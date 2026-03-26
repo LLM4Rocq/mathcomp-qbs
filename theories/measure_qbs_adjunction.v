@@ -130,7 +130,11 @@ Lemma lr_adj_l2r (X : @qbs R) (d : measure_display)
     (Y : measurableType d) (f : @qbs_car R X -> Y) :
   @qbs_morph R X (@R_qbs R _ Y) f ->
   forall U, measurable U -> L_sigma X (f @^-1` U).
-Proof. Admitted.
+Proof.
+move=> hf U hU alpha halpha.
+have hfa : @qbs_random R (@R_qbs R _ Y) (f \o alpha) := hf _ halpha.
+have := hfa measurableT U hU; rewrite setTI; exact.
+Qed.
 
 (* Right-to-left: a "measurable" map w.r.t. L_sigma(X) and sigma(Y)
    gives a QBS morphism X -> R(Y) *)
@@ -138,7 +142,10 @@ Lemma lr_adj_r2l (X : @qbs R) (d : measure_display)
     (Y : measurableType d) (f : @qbs_car R X -> Y) :
   (forall U, measurable U -> L_sigma X (f @^-1` U)) ->
   @qbs_morph R X (@R_qbs R _ Y) f.
-Proof. Admitted.
+Proof.
+move=> hf alpha /= halpha _ U hU; rewrite setTI.
+exact: (hf U hU alpha halpha).
+Qed.
 
 (* The two directions are inverse to each other (naturality) *)
 Lemma lr_adj_natural (X : @qbs R) (d : measure_display)
@@ -163,7 +170,13 @@ Lemma R_preserves_prod (d1 d2 : measure_display)
     (alpha : mR -> M1 * M2) :
   @qbs_random R (@R_qbs R _ [the measurableType _ of (M1 * M2)%type]) alpha <->
   @qbs_random R (@prodQ R (@R_qbs R _ M1) (@R_qbs R _ M2)) alpha.
-Proof. Admitted.
+Proof.
+split.
+- move=> /= halpha; split;
+    [exact: measurableT_comp measurable_fst halpha |
+     exact: measurableT_comp measurable_snd halpha].
+- move=> /= [h1 h2]; apply/measurable_fun_pairP; split; exact.
+Qed.
 
 (* ===================================================================== *)
 (* Section 5: Standard Borel spaces                                      *)
@@ -197,7 +210,17 @@ Lemma R_full_faithful_standard_borel
   forall (f : M1 -> M2),
     @qbs_morph R (@R_qbs R _ M1) (@R_qbs R _ M2) f ->
     measurable_fun setT f.
-Proof. Admitted.
+Proof.
+move=> [phi1 [psi1 [hphi1 [hpsi1 hpsi1phi1]]]]
+       [phi2 [psi2 [hphi2 [hpsi2 hpsi2phi2]]]] f hf.
+have hfpsi1 : measurable_fun setT (f \o psi1).
+  exact: (hf psi1 hpsi1).
+have heq : f = psi2 \o (phi2 \o f \o psi1) \o phi1.
+  apply: boolp.funext => x /=; rewrite hpsi1phi1 hpsi2phi2; reflexivity.
+rewrite heq; apply: measurableT_comp; last exact: hphi1.
+apply: measurableT_comp; first exact: hpsi2.
+exact: measurableT_comp hphi2 hfpsi1.
+Qed.
 
 (* The unit of the adjunction: X -> R(L(X)) at the level of
    the identity function being a QBS morphism into
@@ -212,6 +235,9 @@ Proof. by move=> halpha U hU; exact: hU. Qed.
 Lemma adjunction_counit (d : measure_display) (M : measurableType d)
     (U : set M) :
   measurable U -> L_sigma (@R_qbs R _ M) U.
-Proof. Admitted.
+Proof.
+move=> hU alpha /= halpha.
+have := halpha measurableT U hU; rewrite setTI; exact.
+Qed.
 
 End MQA.

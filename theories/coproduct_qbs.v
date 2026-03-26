@@ -87,7 +87,92 @@ Lemma coprodQ_closed3 (X Y : @qbs R) :
     measurable_fun setT Q ->
     (forall i, coprodQ_random X Y (Fi i)) ->
     coprodQ_random X Y (fun r => Fi (Q r) r).
-Proof. Admitted.
+Proof.
+move=> Q Fi hQ hFi.
+(* We handle the cases based on whether X and Y are inhabited *)
+have [Xempty | x0] := boolp.pselectT (@qbs_car R X).
+{ (* X is empty: cases 1 and 3 of coprodQ_random are impossible *)
+  (* So all Fi i must factor through inr *)
+  have hFi2 : forall i, exists b : mR -> @qbs_car R Y,
+    @qbs_random R Y b /\ forall r, Fi i r = inr (b r).
+  { move=> i; case: (hFi i) => [[a [_ hdef]] | [[b' [hb hdef]] | [P [a _]]]].
+    - exfalso; exact: Xempty (a (0%R : mR)).
+    - by exists b'.
+    - exfalso; exact: Xempty (a (0%R : mR)). }
+  have := @boolp.choice _ _ _ hFi2; move=> [getB hgetB].
+  right; left; exists (fun r => getB (Q r) r); split.
+  - exact: (@qbs_random_glue R Y Q getB hQ (fun i => (hgetB i).1)).
+  - move=> r; exact: (hgetB (Q r)).2.
+}
+have [Yempty | y0] := boolp.pselectT (@qbs_car R Y).
+{ (* Y is empty: all Fi i must factor through inl *)
+  have hFi1 : forall i, exists a : mR -> @qbs_car R X,
+    @qbs_random R X a /\ forall r, Fi i r = inl (a r).
+  { move=> i; case: (hFi i) => [[a [ha hdef]] | [[b' [_ hdef]] | [_ [_ [b' _]]]]].
+    - by exists a.
+    - exfalso; exact: Yempty (b' (0%R : mR)).
+    - exfalso; exact: Yempty (b' (0%R : mR)). }
+  have := @boolp.choice _ _ _ hFi1; move=> [getA hgetA].
+  left; exists (fun r => getA (Q r) r); split.
+  - exact: (@qbs_random_glue R X Q getA hQ (fun i => (hgetA i).1)).
+  - move=> r; exact: (hgetA (Q r)).2.
+}
+(* Both X and Y are inhabited *)
+(* Normalize each Fi i to case 3 form *)
+have hFi3 : forall i, exists triple : (mR -> bool) * (mR -> @qbs_car R X) * (mR -> @qbs_car R Y),
+  measurable_fun setT triple.1.1 /\
+  @qbs_random R X triple.1.2 /\
+  @qbs_random R Y triple.2 /\
+  forall r, Fi i r = if triple.1.1 r then inl (triple.1.2 r) else inr (triple.2 r).
+{ move=> i; case: (hFi i) => [[a [ha hdef]] | [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
+  - (* case 1: pure inl *)
+    exists ((fun _ => true), a, (fun _ => y0)); split; [|split; [|split]] => /=.
+    + exact: measurable_cst.
+    + exact: ha.
+    + exact: qbs_random_const.
+    + by move=> r; rewrite hdef.
+  - (* case 2: pure inr *)
+    exists ((fun _ => false), (fun _ => x0), b'); split; [|split; [|split]] => /=.
+    + exact: measurable_cst.
+    + exact: qbs_random_const.
+    + exact: hb.
+    + by move=> r; rewrite hdef.
+  - (* case 3: already gluing *)
+    exists (P, a, b'); split; [|split; [|split]] => //. }
+have := @boolp.choice _ _ _ hFi3; move=> [getTriple hgetTriple].
+(* Extract the components *)
+set Pi := fun i => (getTriple i).1.1.
+set ai := fun i => (getTriple i).1.2.
+set bi := fun i => (getTriple i).2.
+have hPi_meas : forall i, measurable_fun setT (Pi i).
+{ move=> i; exact: (hgetTriple i).1. }
+have hai : forall i, @qbs_random R X (ai i).
+{ move=> i; exact: (hgetTriple i).2.1. }
+have hbi : forall i, @qbs_random R Y (bi i).
+{ move=> i; exact: (hgetTriple i).2.2.1. }
+have hFi_eq : forall i r, Fi i r = if Pi i r then inl (ai i r) else inr (bi i r).
+{ move=> i; exact: (hgetTriple i).2.2.2. }
+(* Now construct the result in case 3 *)
+right; right.
+(* The combined P: P'(r) = Pi(Q(r))(r) *)
+set P' : mR -> bool := fun r => Pi (Q r) r.
+(* The combined a: a'(r) = ai(Q(r))(r) *)
+set a' : mR -> @qbs_car R X := fun r => ai (Q r) r.
+(* The combined b: b'(r) = bi(Q(r))(r) *)
+set b'' : mR -> @qbs_car R Y := fun r => bi (Q r) r.
+exists P', a', b''; split; [|split; [|split]].
+- (* P' is measurable *)
+  rewrite /P'.
+  exact: (@measurable_glue R _ _ Q (fun i => Pi i) hQ hPi_meas).
+- (* a' is in Mx(X) *)
+  rewrite /a'.
+  exact: (@qbs_random_glue R X Q (fun i => ai i) hQ hai).
+- (* b'' is in Mx(Y) *)
+  rewrite /b''.
+  exact: (@qbs_random_glue R Y Q (fun i => bi i) hQ hbi).
+- (* extensional equality *)
+  move=> r; rewrite /P' /a' /b'' hFi_eq //.
+Qed.
 
 Definition coprodQ (X Y : @qbs R) : @qbs R :=
   @mkQBS R (@qbs_car R X + @qbs_car R Y)
