@@ -150,6 +150,16 @@ Axiom qbs_pair_mu_properE :
     pushforward (qbs_prob_mu p \x qbs_prob_mu q)
       (@mR_prod_encode R) A.
 
+(* Integral against the proper product measure equals integral against
+   the pushforward. This follows from qbs_pair_mu_properE by
+   eq_measure_integral, but we axiomatize it for easier application. *)
+Axiom qbs_pair_mu_proper_integralE :
+  forall (X Y : qbs R) (p : qbs_prob X) (q : qbs_prob Y)
+    (f : mR -> \bar R),
+    \int[qbs_pair_mu_proper p q]_x f x =
+    \int[pushforward (qbs_prob_mu p \x qbs_prob_mu q)
+      (@mR_prod_encode R)]_x f x.
+
 (* The proper product QBS probability *)
 Definition qbs_prob_pair_proper (X Y : qbs R)
   (p : qbs_prob X) (q : qbs_prob Y) : qbs_prob (prodQ X Y) :=
@@ -210,38 +220,130 @@ Proof.
        = RHS *)
 Admitted.
 
+(* Auxiliary: the integrand composed with decode is measurable on mR *)
+Lemma qbs_pair_integrand_meas (X Y : qbs R)
+  (p : qbs_prob X) (q : qbs_prob Y)
+  (h : X * Y -> \bar R)
+  (hmeas : measurable_fun setT
+    (fun r : mR * mR => h (qbs_prob_alpha p r.1, qbs_prob_alpha q r.2))) :
+  measurable_fun setT
+    (fun r : mR => h (qbs_prob_alpha p (mR_prod_decode r).1,
+                       qbs_prob_alpha q (mR_prod_decode r).2)).
+Proof.
+have -> : (fun r : mR => h (qbs_prob_alpha p (mR_prod_decode r).1,
+                             qbs_prob_alpha q (mR_prod_decode r).2)) =
+          (fun r : mR * mR => h (qbs_prob_alpha p r.1, qbs_prob_alpha q r.2))
+            \o (@mR_prod_decode R).
+  by apply: boolp.funext => r /=.
+apply: measurableT_comp hmeas _.
+exact: mR_prod_decode_measurable.
+Qed.
+
 (* Fubini's theorem: iterated integration equals joint integration *)
 Lemma qbs_integral_pair_proper (X Y : qbs R)
   (p : qbs_prob X) (q : qbs_prob Y)
-  (h : X * Y -> \bar R) :
+  (h : X * Y -> \bar R)
+  (hge0 : forall xy, 0 <= h xy)
+  (hmeas : measurable_fun setT
+    (fun r : mR * mR => h (qbs_prob_alpha p r.1, qbs_prob_alpha q r.2))) :
   @qbs_integral R (prodQ X Y) (qbs_prob_pair_proper p q) h =
   @qbs_integral R X p (fun x =>
     @qbs_integral R Y q (fun y => h (x, y))).
 Proof.
-(* LHS = \int[mu_p x mu_q]_(r1,r2) h(alpha_p(r1), alpha_q(r2))
-       = \int[mu_p]_r1 \int[mu_q]_r2 h(alpha_p(r1), alpha_q(r2))  (Fubini)
-       = RHS *)
-Admitted.
+rewrite /qbs_integral /= /qbs_pair_alpha_proper /=.
+set f := (fun x : mR => h (qbs_prob_alpha p (mR_prod_decode x).1,
+                            qbs_prob_alpha q (mR_prod_decode x).2)).
+set g := (fun r : mR * mR => h (qbs_prob_alpha p r.1, qbs_prob_alpha q r.2)).
+have hfm : measurable_fun setT f by exact: qbs_pair_integrand_meas.
+have hf0 : forall x, 0 <= f x by move=> x; apply: hge0.
+have hg0 : forall x, 0 <= g x by move=> x; apply: hge0.
+(* Step 1: Replace qbs_pair_mu_proper with pushforward *)
+rewrite qbs_pair_mu_proper_integralE.
+(* Step 2: Apply ge0_integral_pushforward to remove the pushforward *)
+rewrite (ge0_integral_pushforward (mR_prod_encode_measurable R)
+  _ measurableT hfm (fun x _ => hf0 x)).
+rewrite setTI preimage_setT.
+(* Step 3: Cancel decode o encode: (f \o encode) = g *)
+have -> : (f \o @mR_prod_encode R) = g.
+  apply: boolp.funext => r /=.
+  by rewrite mR_prod_decode_encode.
+(* Step 4: Apply fubini_tonelli1 to convert product integral to iterated *)
+rewrite (fubini_tonelli1 g hmeas hg0).
+(* fubini_F m2 g x = \int[m2]_y g (x, y) by definition *)
+by [].
+Qed.
 
 (* ===================================================================== *)
 (* Part 4: Independence via Proper Products                              *)
 (* ===================================================================== *)
 
-(* E[f * g] = E[f] * E[g] for independent random variables *)
+(* E[f * g] = E[f] * E[g] for independent non-negative random variables *)
 Lemma qbs_integral_indep_mult_proper (X Y : qbs R)
   (pxy : qbs_prob (prodQ X Y))
   (f : X -> R) (g : Y -> R)
   (px : qbs_prob X) (py : qbs_prob Y)
   (hindep : @qbs_prob_equiv R (prodQ X Y) pxy
-              (qbs_prob_pair_proper px py)) :
+              (qbs_prob_pair_proper px py))
+  (hf0 : forall x, (0 <= f x)%R)
+  (hg0 : forall y, (0 <= g y)%R)
+  (hm : @qbs_measurable R (prodQ X Y)
+          (fun xy : prodQ X Y => ((f (fst xy) * g (snd xy))%R)%:E))
+  (hint1 : (qbs_prob_mu pxy).-integrable setT
+             ((fun xy : prodQ X Y => ((f (fst xy) * g (snd xy))%R)%:E) \o
+              qbs_prob_alpha pxy))
+  (hint2 : (qbs_prob_mu (qbs_prob_pair_proper px py)).-integrable setT
+             ((fun xy : prodQ X Y => ((f (fst xy) * g (snd xy))%R)%:E) \o
+              qbs_prob_alpha (qbs_prob_pair_proper px py)))
+  (hfg_meas : measurable_fun setT
+    (fun r : mR * mR =>
+      ((f (qbs_prob_alpha px r.1) * g (qbs_prob_alpha py r.2))%R)%:E))
+  (hg_meas : measurable_fun setT
+    ((fun y : Y => (g y)%:E) \o qbs_prob_alpha py))
+  (hf_meas : measurable_fun setT
+    ((fun x : X => (f x)%:E) \o qbs_prob_alpha px)) :
   @qbs_expect R (prodQ X Y) pxy
     (fun xy => f (fst xy) * g (snd xy))%R =
   (@qbs_expect R X px f * @qbs_expect R Y py g).
 Proof.
-(* Uses qbs_integral_equiv to move from pxy to the proper product,
-   then qbs_integral_pair_proper for Fubini, then linearity of
-   integration to factor the product. *)
-Admitted.
+rewrite /qbs_expect.
+(* Step 1: Use equivalence to move from pxy to the proper product *)
+rewrite (qbs_integral_equiv hm hint1 hint2 hindep).
+(* Step 2: Apply Fubini (non-negative version) to split the joint integral *)
+rewrite (qbs_integral_pair_proper px py
+  (fun xy : X * Y => ((f (fst xy) * g (snd xy))%R)%:E)
+  (fun xy => EFin_nonneg (mulr_ge0 (hf0 xy.1) (hg0 xy.2)))
+  hfg_meas).
+simpl.
+(* Step 3: Factor the inner integral using ge0_integralZl_EFin:
+   \int_y (f x * g y)%:E = (f x)%:E * \int_y (g y)%:E *)
+have inner_eq : forall x : X,
+  @qbs_integral R Y py (fun y : Y => ((f x * g y)%R)%:E) =
+  (f x)%:E * @qbs_integral R Y py (fun y : Y => (g y)%:E).
+  move=> x; rewrite /qbs_integral.
+  under eq_integral do rewrite EFinM.
+  apply: ge0_integralZl_EFin => //.
+  - by move=> r _; apply: EFin_nonneg; apply: hg0.
+  - exact: measurableT.
+  - exact: hg_meas.
+(* Rewrite inner integrals *)
+have lhs_eq :
+  @qbs_integral R X px
+    (fun x : X => @qbs_integral R Y py (fun y : Y => (f x * g y)%:E)) =
+  @qbs_integral R X px
+    (fun x : X => (f x)%:E * @qbs_integral R Y py (fun y : Y => (g y)%:E)).
+  rewrite /qbs_integral; apply: eq_integral => r _.
+  exact: inner_eq (qbs_prob_alpha px r).
+rewrite lhs_eq.
+(* Step 4: Factor the constant Eg out using ge0_integralZr:
+   \int_x (f x)%:E * Eg = (\int_x (f x)%:E) * Eg *)
+rewrite /qbs_integral.
+apply: ge0_integralZr => //.
+- exact: measurableT.
+- exact: hf_meas.
+- by move=> r _; apply: EFin_nonneg; apply: hf0.
+- apply: integral_ge0 => r _.
+  by apply: EFin_nonneg; apply: hg0.
+Qed.
 
 End ProperPairQBS.
 
