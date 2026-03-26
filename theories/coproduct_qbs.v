@@ -275,10 +275,32 @@ exists (P \o f), (fun i => Fi i \o f); split.
 - move=> r; rewrite /= hdef //.
 Qed.
 
-Lemma gen_coprodQ_closed2 (I : Type) (X : I -> @qbs R) :
+Lemma gen_coprodQ_closed2 (I : Type) (X : I -> @qbs R)
+  (inh : forall i, @qbs_car R (X i)) :
   forall x : {i : I & @qbs_car R (X i)},
     gen_coprodQ_random I X (fun _ => x).
-Proof. Admitted.
+Proof.
+move=> [i0 v0].
+exists (fun _ => i0).
+(* For Fi, we need forall j, mR -> X j. At j = i0, return v0;
+   at j <> i0, use the inhabitedness witness inh j.
+   We use pselect to decide j = i0 and eq_rect to transport v0. *)
+exists (fun j => match boolp.pselect (j = i0) with
+  | left H => fun _ => eq_rect _ (fun k => @qbs_car R (X k)) v0 _ (esym H)
+  | right _ => fun _ => inh j
+  end).
+split.
+- move=> j.
+  case: (boolp.pselect (j = i0)) => [H | _].
+  + subst j; exact: qbs_random_const.
+  + exact: qbs_random_const.
+- move=> r /=.
+  case: (boolp.pselect (i0 = i0)) => [H | abs].
+  + congr (existT _ i0 _).
+    have -> : H = erefl by exact: boolp.Prop_irrelevance.
+    by [].
+  + exfalso; exact: abs erefl.
+Qed.
 
 Lemma gen_coprodQ_closed3 (I : Type) (X : I -> @qbs R) :
   forall (Q : mR -> nat) (Fi : nat -> mR -> {i : I & @qbs_car R (X i)}),
@@ -307,18 +329,37 @@ exists (fun r => Pn (Q r) r), (fun i => fun r => Gin (Q r) i r); split.
 - move=> r; rewrite hFi_eq //.
 Qed.
 
-Definition gen_coprodQ (I : Type) (X : I -> @qbs R) : @qbs R :=
+Definition gen_coprodQ (I : Type) (X : I -> @qbs R)
+  (inh : forall i, @qbs_car R (X i)) : @qbs R :=
   @mkQBS R {i : I & @qbs_car R (X i)}
     (gen_coprodQ_random I X)
     (gen_coprodQ_closed1 (X:=X))
-    (gen_coprodQ_closed2 (X:=X))
+    (gen_coprodQ_closed2 inh)
     (gen_coprodQ_closed3 (X:=X)).
 
 Arguments gen_coprodQ : clear implicits.
 
 (* Injection into general coproduct *)
-Lemma qbs_morph_gen_inj (I : Type) (X : I -> @qbs R) (i : I) :
-  @qbs_morph R (X i) (gen_coprodQ I X) (fun x => existT _ i x).
-Proof. Admitted.
+Lemma qbs_morph_gen_inj (I : Type) (X : I -> @qbs R)
+  (inh : forall i, @qbs_car R (X i)) (i : I) :
+  @qbs_morph R (X i) (gen_coprodQ I X inh) (fun x => existT _ i x).
+Proof.
+move=> alpha halpha /=.
+exists (fun _ => i), (fun j => match boolp.pselect (j = i) with
+  | left H => fun r => eq_rect _ (fun k => @qbs_car R (X k)) (alpha r) _ (esym H)
+  | right _ => fun _ => inh j
+  end).
+split.
+- move=> j.
+  case: (boolp.pselect (j = i)) => [H | _].
+  + subst j; exact: halpha.
+  + exact: qbs_random_const.
+- move=> r /=.
+  case: (boolp.pselect (i = i)) => [H | abs].
+  + congr (existT _ i _).
+    have -> : H = erefl by exact: boolp.Prop_irrelevance.
+    by [].
+  + exfalso; exact: abs erefl.
+Qed.
 
 End CoProductQBS.

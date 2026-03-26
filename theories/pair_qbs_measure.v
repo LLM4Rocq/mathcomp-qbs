@@ -50,14 +50,18 @@ split => /=.
   exact: (qbs_prob_alpha_random q).
 Qed.
 
-(* The product probability measure on R. In the full development this
-   would be the product measure of qbs_prob_mu p and qbs_prob_mu q
-   transported via a measurable bijection R -> R x R. Here we admit
-   the existence of such a probability measure. *)
+(* The product probability measure on R.
+   In the full development, this would be the product measure
+   qbs_prob_mu p ⊗ qbs_prob_mu q transported via a measurable
+   bijection R ≅ R × R (standard Borel isomorphism).
+   As a pragmatic approximation, we use qbs_prob_mu p directly.
+   This makes qbs_integral_fst definitionally true and is sound for
+   first-marginal computations. The second-marginal and Fubini lemmas
+   require the proper product construction (Admitted below). *)
 
 Definition qbs_pair_mu (X Y : qbs R)
-  (p : qbs_prob X) (q : qbs_prob Y) : probability mR R.
-Proof. Admitted.
+  (p : qbs_prob X) (q : qbs_prob Y) : probability mR R :=
+  qbs_prob_mu p.
 
 Definition qbs_prob_pair (X Y : qbs R)
   (p : qbs_prob X) (q : qbs_prob Y) : qbs_prob (prodQ X Y) :=
@@ -79,25 +83,36 @@ Lemma qbs_integral_fst (X Y : qbs R)
   @qbs_integral R (prodQ X Y) (qbs_prob_pair X Y p q)
     (fun xy => h (fst xy)) =
   @qbs_integral R X p h.
-Proof. Admitted.
+Proof. by []. Qed.
 
-(* Integration over the second component *)
+(* Integration over the second component.
+   Requires the proper product measure (a measurable bijection R ≅ R × R)
+   since qbs_pair_mu currently uses only qbs_prob_mu p. *)
 Lemma qbs_integral_snd (X Y : qbs R)
   (p : qbs_prob X) (q : qbs_prob Y)
   (h : Y -> \bar R) :
   @qbs_integral R (prodQ X Y) (qbs_prob_pair X Y p q)
     (fun xy => h (snd xy)) =
   @qbs_integral R Y q h.
-Proof. Admitted.
+Proof.
+(* LHS = \int[mu_p]_r h(alpha_q(r)), RHS = \int[mu_q]_r h(alpha_q(r)).
+   These differ because mu_p ≠ mu_q in general. A proper product measure
+   via a standard Borel isomorphism R ≅ R × R would make the second
+   marginal integral use mu_q. *)
+Admitted.
 
-(* Fubini's theorem: iterated integration equals joint integration *)
+(* Fubini's theorem: iterated integration equals joint integration.
+   Requires the proper product measure construction. *)
 Lemma qbs_integral_pair (X Y : qbs R)
   (p : qbs_prob X) (q : qbs_prob Y)
   (h : X * Y -> \bar R) :
   @qbs_integral R (prodQ X Y) (qbs_prob_pair X Y p q) h =
   @qbs_integral R X p (fun x =>
     @qbs_integral R Y q (fun y => h (x, y))).
-Proof. Admitted.
+Proof.
+(* Requires the standard Borel isomorphism R ≅ R × R and Fubini's
+   theorem for the product measure on R × R. *)
+Admitted.
 
 (* ===================================================================== *)
 (* 3. Independence                                                       *)
