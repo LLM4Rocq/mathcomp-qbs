@@ -560,6 +560,54 @@ Definition qbs_prob_event (X : qbs R) (p : qbs_prob X)
 
 Arguments qbs_prob_event : clear implicits.
 
+(* ===================================================================== *)
+(* 10. Variance                                                          *)
+(*     Defined via the mathcomp-analysis variance applied to             *)
+(*     the composition f o alpha against the base measure mu.            *)
+(*     This gives: Var(f) = E[(f o alpha)^2] - E[f o alpha]^2           *)
+(* ===================================================================== *)
+
+Definition qbs_variance (X : qbs R) (p : qbs_prob X)
+  (f : X -> R) : \bar R :=
+  variance (qbs_prob_mu p) (f \o qbs_prob_alpha p).
+
+Arguments qbs_variance : clear implicits.
+
+(* ===================================================================== *)
+(* 11. Monad Join: P(P(X)) -> P(X)                                      *)
+(*     Flattens a probability over probabilities into a single           *)
+(*     probability, defined via bind with the identity function.         *)
+(*     Given p : qbs_prob (monadP X), the outer alpha maps              *)
+(*     r |-> qbs_prob X, and the diagonal extraction gives:             *)
+(*       alpha_join(r) = qbs_prob_alpha(qbs_prob_alpha(p)(r))(r)        *)
+(*       mu_join       = qbs_prob_mu(p)                                 *)
+(* ===================================================================== *)
+
+Definition qbs_join (X : qbs R)
+  (p : qbs_prob (monadP X))
+  (hdiag : @qbs_random R X
+    (fun r => qbs_prob_alpha (id (qbs_prob_alpha p r)) r)) :
+  qbs_prob X :=
+  qbs_bind (monadP X) X p id hdiag.
+
+Arguments qbs_join : clear implicits.
+
+(* ===================================================================== *)
+(* 12. Monad Strength: W x P(X) -> P(W x X)                             *)
+(*     Given a constant value w : W and a probability p on X,           *)
+(*     produce a probability on W x X where W is held constant          *)
+(*     and X is sampled from p.                                         *)
+(* ===================================================================== *)
+
+Definition qbs_strength (W X : qbs R)
+  (w : W) (p : qbs_prob X) : qbs_prob (prodQ W X) :=
+  @mkQBSProb (prodQ W X)
+    (fun r => (w, qbs_prob_alpha p r))
+    (qbs_prob_mu p)
+    (prodQ_const_random w (qbs_prob_alpha_random p)).
+
+Arguments qbs_strength : clear implicits.
+
 End ProbabilityQBS.
 
 Arguments qbs_prob {R}.
@@ -578,3 +626,6 @@ Arguments qbs_measurable {R}.
 Arguments monadP_map {R}.
 Arguments qbs_expect {R}.
 Arguments qbs_prob_event {R}.
+Arguments qbs_variance {R}.
+Arguments qbs_join {R}.
+Arguments qbs_strength {R}.
