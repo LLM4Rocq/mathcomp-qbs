@@ -268,7 +268,12 @@ Lemma gen_coprodQ_closed1 (I : Type) (X : I -> @qbs R) :
     gen_coprodQ_random I X h ->
     measurable_fun setT f ->
     gen_coprodQ_random I X (h \o f).
-Proof. Admitted.
+Proof.
+move=> h f [P [Fi [hFi hdef]]] hf.
+exists (P \o f), (fun i => Fi i \o f); split.
+- move=> i; exact: qbs_random_comp (hFi i) hf.
+- move=> r; rewrite /= hdef //.
+Qed.
 
 Lemma gen_coprodQ_closed2 (I : Type) (X : I -> @qbs R) :
   forall x : {i : I & @qbs_car R (X i)},
@@ -280,7 +285,27 @@ Lemma gen_coprodQ_closed3 (I : Type) (X : I -> @qbs R) :
     measurable_fun setT Q ->
     (forall i, gen_coprodQ_random I X (Fi i)) ->
     gen_coprodQ_random I X (fun r => Fi (Q r) r).
-Proof. Admitted.
+Proof.
+move=> Q Fi hQ hFi.
+(* Each Fi n is in gen_coprodQ_random, so extract witnesses uniformly *)
+have hFi' : forall n, exists pair : (mR -> I) * (forall i, mR -> @qbs_car R (X i)),
+  (forall i, @qbs_random R (X i) (pair.2 i)) /\
+  (forall r, Fi n r = existT _ (pair.1 r) (pair.2 (pair.1 r) r)).
+{ move=> n; case: (hFi n) => [Pn [Gin [hGin hdef]]].
+  by exists (Pn, Gin). }
+have := @boolp.choice _ _ _ hFi'; move=> [getPair hgetPair].
+set Pn := fun n => (getPair n).1.
+set Gin := fun n => (getPair n).2.
+have hGin : forall n i, @qbs_random R (X i) (Gin n i).
+{ move=> n i; exact: (hgetPair n).1 i. }
+have hFi_eq : forall n r, Fi n r = existT _ (Pn n r) (Gin n (Pn n r) r).
+{ move=> n; exact: (hgetPair n).2. }
+(* Construct the result *)
+exists (fun r => Pn (Q r) r), (fun i => fun r => Gin (Q r) i r); split.
+- move=> i.
+  exact: (@qbs_random_glue R (X i) Q (fun n => Gin n i) hQ (fun n => hGin n i)).
+- move=> r; rewrite hFi_eq //.
+Qed.
 
 Definition gen_coprodQ (I : Type) (X : I -> @qbs R) : @qbs R :=
   @mkQBS R {i : I & @qbs_car R (X i)}
