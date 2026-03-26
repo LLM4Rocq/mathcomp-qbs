@@ -20,6 +20,7 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Local Open Scope classical_set_scope.
+Local Open Scope ereal_scope.
 
 Section BayesianRegression.
 Variable (R : realType).
@@ -213,9 +214,13 @@ rewrite rhs_simp.
 (* Goal: mu_p(alpha_Y^{-1}(U)) = \int[mu_p]_r (mu_p(alpha_Y^{-1}(U))) *)
 (* The integral of a constant c against a probability is c *)
 set A := qbs_prob_mu p (alpha_Y @^-1` U).
-have cst_eq : (fun=> A) = @functions.cst mR _ A by [].
-rewrite cst_eq (integral_cst measurableT) probability_setT mule1.
-by [].
+(* The integral of a constant c w.r.t. a probability measure equals c *)
+suff -> : integral (qbs_prob_mu p) setT (fun=> A) = A.
+  by [].
+transitivity (A * qbs_prob_mu p setT).
+  have cst_eq : (fun=> A) = @functions.cst mR _ A by [].
+  by rewrite cst_eq; exact: (@integral_cst _ _ _ (qbs_prob_mu p) setT measurableT A).
+by rewrite probability_setT mule1.
 Qed.
 
 (* The predictive distribution marginalizes correctly *)
@@ -224,13 +229,7 @@ Lemma predictive_marginal (obs_x : R) (U : set (realQ R)) :
   @qbs_integral R (prodQ (realQ R) (realQ R)) param_prior
     (fun params => @qbs_prob_event R (realQ R)
       (likelihood_single obs_x params) U).
-Proof.
-  rewrite /predictive.
-  apply: qbs_prob_event_bind_strong.
-  (* hmu_same: all likelihood results share the same base measure *)
-  move=> r /=.
-  by [].
-Admitted.
+Proof. Admitted.
 
 (* The posterior mean of the slope converges to the true slope
    as the number of observations increases. This is a consistency
