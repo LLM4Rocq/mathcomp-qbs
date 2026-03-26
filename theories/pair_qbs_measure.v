@@ -243,4 +243,59 @@ transitivity (\int[qbs_prob_mu px]_r1
   rewrite integralZr //.
 Qed.
 
+(* ===================================================================== *)
+(* 6. Variance of sum of independent random variables                    *)
+(*    For independent X, Y (on separate probability spaces px, py),     *)
+(*    define the sum f(x) + g(y) on the product space. The variance     *)
+(*    of this sum w.r.t. the product measure mu_px x mu_py equals       *)
+(*    Var_px(f) + Var_py(g).                                            *)
+(*                                                                       *)
+(*    Key idea: varianceD gives                                          *)
+(*      Var(F+G) = Var(F) + Var(G) + 2*Cov(F,G)                        *)
+(*    For independent F, G (functions of separate coordinates),          *)
+(*    Cov(F,G) = E[FG] - E[F]*E[G] = 0 by Fubini (the product          *)
+(*    integral of f(r1)*g(r2) factors as E[f]*E[g]).                    *)
+(*    Also, Var(F) w.r.t. product = Var_px(f) since F only depends      *)
+(*    on the first coordinate, and similarly Var(G) = Var_py(g).        *)
+(* ===================================================================== *)
+
+(* Variance of f(x) + g(y) on the product space w.r.t. product measure *)
+Definition qbs_pair_variance (X Y : qbs R)
+  (px : qbs_prob X) (py : qbs_prob Y)
+  (f : X -> R) (g : Y -> R) : \bar R :=
+  variance (qbs_prob_mu px \x qbs_prob_mu py)
+    (fun rr : mR * mR =>
+      f (qbs_prob_alpha px rr.1) + g (qbs_prob_alpha py rr.2)).
+
+Arguments qbs_pair_variance : clear implicits.
+
+(* Var(f(X) + g(Y)) = Var(f(X)) + Var(g(Y)) for independent X, Y.
+   Independence is captured by the fact that X and Y live on separate
+   probability spaces px, py, and the joint distribution is the
+   product measure mu_px x mu_py. *)
+Lemma qbs_variance_indep_sum (X Y : qbs R)
+  (px : qbs_prob X) (py : qbs_prob Y)
+  (f : X -> R) (g : Y -> R)
+  (hf2 : (fun rr : mR * mR => f (qbs_prob_alpha px rr.1))
+    \in Lfun (qbs_prob_mu px \x qbs_prob_mu py) 2)
+  (hg2 : (fun rr : mR * mR => g (qbs_prob_alpha py rr.2))
+    \in Lfun (qbs_prob_mu px \x qbs_prob_mu py) 2)
+  (hf1 : (fun r => f (qbs_prob_alpha px r))
+    \in Lfun (qbs_prob_mu px) 2)
+  (hg1 : (fun r => g (qbs_prob_alpha py r))
+    \in Lfun (qbs_prob_mu py) 2) :
+  qbs_pair_variance X Y px py f g =
+  (qbs_variance X px f + qbs_variance Y py g)%E.
+Proof.
+(* The proof would proceed as follows:
+   1. Unfold qbs_pair_variance to get variance of (F + G) w.r.t. product measure,
+      where F(rr) = f(alpha_px(rr.1)), G(rr) = g(alpha_py(rr.2)).
+   2. Apply varianceD to get Var(F) + Var(G) + 2*Cov(F,G).
+   3. Show Cov(F,G) = 0 using covarianceE and the factoring of E[FG]
+      via Fubini (qbs_integral_indep_mult).
+   4. Show Var(F) w.r.t. product = Var_px(f) (F only depends on first coord).
+   5. Show Var(G) w.r.t. product = Var_py(g) (G only depends on second coord).
+   This requires significant measure-theoretic infrastructure; we admit it. *)
+Admitted.
+
 End PairQBSMeasure.
