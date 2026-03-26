@@ -18,3 +18,5 @@
 # Editor backups
 *~
 \#*\#
+Makefile*
+.Makefile.d

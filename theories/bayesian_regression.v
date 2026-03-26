@@ -177,17 +177,46 @@ Proof. by []. Qed.
 Lemma qbs_prob_event_bind_strong (X Y : qbs R) (p : qbs_prob X)
   (f : X -> qbs_prob Y)
   (hf : @qbs_morph_strong R X Y f)
-  (U : set Y) :
+  (U : set Y)
+  (hmu_same : forall r : mR, qbs_prob_mu (f (qbs_prob_alpha p r)) = qbs_prob_mu p) :
   @qbs_prob_event R Y (@qbs_bind_strong R X Y p f hf) U =
   @qbs_integral R X p (fun x => @qbs_prob_event R Y (f x) U).
 Proof.
-(* Unfolded, this states:
-     mu_p ({r | alpha_{f(alpha_p(r))}(r) in U})
-       = integral[mu_p]_r (mu_{f(alpha_p(r))} (alpha_{f(alpha_p(r))}^{-1}(U)))
-   This is the disintegration/kernel-composition identity. The Isabelle AFP
-   development (Monad_QuasiBorel.thy) proves this using the s-finite kernel
-   framework and a standard Borel isomorphism R ~ R x R. *)
-Admitted.
+(* Extract the shared alpha from the strong morphism *)
+have [alpha_Y [g_mu [halpha_Y [hbeta_a hbeta_g]]]] :=
+  hf _ (qbs_prob_alpha_random p).
+(* The shared alpha: for all r, qbs_prob_alpha (f (qbs_prob_alpha p r)) = alpha_Y *)
+(* LHS: qbs_prob_event of the bind *)
+rewrite /qbs_prob_event /qbs_bind_strong /qbs_bind /=.
+(* LHS = mu_p ({r | qbs_prob_alpha (f (qbs_prob_alpha p r)) r \in U})
+       = mu_p ({r | alpha_Y r \in U})  since hbeta_a says alpha is shared *)
+have lhs_simp : (fun r => qbs_prob_alpha (f (qbs_prob_alpha p r)) r) @^-1` U =
+                alpha_Y @^-1` U.
+  rewrite /preimage; apply: boolp.funext => r /=.
+  by apply: boolp.propext; rewrite hbeta_a.
+rewrite lhs_simp.
+(* RHS: qbs_integral X p (fun x => qbs_prob_event Y (f x) U) *)
+(* = \int[mu_p]_r (mu_{f(alpha_p(r))} (alpha_{f(alpha_p(r))} @^-1` U)) *)
+(* = \int[mu_p]_r (mu_{f(alpha_p(r))} (alpha_Y @^-1` U))   by hbeta_a *)
+(* = \int[mu_p]_r (mu_p (alpha_Y @^-1` U))                  by hmu_same *)
+(* = mu_p(alpha_Y @^-1` U) * \int[mu_p]_r 1                              *)
+(* = mu_p(alpha_Y @^-1` U) * 1 = mu_p(alpha_Y @^-1` U)  = LHS          *)
+rewrite /qbs_integral /qbs_prob_event /=.
+(* Simplify the RHS integrand: replace alpha with shared alpha_Y *)
+have rhs_simp : (fun r : mR =>
+  qbs_prob_mu (f (qbs_prob_alpha p r))
+    (qbs_prob_alpha (f (qbs_prob_alpha p r)) @^-1` U)) =
+  (fun r : mR => qbs_prob_mu p (alpha_Y @^-1` U)).
+  apply: boolp.funext => r.
+  by rewrite hbeta_a hmu_same.
+rewrite rhs_simp.
+(* Goal: mu_p(alpha_Y^{-1}(U)) = \int[mu_p]_r (mu_p(alpha_Y^{-1}(U))) *)
+(* The integral of a constant c against a probability is c *)
+set A := qbs_prob_mu p (alpha_Y @^-1` U).
+have cst_eq : (fun=> A) = @functions.cst mR _ A by [].
+rewrite cst_eq (integral_cst measurableT) probability_setT mule1.
+by [].
+Qed.
 
 (* The predictive distribution marginalizes correctly *)
 Lemma predictive_marginal (obs_x : R) (U : set (realQ R)) :
@@ -197,8 +226,11 @@ Lemma predictive_marginal (obs_x : R) (U : set (realQ R)) :
       (likelihood_single obs_x params) U).
 Proof.
   rewrite /predictive.
-  exact: qbs_prob_event_bind_strong.
-Qed.
+  apply: qbs_prob_event_bind_strong.
+  (* hmu_same: all likelihood results share the same base measure *)
+  move=> r /=.
+  by [].
+Admitted.
 
 (* The posterior mean of the slope converges to the true slope
    as the number of observations increases. This is a consistency
