@@ -224,37 +224,100 @@ rewrite /= /qbs_pair_alpha_proper /=.
 by rewrite mR_prod_decode_encode.
 Qed.
 
-(* First marginal: integrating a function of fst recovers qbs_integral p *)
+(* Helper: constant integral against a probability measure equals the constant *)
+Lemma prob_integral_cst (X0 : qbs R) (p0 : qbs_prob X0) (c : \bar R) :
+  \int[qbs_prob_mu p0]_x c = c.
+Proof.
+transitivity (c * qbs_prob_mu p0 setT); first exact: integral_cst.
+by rewrite probability_setT mule1.
+Qed.
+
+(* First marginal: integrating a function of fst recovers qbs_integral p.
+   Requires non-negativity and measurability of h composed with alpha. *)
 Lemma qbs_integral_fst_proper (X Y : qbs R)
   (p : qbs_prob X) (q : qbs_prob Y)
-  (h : X -> \bar R) :
+  (h : X -> \bar R)
+  (hge0 : forall x, 0 <= h x)
+  (hmeas : measurable_fun setT (h \o qbs_prob_alpha p)) :
   @qbs_integral R (prodQ X Y) (qbs_prob_pair_proper p q)
     (fun xy => h (fst xy)) =
   @qbs_integral R X p h.
 Proof.
-(* LHS = \int[qbs_pair_mu_proper p q]_r h(alpha_p(decode(r).1))
-   By qbs_pair_mu_properE, qbs_pair_mu_proper agrees with
-   pushforward (mu_p x mu_q) encode, so by integral_pushforward:
-   = \int[mu_p x mu_q]_(r1,r2) h(alpha_p(r1))
-   Since h(alpha_p(r1)) does not depend on r2, by Fubini:
-   = \int[mu_p]_r1 h(alpha_p(r1)) * mu_q(setT)
-   = \int[mu_p]_r1 h(alpha_p(r1))      (mu_q is a probability)
-   = RHS *)
-Admitted.
+rewrite /qbs_integral /=.
+rewrite (qbs_pair_mu_proper_integralE p q
+  (fun x => h (qbs_prob_alpha p (mR_prod_decode x).1))).
+have hfm : measurable_fun setT
+    (fun y : mR => h (qbs_prob_alpha p (mR_prod_decode y).1)).
+  have -> : (fun y : mR => h (qbs_prob_alpha p (mR_prod_decode y).1)) =
+            (h \o qbs_prob_alpha p) \o (fst \o @mR_prod_decode R).
+    by apply: boolp.funext => r /=.
+  exact: (measurableT_comp hmeas (mR_prod_decode_fst_measurable (R:=R))).
+rewrite (ge0_integral_pushforward (mR_prod_encode_measurable R)
+  _ measurableT hfm (fun x _ => hge0 _)).
+rewrite preimage_setT.
+have hcomp : ((fun y : mR => h (qbs_prob_alpha p (mR_prod_decode y).1))
+             \o @mR_prod_encode R) =
+          (fun z : mR * mR => h (qbs_prob_alpha p z.1)).
+  apply: boolp.funext => r /=.
+  by rewrite mR_prod_decode_encode.
+rewrite hcomp.
+have hgm : measurable_fun setT
+    (fun z : mR * mR => h (qbs_prob_alpha p z.1)).
+  have -> : (fun z : mR * mR => h (qbs_prob_alpha p z.1)) =
+            (h \o qbs_prob_alpha p) \o fst.
+    by apply: boolp.funext => r /=.
+  exact: (measurableT_comp hmeas measurable_fst).
+rewrite (fubini_tonelli1 _ hgm (fun x => hge0 _)).
+congr (integral _ setT _).
+apply: boolp.funext => x.
+rewrite /fubini_F.
+rewrite (_ : (fun y => _) = functions.cst (h (qbs_prob_alpha p x))); last first.
+  by apply: boolp.funext.
+exact: prob_integral_cst.
+Qed.
 
-(* Second marginal: integrating a function of snd recovers qbs_integral q *)
+(* Second marginal: integrating a function of snd recovers qbs_integral q.
+   Requires non-negativity and measurability of h composed with alpha. *)
 Lemma qbs_integral_snd_proper (X Y : qbs R)
   (p : qbs_prob X) (q : qbs_prob Y)
-  (h : Y -> \bar R) :
+  (h : Y -> \bar R)
+  (hge0 : forall y, 0 <= h y)
+  (hmeas : measurable_fun setT (h \o qbs_prob_alpha q)) :
   @qbs_integral R (prodQ X Y) (qbs_prob_pair_proper p q)
     (fun xy => h (snd xy)) =
   @qbs_integral R Y q h.
 Proof.
-(* LHS = \int[mu_p x mu_q]_(r1,r2) h(alpha_q(r2))
-       = mu_p(setT) * \int[mu_q]_r2 h(alpha_q(r2))
-       = \int[mu_q]_r2 h(alpha_q(r2))      (mu_p is a probability)
-       = RHS *)
-Admitted.
+rewrite /qbs_integral /=.
+rewrite (qbs_pair_mu_proper_integralE p q
+  (fun x => h (qbs_prob_alpha q (mR_prod_decode x).2))).
+have hfm : measurable_fun setT
+    (fun y : mR => h (qbs_prob_alpha q (mR_prod_decode y).2)).
+  have -> : (fun y : mR => h (qbs_prob_alpha q (mR_prod_decode y).2)) =
+            (h \o qbs_prob_alpha q) \o (snd \o @mR_prod_decode R).
+    by apply: boolp.funext => r /=.
+  exact: (measurableT_comp hmeas (mR_prod_decode_snd_measurable (R:=R))).
+rewrite (ge0_integral_pushforward (mR_prod_encode_measurable R)
+  _ measurableT hfm (fun x _ => hge0 _)).
+rewrite preimage_setT.
+have hcomp : ((fun y : mR => h (qbs_prob_alpha q (mR_prod_decode y).2))
+             \o @mR_prod_encode R) =
+          (fun z : mR * mR => h (qbs_prob_alpha q z.2)).
+  apply: boolp.funext => r /=.
+  by rewrite mR_prod_decode_encode.
+rewrite hcomp.
+have hgm : measurable_fun setT
+    (fun z : mR * mR => h (qbs_prob_alpha q z.2)).
+  have -> : (fun z : mR * mR => h (qbs_prob_alpha q z.2)) =
+            (h \o qbs_prob_alpha q) \o snd.
+    by apply: boolp.funext => r /=.
+  exact: (measurableT_comp hmeas measurable_snd).
+rewrite (fubini_tonelli1 _ hgm (fun x => hge0 _)).
+transitivity (\int[qbs_prob_mu p]_x
+  \int[qbs_prob_mu q]_y h (qbs_prob_alpha q y)).
+  apply: eq_integral => x _.
+  by rewrite /fubini_F.
+exact: prob_integral_cst.
+Qed.
 
 (* Fubini's theorem: iterated integration equals joint integration
    (non-negative version) *)
@@ -267,11 +330,7 @@ Lemma qbs_integral_pair_proper (X Y : qbs R)
   @qbs_integral R (prodQ X Y) (qbs_prob_pair_proper p q) h =
   @qbs_integral R X p (fun x =>
     @qbs_integral R Y q (fun y => h (x, y))).
-Proof.
-(* Proof sketch: transport integral through pushforward via
-   qbs_pair_mu_properE, apply ge0_integral_pushforward to cancel
-   the encoding, then apply fubini_tonelli1 for the product measure. *)
-Admitted.
+Proof. Admitted.
 
 (* ===================================================================== *)
 (* Part 4: Independence via Proper Products                              *)
@@ -309,10 +368,12 @@ rewrite /qbs_expect.
 (* Step 1: Use equivalence to move from pxy to the proper product *)
 rewrite (qbs_integral_equiv hm hint1 hint2 hindep).
 (* Step 2: Apply Fubini (non-negative version) to split the joint integral *)
+have hfg_ge0 : forall xy : X * Y,
+  (0 : \bar R) <= ((f (fst xy) * g (snd xy))%R)%:E.
+  by move=> xy; rewrite lee_fin; apply: mulr_ge0.
 rewrite (@qbs_integral_pair_proper X Y px py
   (fun xy : X * Y => ((f (fst xy) * g (snd xy))%R)%:E)
-  (fun xy => lee_fin_num_EFin0 _ (mulr_ge0 (hf0 xy.1) (hg0 xy.2))))
-  hfg_meas).
+  hfg_ge0 hfg_meas).
 simpl.
 (* Step 3: Factor the inner integral using ge0_integralZl_EFin:
    \int_y (f x * g y)%:E = (f x)%:E * \int_y (g y)%:E *)
@@ -322,7 +383,7 @@ have inner_eq : forall x : X,
   move=> x; rewrite /qbs_integral.
   under eq_integral do rewrite EFinM.
   apply: ge0_integralZl_EFin => //.
-  - by move=> r _; apply: EFin_nonneg; apply: hg0.
+  - by move=> r _; rewrite lee_fin; apply: hg0.
   - exact: measurableT.
   - exact: hg_meas.
 (* Rewrite inner integrals *)
@@ -340,9 +401,9 @@ rewrite /qbs_integral.
 apply: ge0_integralZr => //.
 - exact: measurableT.
 - exact: hf_meas.
-- by move=> r _; apply: EFin_nonneg; apply: hf0.
+- by move=> r _; rewrite lee_fin; apply: hf0.
 - apply: integral_ge0 => r _.
-  by apply: EFin_nonneg; apply: hg0.
+  by rewrite lee_fin; apply: hg0.
 Qed.
 
 End ProperPairQBS.
