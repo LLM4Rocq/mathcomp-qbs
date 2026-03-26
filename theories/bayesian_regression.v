@@ -3,15 +3,16 @@
 (*                                                                      *)
 (* A complete Bayesian linear regression example demonstrating the      *)
 (* QBS probability monad in action:                                     *)
-(*   - Prior on slope and intercept (product of normals)                *)
+(*   - Independent priors on slope and intercept (product of normals)   *)
 (*   - Likelihood function                                              *)
-(*   - Posterior via monadic bind                                       *)
+(*   - Predictive distribution via pair integration                     *)
+(*   - Posterior via conditioning                                       *)
 (* -------------------------------------------------------------------- *)
 
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra.
 From mathcomp.analysis Require Import all_analysis.
-From QBS Require Import quasi_borel probability_qbs.
+From QBS Require Import quasi_borel probability_qbs pair_qbs_measure.
 
 Import Num.Def Num.Theory reals classical_sets.
 
@@ -31,6 +32,11 @@ Local Notation mR := (measurableTypeR R).
 (* 1. Prior distribution on model parameters                             *)
 (*    The model is y = slope * x + intercept + noise.                   *)
 (*    We place independent normal priors on slope and intercept.         *)
+(*                                                                      *)
+(*    The joint prior is represented as the PAIR (slope_prior,          *)
+(*    intercept_prior) and integrated via qbs_pair_integral, which      *)
+(*    uses the product measure mu_slope x mu_intercept on mR x mR.     *)
+(*    This gives truly independent priors (no shared randomness).       *)
 (* ===================================================================== *)
 
 (* Prior on slope: Normal(0, 1)
@@ -47,17 +53,6 @@ Definition intercept_prior : qbs_prob (realQ R) :=
   @mkQBSProb R (realQ R) idfun
     (normal_prob (0 : R) (1 : R) : probability mR R)
     (@measurable_id _ mR setT).
-
-(* Joint prior on (slope, intercept) as a QBS probability on the
-   product space realQ x realQ. The alpha pairs two copies of the
-   identity, and the underlying measure is a standard normal.
-   In the full development, this would use independent normals via
-   a product measure; here we use a single normal for both
-   components as a structural placeholder. *)
-Definition param_prior : qbs_prob (prodQ (realQ R) (realQ R)) :=
-  @mkQBSProb R (@prodQ R (realQ R) (realQ R)) (fun r : mR => (r, r))
-    (normal_prob (0 : R) (1 : R) : probability mR R)
-    (conj (@measurable_id _ mR setT) (@measurable_id _ mR setT)).
 
 (* ===================================================================== *)
 (* 2. Likelihood function                                                *)
@@ -110,143 +105,130 @@ by split.
 Qed.
 
 (* ===================================================================== *)
-(* 3. Posterior distribution via monadic bind                            *)
-(*    posterior = bind param_prior (fun params => likelihood params)     *)
-(*    This produces a QBS probability on the observation space.          *)
+(* 3. Predictive distribution via pair integration                       *)
+(*    The predictive integrates the likelihood over the independent     *)
+(*    prior on (slope, intercept) using qbs_pair_integral, which        *)
+(*    computes the integral w.r.t. mu_slope x mu_intercept.             *)
 (* ===================================================================== *)
 
-(* Predictive distribution for a new x-value:
-   Integrate over the prior on parameters to get a distribution on y. *)
-Definition predictive (obs_x : R) : qbs_prob (realQ R) :=
-  @qbs_bind_strong R
-    (prodQ (realQ R) (realQ R))
-    (realQ R)
-    param_prior
-    (likelihood_single obs_x)
-    (likelihood_single_strong obs_x).
+(* Predictive integral: for an observation x, integrates a function h
+   over y-values against the likelihood, marginalized over the
+   independent prior on (slope, intercept). *)
+Definition predictive_integral (obs_x : R) (h : realQ R -> \bar R) : \bar R :=
+  qbs_pair_integral slope_prior intercept_prior
+    (fun params => qbs_integral _ (likelihood_single obs_x params) h).
+
+(* Predictive event probability: the probability of event U under
+   the predictive distribution for observation x. *)
+Definition predictive_event (obs_x : R) (U : set (realQ R)) : \bar R :=
+  qbs_pair_integral slope_prior intercept_prior
+    (fun params => qbs_prob_event _ (likelihood_single obs_x params) U).
 
 (* ===================================================================== *)
-(* 4. Posterior via conditioning (stated abstractly)                     *)
-(*    Given observed data, the posterior on parameters is obtained by    *)
-(*    conditioning the joint distribution.                               *)
+(* 4. Marginalization identity (Fubini)                                  *)
+(*    The predictive integral satisfies the law of total probability:   *)
+(*    predictive_integral(h) = \int\int h(y) dP(y|s,i) dpi(s) dpi(i)  *)
+(*    This is a direct consequence of qbs_pair_integral_eq (Fubini).    *)
 (* ===================================================================== *)
 
-(* The joint distribution on (parameters, observation) for input obs_x.
-   Constructed as a QBS probability on the triple product by pairing
-   the parameter prior with the likelihood. The alpha maps r to
-   ((r, r), r), giving a joint distribution over the combined space. *)
-Definition joint_distribution (obs_x : R) :
-  qbs_prob (prodQ (prodQ (realQ R) (realQ R)) (realQ R)) :=
-  @mkQBSProb R (@prodQ R (@prodQ R (realQ R) (realQ R)) (realQ R))
-    (fun r : mR => ((r, r), r))
-    (normal_prob (0 : R) (1 : R) : probability mR R)
-    (conj
-      (conj (@measurable_id _ mR setT) (@measurable_id _ mR setT))
-      (@measurable_id _ mR setT)).
-
-(* The posterior on parameters given an observation. In the full
-   development this would use disintegration / conditional expectation.
-   Here we use the prior as a structural placeholder, representing
-   the posterior before conditioning on data. *)
-Definition posterior (obs_x : R) (obs_y : R) :
-  qbs_prob (prodQ (realQ R) (realQ R)) :=
-  @mkQBSProb R (@prodQ R (realQ R) (realQ R)) (fun r : mR => (r, r))
-    (normal_prob (0 : R) (1 : R) : probability mR R)
-    (conj (@measurable_id _ mR setT) (@measurable_id _ mR setT)).
-
-(* ===================================================================== *)
-(* 5. Key properties (all admitted)                                      *)
-(* ===================================================================== *)
-
-(* The posterior is well-defined as a QBS probability *)
-Lemma posterior_well_defined (obs_x obs_y : R) :
-  qbs_prob_alpha_random (posterior obs_x obs_y) =
-  qbs_prob_alpha_random (posterior obs_x obs_y).
-Proof. by []. Qed.
-
-(* Law of total probability for QBS bind:
-   The probability of an event U under bind(p, f) equals the integral
-   over p of the probability of U under f(x).
-   This is the QBS analogue of P(U) = integral P(U|theta) d pi(theta).
-
-   In the kernel-based formulation (LICS 2017, Def. 19), bind uses a
-   proper product/kernel construction where this holds by Fubini. In our
-   pointwise (alpha, mu) representation, the proof requires relating the
-   base measure mu_p applied to the diagonal preimage to the integral of
-   the component transition kernel measures. This is an axiom of the
-   representation and requires the s-finite kernel framework. *)
-Lemma qbs_prob_event_bind_strong (X Y : qbs R) (p : qbs_prob X)
-  (f : X -> qbs_prob Y)
-  (hf : @qbs_morph_strong R X Y f)
-  (U : set Y)
-  (hmu_same : forall r : mR, qbs_prob_mu (f (qbs_prob_alpha p r)) = qbs_prob_mu p) :
-  @qbs_prob_event R Y (@qbs_bind_strong R X Y p f hf) U =
-  @qbs_integral R X p (fun x => @qbs_prob_event R Y (f x) U).
+Lemma predictive_marginal (obs_x : R) (h : realQ R -> \bar R)
+  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
+    setT (qbs_pair_fun slope_prior intercept_prior
+      (fun params => qbs_integral _ (likelihood_single obs_x params) h))) :
+  predictive_integral obs_x h =
+  qbs_integral _ slope_prior (fun s =>
+    qbs_integral _ intercept_prior (fun i =>
+      qbs_integral _ (likelihood_single obs_x (s, i)) h)).
 Proof.
-(* Extract the shared alpha from the strong morphism *)
-have [alpha_Y [g_mu [halpha_Y [hbeta_a hbeta_g]]]] :=
-  hf _ (qbs_prob_alpha_random p).
-(* The shared alpha: for all r, qbs_prob_alpha (f (qbs_prob_alpha p r)) = alpha_Y *)
-(* LHS: qbs_prob_event of the bind *)
-rewrite /qbs_prob_event /qbs_bind_strong /qbs_bind /=.
-(* LHS = mu_p ({r | qbs_prob_alpha (f (qbs_prob_alpha p r)) r \in U})
-       = mu_p ({r | alpha_Y r \in U})  since hbeta_a says alpha is shared *)
-have lhs_simp : (fun r => qbs_prob_alpha (f (qbs_prob_alpha p r)) r) @^-1` U =
-                alpha_Y @^-1` U.
-  rewrite /preimage; apply: boolp.funext => r /=.
-  by apply: boolp.propext; rewrite hbeta_a.
-rewrite lhs_simp.
-(* RHS: qbs_integral X p (fun x => qbs_prob_event Y (f x) U) *)
-(* = \int[mu_p]_r (mu_{f(alpha_p(r))} (alpha_{f(alpha_p(r))} @^-1` U)) *)
-(* = \int[mu_p]_r (mu_{f(alpha_p(r))} (alpha_Y @^-1` U))   by hbeta_a *)
-(* = \int[mu_p]_r (mu_p (alpha_Y @^-1` U))                  by hmu_same *)
-(* = mu_p(alpha_Y @^-1` U) * \int[mu_p]_r 1                              *)
-(* = mu_p(alpha_Y @^-1` U) * 1 = mu_p(alpha_Y @^-1` U)  = LHS          *)
-rewrite /qbs_integral /qbs_prob_event /=.
-(* Simplify the RHS integrand: replace alpha with shared alpha_Y *)
-have rhs_simp : (fun r : mR =>
-  qbs_prob_mu (f (qbs_prob_alpha p r))
-    (qbs_prob_alpha (f (qbs_prob_alpha p r)) @^-1` U)) =
-  (fun r : mR => qbs_prob_mu p (alpha_Y @^-1` U)).
-  apply: boolp.funext => r.
-  by rewrite hbeta_a hmu_same.
-rewrite rhs_simp.
-(* Goal: mu_p(alpha_Y^{-1}(U)) = \int[mu_p]_r (mu_p(alpha_Y^{-1}(U))) *)
-(* The integral of a constant c against a probability is c *)
-set A := qbs_prob_mu p (alpha_Y @^-1` U).
-(* The integral of a constant c w.r.t. a probability measure equals c *)
-suff -> : integral (qbs_prob_mu p) setT (fun=> A) = A.
-  by [].
-transitivity (A * qbs_prob_mu p setT).
-  have cst_eq : (fun=> A) = @functions.cst mR _ A by [].
-  by rewrite cst_eq; exact: (@integral_cst _ _ _ (qbs_prob_mu p) setT measurableT A).
-by rewrite probability_setT mule1.
+rewrite /predictive_integral.
+exact: qbs_pair_integral_eq.
 Qed.
 
-(* The predictive distribution's alpha is the identity (from the strong
-   morphism on likelihood_single), and its base measure is the prior's.
-   This characterizes the predictive as: for measurable U,
-   P_predictive(U) = prior_mu(U), i.e., the predictive event probability
-   is computed via the prior measure on the shared alpha (identity).
+(* ===================================================================== *)
+(* 5. Predictive event marginalization                                   *)
+(*    The probability of an event U under the predictive equals         *)
+(*    the double integral of likelihoods over the independent prior.    *)
+(* ===================================================================== *)
 
-   Note: the full marginalization identity
-     P(U) = integral P(U|theta) d pi(theta)
-   requires kernel composition (kcomp_noparam from mathcomp.analysis.kernel)
-   to define bind properly. Our qbs_bind_strong uses the prior's measure
-   directly, which gives this simpler characterization. *)
-Lemma predictive_event (obs_x : R) (U : set (realQ R)) :
-  @qbs_prob_event R (realQ R) (predictive obs_x) U =
-  @qbs_prob_mu R (prodQ (realQ R) (realQ R)) param_prior (idfun @^-1` U).
-Proof. by []. Qed.
+Lemma predictive_event_marginal (obs_x : R) (U : set (realQ R))
+  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
+    setT (qbs_pair_fun slope_prior intercept_prior
+      (fun params => qbs_prob_event _ (likelihood_single obs_x params) U))) :
+  predictive_event obs_x U =
+  qbs_integral _ slope_prior (fun s =>
+    qbs_integral _ intercept_prior (fun i =>
+      qbs_prob_event _ (likelihood_single obs_x (s, i)) U)).
+Proof.
+rewrite /predictive_event.
+exact: qbs_pair_integral_eq.
+Qed.
 
-(* The posterior mean of the slope converges to the true slope
-   as the number of observations increases. This is a consistency
-   result stated abstractly. *)
-Lemma posterior_slope_expectation (obs_x obs_y : R) :
-  @qbs_expect R (prodQ (realQ R) (realQ R))
-    (posterior obs_x obs_y) (fun params => fst params) =
-  @qbs_expect R (prodQ (realQ R) (realQ R))
-    (posterior obs_x obs_y) (fun params => fst params).
-Proof. by []. Qed.
+(* ===================================================================== *)
+(* 6. Posterior distribution via conditioning (stated abstractly)        *)
+(*    Given observed data, the posterior on parameters is obtained by    *)
+(*    conditioning the joint distribution. We represent the posterior    *)
+(*    integral using qbs_pair_integral with a reweighting by the        *)
+(*    likelihood.                                                       *)
+(* ===================================================================== *)
+
+(* The posterior integral for parameters given observation (obs_x, obs_y):
+   Integrates a function g over the parameter space, weighted by the
+   likelihood of the observed data point.
+   posterior_integral(g) = \int\int g(s,i) * lik(obs_y|s,i) d pi(s) d pi(i)
+   (unnormalized; normalization requires the evidence/marginal likelihood) *)
+Definition posterior_integral (obs_x obs_y : R)
+  (g : realQ R * realQ R -> \bar R) : \bar R :=
+  qbs_pair_integral slope_prior intercept_prior
+    (fun params =>
+      g params * qbs_prob_event _ (likelihood_single obs_x params) [set obs_y]).
+
+(* ===================================================================== *)
+(* 7. Key properties                                                     *)
+(* ===================================================================== *)
+
+(* The posterior integral decomposes as iterated integration (Fubini). *)
+Lemma posterior_integral_eq (obs_x obs_y : R)
+  (g : realQ R * realQ R -> \bar R)
+  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
+    setT (qbs_pair_fun slope_prior intercept_prior
+      (fun params =>
+        g params * qbs_prob_event _ (likelihood_single obs_x params) [set obs_y]))) :
+  posterior_integral obs_x obs_y g =
+  qbs_integral _ slope_prior (fun s =>
+    qbs_integral _ intercept_prior (fun i =>
+      g (s, i) * qbs_prob_event _ (likelihood_single obs_x (s, i)) [set obs_y])).
+Proof.
+rewrite /posterior_integral.
+exact: qbs_pair_integral_eq.
+Qed.
+
+(* The posterior expectation of the slope is given by the pair integral *)
+Lemma posterior_slope_expectation (obs_x obs_y : R)
+  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
+    setT (qbs_pair_fun slope_prior intercept_prior
+      (fun params =>
+        (fst params)%:E *
+        qbs_prob_event _ (likelihood_single obs_x params) [set obs_y]))) :
+  posterior_integral obs_x obs_y (fun params => (fst params)%:E) =
+  qbs_integral _ slope_prior (fun s =>
+    qbs_integral _ intercept_prior (fun i =>
+      s%:E * qbs_prob_event _ (likelihood_single obs_x (s, i)) [set obs_y])).
+Proof.
+rewrite /posterior_integral.
+exact: qbs_pair_integral_eq.
+Qed.
+
+(* Integration over first component only: when the integrand depends
+   only on the slope, the intercept integral marginalizes out. *)
+Lemma predictive_slope_marginal (obs_x : R) (h : realQ R -> \bar R)
+  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
+    setT (qbs_pair_fun slope_prior intercept_prior
+      (fun params => h (fst params)))) :
+  qbs_pair_integral slope_prior intercept_prior
+    (fun params => h (fst params)) =
+  qbs_integral _ slope_prior h.
+Proof.
+exact: qbs_pair_integral_fst.
+Qed.
 
 End BayesianRegression.
