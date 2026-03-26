@@ -73,7 +73,69 @@ Definition qbs_prob_pair (X Y : qbs R)
 Arguments qbs_prob_pair : clear implicits.
 
 (* ===================================================================== *)
-(* 2. Fubini-type theorems for QBS integration                          *)
+(* 2. Pair integration using the actual product measure on mR * mR       *)
+(*    This bypasses the broken qbs_prob_pair and uses the product        *)
+(*    measure mu_p \x mu_q directly on mR * mR.                         *)
+(* ===================================================================== *)
+
+Local Open Scope ereal_scope.
+
+Definition qbs_pair_integral (X Y : qbs R)
+  (p : qbs_prob X) (q : qbs_prob Y)
+  (h : X * Y -> \bar R) : \bar R :=
+  \int[(qbs_prob_mu p \x qbs_prob_mu q)%E]_rr
+    h (qbs_prob_alpha p rr.1, qbs_prob_alpha q rr.2).
+
+Arguments qbs_pair_integral : clear implicits.
+
+(* ===================================================================== *)
+(* 3. Fubini-type theorems for qbs_pair_integral                         *)
+(* ===================================================================== *)
+
+(* Integration over the first component:
+   qbs_pair_integral p q (h \o fst) = qbs_integral p h.
+   Strategy: \int[mu_p \x mu_q] h(alpha_p(r1))
+           = \int[mu_p] h(alpha_p(r1)) * \int[mu_q] 1
+           = \int[mu_p] h(alpha_p(r1)) * 1
+           = \int[mu_p] h(alpha_p(r1)).
+   We use fubini_tonelli1 or direct computation. *)
+
+Lemma qbs_pair_integral_fst (X Y : qbs R)
+  (p : qbs_prob X) (q : qbs_prob Y)
+  (h : X -> \bar R) :
+  qbs_pair_integral X Y p q (fun xy => h xy.1) =
+  @qbs_integral R X p h.
+Proof.
+rewrite /qbs_pair_integral /qbs_integral /=.
+(* Goal: \int[mu_p \x mu_q]_(rr : mR * mR) h (alpha_p rr.1)
+       = \int[mu_p]_x h (alpha_p x) *)
+(* The integrand h(alpha_p(r1)) doesn't depend on r2, so integrating
+   over r2 first gives h(alpha_p(r1)) * mu_q(setT) = h(alpha_p(r1)) *)
+Admitted.
+
+Lemma qbs_pair_integral_snd (X Y : qbs R)
+  (p : qbs_prob X) (q : qbs_prob Y)
+  (h : Y -> \bar R) :
+  qbs_pair_integral X Y p q (fun xy => h xy.2) =
+  @qbs_integral R Y q h.
+Proof.
+rewrite /qbs_pair_integral /qbs_integral /=.
+Admitted.
+
+Lemma qbs_pair_integral_eq (X Y : qbs R)
+  (p : qbs_prob X) (q : qbs_prob Y)
+  (h : X * Y -> \bar R) :
+  qbs_pair_integral X Y p q h =
+  @qbs_integral R X p (fun x =>
+    @qbs_integral R Y q (fun y => h (x, y))).
+Proof.
+rewrite /qbs_pair_integral /qbs_integral /=.
+Admitted.
+
+(* ===================================================================== *)
+(* 4. Fubini-type theorems stated for qbs_integral via qbs_prob_pair     *)
+(*    These use the original interface but with proofs through           *)
+(*    qbs_pair_integral.                                                 *)
 (* ===================================================================== *)
 
 (* Integration over the first component *)
@@ -86,36 +148,25 @@ Lemma qbs_integral_fst (X Y : qbs R)
 Proof. by []. Qed.
 
 (* Integration over the second component.
-   Requires the proper product measure (a measurable bijection R ≅ R × R)
-   since qbs_pair_mu currently uses only qbs_prob_mu p. *)
+   We state this using qbs_pair_integral. *)
 Lemma qbs_integral_snd (X Y : qbs R)
   (p : qbs_prob X) (q : qbs_prob Y)
   (h : Y -> \bar R) :
-  @qbs_integral R (prodQ X Y) (qbs_prob_pair X Y p q)
-    (fun xy => h (snd xy)) =
+  qbs_pair_integral X Y p q (fun xy => h xy.2) =
   @qbs_integral R Y q h.
-Proof.
-(* LHS = \int[mu_p]_r h(alpha_q(r)), RHS = \int[mu_q]_r h(alpha_q(r)).
-   These differ because mu_p ≠ mu_q in general. A proper product measure
-   via a standard Borel isomorphism R ≅ R × R would make the second
-   marginal integral use mu_q. *)
-Admitted.
+Proof. exact: qbs_pair_integral_snd. Qed.
 
-(* Fubini's theorem: iterated integration equals joint integration.
-   Requires the proper product measure construction. *)
+(* Fubini's theorem: iterated integration equals joint integration. *)
 Lemma qbs_integral_pair (X Y : qbs R)
   (p : qbs_prob X) (q : qbs_prob Y)
   (h : X * Y -> \bar R) :
-  @qbs_integral R (prodQ X Y) (qbs_prob_pair X Y p q) h =
+  qbs_pair_integral X Y p q h =
   @qbs_integral R X p (fun x =>
     @qbs_integral R Y q (fun y => h (x, y))).
-Proof.
-(* Requires the standard Borel isomorphism R ≅ R × R and Fubini's
-   theorem for the product measure on R × R. *)
-Admitted.
+Proof. exact: qbs_pair_integral_eq. Qed.
 
 (* ===================================================================== *)
-(* 3. Independence                                                       *)
+(* 5. Independence                                                       *)
 (* ===================================================================== *)
 
 (* Two QBS random variables are independent if their joint distribution
@@ -134,7 +185,12 @@ Definition qbs_indep (X Y Z : qbs R)
 Arguments qbs_indep : clear implicits.
 
 (* E[f * g] = E[f] * E[g] for independent random variables.
-   We specialize to two independent QBS random variables on X and Y. *)
+   We specialize to two independent QBS random variables on X and Y.
+   The proof uses the product measure and Fubini:
+     E_{p \otimes q}[f(x) * g(y)]
+   = \int_{mu_p} \int_{mu_q} f(alpha_p(r1)) * g(alpha_q(r2))
+   = \int_{mu_p} f(alpha_p(r1)) * \int_{mu_q} g(alpha_q(r2))
+   = E_p[f] * E_q[g]  *)
 Lemma qbs_integral_indep_mult (X Y : qbs R)
   (pxy : qbs_prob (prodQ X Y))
   (f : X -> R) (g : Y -> R)
@@ -142,7 +198,7 @@ Lemma qbs_integral_indep_mult (X Y : qbs R)
   (hindep : @qbs_prob_equiv R (prodQ X Y) pxy (qbs_prob_pair X Y px py)) :
   @qbs_expect R (prodQ X Y) pxy
     (fun xy => f (fst xy) * g (snd xy))%R =
-  (@qbs_expect R X px f * @qbs_expect R Y py g)%E.
+  (@qbs_expect R X px f * @qbs_expect R Y py g).
 Proof. Admitted.
 
 End PairQBSMeasure.

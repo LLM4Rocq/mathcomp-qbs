@@ -94,8 +94,19 @@ move=> alpha halpha r /=.
 exact: (@measurable_id _ mR setT).
 Qed.
 
-(* We need a default probability for qbs_bind *)
-Variable (default_prob : probability mR R).
+(* The likelihood satisfies the strong morphism condition: the alpha
+   component (identity) is shared across all parameters. *)
+Lemma likelihood_single_strong (obs_x : R) :
+  @qbs_morph_strong R (prodQ (realQ R) (realQ R)) (realQ R)
+    (likelihood_single obs_x).
+Proof.
+move=> alpha halpha.
+exists idfun.
+exists (fun r => normal_prob (fst (alpha r) * obs_x + snd (alpha r))%R
+                   noise_sigma : probability mR R).
+split; first exact: (@measurable_id _ mR setT).
+by split.
+Qed.
 
 (* ===================================================================== *)
 (* 3. Posterior distribution via monadic bind                            *)
@@ -106,12 +117,12 @@ Variable (default_prob : probability mR R).
 (* Predictive distribution for a new x-value:
    Integrate over the prior on parameters to get a distribution on y. *)
 Definition predictive (obs_x : R) : qbs_prob (realQ R) :=
-  @qbs_bind R default_prob
+  @qbs_bind_strong R
     (prodQ (realQ R) (realQ R))
     (realQ R)
     param_prior
     (likelihood_single obs_x)
-    (likelihood_single_morph obs_x).
+    (likelihood_single_strong obs_x).
 
 (* ===================================================================== *)
 (* 4. Posterior via conditioning (stated abstractly)                     *)
@@ -152,13 +163,42 @@ Lemma posterior_well_defined (obs_x obs_y : R) :
   qbs_prob_alpha_random (posterior obs_x obs_y).
 Proof. by []. Qed.
 
+(* Law of total probability for QBS bind:
+   The probability of an event U under bind(p, f) equals the integral
+   over p of the probability of U under f(x).
+   This is the QBS analogue of P(U) = integral P(U|theta) d pi(theta).
+
+   In the kernel-based formulation (LICS 2017, Def. 19), bind uses a
+   proper product/kernel construction where this holds by Fubini. In our
+   pointwise (alpha, mu) representation, the proof requires relating the
+   base measure mu_p applied to the diagonal preimage to the integral of
+   the component transition kernel measures. This is an axiom of the
+   representation analogous to the Admitted qbs_bind_alpha_random. *)
+Lemma qbs_prob_event_bind_strong (X Y : qbs R) (p : qbs_prob X)
+  (f : X -> qbs_prob Y)
+  (hf : @qbs_morph_strong R X Y f)
+  (U : set Y) :
+  @qbs_prob_event R Y (@qbs_bind_strong R X Y p f hf) U =
+  @qbs_integral R X p (fun x => @qbs_prob_event R Y (f x) U).
+Proof.
+(* Unfolded, this states:
+     mu_p ({r | alpha_{f(alpha_p(r))}(r) in U})
+       = integral[mu_p]_r (mu_{f(alpha_p(r))} (alpha_{f(alpha_p(r))}^{-1}(U)))
+   This is the disintegration/kernel-composition identity. The Isabelle AFP
+   development (Monad_QuasiBorel.thy) proves this using the s-finite kernel
+   framework and a standard Borel isomorphism R ~ R x R. *)
+Admitted.
+
 (* The predictive distribution marginalizes correctly *)
 Lemma predictive_marginal (obs_x : R) (U : set (realQ R)) :
   @qbs_prob_event R (realQ R) (predictive obs_x) U =
   @qbs_integral R (prodQ (realQ R) (realQ R)) param_prior
     (fun params => @qbs_prob_event R (realQ R)
       (likelihood_single obs_x params) U).
-Proof. Admitted.
+Proof.
+  rewrite /predictive.
+  exact: qbs_prob_event_bind_strong.
+Qed.
 
 (* The posterior mean of the slope converges to the true slope
    as the number of observations increases. This is a consistency
