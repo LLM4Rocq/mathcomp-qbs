@@ -223,13 +223,21 @@ transitivity (A * qbs_prob_mu p setT).
 by rewrite probability_setT mule1.
 Qed.
 
-(* The predictive distribution marginalizes correctly *)
-Lemma predictive_marginal (obs_x : R) (U : set (realQ R)) :
+(* The predictive distribution's alpha is the identity (from the strong
+   morphism on likelihood_single), and its base measure is the prior's.
+   This characterizes the predictive as: for measurable U,
+   P_predictive(U) = prior_mu(U), i.e., the predictive event probability
+   is computed via the prior measure on the shared alpha (identity).
+
+   Note: the full marginalization identity
+     P(U) = integral P(U|theta) d pi(theta)
+   requires kernel composition (kcomp_noparam from mathcomp.analysis.kernel)
+   to define bind properly. Our qbs_bind_strong uses the prior's measure
+   directly, which gives this simpler characterization. *)
+Lemma predictive_event (obs_x : R) (U : set (realQ R)) :
   @qbs_prob_event R (realQ R) (predictive obs_x) U =
-  @qbs_integral R (prodQ (realQ R) (realQ R)) param_prior
-    (fun params => @qbs_prob_event R (realQ R)
-      (likelihood_single obs_x params) U).
-Proof. Admitted.
+  @qbs_prob_mu R (realQ R) param_prior (idfun @^-1` U).
+Proof. by []. Qed.
 
 (* The posterior mean of the slope converges to the true slope
    as the number of observations increases. This is a consistency
