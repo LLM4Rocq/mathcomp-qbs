@@ -1,0 +1,9 @@
+-Q theories QBS
+
+theories/quasi_borel.v
+theories/measure_qbs_adjunction.v
+theories/coproduct_qbs.v
+theories/probability_qbs.v
+theories/pair_qbs_measure.v
+theories/measure_as_qbs_measure.v
+theories/bayesian_regression.v

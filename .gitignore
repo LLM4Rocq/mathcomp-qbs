@@ -1,0 +1,20 @@
+# Rocq/Coq build artifacts
+*.vo
+*.vos
+*.vok
+*.glob
+*.aux
+.*.aux
+
+# Claude Code internals
+.claude/
+
+# Temp files from rocq-mcp
+.tmp*
+
+# Python venv
+.venv/
+
+# Editor backups
+*~
+\#*\#
