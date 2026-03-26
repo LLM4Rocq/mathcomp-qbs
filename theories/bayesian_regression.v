@@ -236,7 +236,7 @@ Qed.
    directly, which gives this simpler characterization. *)
 Lemma predictive_event (obs_x : R) (U : set (realQ R)) :
   @qbs_prob_event R (realQ R) (predictive obs_x) U =
-  @qbs_prob_mu R (realQ R) param_prior (idfun @^-1` U).
+  @qbs_prob_mu R (prodQ (realQ R) (realQ R)) param_prior (idfun @^-1` U).
 Proof. by []. Qed.
 
 (* The posterior mean of the slope converges to the true slope
