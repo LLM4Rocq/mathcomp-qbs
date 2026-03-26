@@ -85,6 +85,11 @@ Definition qbs_pair_fun (X Y : qbs R)
   (h : X * Y -> \bar R) : mR * mR -> \bar R :=
   fun rr => h (qbs_prob_alpha p rr.1, qbs_prob_alpha q rr.2).
 
+(* Helper: the setT at the g_sigma_algebraType level equals setT at mR *)
+Local Lemma setT_gsigma_mR :
+  [set: g_sigma_algebraType (R.-ocitv).-measurable] = [set: mR].
+Proof. by []. Qed.
+
 (* ===================================================================== *)
 (* 3. Fubini-type theorems for qbs_pair_integral                         *)
 (* ===================================================================== *)
@@ -123,10 +128,12 @@ Lemma qbs_pair_integral_fst (X Y : qbs R)
   @qbs_integral R X p h.
 Proof.
 rewrite qbs_pair_integral_eq //.
-rewrite /qbs_integral.
-apply: eq_integral => x _.
-rewrite integral_cst //; last exact: measurableT.
-by rewrite probability_setT mule1.
+rewrite /qbs_integral /=.
+apply: eq_integral => x _ /=.
+rewrite -(functions.cstE _ (h (qbs_prob_alpha p x))).
+rewrite integral_cst; last exact: measurableT.
+have h1 := @probability_setT _ _ _ (qbs_prob_mu q).
+by rewrite [X in _ * X]h1 mule1.
 Qed.
 
 (* Integration over the second component (symmetric). *)
@@ -139,18 +146,15 @@ Lemma qbs_pair_integral_snd (X Y : qbs R)
   @qbs_integral R Y q h.
 Proof.
 rewrite /qbs_pair_integral /qbs_integral /=.
-(* Use Fubini's theorem to swap the order of integration.
-   \int[mu_p \x mu_q] h(alpha_q(r2))
-   = \int[mu_q] \int[mu_p] h(alpha_q(r2))      (by integral21_prod_meas1)
-   = \int[mu_q] h(alpha_q(r2)) * mu_p(setT)     (inner integral is constant)
-   = \int[mu_q] h(alpha_q(r2))                   (probability_setT) *)
 set f := qbs_pair_fun p q (fun xy => h xy.2).
 transitivity (\int[qbs_prob_mu q]_y fubini_G (qbs_prob_mu p) f y).
-  exact: integral21_prod_meas1.
+  symmetry; exact: integral21_prod_meas1.
 apply: eq_integral => y _.
 rewrite /fubini_G /f /qbs_pair_fun /=.
-rewrite integral_cst //; last exact: measurableT.
-by rewrite probability_setT mule1.
+rewrite -(functions.cstE _ (h (qbs_prob_alpha q y))).
+rewrite integral_cst; last exact: measurableT.
+have h1 := @probability_setT _ _ _ (qbs_prob_mu p).
+by rewrite [X in _ * X]h1 mule1.
 Qed.
 
 (* ===================================================================== *)
@@ -210,7 +214,7 @@ Arguments qbs_indep : clear implicits.
    = \int_{mu_p} \int_{mu_q} f(alpha_p(r1)) * g(alpha_q(r2))
    = \int_{mu_p} f(alpha_p(r1)) * \int_{mu_q} g(alpha_q(r2))
    = E_p[f] * E_q[g]
-   The integrability hypotheses ensure Fubini applies. *)
+   The integrability hypotheses ensure Fubini and factoring apply. *)
 Lemma qbs_integral_indep_mult (X Y : qbs R)
   (px : qbs_prob X) (py : qbs_prob Y)
   (f : X -> R) (g : Y -> R)
@@ -226,19 +230,17 @@ Lemma qbs_integral_indep_mult (X Y : qbs R)
   (@qbs_expect R X px f * @qbs_expect R Y py g).
 Proof.
 rewrite qbs_pair_integral_eq //.
-rewrite /qbs_integral /qbs_expect /=.
-(* Goal: \int[mu_px] (fun r1 => \int[mu_py] (fun r2 =>
-         (f(alpha_px(r1)) * g(alpha_py(r2)))%:E))
-       = (\int[mu_px] (f \o alpha_px)%:E) * (\int[mu_py] (g \o alpha_py)%:E) *)
+rewrite /qbs_integral /qbs_expect /= {1 2}/qbs_integral /=.
 transitivity (\int[qbs_prob_mu px]_r1
   ((f (qbs_prob_alpha px r1))%:E *
    \int[qbs_prob_mu py]_r2 (g (qbs_prob_alpha py r2))%:E)).
-  apply: eq_integral => r1 _.
-  rewrite EFinM.
-  rewrite integralZl //; last exact: measurableT.
-  congr (_ * _).
-  by apply: eq_integral => r2 _; rewrite EFinM.
-rewrite integralZr //; last exact: measurableT.
+- apply: eq_integral => r1 _.
+  under eq_integral do rewrite EFinM.
+  rewrite integralZl //.
+- have hfin : (\int[qbs_prob_mu py]_r2 (g (qbs_prob_alpha py r2))%:E)
+    \is a fin_num by exact: (integrable_fin_num measurableT hintg).
+  rewrite -(fineK hfin).
+  rewrite integralZr //.
 Qed.
 
 End PairQBSMeasure.
