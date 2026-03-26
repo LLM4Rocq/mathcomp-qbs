@@ -86,7 +86,17 @@ Lemma measurable_glue (d : measure_display) (M : measurableType d)
   measurable_fun setT P ->
   (forall i, measurable_fun setT (Fi i)) ->
   measurable_fun setT (fun r => Fi (P r) r).
-Proof. Admitted.
+Proof.
+move=> hP hFi _ U mU; rewrite setTI.
+have -> : (fun r => Fi (P r) r) @^-1` U =
+          \bigcup_i (P @^-1` [set i] `&` (Fi i) @^-1` U).
+  rewrite eqEsubset; split => [r hUr | r [i _ [hPi hFir]]].
+  - exists (P r) => //; split => //.
+  - rewrite /preimage /=; rewrite /preimage /= in hPi; rewrite hPi; exact: hFir.
+apply: bigcupT_measurable => i; apply: measurableI.
+- have := hP measurableT [set i] I; rewrite setTI; exact.
+- have := hFi i measurableT U mU; rewrite setTI; exact.
+Qed.
 
 Definition R_qbs (d : measure_display) (M : measurableType d) : qbs :=
   @mkQBS M

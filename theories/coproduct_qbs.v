@@ -143,7 +143,23 @@ case=> [[a [ha hdef]] | [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
   { rewrite boolp.funeqE => r; rewrite /= hdef //. }
   by rewrite heq; exact: hg _ hb.
 - (* gamma is a measurable gluing: use qbs_random_glue *)
-  Admitted.
+  have heq : (fun s => match s with inl x => f x | inr y => g y end) \o gamma =
+              fun r => if P r then f (a r) else g (b' r).
+  { rewrite boolp.funeqE => r; rewrite /= hdef; by case: (P r). }
+  rewrite heq.
+  set Pn : mR -> nat := fun r => if P r then 0 else 1.
+  set Gi : nat -> mR -> @qbs_car R Z :=
+    fun i => if i == 0 then f \o a else g \o b'.
+  have heq2 : (fun r => if P r then f (a r) else g (b' r)) =
+               (fun r => Gi (Pn r) r).
+  { rewrite boolp.funeqE => r; rewrite /Gi /Pn.
+    by case: (P r). }
+  rewrite heq2.
+  apply: (@qbs_random_glue R Z Pn Gi).
+    rewrite /Pn; apply: measurable_fun_ifT => //; exact: measurable_cst.
+  move=> i; rewrite /Gi.
+  by case: (i == 0); [exact: hf _ ha | exact: hg _ hb].
+Qed.
 
 (* ===================================================================== *)
 (* 4. General Coproduct (Sigma Type)                                      *)
