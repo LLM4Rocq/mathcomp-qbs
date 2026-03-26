@@ -223,16 +223,54 @@ Lemma qbs_monad_left_unit (X Y : qbs R) (x : X)
   (hf : @qbs_morph R X (monadP Y) f) :
   qbs_prob_equiv Y (qbs_bind X Y (qbs_return X x) f hf) (f x).
 Proof.
-(* The bind result has alpha = qbs_prob_alpha(f(x)) and mu = default_prob.
-   The target f(x) has alpha = qbs_prob_alpha(f(x)) and mu = qbs_prob_mu(f(x)).
-   The alphas agree (up to eta), but the measures differ: default_prob vs
-   qbs_prob_mu(f(x)). So this reduces to showing that for all U in sigma_Mx(Y):
-     default_prob(alpha_{f(x)}^{-1}(U)) = mu_{f(x)}(alpha_{f(x)}^{-1}(U))
-   This is NOT provable in general. The left unit law requires either:
-   (1) qbs_return to use a measure depending on x (e.g., Dirac-like), or
-   (2) Working with equivalence classes (quotient) of probability triples, or
-   (3) A different definition of bind that uses kernel composition with
-       the R x R -> R measurable isomorphism (as in the LICS 2017 paper). *)
+(* NOT PROVABLE with the current definitions. Here is the detailed analysis.
+
+   Unfolding, the bind result is:
+     alpha_bind = fun r => qbs_prob_alpha (f ((fun _ => x) r)) r
+                = fun r => qbs_prob_alpha (f x) r
+                = qbs_prob_alpha (f x)
+     mu_bind    = qbs_prob_mu (qbs_return X x) = default_prob
+
+   And f(x) is:
+     alpha_fx   = qbs_prob_alpha (f x)
+     mu_fx      = qbs_prob_mu (f x)
+
+   The alphas agree: alpha_bind = alpha_fx (both are qbs_prob_alpha (f x)).
+   But the measures differ: mu_bind = default_prob vs mu_fx = qbs_prob_mu (f x).
+
+   The equivalence qbs_prob_equiv Y asks: for all U in sigma_Mx(Y),
+     default_prob (alpha_{f(x)}^{-1}(U)) = mu_{f(x)} (alpha_{f(x)}^{-1}(U))
+
+   This requires two DIFFERENT probability measures (default_prob and
+   mu_{f(x)}) to agree on all sets of the form alpha^{-1}(U). There is
+   no reason for this to hold: default_prob is an arbitrary fixed probability
+   measure on R, while mu_{f(x)} depends on x and f.
+
+   COUNTEREXAMPLE: Take X = Y = R_qbs, f = id (viewing elements of R_qbs
+   as trivial probability triples). Then alpha_{f(x)} = id and the condition
+   becomes default_prob(U) = mu_{f(x)}(U) for all measurable U, i.e.,
+   default_prob = mu_{f(x)} as measures. This fails whenever
+   mu_{f(x)} /= default_prob.
+
+   ROOT CAUSE: qbs_return fixes the measure to default_prob, while bind
+   preserves the measure from the input triple. So bind(return(x), f) gets
+   default_prob as its base measure instead of mu_{f(x)}.
+
+   RESOLUTION APPROACHES (any one suffices):
+   (1) Quotient types: Define P(X) as equivalence classes of (alpha, mu)
+       under qbs_prob_equiv, so that the monad operates on classes. Then
+       return(x) = [(fun _ => x, mu)] for ANY mu (all choices are
+       equivalent since the pushforward of any mu through (fun _ => x)
+       is the Dirac measure at x). The Isabelle AFP takes this approach.
+   (2) Kernel composition: Define bind using the s-finite kernel
+       composition on R, via a measurable isomorphism R -> R x R
+       (a standard Borel space fact). This gives bind a different
+       structure where the left unit law holds by properties of kernel
+       composition. See LICS 2017 Section 4, Definition 19.
+   (3) Dependent measure in return: Make qbs_return carry a measure
+       parameter, so return(x, mu) = (fun _ => x, mu). Then
+       bind(return(x, mu_{f(x)}), f) has mu = mu_{f(x)}, matching f(x).
+       But this changes the type signature and complicates the API. *)
 Admitted.
 
 Lemma qbs_monad_right_unit (X : qbs R) (m : qbs_prob X) :
@@ -261,24 +299,97 @@ Definition qbs_integral (X : qbs R) (p : qbs_prob X)
 
 Arguments qbs_integral : clear implicits.
 
+(* Sigma_Mx-measurability for functions h : X -> \bar R.                 *)
+(* h is sigma_Mx-measurable iff for every random element alpha in Mx(X), *)
+(* the composition h o alpha : R -> \bar R is Borel measurable.          *)
+Definition qbs_measurable (X : qbs R) (h : X -> \bar R) : Prop :=
+  forall alpha, @qbs_random R X alpha ->
+    measurable_fun setT (h \o alpha).
+
+Arguments qbs_measurable : clear implicits.
+
+(* If h is sigma_Mx-measurable, then preimages of measurable sets are    *)
+(* in sigma_Mx.                                                          *)
+Lemma qbs_measurable_sigma_Mx (X : qbs R) (h : X -> \bar R)
+  (hm : qbs_measurable X h) (V : set (\bar R)) :
+  measurable V -> @sigma_Mx R X (h @^-1` V).
+Proof.
+move=> hV alpha halpha.
+have hma := hm alpha halpha.
+have := hma measurableT V hV.
+rewrite setTI.
+have -> : (h \o alpha) @^-1` V = alpha @^-1` (h @^-1` V) by [].
+done.
+Qed.
+
+(* When h is sigma_Mx-measurable, the pushforward measures through       *)
+(* (h o alpha_i) agree on all measurable sets of \bar R.                 *)
+Lemma qbs_pushforward_agree (X : qbs R) (p1 p2 : qbs_prob X)
+  (h : X -> \bar R)
+  (hm : qbs_measurable X h)
+  (hequiv : qbs_prob_equiv X p1 p2) :
+  forall (V : set (\bar R)), measurable V ->
+    pushforward (qbs_prob_mu p1) (h \o qbs_prob_alpha p1) V =
+    pushforward (qbs_prob_mu p2) (h \o qbs_prob_alpha p2) V.
+Proof.
+move=> V hV.
+rewrite /pushforward /=.
+have -> : (h \o qbs_prob_alpha p1) @^-1` V =
+          qbs_prob_alpha p1 @^-1` (h @^-1` V) by [].
+have -> : (h \o qbs_prob_alpha p2) @^-1` V =
+          qbs_prob_alpha p2 @^-1` (h @^-1` V) by [].
+apply: hequiv.
+apply: (qbs_measurable_sigma_Mx hm).
+exact: hV.
+Qed.
+
+(* Integration respects equivalence for sigma_Mx-measurable integrands.  *)
+(* The proof factors through pushforward measures on \bar R:             *)
+(*   int[mu_i] (h o alpha_i) = int[pushforward mu_i (h o alpha_i)] id   *)
+(* by the pushforward integral theorem (integral_pushforward). Since     *)
+(* the pushforward measures agree (qbs_pushforward_agree), the integrals *)
+(* against them agree by eq_measure_integral.                            *)
 Lemma qbs_integral_equiv (X : qbs R) (p1 p2 : qbs_prob X)
-  (h : X -> \bar R) :
+  (h : X -> \bar R)
+  (hm : qbs_measurable X h)
+  (hint1 : (qbs_prob_mu p1).-integrable setT (h \o qbs_prob_alpha p1))
+  (hint2 : (qbs_prob_mu p2).-integrable setT (h \o qbs_prob_alpha p2)) :
   qbs_prob_equiv X p1 p2 ->
   qbs_integral X p1 h = qbs_integral X p2 h.
 Proof.
-(* The equivalence hypothesis says the pushforward measures agree on
-   sigma_Mx-measurable sets. To conclude equality of integrals
-     int[mu1] (h o alpha1) = int[mu2] (h o alpha2)
-   we need a change-of-variables / pushforward integral theorem:
-   the integral of h against the pushforward measure alpha_*(mu) equals
-   the integral of (h o alpha) against mu.
-   Then both sides equal int h d(alpha1_* mu1) = int h d(alpha2_* mu2),
-   and these agree because the pushforward measures are equal (on sigma_Mx).
-   This requires:
-   (a) A pushforward integral theorem from mathcomp-analysis, and
-   (b) h to be sigma_Mx-measurable (or an approximation argument for
-       general h via simple functions on the generated sigma-algebra). *)
-Admitted.
+move=> hequiv.
+rewrite /qbs_integral.
+have hm1 := hm _ (qbs_prob_alpha_random p1).
+have hm2 := hm _ (qbs_prob_alpha_random p2).
+rewrite -(@integral_pushforward _ _ mR (\bar R : measurableType _) R
+  (h \o qbs_prob_alpha p1) hm1
+  (qbs_prob_mu p1) setT id
+  (@measurable_id _ (\bar R) setT) hint1 measurableT).
+rewrite -(@integral_pushforward _ _ mR (\bar R : measurableType _) R
+  (h \o qbs_prob_alpha p2) hm2
+  (qbs_prob_mu p2) setT id
+  (@measurable_id _ (\bar R) setT) hint2 measurableT).
+apply: (@eq_measure_integral _ _ _ setT
+  (pushforward (qbs_prob_mu p2) (h \o qbs_prob_alpha p2))).
+move=> A hA _.
+apply: (qbs_pushforward_agree hm hequiv).
+exact: hA.
+Qed.
+
+(* Simpler version: when both triples share the same random element and  *)
+(* the base measures agree on all measurable sets.                       *)
+Lemma qbs_integral_equiv_same_alpha (X : qbs R) (p1 p2 : qbs_prob X)
+  (h : X -> \bar R) :
+  qbs_prob_alpha p1 = qbs_prob_alpha p2 ->
+  (forall A : set R, measurable A ->
+    qbs_prob_mu p1 A = qbs_prob_mu p2 A) ->
+  qbs_integral X p1 h = qbs_integral X p2 h.
+Proof.
+move=> halpha hmu.
+rewrite /qbs_integral halpha.
+apply: (@eq_measure_integral _ _ _ setT (qbs_prob_mu p2)).
+by move=> A hA _; apply: hmu.
+Qed.
 
 Lemma qbs_integral_const (X : qbs R) (p : qbs_prob X) (c : \bar R) :
   qbs_integral X p (fun _ => c) = (\int[qbs_prob_mu p]_x c)%E.
@@ -362,6 +473,7 @@ Arguments monadP {R}.
 Arguments qbs_return {R}.
 Arguments qbs_bind {R}.
 Arguments qbs_integral {R}.
+Arguments qbs_measurable {R}.
 Arguments monadP_map {R}.
 Arguments qbs_expect {R}.
 Arguments qbs_prob_event {R}.

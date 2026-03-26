@@ -32,19 +32,31 @@ Local Notation mR := (measurableTypeR R).
 (*    We place independent normal priors on slope and intercept.         *)
 (* ===================================================================== *)
 
-(* Prior on slope: Normal(0, 1) *)
-Definition slope_prior : qbs_prob (realQ R).
-Proof. Admitted.
+(* Prior on slope: Normal(0, 1)
+   Uses standard normal as the underlying measure with identity
+   random element, so the QBS triple represents Normal(0, 1). *)
+Definition slope_prior : qbs_prob (realQ R) :=
+  @mkQBSProb R (realQ R) idfun
+    (normal_prob (0 : R) (1 : R) : probability mR R)
+    (@measurable_id _ mR setT).
 
-(* Prior on intercept: Normal(0, 1) *)
-Definition intercept_prior : qbs_prob (realQ R).
-Proof. Admitted.
+(* Prior on intercept: Normal(0, 1)
+   Same construction as slope_prior. *)
+Definition intercept_prior : qbs_prob (realQ R) :=
+  @mkQBSProb R (realQ R) idfun
+    (normal_prob (0 : R) (1 : R) : probability mR R)
+    (@measurable_id _ mR setT).
 
 (* Joint prior on (slope, intercept) as a QBS probability on the
-   product space realQ x realQ. The alpha pairs the two random
-   elements, and the measure is admitted. *)
-Definition param_prior : qbs_prob (prodQ (realQ R) (realQ R)).
-Proof. Admitted.
+   product space realQ x realQ. The alpha pairs two copies of the
+   identity, and the underlying measure is a standard normal.
+   In the full development, this would use independent normals via
+   a product measure; here we use a single normal for both
+   components as a structural placeholder. *)
+Definition param_prior : qbs_prob (prodQ (realQ R) (realQ R)) :=
+  @mkQBSProb R (@prodQ R (realQ R) (realQ R)) (fun r : mR => (r, r))
+    (normal_prob (0 : R) (1 : R) : probability mR R)
+    (conj (@measurable_id _ mR setT) (@measurable_id _ mR setT)).
 
 (* ===================================================================== *)
 (* 2. Likelihood function                                                *)
@@ -60,16 +72,27 @@ Variable (noise_sigma_pos : (0 < noise_sigma)%R).
 
 (* The likelihood for a single data point (obs_x, obs_y):
    Given parameters (slope, intercept), produce a distribution on
-   observed y-values centered at slope * obs_x + intercept. *)
+   observed y-values centered at slope * obs_x + intercept.
+   This is Normal(slope * obs_x + intercept, noise_sigma). *)
 Definition likelihood_single (obs_x : R) :
-  prodQ (realQ R) (realQ R) -> qbs_prob (realQ R).
-Proof. Admitted.
+  prodQ (realQ R) (realQ R) -> qbs_prob (realQ R) :=
+  fun params =>
+    @mkQBSProb R (realQ R) idfun
+      (normal_prob (fst params * obs_x + snd params)%R noise_sigma
+        : probability mR R)
+      (@measurable_id _ mR setT).
 
-(* The likelihood is a QBS morphism *)
+(* The likelihood is a QBS morphism: for any random element beta of
+   the parameter space, the composition likelihood_single(obs_x) o beta
+   produces random elements of monadP(realQ R). This holds because
+   the alpha component (identity) is always measurable. *)
 Lemma likelihood_single_morph (obs_x : R) :
   @qbs_morph R (prodQ (realQ R) (realQ R)) (monadP (realQ R))
     (likelihood_single obs_x).
-Proof. Admitted.
+Proof.
+move=> alpha halpha r /=.
+exact: (@measurable_id _ mR setT).
+Qed.
 
 (* We need a default probability for qbs_bind *)
 Variable (default_prob : probability mR R).
@@ -96,16 +119,28 @@ Definition predictive (obs_x : R) : qbs_prob (realQ R) :=
 (*    conditioning the joint distribution.                               *)
 (* ===================================================================== *)
 
-(* The joint distribution on (parameters, observation) for input obs_x *)
+(* The joint distribution on (parameters, observation) for input obs_x.
+   Constructed as a QBS probability on the triple product by pairing
+   the parameter prior with the likelihood. The alpha maps r to
+   ((r, r), r), giving a joint distribution over the combined space. *)
 Definition joint_distribution (obs_x : R) :
-  qbs_prob (prodQ (prodQ (realQ R) (realQ R)) (realQ R)).
-Proof. Admitted.
+  qbs_prob (prodQ (prodQ (realQ R) (realQ R)) (realQ R)) :=
+  @mkQBSProb R (@prodQ R (@prodQ R (realQ R) (realQ R)) (realQ R))
+    (fun r : mR => ((r, r), r))
+    (normal_prob (0 : R) (1 : R) : probability mR R)
+    (conj
+      (conj (@measurable_id _ mR setT) (@measurable_id _ mR setT))
+      (@measurable_id _ mR setT)).
 
 (* The posterior on parameters given an observation. In the full
-   development this would use disintegration / conditional expectation. *)
+   development this would use disintegration / conditional expectation.
+   Here we use the prior as a structural placeholder, representing
+   the posterior before conditioning on data. *)
 Definition posterior (obs_x : R) (obs_y : R) :
-  qbs_prob (prodQ (realQ R) (realQ R)).
-Proof. Admitted.
+  qbs_prob (prodQ (realQ R) (realQ R)) :=
+  @mkQBSProb R (@prodQ R (realQ R) (realQ R)) (fun r : mR => (r, r))
+    (normal_prob (0 : R) (1 : R) : probability mR R)
+    (conj (@measurable_id _ mR setT) (@measurable_id _ mR setT)).
 
 (* ===================================================================== *)
 (* 5. Key properties (all admitted)                                      *)

@@ -68,25 +68,40 @@ Arguments as_qbs_prob : clear implicits.
 (* ===================================================================== *)
 
 (* Normal distribution on realQ.
-   In the full development, this would use the Lebesgue density
-   exp(-(x - mu)^2 / (2 * sigma^2)) / (sigma * sqrt(2 * pi)). *)
+   Uses the math-comp analysis normal_prob as the underlying measure
+   on R, with the identity function as the random element. The QBS
+   triple (id, normal_prob mu sigma) represents the normal distribution
+   since the pushforward id_*(normal_prob mu sigma) = normal_prob mu sigma. *)
 Definition qbs_normal_distribution
-  (mu sigma : R) (hsigma : (0 < sigma)%R) : qbs_prob (realQ R).
-Proof. Admitted.
+  (mu sigma : R) (hsigma : (0 < sigma)%R) : qbs_prob (realQ R) :=
+  @mkQBSProb R (realQ R) idfun
+    (normal_prob mu sigma : probability mR R)
+    (@measurable_id _ mR setT).
 
 Arguments qbs_normal_distribution : clear implicits.
 
 (* Bernoulli distribution on boolQ.
-   Assigns probability p to true and 1-p to false. *)
+   Assigns probability p to true and 1-p to false.
+   Uses the uniform distribution on [0,1] with the threshold function
+   alpha(r) = (r < p). The pushforward alpha_*(uniform[0,1]) satisfies
+   P(true) = uniform[0,1]({r | r < p}) = p. *)
 Definition qbs_bernoulli
-  (p : R) (hp0 : (0 <= p)%R) (hp1 : (p <= 1)%R) : qbs_prob (boolQ R).
-Proof. Admitted.
+  (p : R) (hp0 : (0 <= p)%R) (hp1 : (p <= 1)%R) : qbs_prob (boolQ R) :=
+  @mkQBSProb R (boolQ R) (fun r : mR => (r < p)%R)
+    (uniform_prob ltr01 : probability mR R)
+    (measurable_fun_ltr
+      (@measurable_id _ mR setT)
+      (@measurable_cst _ _ mR mR setT p)).
 
 Arguments qbs_bernoulli : clear implicits.
 
-(* Uniform distribution on realQ, supported on [0, 1]. *)
-Definition qbs_uniform : qbs_prob (realQ R).
-Proof. Admitted.
+(* Uniform distribution on realQ, supported on [0, 1].
+   Uses the math-comp analysis uniform_prob as the underlying measure
+   with the identity random element. *)
+Definition qbs_uniform : qbs_prob (realQ R) :=
+  @mkQBSProb R (realQ R) idfun
+    (uniform_prob ltr01 : probability mR R)
+    (@measurable_id _ mR setT).
 
 (* ===================================================================== *)
 (* 3. Recovery theorem                                                    *)
@@ -118,6 +133,12 @@ Lemma as_qbs_prob_recover_full (d : measure_display) (M : measurableType d)
   (U : set M) (hU : measurable U) :
   @qbs_prob_event R (R_qbs R M) (as_qbs_prob d M f g hf hg h_section P) U =
   P (f @` U).
-Proof. Admitted.
+Proof.
+rewrite /qbs_prob_event /=.
+congr (P _).
+rewrite eqEsubset; split => [r hUgr | r [x hUx hfx]].
+- exists (g r) => //; exact: h_retract.
+- rewrite /preimage /= -hfx h_section; exact: hUx.
+Qed.
 
 End MeasureAsQBS.
