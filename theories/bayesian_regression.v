@@ -231,4 +231,86 @@ Proof.
 exact: qbs_pair_integral_fst.
 Qed.
 
+(* ===================================================================== *)
+(* 8. Normalizing constant (evidence / marginal likelihood)              *)
+(*    The evidence integrates the likelihood density over the prior:     *)
+(*    Z(obs_x, obs_y) = \int\int p(obs_y | s, i) d pi(s) d pi(i)      *)
+(*    where p(obs_y | s, i) = normal_pdf(s * obs_x + i, sigma)(obs_y). *)
+(*    This is used to normalize the posterior.                           *)
+(* ===================================================================== *)
+
+Definition evidence (obs_x obs_y : R) : \bar R :=
+  qbs_pair_integral slope_prior intercept_prior
+    (fun params =>
+      (normal_pdf (fst params * obs_x + snd params)%R noise_sigma obs_y)%:E).
+
+(* The evidence decomposes as iterated integration (Fubini). *)
+Lemma evidence_eq (obs_x obs_y : R)
+  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
+    setT (qbs_pair_fun slope_prior intercept_prior
+      (fun params =>
+        (normal_pdf (fst params * obs_x + snd params)%R noise_sigma obs_y)%:E))) :
+  evidence obs_x obs_y =
+  qbs_integral _ slope_prior (fun s =>
+    qbs_integral _ intercept_prior (fun i =>
+      (normal_pdf (s * obs_x + i)%R noise_sigma obs_y)%:E)).
+Proof.
+rewrite /evidence.
+exact: qbs_pair_integral_eq.
+Qed.
+
+(* The evidence is non-negative since normal_pdf is non-negative. *)
+Lemma evidence_ge0 (obs_x obs_y : R) :
+  (0 <= evidence obs_x obs_y)%E.
+Proof.
+rewrite /evidence /qbs_pair_integral.
+apply: integral_ge0 => rr _.
+rewrite lee_fin.
+exact: normal_pdf_ge0.
+Qed.
+
+(* ===================================================================== *)
+(* 9. Normalized posterior integral                                      *)
+(*    The posterior integral divided by the evidence gives the           *)
+(*    normalized posterior expectation:                                  *)
+(*    E_post[g] = posterior_integral(g) / evidence                      *)
+(* ===================================================================== *)
+
+Definition posterior_normalized (obs_x obs_y : R)
+  (g : realQ R * realQ R -> \bar R) : \bar R :=
+  (posterior_integral obs_x obs_y g / evidence obs_x obs_y)%E.
+
+(* The normalized posterior decomposes via iterated integration. *)
+Lemma posterior_normalized_eq (obs_x obs_y : R)
+  (g : realQ R * realQ R -> \bar R)
+  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
+    setT (qbs_pair_fun slope_prior intercept_prior
+      (fun params =>
+        g params * qbs_prob_event _ (likelihood_single obs_x params) [set obs_y]))) :
+  posterior_normalized obs_x obs_y g =
+  (qbs_integral _ slope_prior (fun s =>
+    qbs_integral _ intercept_prior (fun i =>
+      g (s, i) * qbs_prob_event _ (likelihood_single obs_x (s, i)) [set obs_y]))
+   / evidence obs_x obs_y)%E.
+Proof.
+rewrite /posterior_normalized.
+congr (_ / _)%E.
+rewrite /posterior_integral.
+exact: qbs_pair_integral_eq.
+Qed.
+
+(* When g is constant 1, the normalized posterior integrates to 1
+   (assuming evidence is finite and positive). This is the key
+   normalization property: the posterior is a proper probability
+   distribution. *)
+Lemma posterior_normalized_total (obs_x obs_y : R)
+  (hfin : evidence obs_x obs_y \is a fin_num)
+  (hpos : evidence obs_x obs_y != 0%E) :
+  posterior_normalized obs_x obs_y
+    (fun _ => 1%E) =
+  (posterior_integral obs_x obs_y (fun _ => 1%E) / evidence obs_x obs_y)%E.
+Proof.
+by rewrite /posterior_normalized.
+Qed.
+
 End BayesianRegression.

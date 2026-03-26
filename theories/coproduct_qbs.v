@@ -508,4 +508,134 @@ exists P, (Fi true), (Fi false); split; [|split; [|split]].
 - move=> r; rewrite /= hdef /=; by case: (P r).
 Admitted.
 
+(* ===================================================================== *)
+(* 7. List Type as Coproduct of Products                                 *)
+(*                                                                        *)
+(* Following Isabelle's Product_QuasiBorel.thy, the list type list(X) is  *)
+(* a QBS defined as a countable coproduct of finite products:             *)
+(*   list(X) = coprod_{n : nat} X^n                                       *)
+(*                                                                        *)
+(* The carrier is seq (qbs_car X). A function alpha : mR -> seq X is a   *)
+(* random element iff there exist a measurable length function             *)
+(* len : mR -> nat and for each position i a random element Fi i in Mx(X) *)
+(* such that alpha(r) = mkseq (fun i => Fi i r) (len r).                 *)
+(* ===================================================================== *)
+
+Definition listQ_random (X : @qbs R) :
+  set (mR -> seq (@qbs_car R X)) :=
+  [set alpha | exists (len : mR -> nat) (Fi : nat -> mR -> @qbs_car R X),
+    measurable_fun setT len /\
+    (forall i, @qbs_random R X (Fi i)) /\
+    (forall r, alpha r = mkseq (fun i => Fi i r) (len r))].
+
+Arguments listQ_random : clear implicits.
+
+Lemma listQ_closed1 (X : @qbs R) :
+  forall (h : mR -> seq (@qbs_car R X)) (f : mR -> mR),
+    listQ_random X h ->
+    measurable_fun setT f ->
+    listQ_random X (h \o f).
+Proof.
+move=> h f [len [Fi [hlen [hFi hdef]]]] hf.
+exists (len \o f), (fun i => Fi i \o f); split; [|split].
+- exact: measurableT_comp hlen hf.
+- move=> i; exact: qbs_random_comp (hFi i) hf.
+- move=> r; rewrite /= hdef //.
+Qed.
+
+Lemma listQ_closed2 (X : @qbs R) (x0 : @qbs_car R X) :
+  forall x : seq (@qbs_car R X),
+    listQ_random X (fun _ => x).
+Proof.
+move=> x.
+exists (fun _ => size x), (fun i _ => nth x0 x i).
+split; [|split].
+- exact: measurable_cst.
+- move=> i; exact: qbs_random_const.
+- move=> r; symmetry; exact: mkseq_nth.
+Qed.
+
+Lemma listQ_closed3 (X : @qbs R) :
+  forall (Q : mR -> nat) (Gi : nat -> mR -> seq (@qbs_car R X)),
+    measurable_fun setT Q ->
+    (forall i, listQ_random X (Gi i)) ->
+    listQ_random X (fun r => Gi (Q r) r).
+Proof.
+move=> Q Gi hQ hGi.
+have hGi' : forall n, exists pair : (mR -> nat) * (nat -> mR -> @qbs_car R X),
+  measurable_fun setT pair.1 /\
+  (forall i, @qbs_random R X (pair.2 i)) /\
+  (forall r, Gi n r = mkseq (fun i => pair.2 i r) (pair.1 r)).
+{ move=> n; case: (hGi n) => [len [Fi [hlen [hFi hdef]]]].
+  by exists (len, Fi). }
+have := @boolp.choice _ _ _ hGi'; move=> [getPair hgetPair].
+set lenN := fun n => (getPair n).1.
+set FiN := fun n => (getPair n).2.
+have hlenN : forall n, measurable_fun setT (lenN n).
+{ move=> n; exact: (hgetPair n).1. }
+have hFiN : forall n i, @qbs_random R X (FiN n i).
+{ move=> n i; exact: (hgetPair n).2.1 i. }
+have hGi_eq : forall n r, Gi n r = mkseq (fun i => FiN n i r) (lenN n r).
+{ move=> n; exact: (hgetPair n).2.2. }
+exists (fun r => lenN (Q r) r), (fun i r => FiN (Q r) i r); split; [|split].
+- exact: (@measurable_glue _ _ _ Q (fun n => lenN n) hQ hlenN).
+- move=> i.
+  exact: (@qbs_random_glue R X Q (fun n => FiN n i) hQ (fun n => hFiN n i)).
+- move=> r; rewrite hGi_eq //.
+Qed.
+
+(* The list QBS. Requires an inhabitedness witness x0 for the constant
+   axiom (needed to extract nth elements from constant lists). *)
+Definition listQ (X : @qbs R) (x0 : @qbs_car R X) : @qbs R :=
+  @mkQBS R (seq (@qbs_car R X))
+    (listQ_random X)
+    (listQ_closed1 (X:=X))
+    (listQ_closed2 x0)
+    (listQ_closed3 (X:=X)).
+
+(* Length is a QBS morphism from listQ to natQ *)
+Lemma qbs_morph_length (X : @qbs R) (x0 : @qbs_car R X) :
+  @qbs_morph R (listQ x0) (natQ R) (@size (@qbs_car R X)).
+Proof.
+move=> alpha [len [Fi [hlen [hFi hdef]]]] /=.
+have heq : size \o alpha = len.
+  apply: boolp.funext => r; rewrite /= hdef size_mkseq //.
+by rewrite heq.
+Qed.
+
+(* nth projection: for any index i, the i-th element extraction
+   preserves randomness. When i < len(r), the result is Fi i r;
+   when i >= len(r), the result is the default x0. *)
+Lemma listQ_nth_random (X : @qbs R) (x0 : @qbs_car R X) (i : nat) :
+  forall alpha, @qbs_random R (listQ x0) alpha ->
+    @qbs_random R X (fun r => nth x0 (alpha r) i).
+Proof.
+move=> alpha [len [Fi [hlen [hFi hdef]]]].
+have heq : (fun r => nth x0 (alpha r) i) =
+          (fun r => if i < len r then Fi i r else x0).
+  apply: boolp.funext => r; rewrite hdef.
+  case hlt : (i < len r).
+  - by rewrite nth_mkseq.
+  - rewrite nth_default //; rewrite size_mkseq.
+    by rewrite leqNgt hlt.
+rewrite heq.
+set P := fun r : mR => if (i < len r)%N then 0%N else 1%N.
+set Gi := fun (n : nat) => if n == 0 then Fi i else (fun _ => x0).
+have hP : measurable_fun setT P.
+  rewrite /P.
+  apply: (@measurable_fun_ifT _ _ mR nat
+    (fun _ => 0%N) (fun _ => 1%N) (fun r => i < len r)).
+  - exact: (measurable_fun_ltn (@measurable_cst _ _ mR _ setT i) hlen).
+  - exact: measurable_cst.
+  - exact: measurable_cst.
+have heq2 : (fun r => if i < len r then Fi i r else x0) =
+          (fun r => Gi (P r) r).
+  apply: boolp.funext => r; rewrite /Gi /P.
+  by case: (i < len r).
+rewrite heq2.
+apply: (@qbs_random_glue R X P Gi hP).
+move=> n; rewrite /Gi.
+by case: (n == 0); [exact: hFi | exact: qbs_random_const].
+Qed.
+
 End CoProductQBS.
