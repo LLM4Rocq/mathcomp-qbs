@@ -173,7 +173,7 @@ Proof. by []. Qed.
    pointwise (alpha, mu) representation, the proof requires relating the
    base measure mu_p applied to the diagonal preimage to the integral of
    the component transition kernel measures. This is an axiom of the
-   representation analogous to the Admitted qbs_bind_alpha_random. *)
+   representation and requires the s-finite kernel framework. *)
 Lemma qbs_prob_event_bind_strong (X Y : qbs R) (p : qbs_prob X)
   (f : X -> qbs_prob Y)
   (hf : @qbs_morph_strong R X Y f)
