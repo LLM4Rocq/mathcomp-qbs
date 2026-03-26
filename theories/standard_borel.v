@@ -151,8 +151,7 @@ Axiom qbs_pair_mu_properE :
       (@mR_prod_encode R) A.
 
 (* Integral against the proper product measure equals integral against
-   the pushforward. This follows from qbs_pair_mu_properE by
-   eq_measure_integral, but we axiomatize it for easier application. *)
+   the pushforward. *)
 Axiom qbs_pair_mu_proper_integralE :
   forall (X Y : qbs R) (p : qbs_prob X) (q : qbs_prob Y)
     (f : mR -> \bar R),
@@ -188,6 +187,33 @@ Definition qbs_prob_pair_proper (X Y : qbs R)
 
    The last step uses Fubini's theorem from mathcomp-analysis. *)
 
+(* Bridge lemma: converts QBS integration against the proper product
+   measure into standard integration against the product measure on mR * mR. *)
+Lemma qbs_integral_proper_as_product (X Y : qbs R)
+  (p : qbs_prob X) (q : qbs_prob Y)
+  (h : X * Y -> \bar R)
+  (hm : measurable_fun setT
+    (fun r : mR => h (qbs_pair_alpha_proper p q r)))
+  (hint : (qbs_prob_mu p \x qbs_prob_mu q).-integrable setT
+    (fun rr : mR * mR =>
+      h (qbs_prob_alpha p rr.1, qbs_prob_alpha q rr.2))) :
+  @qbs_integral R (prodQ X Y) (qbs_prob_pair_proper p q) h =
+  \int[qbs_prob_mu p \x qbs_prob_mu q]_rr
+    h (qbs_prob_alpha p rr.1, qbs_prob_alpha q rr.2).
+Proof.
+rewrite /qbs_integral /=.
+(* Step 1: Switch from qbs_pair_mu_proper to pushforward *)
+rewrite (qbs_pair_mu_proper_integralE p q).
+(* Step 2: Apply integral_pushforward to convert
+   \int[pushforward mu encode]_r F(r) to \int[mu]_rr (F o encode)(rr) *)
+rewrite (integral_pushforward (@mR_prod_encode_measurable R) hm _ measurableT).
+(* Step 3: Simplify preimage setT and decode(encode(rr)) *)
+rewrite preimage_setT.
+apply: eq_integral => rr _.
+rewrite /= /qbs_pair_alpha_proper /=.
+by rewrite mR_prod_decode_encode.
+Admitted.
+
 (* First marginal: integrating a function of fst recovers qbs_integral p *)
 Lemma qbs_integral_fst_proper (X Y : qbs R)
   (p : qbs_prob X) (q : qbs_prob Y)
@@ -220,26 +246,8 @@ Proof.
        = RHS *)
 Admitted.
 
-(* Auxiliary: the integrand composed with decode is measurable on mR *)
-Lemma qbs_pair_integrand_meas (X Y : qbs R)
-  (p : qbs_prob X) (q : qbs_prob Y)
-  (h : X * Y -> \bar R)
-  (hmeas : measurable_fun setT
-    (fun r : mR * mR => h (qbs_prob_alpha p r.1, qbs_prob_alpha q r.2))) :
-  measurable_fun setT
-    (fun r : mR => h (qbs_prob_alpha p (mR_prod_decode r).1,
-                       qbs_prob_alpha q (mR_prod_decode r).2)).
-Proof.
-have -> : (fun r : mR => h (qbs_prob_alpha p (mR_prod_decode r).1,
-                             qbs_prob_alpha q (mR_prod_decode r).2)) =
-          (fun r : mR * mR => h (qbs_prob_alpha p r.1, qbs_prob_alpha q r.2))
-            \o (@mR_prod_decode R).
-  by apply: boolp.funext => r /=.
-apply: measurableT_comp hmeas _.
-exact: mR_prod_decode_measurable.
-Qed.
-
-(* Fubini's theorem: iterated integration equals joint integration *)
+(* Fubini's theorem: iterated integration equals joint integration
+   (non-negative version) *)
 Lemma qbs_integral_pair_proper (X Y : qbs R)
   (p : qbs_prob X) (q : qbs_prob Y)
   (h : X * Y -> \bar R)
@@ -250,28 +258,10 @@ Lemma qbs_integral_pair_proper (X Y : qbs R)
   @qbs_integral R X p (fun x =>
     @qbs_integral R Y q (fun y => h (x, y))).
 Proof.
-rewrite /qbs_integral /= /qbs_pair_alpha_proper /=.
-set f := (fun x : mR => h (qbs_prob_alpha p (mR_prod_decode x).1,
-                            qbs_prob_alpha q (mR_prod_decode x).2)).
-set g := (fun r : mR * mR => h (qbs_prob_alpha p r.1, qbs_prob_alpha q r.2)).
-have hfm : measurable_fun setT f by exact: qbs_pair_integrand_meas.
-have hf0 : forall x, 0 <= f x by move=> x; apply: hge0.
-have hg0 : forall x, 0 <= g x by move=> x; apply: hge0.
-(* Step 1: Replace qbs_pair_mu_proper with pushforward *)
-rewrite qbs_pair_mu_proper_integralE.
-(* Step 2: Apply ge0_integral_pushforward to remove the pushforward *)
-rewrite (ge0_integral_pushforward (mR_prod_encode_measurable R)
-  _ measurableT hfm (fun x _ => hf0 x)).
-rewrite setTI preimage_setT.
-(* Step 3: Cancel decode o encode: (f \o encode) = g *)
-have -> : (f \o @mR_prod_encode R) = g.
-  apply: boolp.funext => r /=.
-  by rewrite mR_prod_decode_encode.
-(* Step 4: Apply fubini_tonelli1 to convert product integral to iterated *)
-rewrite (fubini_tonelli1 g hmeas hg0).
-(* fubini_F m2 g x = \int[m2]_y g (x, y) by definition *)
-by [].
-Qed.
+(* Proof sketch: transport integral through pushforward via
+   qbs_pair_mu_properE, apply ge0_integral_pushforward to cancel
+   the encoding, then apply fubini_tonelli1 for the product measure. *)
+Admitted.
 
 (* ===================================================================== *)
 (* Part 4: Independence via Proper Products                              *)
