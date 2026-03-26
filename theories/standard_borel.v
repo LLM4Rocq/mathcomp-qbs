@@ -155,9 +155,9 @@ Axiom qbs_pair_mu_properE :
 Axiom qbs_pair_mu_proper_integralE :
   forall (X Y : qbs R) (p : qbs_prob X) (q : qbs_prob Y)
     (f : mR -> \bar R),
-    \int[qbs_pair_mu_proper p q]_x f x =
-    \int[pushforward (qbs_prob_mu p \x qbs_prob_mu q)
-      (@mR_prod_encode R)]_x f x.
+    integral (qbs_pair_mu_proper p q) setT f =
+    integral (pushforward (qbs_prob_mu p \x qbs_prob_mu q)
+      (@mR_prod_encode R)) setT f.
 
 (* The proper product QBS probability *)
 Definition qbs_prob_pair_proper (X Y : qbs R)
@@ -203,16 +203,26 @@ Lemma qbs_integral_proper_as_product (X Y : qbs R)
 Proof.
 rewrite /qbs_integral /=.
 (* Step 1: Switch from qbs_pair_mu_proper to pushforward *)
-rewrite (qbs_pair_mu_proper_integralE p q).
-(* Step 2: Apply integral_pushforward to convert
-   \int[pushforward mu encode]_r F(r) to \int[mu]_rr (F o encode)(rr) *)
-rewrite (integral_pushforward (@mR_prod_encode_measurable R) hm _ measurableT).
-(* Step 3: Simplify preimage setT and decode(encode(rr)) *)
+rewrite (qbs_pair_mu_proper_integralE p q
+  (fun x => h (qbs_pair_alpha_proper p q x))).
+(* Step 2: Provide integrability of (F o encode) for integral_pushforward *)
+have hint' : (qbs_prob_mu p \x qbs_prob_mu q).-integrable
+  (@mR_prod_encode R @^-1` setT)
+  ((fun r => h (qbs_pair_alpha_proper p q r)) \o @mR_prod_encode R).
+  rewrite preimage_setT.
+  apply: (eq_integrable measurableT
+    (fun rr : mR * mR => h (qbs_prob_alpha p rr.1, qbs_prob_alpha q rr.2))).
+  - move=> rr _ /=; rewrite /qbs_pair_alpha_proper /=.
+    by rewrite mR_prod_decode_encode.
+  - exact: hint.
+(* Step 3: Apply integral_pushforward *)
+rewrite (integral_pushforward (@mR_prod_encode_measurable R) hm hint' measurableT).
+(* Step 4: Simplify preimage setT and decode(encode(rr)) *)
 rewrite preimage_setT.
 apply: eq_integral => rr _.
 rewrite /= /qbs_pair_alpha_proper /=.
 by rewrite mR_prod_decode_encode.
-Admitted.
+Qed.
 
 (* First marginal: integrating a function of fst recovers qbs_integral p *)
 Lemma qbs_integral_fst_proper (X Y : qbs R)
@@ -299,9 +309,9 @@ rewrite /qbs_expect.
 (* Step 1: Use equivalence to move from pxy to the proper product *)
 rewrite (qbs_integral_equiv hm hint1 hint2 hindep).
 (* Step 2: Apply Fubini (non-negative version) to split the joint integral *)
-rewrite (qbs_integral_pair_proper px py
+rewrite (@qbs_integral_pair_proper X Y px py
   (fun xy : X * Y => ((f (fst xy) * g (snd xy))%R)%:E)
-  (fun xy => EFin_nonneg (mulr_ge0 (hf0 xy.1) (hg0 xy.2)))
+  (fun xy => lee_fin_num_EFin0 _ (mulr_ge0 (hf0 xy.1) (hg0 xy.2))))
   hfg_meas).
 simpl.
 (* Step 3: Factor the inner integral using ge0_integralZl_EFin:
