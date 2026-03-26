@@ -362,4 +362,76 @@ split.
   + exfalso; exact: abs erefl.
 Qed.
 
+(* ===================================================================== *)
+(* 5. Dependent Product (Pi Type)                                         *)
+(*                                                                        *)
+(* For a family X : I -> qbs R, the dependent product (Pi type) has       *)
+(* carrier forall i, qbs_car (X i) (dependent function type).             *)
+(* A function alpha : mR -> (forall i, qbs_car (X i)) is a random        *)
+(* element iff for each i, (fun r => alpha r i) is in qbs_random (X i).  *)
+(* ===================================================================== *)
+
+Definition piQ_random (I : Type) (X : I -> @qbs R) :
+  set (mR -> forall i : I, @qbs_car R (X i)) :=
+  [set alpha | forall i, @qbs_random R (X i) (fun r => alpha r i)].
+
+Arguments piQ_random : clear implicits.
+
+Lemma piQ_closed1 (I : Type) (X : I -> @qbs R) :
+  forall (h : mR -> forall i, @qbs_car R (X i)) (f : mR -> mR),
+    piQ_random I X h ->
+    measurable_fun setT f ->
+    piQ_random I X (h \o f).
+Proof.
+move=> h f Hh hf i.
+have -> : (fun r => (h \o f) r i) = (fun r => h r i) \o f by [].
+exact: qbs_random_comp (Hh i) hf.
+Qed.
+
+Lemma piQ_closed2 (I : Type) (X : I -> @qbs R) :
+  forall x : (forall i : I, @qbs_car R (X i)),
+    piQ_random I X (fun _ => x).
+Proof.
+move=> x i.
+exact: qbs_random_const.
+Qed.
+
+Lemma piQ_closed3 (I : Type) (X : I -> @qbs R) :
+  forall (Q : mR -> nat) (Fi : nat -> mR -> forall i, @qbs_car R (X i)),
+    measurable_fun setT Q ->
+    (forall n, piQ_random I X (Fi n)) ->
+    piQ_random I X (fun r => Fi (Q r) r).
+Proof.
+move=> Q Fi hQ hFi i.
+exact: (@qbs_random_glue R (X i) Q (fun n r => Fi n r i) hQ (fun n => hFi n i)).
+Qed.
+
+Definition piQ (I : Type) (X : I -> @qbs R) : @qbs R :=
+  @mkQBS R (forall i : I, @qbs_car R (X i))
+    (piQ_random I X)
+    (piQ_closed1 (X:=X))
+    (piQ_closed2 (X:=X))
+    (piQ_closed3 (X:=X)).
+
+Arguments piQ : clear implicits.
+
+(* Projection morphism *)
+Lemma qbs_morph_proj (I : Type) (X : I -> @qbs R) (i : I) :
+  @qbs_morph R (piQ I X) (X i) (fun f => f i).
+Proof.
+move=> alpha halpha /=.
+exact: (halpha i).
+Qed.
+
+(* Tupling morphism *)
+Lemma qbs_morph_tuple (I : Type) (X : I -> @qbs R) (W : @qbs R)
+  (fi : forall i, @qbs_car R W -> @qbs_car R (X i))
+  (hfi : forall i, @qbs_morph R W (X i) (fi i)) :
+  @qbs_morph R W (piQ I X) (fun w i => fi i w).
+Proof.
+move=> alpha halpha /= i.
+have -> : (fun r => fi i (alpha r)) = (fi i) \o alpha by [].
+exact: (hfi i) _ halpha.
+Qed.
+
 End CoProductQBS.
