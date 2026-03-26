@@ -341,4 +341,36 @@ rewrite preimage_bigcup.
 exact: bigcup_measurable (fun i _ => hF i _ halpha).
 Qed.
 
+(* ----- 10. Comparison Morphisms ----- *)
+(* Standard operations on R, nat, bool that are measurable are automatically
+   QBS morphisms, since R_qbs sends measurable functions to morphisms. *)
+
+(* Addition is a QBS morphism prodQ realQ realQ -> realQ *)
+Lemma qbs_morph_add :
+  qbs_morph (prodQ realQ realQ) realQ (fun p => (p.1 + p.2)%R).
+Proof.
+move=> alpha [h1 h2] /=; exact: measurable_funD h1 h2.
+Qed.
+
+(* Multiplication is a QBS morphism prodQ realQ realQ -> realQ *)
+Lemma qbs_morph_mul :
+  qbs_morph (prodQ realQ realQ) realQ (fun p => (p.1 * p.2)%R).
+Proof.
+move=> alpha [h1 h2] /=; exact: measurable_funM h1 h2.
+Qed.
+
+(* Less-than comparison: realQ x realQ -> boolQ *)
+Lemma qbs_morph_ltr :
+  qbs_morph (prodQ realQ realQ) boolQ (fun p => (p.1 < p.2)%R).
+Proof.
+move=> alpha [h1 h2] /=; exact: measurable_fun_ltr h1 h2.
+Qed.
+
+(* Negation on bool *)
+Lemma qbs_morph_negb :
+  qbs_morph boolQ boolQ negb.
+Proof.
+move=> alpha ha /=; exact: measurable_neg ha.
+Qed.
+
 End QBS.

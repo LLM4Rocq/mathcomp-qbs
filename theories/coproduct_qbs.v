@@ -434,4 +434,78 @@ have -> : (fun r => fi i (alpha r)) = (fi i) \o alpha by [].
 exact: (hfi i) _ halpha.
 Qed.
 
+(* ===================================================================== *)
+(* 6. Binary Coproduct ~ General Coproduct Isomorphism                   *)
+(*                                                                        *)
+(* The binary coproduct X + Y is isomorphic to the general coproduct     *)
+(* over bool, where true |-> X and false |-> Y.                          *)
+(* ===================================================================== *)
+
+Lemma qbs_morph_coprod_to_gen (X Y : @qbs R)
+  (inhX : @qbs_car R X) (inhY : @qbs_car R Y) :
+  @qbs_morph R (coprodQ X Y) (gen_coprodQ bool (fun b => if b then X else Y)
+    (fun b => if b as b0 return @qbs_car R (if b0 then X else Y) then inhX else inhY))
+    (fun s => match s with
+     | inl x => existT _ true x
+     | inr y => existT _ false y
+     end).
+Proof.
+move=> alpha.
+case=> [[a [ha hdef]] | [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
+- (* alpha factors through inl: alpha r = inl (a r) *)
+  exists (fun _ => true), (fun (i : bool) =>
+    if i as i0 return (mR -> @qbs_car R (if i0 then X else Y))
+    then a
+    else (fun _ => inhY)).
+  split.
+  + move=> [|] /=; [exact: ha | exact: qbs_random_const].
+  + move=> r /=; rewrite hdef //.
+- (* alpha factors through inr: alpha r = inr (b' r) *)
+  exists (fun _ => false), (fun (i : bool) =>
+    if i as i0 return (mR -> @qbs_car R (if i0 then X else Y))
+    then (fun _ => inhX)
+    else b').
+  split.
+  + move=> [|] /=; [exact: qbs_random_const | exact: hb].
+  + move=> r /=; rewrite hdef //.
+- (* alpha is a measurable gluing *)
+  (* P : mR -> bool with measurable_fun setT P *)
+  (* We need an index function mR -> bool for the gen coproduct *)
+  exists P, (fun (i : bool) =>
+    if i as i0 return (mR -> @qbs_car R (if i0 then X else Y))
+    then a
+    else b').
+  split.
+  + move=> [|] /=; [exact: ha | exact: hb].
+  + move=> r /=; rewrite hdef; by case: (P r).
+Qed.
+
+Lemma qbs_morph_gen_to_coprod (X Y : @qbs R)
+  (inhX : @qbs_car R X) (inhY : @qbs_car R Y) :
+  @qbs_morph R (gen_coprodQ bool (fun b => if b then X else Y)
+    (fun b => if b as b0 return @qbs_car R (if b0 then X else Y) then inhX else inhY))
+    (coprodQ X Y)
+    (fun s => match projT1 s as b return
+      (@qbs_car R (if b then X else Y) -> @qbs_car R X + @qbs_car R Y)
+      with true => inl | false => inr end (projT2 s)).
+Proof.
+move=> alpha [P [Fi [hFi hdef]]].
+(* P : mR -> bool, Fi : forall i : bool, mR -> (if i then X else Y) *)
+(* After rewriting with hdef, the composition becomes:
+   fun r => if P r then inl (Fi true r) else inr (Fi false r)
+   which is a coprodQ_random element, provided P is measurable. *)
+right; right.
+exists P, (Fi true), (Fi false); split; [|split; [|split]].
+- (* P is measurable: gen_coprodQ_random does not directly require P to
+     be measurable. A full proof would show that projT1 is a QBS morphism
+     from gen_coprodQ to boolQ, making projT1 \o alpha measurable and
+     hence P measurable (since P = projT1 \o alpha up to the witness).
+     This requires additional infrastructure (sigma_Mx on boolQ, etc.)
+     which we leave for future work. *)
+  admit.
+- exact: (hFi true).
+- exact: (hFi false).
+- move=> r; rewrite /= hdef /=; by case: (P r).
+Admitted.
+
 End CoProductQBS.
