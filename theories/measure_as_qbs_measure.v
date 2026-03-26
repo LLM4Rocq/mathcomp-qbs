@@ -141,4 +141,34 @@ rewrite eqEsubset; split => [r hUgr | r [x hUx hfx]].
 - rewrite /preimage /= -hfx h_section; exact: hUx.
 Qed.
 
+(* ===================================================================== *)
+(* 4. Parameterized distribution morphisms                               *)
+(*    Parameterized families of distributions are QBS morphisms from     *)
+(*    the parameter space to the probability monad.                      *)
+(*                                                                       *)
+(*    Key insight: since qbs_normal_distribution mu sigma has alpha =    *)
+(*    idfun for all mu, the monadP_random' condition reduces to showing *)
+(*    qbs_random (realQ R) idfun, which is just measurable_id.          *)
+(* ===================================================================== *)
+
+(* The normal distribution, viewed as a function of its mean parameter,
+   is a QBS morphism from realQ to monadP(realQ). *)
+Lemma qbs_normal_morph (sigma : R) (hsigma : (0 < sigma)%R) :
+  @qbs_morph R (realQ R) (monadP (realQ R))
+    (fun mu => qbs_normal_distribution mu sigma hsigma).
+Proof.
+move=> alpha halpha r /=.
+exact: @measurable_id _ mR setT.
+Qed.
+
+(* The uniform distribution is a constant element of monadP(realQ),
+   i.e., the constant function mapping any r to qbs_uniform is a
+   random element of the probability monad. *)
+Lemma qbs_uniform_random :
+  @qbs_random R (monadP (realQ R)) (fun _ : mR => qbs_uniform).
+Proof.
+move=> r /=.
+exact: @measurable_id _ mR setT.
+Qed.
+
 End MeasureAsQBS.
