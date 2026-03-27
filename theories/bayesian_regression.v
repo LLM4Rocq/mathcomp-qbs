@@ -313,4 +313,118 @@ Proof.
 by rewrite /posterior_normalized.
 Qed.
 
+(* ===================================================================== *)
+(* 10. Concrete posterior computation with actual data                    *)
+(*     Following the Isabelle AFP development (Bayesian_Linear_Regression *)
+(*     .thy), we compute the posterior for 5 specific data points and    *)
+(*     prove properties of the normalizing constant.                     *)
+(* ===================================================================== *)
+
+(* Five observed data points: (x_i, y_i)
+   True model: y = 2*x + 1 + noise
+   We use integer approximations: y_i ~ round(2*x_i + 1) *)
+Definition data_x : seq R :=
+  [:: (1%R : R); (2%R : R); (3%R : R); (4%R : R); (5%R : R)].
+Definition data_y : seq R :=
+  [:: (3%R : R); (5%R : R); (7%R : R); (9%R : R); (11%R : R)].
+
+(* ----- Multi-observation likelihood ---------------------------------- *)
+(* The likelihood for multiple data points is the product of individual
+   normal pdf evaluations. For parameters (slope, intercept) and data
+   points {(x_i, y_i)}, this is:
+     \prod_i normal_pdf(slope * x_i + intercept, noise_sigma)(y_i)
+   lifted to extended reals. *)
+
+Definition likelihood_product (xs ys : seq R) :
+  realQ R * realQ R -> \bar R :=
+  fun params =>
+    \prod_(xy <- zip xs ys)
+      (normal_pdf (fst params * xy.1 + snd params)%R noise_sigma xy.2)%:E.
+
+(* ----- Multi-observation evidence ------------------------------------ *)
+(* The evidence (marginal likelihood) for multiple observations is the
+   integral of the likelihood product over the prior on (slope, intercept). *)
+
+Definition evidence_multi (xs ys : seq R) : \bar R :=
+  qbs_pair_integral slope_prior intercept_prior
+    (fun params => likelihood_product xs ys params).
+
+(* ----- Multi-observation posterior ----------------------------------- *)
+(* The posterior expectation of a function g on parameters, given
+   multiple observations, is the integral of g weighted by the
+   likelihood product, normalized by the multi-observation evidence. *)
+
+Definition posterior_multi (xs ys : seq R)
+  (g : realQ R * realQ R -> \bar R) : \bar R :=
+  (qbs_pair_integral slope_prior intercept_prior
+    (fun params => g params * likelihood_product xs ys params)
+   / evidence_multi xs ys)%E.
+
+(* ----- Key properties ------------------------------------------------ *)
+
+(* The likelihood product is non-negative for any parameter values. *)
+Lemma likelihood_product_ge0 (xs ys : seq R) (params : realQ R * realQ R) :
+  (0 <= likelihood_product xs ys params)%E.
+Proof.
+rewrite /likelihood_product.
+apply: prode_ge0 => xy _.
+rewrite lee_fin.
+exact: normal_pdf_ge0.
+Qed.
+
+(* The multi-observation evidence is non-negative. *)
+Lemma evidence_multi_ge0 (xs ys : seq R) :
+  (0 <= evidence_multi xs ys)%E.
+Proof.
+rewrite /evidence_multi /qbs_pair_integral.
+apply: integral_ge0 => rr _.
+apply: prode_ge0 => xy _.
+rewrite lee_fin.
+exact: normal_pdf_ge0.
+Qed.
+
+(* The posterior is a proper probability (integrates to 1) when the
+   evidence is finite and positive. This is the multi-observation
+   analogue of posterior_normalized_total. *)
+Lemma posterior_multi_total (xs ys : seq R)
+  (hev : (0 < evidence_multi xs ys)%E)
+  (hfin : (evidence_multi xs ys < +oo)%E) :
+  posterior_multi xs ys (fun _ => 1%E) =
+  (qbs_pair_integral slope_prior intercept_prior
+    (fun params => likelihood_product xs ys params)
+   / evidence_multi xs ys)%E.
+Proof.
+rewrite /posterior_multi.
+congr (_ / _)%E.
+apply: eq_integral => rr _.
+by rewrite mul1e.
+Qed.
+
+(* ----- Concrete instantiation with data ------------------------------ *)
+(* Applying the definitions to our five concrete data points. *)
+
+Definition concrete_evidence : \bar R :=
+  evidence_multi data_x data_y.
+
+Definition concrete_posterior (g : realQ R * realQ R -> \bar R) : \bar R :=
+  posterior_multi data_x data_y g.
+
+(* The concrete evidence is non-negative. *)
+Lemma concrete_evidence_ge0 : (0 <= concrete_evidence)%E.
+Proof. exact: evidence_multi_ge0. Qed.
+
+(* The concrete posterior decomposes via iterated integration (Fubini). *)
+Lemma concrete_evidence_eq
+  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
+    setT (qbs_pair_fun slope_prior intercept_prior
+      (fun params => likelihood_product data_x data_y params))) :
+  concrete_evidence =
+  qbs_integral _ slope_prior (fun s =>
+    qbs_integral _ intercept_prior (fun i =>
+      likelihood_product data_x data_y (s, i))).
+Proof.
+rewrite /concrete_evidence /evidence_multi.
+exact: qbs_pair_integral_eq.
+Qed.
+
 End BayesianRegression.
