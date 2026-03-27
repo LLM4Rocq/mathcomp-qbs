@@ -255,30 +255,35 @@ Qed.
 (* random element in the corresponding fiber.                             *)
 (* ===================================================================== *)
 
-Definition gen_coprodQ_random (I : Type) (X : I -> @qbs R) :
+Definition gen_coprodQ_random (d : measure_display) (I : measurableType d)
+  (X : I -> @qbs R) :
   set (mR -> {i : I & @qbs_car R (X i)}) :=
   [set f | exists (P : mR -> I) (Fi : forall i, mR -> @qbs_car R (X i)),
+    measurable_fun setT P /\
     (forall i, @qbs_random R (X i) (Fi i)) /\
     (forall r, f r = existT _ (P r) (Fi (P r) r))].
 
 Arguments gen_coprodQ_random : clear implicits.
 
-Lemma gen_coprodQ_closed1 (I : Type) (X : I -> @qbs R) :
+Lemma gen_coprodQ_closed1 (d : measure_display) (I : measurableType d)
+  (X : I -> @qbs R) :
   forall (h : mR -> {i : I & @qbs_car R (X i)}) (f : mR -> mR),
-    gen_coprodQ_random I X h ->
+    gen_coprodQ_random d I X h ->
     measurable_fun setT f ->
-    gen_coprodQ_random I X (h \o f).
+    gen_coprodQ_random d I X (h \o f).
 Proof.
-move=> h f [P [Fi [hFi hdef]]] hf.
-exists (P \o f), (fun i => Fi i \o f); split.
+move=> h f [P [Fi [hP [hFi hdef]]]] hf.
+exists (P \o f), (fun i => Fi i \o f); split; [|split].
+- exact: measurableT_comp hP hf.
 - move=> i; exact: qbs_random_comp (hFi i) hf.
 - move=> r; rewrite /= hdef //.
 Qed.
 
-Lemma gen_coprodQ_closed2 (I : Type) (X : I -> @qbs R)
+Lemma gen_coprodQ_closed2 (d : measure_display) (I : measurableType d)
+  (X : I -> @qbs R)
   (inh : forall i, @qbs_car R (X i)) :
   forall x : {i : I & @qbs_car R (X i)},
-    gen_coprodQ_random I X (fun _ => x).
+    gen_coprodQ_random d I X (fun _ => x).
 Proof.
 move=> [i0 v0].
 exists (fun _ => i0).
@@ -289,7 +294,8 @@ exists (fun j => match boolp.pselect (j = i0) with
   | left H => fun _ => eq_rect _ (fun k => @qbs_car R (X k)) v0 _ (esym H)
   | right _ => fun _ => inh j
   end).
-split.
+split; [|split].
+- exact: measurable_cst.
 - move=> j.
   case: (boolp.pselect (j = i0)) => [H | _].
   + subst j; exact: qbs_random_const.
@@ -302,54 +308,63 @@ split.
   + exfalso; exact: abs erefl.
 Qed.
 
-Lemma gen_coprodQ_closed3 (I : Type) (X : I -> @qbs R) :
+Lemma gen_coprodQ_closed3 (d : measure_display) (I : measurableType d)
+  (X : I -> @qbs R) :
   forall (Q : mR -> nat) (Fi : nat -> mR -> {i : I & @qbs_car R (X i)}),
     measurable_fun setT Q ->
-    (forall i, gen_coprodQ_random I X (Fi i)) ->
-    gen_coprodQ_random I X (fun r => Fi (Q r) r).
+    (forall i, gen_coprodQ_random d I X (Fi i)) ->
+    gen_coprodQ_random d I X (fun r => Fi (Q r) r).
 Proof.
 move=> Q Fi hQ hFi.
 (* Each Fi n is in gen_coprodQ_random, so extract witnesses uniformly *)
-have hFi' : forall n, exists pair : (mR -> I) * (forall i, mR -> @qbs_car R (X i)),
-  (forall i, @qbs_random R (X i) (pair.2 i)) /\
-  (forall r, Fi n r = existT _ (pair.1 r) (pair.2 (pair.1 r) r)).
-{ move=> n; case: (hFi n) => [Pn [Gin [hGin hdef]]].
-  by exists (Pn, Gin). }
-have := @boolp.choice _ _ _ hFi'; move=> [getPair hgetPair].
-set Pn := fun n => (getPair n).1.
-set Gin := fun n => (getPair n).2.
+have hFi' : forall n, exists triple :
+  (mR -> I) * (forall i, mR -> @qbs_car R (X i)) * Prop,
+  measurable_fun setT triple.1.1 /\
+  (forall i, @qbs_random R (X i) (triple.1.2 i)) /\
+  (forall r, Fi n r = existT _ (triple.1.1 r) (triple.1.2 (triple.1.1 r) r)).
+{ move=> n; case: (hFi n) => [Pn [Gin [hPn [hGin hdef]]]].
+  by exists (Pn, Gin, True). }
+have := @boolp.choice _ _ _ hFi'; move=> [getTriple hgetTriple].
+set Pn := fun n => (getTriple n).1.1.
+set Gin := fun n => (getTriple n).1.2.
+have hPn_meas : forall n, measurable_fun setT (Pn n).
+{ move=> n; exact: (hgetTriple n).1. }
 have hGin : forall n i, @qbs_random R (X i) (Gin n i).
-{ move=> n i; exact: (hgetPair n).1 i. }
+{ move=> n i; exact: (hgetTriple n).2.1 i. }
 have hFi_eq : forall n r, Fi n r = existT _ (Pn n r) (Gin n (Pn n r) r).
-{ move=> n; exact: (hgetPair n).2. }
+{ move=> n; exact: (hgetTriple n).2.2. }
 (* Construct the result *)
-exists (fun r => Pn (Q r) r), (fun i => fun r => Gin (Q r) i r); split.
+exists (fun r => Pn (Q r) r), (fun i => fun r => Gin (Q r) i r); split; [|split].
+- exact: (@measurable_glue R _ _ Q (fun n => Pn n) hQ hPn_meas).
 - move=> i.
   exact: (@qbs_random_glue R (X i) Q (fun n => Gin n i) hQ (fun n => hGin n i)).
 - move=> r; rewrite hFi_eq //.
 Qed.
 
-Definition gen_coprodQ (I : Type) (X : I -> @qbs R)
+Definition gen_coprodQ (d : measure_display) (I : measurableType d)
+  (X : I -> @qbs R)
   (inh : forall i, @qbs_car R (X i)) : @qbs R :=
   @mkQBS R {i : I & @qbs_car R (X i)}
-    (gen_coprodQ_random I X)
-    (gen_coprodQ_closed1 (X:=X))
-    (gen_coprodQ_closed2 inh)
-    (gen_coprodQ_closed3 (X:=X)).
+    (gen_coprodQ_random d I X)
+    (gen_coprodQ_closed1 (I:=I) (X:=X))
+    (gen_coprodQ_closed2 (I:=I) inh)
+    (gen_coprodQ_closed3 (I:=I) (X:=X)).
 
 Arguments gen_coprodQ : clear implicits.
 
 (* Injection into general coproduct *)
-Lemma qbs_morph_gen_inj (I : Type) (X : I -> @qbs R)
+Lemma qbs_morph_gen_inj (d : measure_display) (I : measurableType d)
+  (X : I -> @qbs R)
   (inh : forall i, @qbs_car R (X i)) (i : I) :
-  @qbs_morph R (X i) (gen_coprodQ I X inh) (fun x => existT _ i x).
+  @qbs_morph R (X i) (gen_coprodQ d I X inh) (fun x => existT _ i x).
 Proof.
 move=> alpha halpha /=.
 exists (fun _ => i), (fun j => match boolp.pselect (j = i) with
   | left H => fun r => eq_rect _ (fun k => @qbs_car R (X k)) (alpha r) _ (esym H)
   | right _ => fun _ => inh j
   end).
-split.
+split; [|split].
+- exact: measurable_cst.
 - move=> j.
   case: (boolp.pselect (j = i)) => [H | _].
   + subst j; exact: halpha.
@@ -443,7 +458,8 @@ Qed.
 
 Lemma qbs_morph_coprod_to_gen (X Y : @qbs R)
   (inhX : @qbs_car R X) (inhY : @qbs_car R Y) :
-  @qbs_morph R (coprodQ X Y) (gen_coprodQ bool (fun b => if b then X else Y)
+  @qbs_morph R (coprodQ X Y) (gen_coprodQ default_measure_display bool
+    (fun b => if b then X else Y)
     (fun b => if b as b0 return @qbs_car R (if b0 then X else Y) then inhX else inhY))
     (fun s => match s with
      | inl x => existT _ true x
@@ -457,7 +473,8 @@ case=> [[a [ha hdef]] | [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
     if i as i0 return (mR -> @qbs_car R (if i0 then X else Y))
     then a
     else (fun _ => inhY)).
-  split.
+  split; [|split].
+  + exact: measurable_cst.
   + move=> [|] /=; [exact: ha | exact: qbs_random_const].
   + move=> r /=; rewrite hdef //.
 - (* alpha factors through inr: alpha r = inr (b' r) *)
@@ -465,7 +482,8 @@ case=> [[a [ha hdef]] | [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
     if i as i0 return (mR -> @qbs_car R (if i0 then X else Y))
     then (fun _ => inhX)
     else b').
-  split.
+  split; [|split].
+  + exact: measurable_cst.
   + move=> [|] /=; [exact: qbs_random_const | exact: hb].
   + move=> r /=; rewrite hdef //.
 - (* alpha is a measurable gluing *)
@@ -475,38 +493,34 @@ case=> [[a [ha hdef]] | [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
     if i as i0 return (mR -> @qbs_car R (if i0 then X else Y))
     then a
     else b').
-  split.
+  split; [|split].
+  + exact: hP.
   + move=> [|] /=; [exact: ha | exact: hb].
   + move=> r /=; rewrite hdef; by case: (P r).
 Qed.
 
 Lemma qbs_morph_gen_to_coprod (X Y : @qbs R)
   (inhX : @qbs_car R X) (inhY : @qbs_car R Y) :
-  @qbs_morph R (gen_coprodQ bool (fun b => if b then X else Y)
+  @qbs_morph R (gen_coprodQ default_measure_display bool
+    (fun b => if b then X else Y)
     (fun b => if b as b0 return @qbs_car R (if b0 then X else Y) then inhX else inhY))
     (coprodQ X Y)
     (fun s => match projT1 s as b return
       (@qbs_car R (if b then X else Y) -> @qbs_car R X + @qbs_car R Y)
       with true => inl | false => inr end (projT2 s)).
 Proof.
-move=> alpha [P [Fi [hFi hdef]]].
+move=> alpha [P [Fi [hP [hFi hdef]]]].
 (* P : mR -> bool, Fi : forall i : bool, mR -> (if i then X else Y) *)
 (* After rewriting with hdef, the composition becomes:
    fun r => if P r then inl (Fi true r) else inr (Fi false r)
-   which is a coprodQ_random element, provided P is measurable. *)
+   which is a coprodQ_random element. P is measurable by gen_coprodQ_random. *)
 right; right.
 exists P, (Fi true), (Fi false); split; [|split; [|split]].
-- (* P is measurable: gen_coprodQ_random does not directly require P to
-     be measurable. A full proof would show that projT1 is a QBS morphism
-     from gen_coprodQ to boolQ, making projT1 \o alpha measurable and
-     hence P measurable (since P = projT1 \o alpha up to the witness).
-     This requires additional infrastructure (sigma_Mx on boolQ, etc.)
-     which we leave for future work. *)
-  admit.
+- exact: hP.
 - exact: (hFi true).
 - exact: (hFi false).
 - move=> r; rewrite /= hdef /=; by case: (P r).
-Admitted.
+Qed.
 
 (* ===================================================================== *)
 (* 7. List Type as Coproduct of Products                                 *)
