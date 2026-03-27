@@ -608,6 +608,123 @@ Definition qbs_strength (W X : qbs R)
 
 Arguments qbs_strength : clear implicits.
 
+(* ===================================================================== *)
+(* 13. Bind respects equivalence (prerequisite for the quotient monad)   *)
+(*                                                                       *)
+(*     The key result: bind respects equivalence on the first argument.  *)
+(*     The proof requires that the diagonal extraction factors through   *)
+(*     a QBS morphism g : X -> Y, i.e., for each p with random element  *)
+(*     alpha_p, the bind's alpha equals g o alpha_p.                     *)
+(*                                                                       *)
+(*     This factoring condition holds when f produces triples whose      *)
+(*     alpha component depends on x only through a morphism g (e.g.,    *)
+(*     when f(x) = return(g(x), mu_x) for a morphism g).               *)
+(*                                                                       *)
+(*     The general case (arbitrary strong morphism) requires the         *)
+(*     disintegration theorem / Markov kernel representation, which is   *)
+(*     beyond the current development.                                   *)
+(* ===================================================================== *)
+
+(* Bind respects equivalence on the first argument when the diagonal
+   factors through a QBS morphism g : X -> Y.
+
+   Under this condition, the bind's alpha for p is (g o alpha_p).
+   The preimage (g o alpha_p)^{-1}(U) = alpha_p^{-1}(g^{-1}(U)),
+   and g^{-1}(U) is in sigma_Mx(X) since g is a morphism and U is
+   in sigma_Mx(Y). The equivalence p1 ~ p2 then gives the result
+   directly. *)
+Lemma qbs_bind_equiv_l (X Y : qbs R)
+  (p1 p2 : qbs_prob X)
+  (f : X -> qbs_prob Y)
+  (g : X -> Y) (hg : @qbs_morph R X Y g)
+  (hdiag1 : forall r,
+    qbs_prob_alpha (f (qbs_prob_alpha p1 r)) r = g (qbs_prob_alpha p1 r))
+  (hdiag2 : forall r,
+    qbs_prob_alpha (f (qbs_prob_alpha p2 r)) r = g (qbs_prob_alpha p2 r))
+  (hrand1 : @qbs_random R Y
+    (fun r => qbs_prob_alpha (f (qbs_prob_alpha p1 r)) r))
+  (hrand2 : @qbs_random R Y
+    (fun r => qbs_prob_alpha (f (qbs_prob_alpha p2 r)) r))
+  (hequiv : qbs_prob_equiv X p1 p2) :
+  qbs_prob_equiv Y
+    (qbs_bind X Y p1 f hrand1)
+    (qbs_bind X Y p2 f hrand2).
+Proof.
+move=> U hU /=.
+have heq1 : (fun r => qbs_prob_alpha (f (qbs_prob_alpha p1 r)) r) @^-1` U =
+            qbs_prob_alpha p1 @^-1` (g @^-1` U).
+  rewrite /preimage; apply: boolp.funext => r /=.
+  by apply: boolp.propext; split => h; rewrite ?hdiag1 // -hdiag1.
+have heq2 : (fun r => qbs_prob_alpha (f (qbs_prob_alpha p2 r)) r) @^-1` U =
+            qbs_prob_alpha p2 @^-1` (g @^-1` U).
+  rewrite /preimage; apply: boolp.funext => r /=.
+  by apply: boolp.propext; split => h; rewrite ?hdiag2 // -hdiag2.
+rewrite heq1 heq2.
+apply: hequiv.
+move=> alpha halpha.
+apply: (hU (g \o alpha)).
+exact: hg _ halpha.
+Qed.
+
+(* Specialization for the strong morphism case when the diagonal
+   factors through a morphism g. This combines the strong morphism
+   condition (for diagonal randomness) with the factoring condition
+   (for the equivalence proof). *)
+Lemma qbs_bind_strong_equiv_l (X Y : qbs R)
+  (p1 p2 : qbs_prob X)
+  (f : X -> qbs_prob Y)
+  (g : X -> Y) (hg : @qbs_morph R X Y g)
+  (hf : qbs_morph_strong X Y f)
+  (hfact1 : forall r,
+    qbs_prob_alpha (f (qbs_prob_alpha p1 r)) r = g (qbs_prob_alpha p1 r))
+  (hfact2 : forall r,
+    qbs_prob_alpha (f (qbs_prob_alpha p2 r)) r = g (qbs_prob_alpha p2 r))
+  (hequiv : qbs_prob_equiv X p1 p2) :
+  qbs_prob_equiv Y
+    (qbs_bind_strong X Y p1 f hf)
+    (qbs_bind_strong X Y p2 f hf).
+Proof.
+move=> U hU.
+have hrand1 := qbs_bind_alpha_random_strong p1 hf.
+have hrand2 := qbs_bind_alpha_random_strong p2 hf.
+exact: (@qbs_bind_equiv_l X Y p1 p2 f g hg hfact1 hfact2
+          hrand1 hrand2 hequiv U hU).
+Qed.
+
+(* Bind respects equivalence for "return-like" f.
+   When f(x) = (fun _ => g(x), mu_x) for a morphism g, the diagonal
+   simplifies to g o alpha_p. This covers important cases like
+   f(x) = qbs_return Y (g x) (mu x). *)
+Lemma qbs_bind_equiv_l_return (X Y : qbs R)
+  (p1 p2 : qbs_prob X)
+  (g : X -> Y) (hg : @qbs_morph R X Y g)
+  (mu_f : X -> probability mR R)
+  (hequiv : qbs_prob_equiv X p1 p2) :
+  let f := fun x => qbs_return Y (g x) (mu_f x) in
+  qbs_prob_equiv Y
+    (qbs_bind X Y p1 f (hg _ (qbs_prob_alpha_random p1)))
+    (qbs_bind X Y p2 f (hg _ (qbs_prob_alpha_random p2))).
+Proof.
+move=> f U hU /=.
+have -> : (fun r : mR => g (qbs_prob_alpha p1 r)) @^-1` U =
+          qbs_prob_alpha p1 @^-1` (g @^-1` U) by [].
+have -> : (fun r : mR => g (qbs_prob_alpha p2 r)) @^-1` U =
+          qbs_prob_alpha p2 @^-1` (g @^-1` U) by [].
+apply: hequiv.
+move=> alpha halpha.
+apply: (hU (g \o alpha)).
+exact: hg _ halpha.
+Qed.
+
+(* All returns with the same point are equivalent (canonical form).
+   This is a direct corollary of qbs_return_equiv. *)
+Lemma qbs_return_canonical (X : qbs R) (x : X)
+  (mu1 mu2 : probability mR R) :
+  qbs_prob_equiv X (qbs_return X x mu1) (qbs_return X x mu2).
+Proof.
+exact: qbs_return_equiv.
+Qed.
+
 End ProbabilityQBS.
 
 Arguments qbs_prob {R}.
