@@ -273,6 +273,137 @@ Arguments qbs_pair_variance : clear implicits.
    Independence is captured by the fact that X and Y live on separate
    probability spaces px, py, and the joint distribution is the
    product measure mu_px x mu_py. *)
+
+(* Helper: expectation on product of a function depending only on the
+   first coordinate equals expectation on the first marginal.
+   E_{mu1 x mu2}[h(rr.1)] = E_{mu1}[h] *)
+Lemma expectation_prod_fst (mu1 : probability mR R)
+  (mu2 : probability mR R) (h : mR -> R)
+  (hint : (mu1 \x mu2).-integrable setT
+    (EFin \o (fun rr : mR * mR => h rr.1))) :
+  'E_(mu1 \x mu2)[fun rr : mR * mR => h rr.1] =
+  'E_mu1[h].
+Proof.
+rewrite !unlock /=.
+set f := (fun rr : mR * mR => (h rr.1)%:E).
+transitivity (\int[mu1]_x fubini_F mu2 f x).
+  symmetry; rewrite -[f]/(EFin \o (fun rr : mR * mR => h rr.1)).
+  exact: integral12_prod_meas1.
+apply: eq_integral => x _.
+rewrite /fubini_F /f /=.
+rewrite -(functions.cstE _ (h x)%:E).
+rewrite integral_cst; last exact: measurableT.
+have h1 := @probability_setT _ _ _ mu2.
+by rewrite [X in _ * X]h1 mule1.
+Qed.
+
+(* Helper: expectation on product of a function depending only on the
+   second coordinate equals expectation on the second marginal. *)
+Lemma expectation_prod_snd (mu1 : probability mR R)
+  (mu2 : probability mR R) (h : mR -> R)
+  (hint : (mu1 \x mu2).-integrable setT
+    (EFin \o (fun rr : mR * mR => h rr.2))) :
+  'E_(mu1 \x mu2)[fun rr : mR * mR => h rr.2] =
+  'E_mu2[h].
+Proof.
+rewrite !unlock /=.
+set f := (fun rr : mR * mR => (h rr.2)%:E).
+transitivity (\int[mu2]_y fubini_G mu1 f y).
+  rewrite -[f]/(EFin \o (fun rr : mR * mR => h rr.2)).
+  symmetry; exact: integral21_prod_meas1.
+apply: eq_integral => y _.
+rewrite /fubini_G /f /=.
+rewrite -(functions.cstE _ (h y)%:E).
+rewrite integral_cst; last exact: measurableT.
+have h1 := @probability_setT _ _ _ mu1.
+by rewrite [X in _ * X]h1 mule1.
+Qed.
+
+(* Helper: variance on product of a function depending only on the
+   first coordinate equals variance on the first marginal. *)
+Lemma variance_prod_fst (mu1 : probability mR R)
+  (mu2 : probability mR R) (h : mR -> R)
+  (hL2prod : (fun rr : mR * mR => h rr.1) \in Lfun (mu1 \x mu2) 2)
+  (hL2 : h \in Lfun mu1 2)
+  (hint1 : (mu1 \x mu2).-integrable setT
+    (EFin \o (fun rr : mR * mR => h rr.1)))
+  (hint2 : (mu1 \x mu2).-integrable setT
+    (EFin \o (fun rr : mR * mR => (h rr.1 ^+ 2)%R))) :
+  'V_(mu1 \x mu2)[fun rr : mR * mR => h rr.1] =
+  'V_mu1[h].
+Proof.
+rewrite !varianceE // /GRing.exp /= /GRing.mul /=.
+unlock; congr (_ - _).
+- rewrite unlock /=.
+  set f := (fun rr : mR * mR => (h rr.1 * h rr.1)%:E).
+  transitivity (\int[mu1]_x fubini_F mu2 f x).
+    symmetry; rewrite -[f]/(EFin \o (fun rr : mR * mR => (h rr.1 ^+ 2)%R)).
+    exact: integral12_prod_meas1.
+  apply: eq_integral => x _.
+  rewrite /fubini_F /f /=.
+  rewrite -(functions.cstE _ (h x * h x)%:E).
+  rewrite integral_cst; last exact: measurableT.
+  have h1 := @probability_setT _ _ _ mu2.
+  by rewrite [X in _ * X]h1 mule1.
+- by rewrite (expectation_prod_fst hint1).
+Qed.
+
+(* Helper: variance on product of a function depending only on the
+   second coordinate equals variance on the second marginal. *)
+Lemma variance_prod_snd (mu1 : probability mR R)
+  (mu2 : probability mR R) (h : mR -> R)
+  (hL2prod : (fun rr : mR * mR => h rr.2) \in Lfun (mu1 \x mu2) 2)
+  (hL2 : h \in Lfun mu2 2)
+  (hint1 : (mu1 \x mu2).-integrable setT
+    (EFin \o (fun rr : mR * mR => h rr.2)))
+  (hint2 : (mu1 \x mu2).-integrable setT
+    (EFin \o (fun rr : mR * mR => (h rr.2 ^+ 2)%R))) :
+  'V_(mu1 \x mu2)[fun rr : mR * mR => h rr.2] =
+  'V_mu2[h].
+Proof.
+rewrite !varianceE // /GRing.exp /= /GRing.mul /=.
+unlock; congr (_ - _).
+- rewrite unlock /=.
+  set f := (fun rr : mR * mR => (h rr.2 * h rr.2)%:E).
+  transitivity (\int[mu2]_y fubini_G mu1 f y).
+    rewrite -[f]/(EFin \o (fun rr : mR * mR => (h rr.2 ^+ 2)%R)).
+    symmetry; exact: integral21_prod_meas1.
+  apply: eq_integral => y _.
+  rewrite /fubini_G /f /=.
+  rewrite -(functions.cstE _ (h y * h y)%:E).
+  rewrite integral_cst; last exact: measurableT.
+  have h1 := @probability_setT _ _ _ mu1.
+  by rewrite [X in _ * X]h1 mule1.
+- by rewrite (expectation_prod_snd hint1).
+Qed.
+
+(* Helper: E_{mu1 x mu2}[h1(rr.1) * h2(rr.2)] = E_{mu1}[h1] * E_{mu2}[h2] *)
+Lemma expectation_prod_indep (mu1 : probability mR R)
+  (mu2 : probability mR R) (h1 h2 : mR -> R)
+  (hint1 : mu1.-integrable setT (fun r => (h1 r)%:E))
+  (hint2 : mu2.-integrable setT (fun r => (h2 r)%:E))
+  (hintprod : (mu1 \x mu2).-integrable setT
+    (fun rr : mR * mR => (h1 rr.1 * h2 rr.2)%:E)) :
+  'E_(mu1 \x mu2)[(fun rr : mR * mR => (h1 rr.1 * h2 rr.2)%R)] =
+  ('E_mu1[h1] * 'E_mu2[h2]).
+Proof.
+rewrite !unlock /=.
+set fg := (fun rr : mR * mR => (h1 rr.1 * h2 rr.2)%:E).
+transitivity (\int[mu1]_r1
+  ((h1 r1)%:E *
+   \int[mu2]_r2 (h2 r2)%:E)).
+- transitivity (\int[mu1]_r1 fubini_F mu2 fg r1).
+    symmetry; exact: integral12_prod_meas1.
+  apply: eq_integral => r1 _.
+  rewrite /fubini_F /fg /=.
+  under eq_integral do rewrite EFinM.
+  rewrite integralZl //.
+- have hfin : (\int[mu2]_r2 (h2 r2)%:E)
+    \is a fin_num by exact: (integrable_fin_num measurableT hint2).
+  rewrite -(fineK hfin).
+  rewrite integralZr //.
+Qed.
+
 Lemma qbs_variance_indep_sum (X Y : qbs R)
   (px : qbs_prob X) (py : qbs_prob Y)
   (f : X -> R) (g : Y -> R)
@@ -283,19 +414,72 @@ Lemma qbs_variance_indep_sum (X Y : qbs R)
   (hf1 : (fun r => f (qbs_prob_alpha px r))
     \in Lfun (qbs_prob_mu px) 2)
   (hg1 : (fun r => g (qbs_prob_alpha py r))
-    \in Lfun (qbs_prob_mu py) 2) :
+    \in Lfun (qbs_prob_mu py) 2)
+  (hintf : (qbs_prob_mu px \x qbs_prob_mu py).-integrable setT
+    (EFin \o (fun rr : mR * mR => f (qbs_prob_alpha px rr.1))))
+  (hintg : (qbs_prob_mu px \x qbs_prob_mu py).-integrable setT
+    (EFin \o (fun rr : mR * mR => g (qbs_prob_alpha py rr.2))))
+  (hintf2 : (qbs_prob_mu px \x qbs_prob_mu py).-integrable setT
+    (EFin \o (fun rr : mR * mR => (f (qbs_prob_alpha px rr.1) ^+ 2)%R)))
+  (hintg2 : (qbs_prob_mu px \x qbs_prob_mu py).-integrable setT
+    (EFin \o (fun rr : mR * mR => (g (qbs_prob_alpha py rr.2) ^+ 2)%R)))
+  (hintfg : (qbs_prob_mu px \x qbs_prob_mu py).-integrable setT
+    (EFin \o (fun rr : mR * mR =>
+      (f (qbs_prob_alpha px rr.1) * g (qbs_prob_alpha py rr.2))%R)))
+  (hintfm : (qbs_prob_mu px).-integrable setT
+    (EFin \o (fun r => f (qbs_prob_alpha px r))))
+  (hintgm : (qbs_prob_mu py).-integrable setT
+    (EFin \o (fun r => g (qbs_prob_alpha py r)))) :
   qbs_pair_variance X Y px py f g =
   (qbs_variance X px f + qbs_variance Y py g)%E.
 Proof.
-(* The proof would proceed as follows:
-   1. Unfold qbs_pair_variance to get variance of (F + G) w.r.t. product measure,
-      where F(rr) = f(alpha_px(rr.1)), G(rr) = g(alpha_py(rr.2)).
-   2. Apply varianceD to get Var(F) + Var(G) + 2*Cov(F,G).
-   3. Show Cov(F,G) = 0 using covarianceE and the factoring of E[FG]
-      via Fubini (qbs_integral_indep_mult).
-   4. Show Var(F) w.r.t. product = Var_px(f) (F only depends on first coord).
-   5. Show Var(G) w.r.t. product = Var_py(g) (G only depends on second coord).
-   This requires significant measure-theoretic infrastructure; we admit it. *)
-Admitted.
+rewrite /qbs_pair_variance /qbs_variance.
+set F := (fun rr : mR * mR => f (qbs_prob_alpha px rr.1)).
+set G := (fun rr : mR * mR => g (qbs_prob_alpha py rr.2)).
+set fp := (fun r => f (qbs_prob_alpha px r)).
+set gp := (fun r => g (qbs_prob_alpha py r)).
+set mu_p := qbs_prob_mu px.
+set mu_q := qbs_prob_mu py.
+have FGeq : (fun rr : mR * mR =>
+  f (qbs_prob_alpha px rr.1) + g (qbs_prob_alpha py rr.2)) = (F \+ G)%R.
+  by apply: boolp.funext => rr.
+rewrite FGeq varianceD //.
+(* Var(F) + Var(G) + 2 * Cov(F,G) = variance mu_p fp + variance mu_q gp *)
+rewrite (variance_prod_fst hf2 hf1 hintf hintf2).
+rewrite (variance_prod_snd hg2 hg1 hintg hintg2).
+(* variance mu_p fp + variance mu_q gp + 2 * Cov(F,G) =
+   variance mu_p fp + variance mu_q gp *)
+suff -> : covariance (mu_p \x mu_q) F G = 0
+  by rewrite mule0 adde0.
+(* Use covarianceE: Cov(F,G) = E[FG] - E[F]*E[G] *)
+have prod_fin : (mu_p \x mu_q) setT \is a fin_num.
+  by rewrite -(@setXTT mR mR) product_measure1E //= !probability_setT mule1.
+have hfL1 : F \in Lfun (mu_p \x mu_q) 1.
+  exact: (Lfun_subset12 prod_fin hf2).
+have hgL1 : G \in Lfun (mu_p \x mu_q) 1.
+  exact: (Lfun_subset12 prod_fin hg2).
+have hfgL1 : (F \* G)%R \in Lfun (mu_p \x mu_q) 1.
+  exact: (Lfun2_mul_Lfun1 hf2 hg2).
+rewrite covarianceE //.
+(* E[F*G] factors by Fubini: E[F*G] = E[fp] * E[gp] *)
+have -> : 'E_(mu_p \x mu_q)[(F \* G)%R] =
+  ('E_mu_p[fp] * 'E_mu_q[gp]).
+  rewrite (@expectation_prod_indep mu_p mu_q fp gp hintfm hintgm) //.
+(* E[F] = E[fp] *)
+have -> : 'E_(mu_p \x mu_q)[F] = 'E_mu_p[fp].
+  exact: (expectation_prod_fst hintf).
+(* E[G] = E[gp] *)
+have -> : 'E_(mu_p \x mu_q)[G] = 'E_mu_q[gp].
+  exact: (expectation_prod_snd hintg).
+(* Now: E[fp] * E[gp] - E[fp] * E[gp] = 0 *)
+apply: subee.
+have mu_p_fin : mu_p setT \is a fin_num.
+  by rewrite (@probability_setT _ _ _ mu_p).
+have mu_q_fin : mu_q setT \is a fin_num.
+  by rewrite (@probability_setT _ _ _ mu_q).
+have hfp_fin := expectation_fin_num (Lfun_subset12 mu_p_fin hf1).
+have hgp_fin := expectation_fin_num (Lfun_subset12 mu_q_fin hg1).
+by rewrite fin_numM.
+Qed.
 
 End PairQBSMeasure.
