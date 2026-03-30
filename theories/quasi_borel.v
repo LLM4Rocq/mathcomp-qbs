@@ -1,14 +1,4 @@
-(* -------------------------------------------------------------------- *)
-(* Quasi-Borel Spaces                                                    *)
-(*                                                                        *)
-(* Formalization following:                                               *)
-(* - "A Convenient Category for Higher-Order Probability Theory"          *)
-(*   Heunen, Kammar, Staton, Yang (LICS 2017)                           *)
-(* - Isabelle AFP: Quasi_Borel_Spaces by Hirata, Minamide, Sato          *)
-(*                                                                        *)
-(* Built on math-comp analysis (measurable types, measures, kernels)      *)
-(* -------------------------------------------------------------------- *)
-
+(* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra.
 From mathcomp.analysis Require Import all_analysis.
@@ -21,65 +11,70 @@ Unset Printing Implicit Defensive.
 
 Local Open Scope classical_set_scope.
 
-(* ===================================================================== *)
-(* Core Definitions                                                       *)
-(* A quasi-Borel space on a type T is a set Mx of "random elements"      *)
-(* (functions R -> T) satisfying three closure axioms.                    *)
-(* ===================================================================== *)
+(**md**************************************************************************)
+(* # Quasi-Borel Spaces                                                       *)
+(*                                                                            *)
+(* Formalization following:                                                    *)
+(* - "A Convenient Category for Higher-Order Probability Theory"              *)
+(*   Heunen, Kammar, Staton, Yang (LICS 2017)                                *)
+(* - Isabelle AFP: Quasi_Borel_Spaces by Hirata, Minamide, Sato              *)
+(*                                                                            *)
+(* Built on math-comp analysis (measurable types, measures, kernels)          *)
+(*                                                                            *)
+(* ```                                                                        *)
+(*   qbsType R == type of quasi-Borel spaces over reals R                     *)
+(*   qbs_Mx alpha == alpha is a random element (in Mx)                        *)
+(*   qbs_morphism X Y f == f is a QBS morphism from X to Y                    *)
+(*   qbs_hom X Y == bundled QBS morphisms from X to Y                         *)
+(* ```                                                                        *)
+(******************************************************************************)
+
+HB.mixin Record isQBS (R : realType) (T : Type) := {
+  qbs_Mx : set (measurableTypeR R -> T) ;
+  qbs_Mx_comp : forall alpha f,
+    qbs_Mx alpha -> measurable_fun setT f -> qbs_Mx (alpha \o f) ;
+  qbs_Mx_const : forall x : T, qbs_Mx (fun _ => x) ;
+  qbs_Mx_glue : forall (P : measurableTypeR R -> nat)
+    (Fi : nat -> measurableTypeR R -> T),
+    measurable_fun setT P ->
+    (forall i, qbs_Mx (Fi i)) ->
+    qbs_Mx (fun r => Fi (P r) r) ;
+}.
+
+#[short(type="qbsType")]
+HB.structure Definition QBSpace (R : realType) := { T of isQBS R T }.
 
 Section QBS.
 Variable (R : realType).
 
 Local Notation mR := (measurableTypeR R).
 
-(* ----- 1. Core Record ----- *)
+(* ----- 1. Morphisms ----- *)
 
-Record qbs := mkQBS {
-  qbs_car :> Type ;
-  qbs_random : set (mR -> qbs_car) ;
-  qbs_random_comp : forall alpha f,
-    qbs_random alpha ->
-    measurable_fun setT f ->
-    qbs_random (alpha \o f) ;
-  qbs_random_const : forall x, qbs_random (fun _ => x) ;
-  qbs_random_glue : forall (P : mR -> nat) (Fi : nat -> mR -> qbs_car),
-    measurable_fun setT P ->
-    (forall i, qbs_random (Fi i)) ->
-    qbs_random (fun r => Fi (P r) r) ;
-}.
+Definition qbs_morphism (X Y : qbsType R) (f : X -> Y) : Prop :=
+  forall alpha, @qbs_Mx R X alpha -> @qbs_Mx R Y (f \o alpha).
 
-Arguments qbs_random : clear implicits.
-Arguments qbs_car : clear implicits.
-
-(* ----- 2. Morphisms ----- *)
-
-Definition qbs_morph (X Y : qbs) (f : qbs_car X -> qbs_car Y) : Prop :=
-  forall alpha, qbs_random X alpha -> qbs_random Y (f \o alpha).
-
-Arguments qbs_morph : clear implicits.
-
-Lemma qbs_morph_id (X : qbs) : qbs_morph X X idfun.
-Proof. by move=> alpha hα. Qed.
-
-Lemma qbs_morph_comp (X Y Z : qbs) (f : X -> Y) (g : Y -> Z) :
-  qbs_morph X Y f -> qbs_morph Y Z g -> qbs_morph X Z (g \o f).
-Proof. by move=> hf hg alpha hα; apply: hg; apply: hf. Qed.
-
-Lemma qbs_morph_const (X Y : qbs) (y : Y) :
-  qbs_morph X Y (fun _ => y).
-Proof. by move=> alpha _; apply: qbs_random_const. Qed.
-
-(* ----- 3. Bundled Morphism ----- *)
-
-Record qbs_hom (X Y : qbs) := QBSHom {
+Record qbs_hom (X Y : qbsType R) := QBSHom {
   qbs_hom_val :> X -> Y ;
-  qbs_hom_proof : qbs_morph X Y qbs_hom_val ;
+  qbs_hom_proof : forall alpha, @qbs_Mx R X alpha ->
+    @qbs_Mx R Y (qbs_hom_val \o alpha) ;
 }.
 
 Arguments qbs_hom_val {X Y}.
 Arguments qbs_hom_proof {X Y}.
 
-(* ----- 4. The R functor: measurableType -> qbs ----- *)
+Lemma qbs_morphism_id (X : qbsType R) : @qbs_morphism X X idfun.
+Proof. by move=> alpha hα. Qed.
+
+Lemma qbs_morphism_comp (X Y Z : qbsType R) (f : X -> Y) (g : Y -> Z) :
+  @qbs_morphism X Y f -> @qbs_morphism Y Z g -> @qbs_morphism X Z (g \o f).
+Proof. by move=> hf hg alpha hα; apply: hg; apply: hf. Qed.
+
+Lemma qbs_morphism_const (X Y : qbsType R) (y : Y) :
+  @qbs_morphism X Y (fun _ => y).
+Proof. by move=> alpha _; apply: qbs_Mx_const. Qed.
+
+(* ----- 2. The R functor: measurableType -> qbsType ----- *)
 
 Lemma measurable_glue (d : measure_display) (M : measurableType d)
   (P : mR -> nat) (Fi : nat -> mR -> M) :
@@ -98,98 +93,100 @@ apply: bigcupT_measurable => i; apply: measurableI.
 - have := hFi i measurableT U mU; rewrite setTI; exact.
 Qed.
 
-Definition R_qbs (d : measure_display) (M : measurableType d) : qbs :=
-  @mkQBS M
-    [set f : mR -> M | measurable_fun setT f]
-    (fun alpha f (ha : measurable_fun setT alpha) hf =>
-       measurableT_comp ha hf)
-    (fun x => @measurable_cst _ _ mR M setT x)
-    (fun P Fi hP hFi => @measurable_glue d M P Fi hP hFi).
+Definition R_qbs (d : measure_display) (M : measurableType d) : qbsType R :=
+  QBSpace.Pack (QBSpace.Class
+    (@isQBS.Build R M
+      [set f : mR -> M | measurable_fun setT f]
+      (fun alpha f (ha : measurable_fun setT alpha) hf =>
+         measurableT_comp ha hf)
+      (fun x => @measurable_cst _ _ mR M setT x)
+      (fun P Fi hP hFi => @measurable_glue d M P Fi hP hFi))).
 
-Definition realQ : qbs := R_qbs mR.
-Definition natQ : qbs := R_qbs nat.
-Definition boolQ : qbs := R_qbs bool.
+Definition realQ : qbsType R := R_qbs mR.
+Definition natQ : qbsType R := R_qbs nat.
+Definition boolQ : qbsType R := R_qbs bool.
 
-(* ----- 5. Binary Product ----- *)
+(* ----- 3. Binary Product ----- *)
 
-Lemma prodQ_closed1 (X Y : qbs) :
+Lemma prodQ_closed1 (X Y : qbsType R) :
   forall alpha f,
-    (qbs_random X (fst \o alpha) /\ qbs_random Y (snd \o alpha)) ->
+    (@qbs_Mx R X (fst \o alpha) /\ @qbs_Mx R Y (snd \o alpha)) ->
     measurable_fun setT f ->
-    (qbs_random X (fst \o (alpha \o f)) /\ qbs_random Y (snd \o (alpha \o f))).
+    (@qbs_Mx R X (fst \o (alpha \o f)) /\ @qbs_Mx R Y (snd \o (alpha \o f))).
 Proof.
 move=> alpha f [h1 h2] hf; split.
 - have -> : fst \o (alpha \o f) = (fst \o alpha) \o f by [].
-  exact: qbs_random_comp h1 hf.
+  exact: qbs_Mx_comp h1 hf.
 - have -> : snd \o (alpha \o f) = (snd \o alpha) \o f by [].
-  exact: qbs_random_comp h2 hf.
+  exact: qbs_Mx_comp h2 hf.
 Qed.
 
-Lemma prodQ_closed2 (X Y : qbs) :
+Lemma prodQ_closed2 (X Y : qbsType R) :
   forall xy : X * Y,
-    qbs_random X (fst \o (fun _ : mR => xy)) /\
-    qbs_random Y (snd \o (fun _ : mR => xy)).
+    @qbs_Mx R X (fst \o (fun _ : mR => xy)) /\
+    @qbs_Mx R Y (snd \o (fun _ : mR => xy)).
 Proof.
 move=> [x y]; split.
 - have -> : fst \o (fun _ : mR => (x, y)) = (fun _ => x) by [].
-  exact: qbs_random_const.
+  exact: qbs_Mx_const.
 - have -> : snd \o (fun _ : mR => (x, y)) = (fun _ => y) by [].
-  exact: qbs_random_const.
+  exact: qbs_Mx_const.
 Qed.
 
-Lemma prodQ_closed3 (X Y : qbs) :
+Lemma prodQ_closed3 (X Y : qbsType R) :
   forall (P : mR -> nat)
          (Fi : nat -> mR -> X * Y),
     measurable_fun setT P ->
-    (forall i, qbs_random X (fst \o Fi i) /\ qbs_random Y (snd \o Fi i)) ->
-    qbs_random X (fst \o (fun r => Fi (P r) r)) /\
-    qbs_random Y (snd \o (fun r => Fi (P r) r)).
+    (forall i, @qbs_Mx R X (fst \o Fi i) /\ @qbs_Mx R Y (snd \o Fi i)) ->
+    @qbs_Mx R X (fst \o (fun r => Fi (P r) r)) /\
+    @qbs_Mx R Y (snd \o (fun r => Fi (P r) r)).
 Proof.
 move=> P Fi hP hFi; split.
 - have -> : fst \o (fun r => Fi (P r) r) =
             (fun r => (fun i => fst \o Fi i) (P r) r) by [].
-  apply: (@qbs_random_glue X P (fun i => fst \o Fi i)) => // i.
+  apply: (@qbs_Mx_glue _ X P (fun i => fst \o Fi i)) => // i.
   by have [] := hFi i.
 - have -> : snd \o (fun r => Fi (P r) r) =
             (fun r => (fun i => snd \o Fi i) (P r) r) by [].
-  apply: (@qbs_random_glue Y P (fun i => snd \o Fi i)) => // i.
+  apply: (@qbs_Mx_glue _ Y P (fun i => snd \o Fi i)) => // i.
   by have [] := hFi i.
 Qed.
 
-Definition prodQ (X Y : qbs) : qbs :=
-  @mkQBS (X * Y)
-    [set f | qbs_random X (fst \o f) /\ qbs_random Y (snd \o f)]
-    (@prodQ_closed1 X Y)
-    (@prodQ_closed2 X Y)
-    (@prodQ_closed3 X Y).
+Definition prodQ (X Y : qbsType R) : qbsType R :=
+  QBSpace.Pack (QBSpace.Class
+    (@isQBS.Build R (X * Y)%type
+      [set f | @qbs_Mx R X (fst \o f) /\ @qbs_Mx R Y (snd \o f)]
+      (@prodQ_closed1 X Y)
+      (@prodQ_closed2 X Y)
+      (@prodQ_closed3 X Y))).
 
 Arguments prodQ : clear implicits.
 
-Lemma qbs_morph_fst (X Y : qbs) : qbs_morph (prodQ X Y) X fst.
+Lemma qbs_morphism_fst (X Y : qbsType R) : @qbs_morphism (prodQ X Y) X fst.
 Proof. by move=> alpha [h1 h2]. Qed.
 
-Lemma qbs_morph_snd (X Y : qbs) : qbs_morph (prodQ X Y) Y snd.
+Lemma qbs_morphism_snd (X Y : qbsType R) : @qbs_morphism (prodQ X Y) Y snd.
 Proof. by move=> alpha [h1 h2]. Qed.
 
-Lemma qbs_morph_pair (W X Y : qbs) (f : W -> X) (g : W -> Y) :
-  qbs_morph W X f -> qbs_morph W Y g ->
-  qbs_morph W (prodQ X Y) (fun w => (f w, g w)).
+Lemma qbs_morphism_pair (W X Y : qbsType R) (f : W -> X) (g : W -> Y) :
+  @qbs_morphism W X f -> @qbs_morphism W Y g ->
+  @qbs_morphism W (prodQ X Y) (fun w => (f w, g w)).
 Proof.
 by move=> hf hg alpha hα; split; [apply: hf | apply: hg].
 Qed.
 
-(* ----- 6. Exponential (Function Space) ----- *)
+(* ----- 4. Exponential (Function Space) ----- *)
 
 (* The carrier of expQ X Y is qbs_hom X Y (bundled morphisms).
    The random elements are those g : mR -> qbs_hom X Y such that
    the uncurried map (r, x) |-> g(r)(x) is a morphism prodQ realQ X -> Y. *)
 
-Lemma expQ_closed1 (X Y : qbs) :
+Lemma expQ_closed1 (X Y : qbsType R) :
   forall alpha f,
-    (qbs_morph (prodQ realQ X) Y
+    (@qbs_morphism (prodQ realQ X) Y
        (fun p : realQ * X => qbs_hom_val (alpha p.1) p.2)) ->
     measurable_fun setT f ->
-    qbs_morph (prodQ realQ X) Y
+    @qbs_morphism (prodQ realQ X) Y
       (fun p : realQ * X => qbs_hom_val ((alpha \o f) p.1) p.2).
 Proof.
 move=> alpha f halpha hf beta [hb1 hb2].
@@ -205,9 +202,9 @@ apply: halpha; split => /=.
   exact: hb2.
 Qed.
 
-Lemma expQ_closed2 (X Y : qbs) :
+Lemma expQ_closed2 (X Y : qbsType R) :
   forall g : qbs_hom X Y,
-    qbs_morph (prodQ realQ X) Y
+    @qbs_morphism (prodQ realQ X) Y
       (fun p : realQ * X => qbs_hom_val ((fun _ : mR => g) p.1) p.2).
 Proof.
 move=> g beta [hb1 hb2].
@@ -216,12 +213,12 @@ have -> : (fun p : realQ * X => qbs_hom_val g p.2) \o beta =
 exact: (qbs_hom_proof g) _ hb2.
 Qed.
 
-Lemma expQ_closed3 (X Y : qbs) :
+Lemma expQ_closed3 (X Y : qbsType R) :
   forall (P : mR -> nat) (Fi : nat -> mR -> qbs_hom X Y),
     measurable_fun setT P ->
-    (forall i, qbs_morph (prodQ realQ X) Y
+    (forall i, @qbs_morphism (prodQ realQ X) Y
        (fun p : realQ * X => qbs_hom_val (Fi i p.1) p.2)) ->
-    qbs_morph (prodQ realQ X) Y
+    @qbs_morphism (prodQ realQ X) Y
       (fun p : realQ * X => qbs_hom_val ((fun r => Fi (P r) r) p.1) p.2).
 Proof.
 move=> P Fi hP hFi beta [hb1 hb2].
@@ -231,34 +228,35 @@ have hQ : measurable_fun setT Q.
 have -> : (fun p : realQ * X => Fi (P p.1) p.1 p.2) \o beta =
           (fun r => (fun i => (fun p : realQ * X => Fi i p.1 p.2) \o beta)
             (Q r) r) by [].
-apply: (@qbs_random_glue Y Q
+apply: (@qbs_Mx_glue _ Y Q
   (fun i => (fun p : realQ * X => Fi i p.1 p.2) \o beta) hQ).
 move=> i; exact: hFi i _ (conj hb1 hb2).
 Qed.
 
-Definition expQ (X Y : qbs) : qbs :=
-  @mkQBS (qbs_hom X Y)
-    [set g : mR -> qbs_hom X Y |
-      qbs_morph (prodQ realQ X) Y
-        (fun p : realQ * X => qbs_hom_val (g p.1) p.2)]
-    (@expQ_closed1 X Y)
-    (@expQ_closed2 X Y)
-    (@expQ_closed3 X Y).
+Definition expQ (X Y : qbsType R) : qbsType R :=
+  QBSpace.Pack (QBSpace.Class
+    (@isQBS.Build R (qbs_hom X Y)
+      [set g : mR -> qbs_hom X Y |
+        @qbs_morphism (prodQ realQ X) Y
+          (fun p : realQ * X => qbs_hom_val (g p.1) p.2)]
+      (@expQ_closed1 X Y)
+      (@expQ_closed2 X Y)
+      (@expQ_closed3 X Y))).
 
 Arguments expQ : clear implicits.
 
-(* ----- 7. Key Theorems: Cartesian Closure ----- *)
+(* ----- 5. Key Theorems: Cartesian Closure ----- *)
 
 (* Evaluation morphism: (expQ X Y) x X -> Y *)
-Lemma qbs_eval_morph (X Y : qbs) :
-  qbs_morph (prodQ (expQ X Y) X) Y (fun p => qbs_hom_val p.1 p.2).
+Lemma qbs_eval_morph (X Y : qbsType R) :
+  @qbs_morphism (prodQ (expQ X Y) X) Y (fun p => qbs_hom_val p.1 p.2).
 Proof.
 move=> beta [hb1 hb2].
-have hmorph : qbs_morph (prodQ realQ X) Y
+have hmorph : @qbs_morphism (prodQ realQ X) Y
     (fun p : realQ * X => qbs_hom_val ((fst \o beta) p.1) p.2).
   exact: hb1.
 set gamma := (fun r : mR => (r, snd (beta r))) : mR -> realQ * X.
-have hgamma : qbs_random (prodQ realQ X) gamma.
+have hgamma : @qbs_Mx R (prodQ realQ X) gamma.
   split => /=.
   - have -> : fst \o gamma = idfun by [].
     exact: measurable_id.
@@ -271,20 +269,20 @@ by [].
 Qed.
 
 (* Helper: constant paired with random element is random in product *)
-Lemma prodQ_const_random (X Y : qbs) (x : X) (alpha : mR -> Y) :
-  qbs_random Y alpha -> qbs_random (prodQ X Y) (fun r => (x, alpha r)).
+Lemma prodQ_const_random (X Y : qbsType R) (x : X) (alpha : mR -> Y) :
+  @qbs_Mx R Y alpha -> @qbs_Mx R (prodQ X Y) (fun r => (x, alpha r)).
 Proof.
 move=> hα; split => /=.
 - have -> : fst \o (fun r : mR => (x, alpha r)) = (fun _ => x) by [].
-  exact: qbs_random_const.
+  exact: qbs_Mx_const.
 - have -> : snd \o (fun r : mR => (x, alpha r)) = alpha by [].
   exact: hα.
 Qed.
 
 (* Curry morphism: if f : prodQ X Y -> Z is morph, then curry(f) : X -> expQ Y Z *)
-Lemma qbs_curry_morph (X Y Z : qbs)
+Lemma qbs_curry_morph (X Y Z : qbsType R)
   (f : qbs_hom (prodQ X Y) Z) :
-  qbs_morph X (expQ Y Z)
+  @qbs_morphism X (expQ Y Z)
     (fun x => @QBSHom Y Z (fun y => f (x, y))
        (fun alpha hα => qbs_hom_proof f _
           (prodQ_const_random x hα))).
@@ -293,82 +291,81 @@ move=> beta hbeta /= gamma [hg1 hg2].
 apply: (qbs_hom_proof f); split => /=.
 - have -> : fst \o (fun x : mR => (beta (gamma x).1, (gamma x).2)) =
             beta \o (fst \o gamma) by [].
-  exact: qbs_random_comp hbeta hg1.
+  exact: qbs_Mx_comp hbeta hg1.
 - have -> : snd \o (fun x : mR => (beta (gamma x).1, (gamma x).2)) =
             snd \o gamma by [].
   exact: hg2.
 Qed.
 
-(* ----- 8. Unit QBS ----- *)
+(* ----- 6. Unit QBS ----- *)
 
-Definition unitQ : qbs :=
-  @mkQBS unit
-    [set _ : mR -> unit | True]
-    (fun _ _ _ _ => I)
-    (fun _ => I)
-    (fun _ _ _ _ => I).
+Definition unitQ : qbsType R :=
+  QBSpace.Pack (QBSpace.Class
+    (@isQBS.Build R unit
+      [set _ : mR -> unit | True]
+      (fun _ _ _ _ => I)
+      (fun _ => I)
+      (fun _ _ _ _ => I))).
 
 (* Unit is terminal: unique morphism to unit *)
-Lemma qbs_morph_unit (X : qbs) :
-  qbs_morph X unitQ (fun _ => tt).
+Lemma qbs_morphism_unit (X : qbsType R) :
+  @qbs_morphism X unitQ (fun _ => tt).
 Proof. by move=> alpha _. Qed.
 
-(* ----- 9. sigma_Mx: the induced sigma-algebra ----- *)
+(* ----- 7. sigma_Mx: the induced sigma-algebra ----- *)
 
-Definition sigma_Mx (X : qbs) : set (set X) :=
-  [set U | forall alpha, qbs_random X alpha ->
+Definition sigma_Mx (X : qbsType R) : set (set X) :=
+  [set U | forall alpha, @qbs_Mx R X alpha ->
     measurable (alpha @^-1` U)].
 
-Arguments sigma_Mx : clear implicits.
-
-Lemma sigma_Mx_setT (X : qbs) : sigma_Mx X setT.
+Lemma sigma_Mx_setT (X : qbsType R) : @sigma_Mx X setT.
 Proof. by move=> alpha _; exact: measurableT. Qed.
 
-Lemma sigma_Mx_setC (X : qbs) (U : set X) :
-  sigma_Mx X U -> sigma_Mx X (~` U).
+Lemma sigma_Mx_setC (X : qbsType R) (U : set X) :
+  @sigma_Mx X U -> @sigma_Mx X (~` U).
 Proof.
 move=> hU alpha halpha.
 rewrite preimage_setC.
 exact: measurableC (hU _ halpha).
 Qed.
 
-Lemma sigma_Mx_bigcup (X : qbs) (F : nat -> set X) :
-  (forall i, sigma_Mx X (F i)) ->
-  sigma_Mx X (\bigcup_i F i).
+Lemma sigma_Mx_bigcup (X : qbsType R) (F : nat -> set X) :
+  (forall i, @sigma_Mx X (F i)) ->
+  @sigma_Mx X (\bigcup_i F i).
 Proof.
 move=> hF alpha halpha.
 rewrite preimage_bigcup.
 exact: bigcup_measurable (fun i _ => hF i _ halpha).
 Qed.
 
-(* ----- 10. Comparison Morphisms ----- *)
+(* ----- 8. Comparison Morphisms ----- *)
 (* Standard operations on R, nat, bool that are measurable are automatically
    QBS morphisms, since R_qbs sends measurable functions to morphisms. *)
 
 (* Addition is a QBS morphism prodQ realQ realQ -> realQ *)
-Lemma qbs_morph_add :
-  qbs_morph (prodQ realQ realQ) realQ (fun p => (p.1 + p.2)%R).
+Lemma qbs_morphism_add :
+  @qbs_morphism (prodQ realQ realQ) realQ (fun p => (p.1 + p.2)%R).
 Proof.
 move=> alpha [h1 h2] /=; exact: measurable_funD h1 h2.
 Qed.
 
 (* Multiplication is a QBS morphism prodQ realQ realQ -> realQ *)
-Lemma qbs_morph_mul :
-  qbs_morph (prodQ realQ realQ) realQ (fun p => (p.1 * p.2)%R).
+Lemma qbs_morphism_mul :
+  @qbs_morphism (prodQ realQ realQ) realQ (fun p => (p.1 * p.2)%R).
 Proof.
 move=> alpha [h1 h2] /=; exact: measurable_funM h1 h2.
 Qed.
 
 (* Less-than comparison: realQ x realQ -> boolQ *)
-Lemma qbs_morph_ltr :
-  qbs_morph (prodQ realQ realQ) boolQ (fun p => (p.1 < p.2)%R).
+Lemma qbs_morphism_ltr :
+  @qbs_morphism (prodQ realQ realQ) boolQ (fun p => (p.1 < p.2)%R).
 Proof.
 move=> alpha [h1 h2] /=; exact: measurable_fun_ltr h1 h2.
 Qed.
 
 (* Negation on bool *)
-Lemma qbs_morph_negb :
-  qbs_morph boolQ boolQ negb.
+Lemma qbs_morphism_negb :
+  @qbs_morphism boolQ boolQ negb.
 Proof.
 move=> alpha ha /=; exact: measurable_neg ha.
 Qed.
@@ -377,26 +374,26 @@ Qed.
 (* Extensions: Subspaces, Generating sets, Structural morphisms          *)
 (* ===================================================================== *)
 
-(* ----- 11. Subspace QBS ----- *)
+(* ----- 9. Subspace QBS ----- *)
 (* Given a QBS X and a predicate P on X, the subspace sub_qbs X P has
    carrier {x : X | P x} and random elements alpha such that
    proj1_sig \o alpha is random in X. *)
 
 Section sub_qbs_def.
-Variable (X : qbs) (P : set (qbs_car X)).
+Variable (X : qbsType R) (P : set X).
 
-Let sub_car := {x : qbs_car X | P x}.
-Let sub_proj : sub_car -> qbs_car X := @proj1_sig _ P.
+Let sub_car := {x : X | P x}.
+Let sub_proj : sub_car -> X := @proj1_sig _ P.
 
 Let sub_Mx : set (mR -> sub_car) :=
-  [set alpha | qbs_random X (sub_proj \o alpha)].
+  [set alpha | @qbs_Mx R X (sub_proj \o alpha)].
 
 Lemma sub_qbs_closed1 : forall alpha f,
   sub_Mx alpha -> measurable_fun setT f -> sub_Mx (alpha \o f).
 Proof.
 move=> alpha f halpha hf; rewrite /sub_Mx /=.
 have -> : sub_proj \o (alpha \o f) = (sub_proj \o alpha) \o f by [].
-exact: qbs_random_comp halpha hf.
+exact: qbs_Mx_comp halpha hf.
 Qed.
 
 Lemma sub_qbs_closed2 : forall x : sub_car,
@@ -404,7 +401,7 @@ Lemma sub_qbs_closed2 : forall x : sub_car,
 Proof.
 move=> x; rewrite /sub_Mx /=.
 have -> : sub_proj \o (fun _ : mR => x) = (fun _ => sub_proj x) by [].
-exact: qbs_random_const.
+exact: qbs_Mx_const.
 Qed.
 
 Lemma sub_qbs_closed3 : forall (Q : mR -> nat) (Fi : nat -> mR -> sub_car),
@@ -415,15 +412,17 @@ Proof.
 move=> Q Fi hQ hFi; rewrite /sub_Mx /=.
 have -> : sub_proj \o (fun r => Fi (Q r) r) =
           (fun r => (fun i r => sub_proj (Fi i r)) (Q r) r) by [].
-exact: (qbs_random_glue hQ (fun i => hFi i)).
+exact: (@qbs_Mx_glue _ X Q (fun i r => sub_proj (Fi i r)) hQ (fun i => hFi i)).
 Qed.
 
-Definition sub_qbs : qbs :=
-  @mkQBS sub_car sub_Mx sub_qbs_closed1 sub_qbs_closed2 sub_qbs_closed3.
+Definition sub_qbs : qbsType R :=
+  QBSpace.Pack (QBSpace.Class
+    (@isQBS.Build R sub_car sub_Mx
+      sub_qbs_closed1 sub_qbs_closed2 sub_qbs_closed3)).
 
 End sub_qbs_def.
 
-(* ----- 12. Generating QBS ----- *)
+(* ----- 10. Generating QBS ----- *)
 (* Given a set G of functions R -> X, generate the smallest QBS
    containing G by closing under the three QBS axioms. *)
 
@@ -440,20 +439,21 @@ Inductive generating_Mx (T : Type) (G : set (mR -> T))
       (forall i, generating_Mx G (Fi i)) ->
       generating_Mx G (fun r => Fi (P r) r).
 
-Definition generating_qbs (T : Type) (G : set (mR -> T)) : qbs :=
-  @mkQBS T (generating_Mx G)
-    (fun alpha f ha hf => gen_comp ha hf)
-    (fun x => gen_const G x)
-    (fun P Fi hP hFi => gen_glue hP hFi).
+Definition generating_qbs (T : Type) (G : set (mR -> T)) : qbsType R :=
+  QBSpace.Pack (QBSpace.Class
+    (@isQBS.Build R T (generating_Mx G)
+      (fun alpha f ha hf => gen_comp ha hf)
+      (fun x => gen_const G x)
+      (fun P Fi hP hFi => gen_glue hP hFi))).
 
 Lemma generating_qbs_incl (T : Type) (G : set (mR -> T)) :
-  G `<=` qbs_random (generating_qbs G).
+  G `<=` @qbs_Mx R (generating_qbs G).
 Proof. by move=> alpha hα; exact: gen_base. Qed.
 
-(* ----- 13. Product swap and associators ----- *)
+(* ----- 11. Product swap and associators ----- *)
 
-Lemma qbs_morph_swap (X Y : qbs) :
-  qbs_morph (prodQ X Y) (prodQ Y X) (fun p => (p.2, p.1)).
+Lemma qbs_morphism_swap (X Y : qbsType R) :
+  @qbs_morphism (prodQ X Y) (prodQ Y X) (fun p => (p.2, p.1)).
 Proof.
 move=> alpha [h1 h2]; split => /=.
 - have -> : fst \o (fun r : mR => ((alpha r).2, (alpha r).1)) =
@@ -464,12 +464,12 @@ move=> alpha [h1 h2]; split => /=.
   exact: h1.
 Qed.
 
-Lemma qbs_morph_assoc_lr (X Y Z : qbs) :
-  qbs_morph (prodQ (prodQ X Y) Z) (prodQ X (prodQ Y Z))
+Lemma qbs_morphism_assoc_lr (X Y Z : qbsType R) :
+  @qbs_morphism (prodQ (prodQ X Y) Z) (prodQ X (prodQ Y Z))
     (fun p => (p.1.1, (p.1.2, p.2))).
 Proof.
 move=> alpha [h12 h3].
-have h12' : qbs_random (prodQ X Y) (fst \o alpha) by exact: h12.
+have h12' : @qbs_Mx R (prodQ X Y) (fst \o alpha) by exact: h12.
 have [h1 h2] := h12'.
 split => /=.
 - have -> : fst \o (fun r : mR => ((fst (alpha r)).1, ((fst (alpha r)).2, (alpha r).2))) =
@@ -484,12 +484,12 @@ split => /=.
     exact: h3.
 Qed.
 
-Lemma qbs_morph_assoc_rl (X Y Z : qbs) :
-  qbs_morph (prodQ X (prodQ Y Z)) (prodQ (prodQ X Y) Z)
+Lemma qbs_morphism_assoc_rl (X Y Z : qbsType R) :
+  @qbs_morphism (prodQ X (prodQ Y Z)) (prodQ (prodQ X Y) Z)
     (fun p => ((p.1, p.2.1), p.2.2)).
 Proof.
 move=> alpha [h1 h23].
-have h23' : qbs_random (prodQ Y Z) (snd \o alpha) by exact: h23.
+have h23' : @qbs_Mx R (prodQ Y Z) (snd \o alpha) by exact: h23.
 have [h2 h3] := h23'.
 split => /=.
 - split => /=.
@@ -504,32 +504,32 @@ split => /=.
   exact: h3.
 Qed.
 
-(* ----- 14. Exponential morphisms ----- *)
+(* ----- 12. Exponential morphisms ----- *)
 
 (* Helper: random element paired with constant is random in product *)
-Lemma prodQ_random_const (X Y : qbs) (alpha : mR -> X) (y : Y) :
-  qbs_random X alpha -> qbs_random (prodQ X Y) (fun r => (alpha r, y)).
+Lemma prodQ_random_const (X Y : qbsType R) (alpha : mR -> X) (y : Y) :
+  @qbs_Mx R X alpha -> @qbs_Mx R (prodQ X Y) (fun r => (alpha r, y)).
 Proof.
 move=> hα; split => /=.
 - have -> : fst \o (fun r : mR => (alpha r, y)) = alpha by [].
   exact: hα.
 - have -> : snd \o (fun r : mR => (alpha r, y)) = (fun _ => y) by [].
-  exact: qbs_random_const.
+  exact: qbs_Mx_const.
 Qed.
 
 (* Application/evaluation composed with pairing: given f : W -> expQ X Y
    and g : W -> X, the map w |-> f(w)(g(w)) is a morphism W -> Y *)
-Lemma qbs_morph_exp_comp (W X Y : qbs)
+Lemma qbs_morphism_exp_comp (W X Y : qbsType R)
   (f : qbs_hom W (expQ X Y)) (g : qbs_hom W X) :
-  qbs_morph W Y (fun w => qbs_hom_val (f w) (g w)).
+  @qbs_morphism W Y (fun w => qbs_hom_val (f w) (g w)).
 Proof.
 move=> alpha halpha.
-have hf_alpha : qbs_random (expQ X Y) (f \o alpha).
+have hf_alpha : @qbs_Mx R (expQ X Y) (f \o alpha).
   exact: (qbs_hom_proof f) _ halpha.
-have hg_alpha : qbs_random X (g \o alpha).
+have hg_alpha : @qbs_Mx R X (g \o alpha).
   exact: (qbs_hom_proof g) _ halpha.
 set beta := (fun r : mR => (r, g (alpha r))) : mR -> realQ * X.
-have hbeta : qbs_random (prodQ realQ X) beta.
+have hbeta : @qbs_Mx R (prodQ realQ X) beta.
   split => /=.
   - have -> : fst \o beta = idfun by [].
     exact: measurable_id.
@@ -543,24 +543,24 @@ Qed.
 
 (* Argument swap: given f : X -> expQ Y Z, construct the morphism
    Y -> expQ X Z sending y to (x |-> f(x)(y)). *)
-Lemma qbs_morph_arg_swap (X Y Z : qbs) (f : qbs_hom X (expQ Y Z)) :
-  qbs_morph Y (expQ X Z)
+Lemma qbs_morphism_arg_swap (X Y Z : qbsType R) (f : qbs_hom X (expQ Y Z)) :
+  @qbs_morphism Y (expQ X Z)
     (fun y => @QBSHom X Z (fun x => qbs_hom_val (f x) y)
        (fun alpha halpha =>
           ((qbs_hom_proof f alpha halpha) :
-             qbs_morph (prodQ realQ Y) Z
+             @qbs_morphism (prodQ realQ Y) Z
                (fun p : realQ * Y => qbs_hom_val ((f \o alpha) p.1) p.2))
           (fun r : mR => (r, y))
-          (conj (@measurable_id _ mR setT) (qbs_random_const y))
+          (conj (@measurable_id _ mR setT) (qbs_Mx_const y))
        )).
 Proof.
 move=> beta hbeta /= gamma [hg1 hg2].
-have hf_sg : qbs_random (expQ Y Z) (f \o (snd \o gamma)).
+have hf_sg : @qbs_Mx R (expQ Y Z) (f \o (snd \o gamma)).
   exact: (qbs_hom_proof f) _ hg2.
-have hbfg : qbs_random Y (beta \o (fst \o gamma)).
-  exact: qbs_random_comp hbeta hg1.
+have hbfg : @qbs_Mx R Y (beta \o (fst \o gamma)).
+  exact: qbs_Mx_comp hbeta hg1.
 set delta := (fun r : mR => (r, beta ((fst \o gamma) r))) : mR -> realQ * Y.
-have hdelta : qbs_random (prodQ realQ Y) delta.
+have hdelta : @qbs_Mx R (prodQ realQ Y) delta.
   split => /=.
   - have -> : fst \o delta = idfun by [].
     exact: measurable_id.
@@ -574,41 +574,41 @@ have -> : (fun p : realQ * X => (fun x : X => qbs_hom_val (f x) (beta p.1)) p.2)
 by [].
 Qed.
 
-(* ----- 15. Image QBS (map_qbs) ----- *)
+(* ----- 13. Image QBS (map_qbs) ----- *)
 (* Given a QBS morphism f : X -> Y, the image QBS map_qbs f X has
    carrier Y and random elements generated by {f \o alpha | alpha in Mx(X)}.
    This uses generating_qbs to close under the three QBS axioms,
    ensuring all constant functions are included even if f is not surjective. *)
 
-Definition map_qbs (X Y : qbs) (f : qbs_car X -> qbs_car Y)
-  (hf : qbs_morph X Y f) : qbs :=
-  generating_qbs [set beta : mR -> qbs_car Y |
-    exists alpha, qbs_random X alpha /\ beta = f \o alpha].
+Definition map_qbs (X Y : qbsType R) (f : X -> Y)
+  (hf : @qbs_morphism X Y f) : qbsType R :=
+  generating_qbs [set beta : mR -> Y |
+    exists alpha, @qbs_Mx R X alpha /\ beta = f \o alpha].
 
-Lemma map_qbs_random (X Y : qbs) (f : X -> Y)
-  (hf : qbs_morph X Y f) (alpha : mR -> X) :
-  qbs_random X alpha -> qbs_random (map_qbs hf) (f \o alpha).
+Lemma map_qbs_random (X Y : qbsType R) (f : X -> Y)
+  (hf : @qbs_morphism X Y f) (alpha : mR -> X) :
+  @qbs_Mx R X alpha -> @qbs_Mx R (map_qbs hf) (f \o alpha).
 Proof.
 move=> halpha; apply: gen_base; exists alpha; split => //.
 Qed.
 
 (* map_qbs is coarser than Y: every random element of map_qbs f X
    is also a random element of Y. *)
-Lemma map_qbs_sub (X Y : qbs) (f : X -> Y)
-  (hf : qbs_morph X Y f) :
-  forall beta, qbs_random (map_qbs hf) beta -> qbs_random Y beta.
+Lemma map_qbs_sub (X Y : qbsType R) (f : X -> Y)
+  (hf : @qbs_morphism X Y f) :
+  forall beta, @qbs_Mx R (map_qbs hf) beta -> @qbs_Mx R Y beta.
 Proof.
 move=> beta; elim => {beta}.
 - move=> beta [alpha [halpha ->]]; exact: hf _ halpha.
-- move=> alpha g _ hIH hg; exact: qbs_random_comp hIH hg.
-- move=> x; exact: qbs_random_const.
-- move=> P Fi hP hFi IH; exact: qbs_random_glue hP IH.
+- move=> alpha g _ hIH hg; exact: qbs_Mx_comp hIH hg.
+- move=> x; exact: qbs_Mx_const.
+- move=> P Fi hP hFi IH; exact: qbs_Mx_glue hP IH.
 Qed.
 
 (* map_qbs is functorial: identity *)
-Lemma map_qbs_morph_id (X Y Z : qbs) (f : X -> Y) (g : Y -> Z)
-  (hf : qbs_morph X Y f) (hg : qbs_morph Y Z g) :
-  qbs_morph (map_qbs hf) Z g.
+Lemma map_qbs_morph_id (X Y Z : qbsType R) (f : X -> Y) (g : Y -> Z)
+  (hf : @qbs_morphism X Y f) (hg : @qbs_morphism Y Z g) :
+  @qbs_morphism (map_qbs hf) Z g.
 Proof.
 move=> beta hbeta.
 have hbY := map_qbs_sub hbeta.
@@ -616,16 +616,16 @@ exact: hg _ hbY.
 Qed.
 
 (* The defining map f is a morphism from X to map_qbs f X *)
-Lemma map_qbs_morph_from (X Y : qbs) (f : X -> Y)
-  (hf : qbs_morph X Y f) :
-  qbs_morph X (map_qbs hf) f.
+Lemma map_qbs_morph_from (X Y : qbsType R) (f : X -> Y)
+  (hf : @qbs_morphism X Y f) :
+  @qbs_morphism X (map_qbs hf) f.
 Proof.
 move=> alpha halpha; exact: map_qbs_random halpha.
 Qed.
 
-(* ----- 16. Order Structure on QBS ----- *)
+(* ----- 14. Order Structure on QBS ----- *)
 (* Following Isabelle's order on QBS spaces:
-   X ≤ Y iff Mx(X) ⊆ Mx(Y) (for QBS with the same carrier type).
+   X <= Y iff Mx(X) <= Mx(Y) (for QBS with the same carrier type).
    More random elements = less restrictive structure = higher in the order.
 
    In our type-theoretic setting, the order is most naturally expressed
@@ -635,7 +635,7 @@ Qed.
 Section qbs_order.
 Variable (T : Type).
 
-(* X ≤ Y iff Mx(X) ⊆ Mx(Y) *)
+(* X <= Y iff Mx(X) <= Mx(Y) *)
 Definition qbs_leT (MxX MxY : set (mR -> T)) : Prop :=
   MxX `<=` MxY.
 
@@ -674,19 +674,19 @@ Qed.
 
 (* Sup (join) of two sets of random elements on the same type:
    Mx(sup) is the generating closure of their union. *)
-Definition qbs_supT (T : Type) (MxX MxY : set (mR -> T)) : qbs :=
+Definition qbs_supT (T : Type) (MxX MxY : set (mR -> T)) : qbsType R :=
   generating_qbs [set alpha : mR -> T | MxX alpha \/ MxY alpha].
 
 (* Left inclusion: MxX <= Mx(sup) *)
 Lemma qbs_supT_ub_l (T : Type) (MxX MxY : set (mR -> T)) :
-  qbs_leT MxX (qbs_random (qbs_supT MxX MxY)).
+  qbs_leT MxX (@qbs_Mx R (qbs_supT MxX MxY)).
 Proof.
 move=> alpha halpha; apply: gen_base; left; exact: halpha.
 Qed.
 
 (* Right inclusion: MxY <= Mx(sup) *)
 Lemma qbs_supT_ub_r (T : Type) (MxX MxY : set (mR -> T)) :
-  qbs_leT MxY (qbs_random (qbs_supT MxX MxY)).
+  qbs_leT MxY (@qbs_Mx R (qbs_supT MxX MxY)).
 Proof.
 move=> alpha halpha; apply: gen_base; right; exact: halpha.
 Qed.
@@ -699,7 +699,7 @@ Lemma qbs_supT_least (T : Type) (MxX MxY MxZ : set (mR -> T))
     measurable_fun setT P -> (forall i, MxZ (Fi i)) -> MxZ (fun r => Fi (P r) r)) :
   qbs_leT MxX MxZ ->
   qbs_leT MxY MxZ ->
-  qbs_leT (qbs_random (qbs_supT MxX MxY)) MxZ.
+  qbs_leT (@qbs_Mx R (qbs_supT MxX MxY)) MxZ.
 Proof.
 move=> hX hY.
 apply: generating_qbs_least c1 c2 c3 _.
@@ -707,3 +707,7 @@ by move=> alpha /= -[/hX | /hY].
 Qed.
 
 End QBS.
+
+Arguments QBSHom {R X Y}.
+Arguments qbs_hom_val {R X Y}.
+Arguments qbs_hom_proof {R X Y}.
