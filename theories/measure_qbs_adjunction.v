@@ -1,12 +1,4 @@
-(* -------------------------------------------------------------------- *)
-(* Adjunction between Measurable Spaces and Quasi-Borel Spaces          *)
-(*                                                                        *)
-(* The R functor: Meas -> QBS sends a measurable space to its QBS of     *)
-(* measurable functions. The L functor: QBS -> sigma-algebra sends a QBS *)
-(* to the sigma-algebra sigma_Mx of sets whose preimages under random    *)
-(* elements are measurable. These form an adjunction L -| R.             *)
-(* -------------------------------------------------------------------- *)
-
+(* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra.
 From mathcomp.analysis Require Import all_analysis.
@@ -19,6 +11,15 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Local Open Scope classical_set_scope.
+
+(**md**************************************************************************)
+(* # Adjunction between Measurable Spaces and Quasi-Borel Spaces              *)
+(*                                                                            *)
+(* The R functor: Meas -> QBS sends a measurable space to its QBS of          *)
+(* measurable functions. The L functor: QBS -> sigma-algebra sends a QBS      *)
+(* to the sigma-algebra sigma_Mx of sets whose preimages under random         *)
+(* elements are measurable. These form an adjunction L -| R.                  *)
+(******************************************************************************)
 
 Section MQA.
 Variable (R : realType).
@@ -35,7 +36,7 @@ Lemma R_qbs_morph (d1 d2 : measure_display)
     (M1 : measurableType d1) (M2 : measurableType d2)
     (f : M1 -> M2) :
   measurable_fun setT f ->
-  @qbs_morph R (@R_qbs R _ M1) (@R_qbs R _ M2) f.
+  @qbs_morphism R (@R_qbs R _ M1) (@R_qbs R _ M2) f.
 Proof.
 move=> hf alpha /= halpha.
 exact: measurableT_comp hf halpha.
@@ -43,8 +44,8 @@ Qed.
 
 (* R_qbs preserves identity *)
 Lemma R_qbs_id (d : measure_display) (M : measurableType d) :
-  @qbs_morph R (@R_qbs R _ M) (@R_qbs R _ M) idfun.
-Proof. exact: (@qbs_morph_id R). Qed.
+  @qbs_morphism R (@R_qbs R _ M) (@R_qbs R _ M) idfun.
+Proof. exact: (@qbs_morphism_id R). Qed.
 
 (* R_qbs preserves composition *)
 Lemma R_qbs_comp (d1 d2 d3 : measure_display)
@@ -53,10 +54,10 @@ Lemma R_qbs_comp (d1 d2 d3 : measure_display)
     (f : M1 -> M2) (g : M2 -> M3) :
   measurable_fun setT f ->
   measurable_fun setT g ->
-  @qbs_morph R (@R_qbs R _ M1) (@R_qbs R _ M3) (g \o f).
+  @qbs_morphism R (@R_qbs R _ M1) (@R_qbs R _ M3) (g \o f).
 Proof.
 move=> hf hg.
-apply: (@qbs_morph_comp R (@R_qbs R _ M1) (@R_qbs R _ M2) (@R_qbs R _ M3)).
+apply: (@qbs_morphism_comp R (@R_qbs R _ M1) (@R_qbs R _ M2) (@R_qbs R _ M3)).
 - exact: R_qbs_morph.
 - exact: R_qbs_morph.
 Qed.
@@ -70,51 +71,51 @@ Qed.
    sigma_Mx X = { U | forall alpha in Mx, alpha^{-1}(U) is measurable } *)
 
 (* sigma_Mx contains the empty set *)
-Lemma L_sigma_set0 (X : @qbs R) : @sigma_Mx R X set0.
+Lemma L_sigma_set0 (X : qbsType R) : @sigma_Mx R X set0.
 Proof.
 by move=> alpha _; rewrite preimage_set0; exact: measurable0.
 Qed.
 
 (* L_sigma collects the sigma-algebra properties *)
-Definition L_sigma (X : @qbs R) : set (set (@qbs_car R X)) := @sigma_Mx R X.
+Definition L_sigma (X : qbsType R) : set (set X) := @sigma_Mx R X.
 Arguments L_sigma : clear implicits.
 
-Lemma L_sigma_measurableT (X : @qbs R) : L_sigma X setT.
+Lemma L_sigma_measurableT (X : qbsType R) : L_sigma X setT.
 Proof. exact: (@sigma_Mx_setT R X). Qed.
 
-Lemma L_sigma_measurableC (X : @qbs R) (U : set (@qbs_car R X)) :
+Lemma L_sigma_measurableC (X : qbsType R) (U : set X) :
   L_sigma X U -> L_sigma X (~` U).
 Proof. exact: (@sigma_Mx_setC R X). Qed.
 
-Lemma L_sigma_measurable_bigcup (X : @qbs R) (F : nat -> set (@qbs_car R X)) :
+Lemma L_sigma_measurable_bigcup (X : qbsType R) (F : nat -> set X) :
   (forall i, L_sigma X (F i)) -> L_sigma X (\bigcup_i F i).
 Proof. exact: (@sigma_Mx_bigcup R X). Qed.
 
 (* L is functorial: QBS morphisms map to measurable functions *)
-Lemma L_qbs_morph (X Y : @qbs R) (f : @qbs_car R X -> @qbs_car R Y) :
-  @qbs_morph R X Y f ->
+Lemma L_qbs_morph (X Y : qbsType R) (f : X -> Y) :
+  @qbs_morphism R X Y f ->
   forall U, L_sigma Y U -> L_sigma X (f @^-1` U).
 Proof.
 move=> hf U hU alpha halpha.
-have hfa : @qbs_random R Y (f \o alpha) by exact: hf.
+have hfa : @qbs_Mx R Y (f \o alpha) by exact: hf.
 exact: hU.
 Qed.
 
 (* L preserves identity *)
-Lemma L_qbs_id (X : @qbs R) (U : set (@qbs_car R X)) :
+Lemma L_qbs_id (X : qbsType R) (U : set X) :
   L_sigma X U -> L_sigma X (idfun @^-1` U).
 Proof. by []. Qed.
 
 (* L preserves composition *)
-Lemma L_qbs_comp (X Y Z : @qbs R) (f : @qbs_car R X -> @qbs_car R Y)
-    (g : @qbs_car R Y -> @qbs_car R Z) :
-  @qbs_morph R X Y f ->
-  @qbs_morph R Y Z g ->
+Lemma L_qbs_comp (X Y Z : qbsType R) (f : X -> Y)
+    (g : Y -> Z) :
+  @qbs_morphism R X Y f ->
+  @qbs_morphism R Y Z g ->
   forall U, L_sigma Z U -> L_sigma X ((g \o f) @^-1` U).
 Proof.
 move=> hf hg U hU alpha halpha.
-have hfa : @qbs_random R Y (f \o alpha) by exact: hf.
-have hgfa : @qbs_random R Z (g \o (f \o alpha)) by exact: hg.
+have hfa : @qbs_Mx R Y (f \o alpha) by exact: hf.
+have hgfa : @qbs_Mx R Z (g \o (f \o alpha)) by exact: hg.
 exact: hU.
 Qed.
 
@@ -126,31 +127,31 @@ Qed.
 
 (* Left-to-right: a QBS morphism X -> R(Y) gives a "measurable" map
    w.r.t. L_sigma(X) and sigma(Y) *)
-Lemma lr_adj_l2r (X : @qbs R) (d : measure_display)
-    (Y : measurableType d) (f : @qbs_car R X -> Y) :
-  @qbs_morph R X (@R_qbs R _ Y) f ->
+Lemma lr_adj_l2r (X : qbsType R) (d : measure_display)
+    (Y : measurableType d) (f : X -> Y) :
+  @qbs_morphism R X (@R_qbs R _ Y) f ->
   forall U, measurable U -> L_sigma X (f @^-1` U).
 Proof.
 move=> hf U hU alpha halpha.
-have hfa : @qbs_random R (@R_qbs R _ Y) (f \o alpha) := hf _ halpha.
+have hfa : @qbs_Mx R (@R_qbs R _ Y) (f \o alpha) := hf _ halpha.
 have := hfa measurableT U hU; rewrite setTI; exact.
 Qed.
 
 (* Right-to-left: a "measurable" map w.r.t. L_sigma(X) and sigma(Y)
    gives a QBS morphism X -> R(Y) *)
-Lemma lr_adj_r2l (X : @qbs R) (d : measure_display)
-    (Y : measurableType d) (f : @qbs_car R X -> Y) :
+Lemma lr_adj_r2l (X : qbsType R) (d : measure_display)
+    (Y : measurableType d) (f : X -> Y) :
   (forall U, measurable U -> L_sigma X (f @^-1` U)) ->
-  @qbs_morph R X (@R_qbs R _ Y) f.
+  @qbs_morphism R X (@R_qbs R _ Y) f.
 Proof.
 move=> hf alpha /= halpha _ U hU; rewrite setTI.
 exact: (hf U hU alpha halpha).
 Qed.
 
 (* The two directions are inverse to each other (naturality) *)
-Lemma lr_adj_natural (X : @qbs R) (d : measure_display)
-    (Y : measurableType d) (f : @qbs_car R X -> Y) :
-  (@qbs_morph R X (@R_qbs R _ Y) f) <->
+Lemma lr_adj_natural (X : qbsType R) (d : measure_display)
+    (Y : measurableType d) (f : X -> Y) :
+  (@qbs_morphism R X (@R_qbs R _ Y) f) <->
   (forall U, measurable U -> L_sigma X (f @^-1` U)).
 Proof.
 split.
@@ -168,8 +169,8 @@ Qed.
 Lemma R_preserves_prod (d1 d2 : measure_display)
     (M1 : measurableType d1) (M2 : measurableType d2)
     (alpha : mR -> M1 * M2) :
-  @qbs_random R (@R_qbs R _ [the measurableType _ of (M1 * M2)%type]) alpha <->
-  @qbs_random R (@prodQ R (@R_qbs R _ M1) (@R_qbs R _ M2)) alpha.
+  @qbs_Mx R (@R_qbs R _ [the measurableType _ of (M1 * M2)%type]) alpha <->
+  @qbs_Mx R (@prodQ R (@R_qbs R _ M1) (@R_qbs R _ M2)) alpha.
 Proof.
 split.
 - move=> /= halpha; split;
@@ -208,7 +209,7 @@ Lemma R_full_faithful_standard_borel
   is_standard_borel M1 ->
   is_standard_borel M2 ->
   forall (f : M1 -> M2),
-    @qbs_morph R (@R_qbs R _ M1) (@R_qbs R _ M2) f ->
+    @qbs_morphism R (@R_qbs R _ M1) (@R_qbs R _ M2) f ->
     measurable_fun setT f.
 Proof.
 move=> [phi1 [psi1 [hphi1 [hpsi1 hpsi1phi1]]]]
@@ -225,8 +226,8 @@ Qed.
 (* The unit of the adjunction: X -> R(L(X)) at the level of
    the identity function being a QBS morphism into
    the R_qbs of the L_sigma-measurable structure *)
-Lemma adjunction_unit (X : @qbs R) (alpha : mR -> @qbs_car R X) :
-  @qbs_random R X alpha ->
+Lemma adjunction_unit (X : qbsType R) (alpha : mR -> X) :
+  @qbs_Mx R X alpha ->
   forall U, L_sigma X U -> measurable (alpha @^-1` U).
 Proof. by move=> halpha U hU; exact: hU. Qed.
 
