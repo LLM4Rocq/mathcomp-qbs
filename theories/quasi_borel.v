@@ -1,9 +1,17 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp.analysis Require Import all_analysis.
+From mathcomp Require Import all_boot all_algebra.
+From mathcomp.reals Require Import reals.
+From mathcomp.classical Require Import classical_sets.
+From mathcomp.analysis Require Import topology_theory.num_topology.
+From mathcomp.analysis Require Import measure_theory.measurable_structure.
+From mathcomp.analysis Require Import measure_theory.measurable_function.
+From mathcomp.analysis Require Import borel_hierarchy.
+From mathcomp.analysis Require Import lebesgue_stieltjes_measure.
+From mathcomp.analysis Require Import measurable_realfun.
 
 Import Num.Def Num.Theory reals classical_sets.
+Import numFieldTopology.Exports.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -22,10 +30,24 @@ Local Open Scope classical_set_scope.
 (* Built on math-comp analysis (measurable types, measures, kernels)          *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*   qbsType R == type of quasi-Borel spaces over reals R                     *)
+(*         qbsType R == type of quasi-Borel spaces over reals R               *)
 (*   qbs_Mx alpha == alpha is a random element (in Mx)                        *)
 (*   qbs_morphism X Y f == f is a QBS morphism from X to Y                    *)
 (*   qbs_hom X Y == bundled QBS morphisms from X to Y                         *)
+(*   R_qbs d M == QBS induced on measurableType M by measurable functions     *)
+(*   realQ, natQ, boolQ == QBS on R, nat, bool via R_qbs                      *)
+(*   prodQ X Y == binary product QBS on (X * Y)                               *)
+(*   expQ X Y == exponential (function space) QBS on qbs_hom X Y              *)
+(*   unitQ == terminal QBS on unit                                             *)
+(*   sub_qbs X P == subspace QBS on {x : X | P x}                             *)
+(*   generating_qbs G == smallest QBS containing generators G                  *)
+(*   generating_Mx G == inductive closure of G under the QBS axioms            *)
+(*   map_qbs f hf == image QBS on Y via morphism f : X -> Y                   *)
+(*   sigma_Mx X == the sigma-algebra induced by the random elements of X      *)
+(*   qbs_leT MxX MxY == order on QBS: set inclusion on random elements        *)
+(*   qbs_supT MxX MxY == join (sup) of two QBS on the same carrier            *)
+(*   qbs_morphism_eval == evaluation morphism (expQ X Y) x X -> Y             *)
+(*   qbs_morphism_curry == currying morphism X -> expQ Y Z                     *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -93,6 +115,8 @@ apply: bigcupT_measurable => i; apply: measurableI.
 - have := hFi i measurableT U mU; rewrite setTI; exact.
 Qed.
 
+(* NB: manual QBSpace.Pack because R_qbs builds a non-canonical QBS on an
+   existing measurableType *)
 Definition R_qbs (d : measure_display) (M : measurableType d) : qbsType R :=
   QBSpace.Pack (QBSpace.Class
     (@isQBS.Build R M
@@ -108,7 +132,7 @@ Definition boolQ : qbsType R := R_qbs bool.
 
 (* ----- 3. Binary Product ----- *)
 
-Lemma prodQ_closed1 (X Y : qbsType R) :
+Lemma prodQ_Mx_comp (X Y : qbsType R) :
   forall alpha f,
     (@qbs_Mx R X (fst \o alpha) /\ @qbs_Mx R Y (snd \o alpha)) ->
     measurable_fun setT f ->
@@ -121,7 +145,7 @@ move=> alpha f [h1 h2] hf; split.
   exact: qbs_Mx_comp h2 hf.
 Qed.
 
-Lemma prodQ_closed2 (X Y : qbsType R) :
+Lemma prodQ_Mx_const (X Y : qbsType R) :
   forall xy : X * Y,
     @qbs_Mx R X (fst \o (fun _ : mR => xy)) /\
     @qbs_Mx R Y (snd \o (fun _ : mR => xy)).
@@ -133,7 +157,7 @@ move=> [x y]; split.
   exact: qbs_Mx_const.
 Qed.
 
-Lemma prodQ_closed3 (X Y : qbsType R) :
+Lemma prodQ_Mx_glue (X Y : qbsType R) :
   forall (P : mR -> nat)
          (Fi : nat -> mR -> X * Y),
     measurable_fun setT P ->
@@ -152,13 +176,14 @@ move=> P Fi hP hFi; split.
   by have [] := hFi i.
 Qed.
 
+(* NB: manual QBSpace.Pack because this is a non-canonical QBS on (X * Y)%type *)
 Definition prodQ (X Y : qbsType R) : qbsType R :=
   QBSpace.Pack (QBSpace.Class
     (@isQBS.Build R (X * Y)%type
       [set f | @qbs_Mx R X (fst \o f) /\ @qbs_Mx R Y (snd \o f)]
-      (@prodQ_closed1 X Y)
-      (@prodQ_closed2 X Y)
-      (@prodQ_closed3 X Y))).
+      (@prodQ_Mx_comp X Y)
+      (@prodQ_Mx_const X Y)
+      (@prodQ_Mx_glue X Y))).
 
 Arguments prodQ : clear implicits.
 
@@ -181,7 +206,7 @@ Qed.
    The random elements are those g : mR -> qbs_hom X Y such that
    the uncurried map (r, x) |-> g(r)(x) is a morphism prodQ realQ X -> Y. *)
 
-Lemma expQ_closed1 (X Y : qbsType R) :
+Lemma expQ_Mx_comp (X Y : qbsType R) :
   forall alpha f,
     (@qbs_morphism (prodQ realQ X) Y
        (fun p : realQ * X => qbs_hom_val (alpha p.1) p.2)) ->
@@ -202,7 +227,7 @@ apply: halpha; split => /=.
   exact: hb2.
 Qed.
 
-Lemma expQ_closed2 (X Y : qbsType R) :
+Lemma expQ_Mx_const (X Y : qbsType R) :
   forall g : qbs_hom X Y,
     @qbs_morphism (prodQ realQ X) Y
       (fun p : realQ * X => qbs_hom_val ((fun _ : mR => g) p.1) p.2).
@@ -213,7 +238,7 @@ have -> : (fun p : realQ * X => qbs_hom_val g p.2) \o beta =
 exact: (qbs_hom_proof g) _ hb2.
 Qed.
 
-Lemma expQ_closed3 (X Y : qbsType R) :
+Lemma expQ_Mx_glue (X Y : qbsType R) :
   forall (P : mR -> nat) (Fi : nat -> mR -> qbs_hom X Y),
     measurable_fun setT P ->
     (forall i, @qbs_morphism (prodQ realQ X) Y
@@ -233,22 +258,23 @@ apply: (@qbs_Mx_glue _ Y Q
 move=> i; exact: hFi i _ (conj hb1 hb2).
 Qed.
 
+(* NB: manual QBSpace.Pack because this is a non-canonical QBS on (qbs_hom X Y) *)
 Definition expQ (X Y : qbsType R) : qbsType R :=
   QBSpace.Pack (QBSpace.Class
     (@isQBS.Build R (qbs_hom X Y)
       [set g : mR -> qbs_hom X Y |
         @qbs_morphism (prodQ realQ X) Y
           (fun p : realQ * X => qbs_hom_val (g p.1) p.2)]
-      (@expQ_closed1 X Y)
-      (@expQ_closed2 X Y)
-      (@expQ_closed3 X Y))).
+      (@expQ_Mx_comp X Y)
+      (@expQ_Mx_const X Y)
+      (@expQ_Mx_glue X Y))).
 
 Arguments expQ : clear implicits.
 
 (* ----- 5. Key Theorems: Cartesian Closure ----- *)
 
 (* Evaluation morphism: (expQ X Y) x X -> Y *)
-Lemma qbs_eval_morph (X Y : qbsType R) :
+Lemma qbs_morphism_eval (X Y : qbsType R) :
   @qbs_morphism (prodQ (expQ X Y) X) Y (fun p => qbs_hom_val p.1 p.2).
 Proof.
 move=> beta [hb1 hb2].
@@ -280,7 +306,7 @@ move=> hα; split => /=.
 Qed.
 
 (* Curry morphism: if f : prodQ X Y -> Z is morph, then curry(f) : X -> expQ Y Z *)
-Lemma qbs_curry_morph (X Y Z : qbsType R)
+Lemma qbs_morphism_curry (X Y Z : qbsType R)
   (f : qbs_hom (prodQ X Y) Z) :
   @qbs_morphism X (expQ Y Z)
     (fun x => @QBSHom Y Z (fun y => f (x, y))
@@ -299,6 +325,7 @@ Qed.
 
 (* ----- 6. Unit QBS ----- *)
 
+(* NB: manual QBSpace.Pack because this is a non-canonical QBS on unit *)
 Definition unitQ : qbsType R :=
   QBSpace.Pack (QBSpace.Class
     (@isQBS.Build R unit
@@ -415,6 +442,7 @@ have -> : sub_proj \o (fun r => Fi (Q r) r) =
 exact: (@qbs_Mx_glue _ X Q (fun i r => sub_proj (Fi i r)) hQ (fun i => hFi i)).
 Qed.
 
+(* NB: manual QBSpace.Pack because this is a non-canonical QBS on {x : X | P x} *)
 Definition sub_qbs : qbsType R :=
   QBSpace.Pack (QBSpace.Class
     (@isQBS.Build R sub_car sub_Mx
@@ -439,6 +467,7 @@ Inductive generating_Mx (T : Type) (G : set (mR -> T))
       (forall i, generating_Mx G (Fi i)) ->
       generating_Mx G (fun r => Fi (P r) r).
 
+(* NB: manual QBSpace.Pack because this is a non-canonical QBS on T *)
 Definition generating_qbs (T : Type) (G : set (mR -> T)) : qbsType R :=
   QBSpace.Pack (QBSpace.Class
     (@isQBS.Build R T (generating_Mx G)
