@@ -1,16 +1,10 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp.analysis Require Import all_analysis.
+From mathcomp Require Import all_boot all_algebra.
+From mathcomp.analysis Require Import all_analysis. (* TODO: replace all_analysis with specific imports *)
 From QBS Require Import quasi_borel.
 
 Import Num.Def Num.Theory reals classical_sets.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
-
-Local Open Scope classical_set_scope.
 
 (**md**************************************************************************)
 (* # Coproducts for Quasi-Borel Spaces                                        *)
@@ -25,6 +19,12 @@ Local Open Scope classical_set_scope.
 (*   listQ X x0 == list QBS on seq X                                          *)
 (* ```                                                                        *)
 (******************************************************************************)
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
+Local Open Scope classical_set_scope.
 
 Section CoProductQBS.
 Variable (R : realType).
@@ -56,7 +56,7 @@ Definition coprodQ_random (X Y : qbsType R) : set (mR -> X + Y) :=
 
 Arguments coprodQ_random : clear implicits.
 
-Lemma coprodQ_closed1 (X Y : qbsType R) :
+Lemma coprodQ_Mx_comp (X Y : qbsType R) :
   forall (h : mR -> X + Y) (f : mR -> mR),
     coprodQ_random X Y h ->
     measurable_fun setT f ->
@@ -77,7 +77,7 @@ case: Hh => [[a [ha hdef]] | [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]
   + by move=> r; rewrite /= hdef.
 Qed.
 
-Lemma coprodQ_closed2 (X Y : qbsType R) :
+Lemma coprodQ_Mx_const (X Y : qbsType R) :
   forall x : X + Y,
     coprodQ_random X Y (fun _ => x).
 Proof.
@@ -90,7 +90,7 @@ case=> [xl | yr].
   + by [].
 Qed.
 
-Lemma coprodQ_closed3 (X Y : qbsType R) :
+Lemma coprodQ_Mx_glue (X Y : qbsType R) :
   forall (Q : mR -> nat) (Fi : nat -> mR -> X + Y),
     measurable_fun setT Q ->
     (forall i, coprodQ_random X Y (Fi i)) ->
@@ -183,12 +183,13 @@ exists P', a', b''; split; [|split; [|split]].
 Qed.
 
 Definition coprodQ (X Y : qbsType R) : qbsType R :=
+  (* NB: manual QBSpace.Pack because sum types lack a canonical QBS instance *)
   QBSpace.Pack (QBSpace.Class
     (@isQBS.Build R (X + Y)%type
       (coprodQ_random X Y)
-      (coprodQ_closed1 (X:=X) (Y:=Y))
-      (coprodQ_closed2 (X:=X) (Y:=Y))
-      (coprodQ_closed3 (X:=X) (Y:=Y)))).
+      (coprodQ_Mx_comp (X:=X) (Y:=Y))
+      (coprodQ_Mx_const (X:=X) (Y:=Y))
+      (coprodQ_Mx_glue (X:=X) (Y:=Y)))).
 
 Arguments coprodQ : clear implicits.
 
@@ -274,7 +275,7 @@ Definition gen_coprodQ_random (d : measure_display) (I : measurableType d)
 
 Arguments gen_coprodQ_random : clear implicits.
 
-Lemma gen_coprodQ_closed1 (d : measure_display) (I : measurableType d)
+Lemma gen_coprodQ_Mx_comp (d : measure_display) (I : measurableType d)
   (X : I -> qbsType R) :
   forall (h : mR -> {i : I & X i}) (f : mR -> mR),
     gen_coprodQ_random d I X h ->
@@ -288,7 +289,7 @@ exists (P \o f), (fun i => Fi i \o f); split; [|split].
 - move=> r; rewrite /= hdef //.
 Qed.
 
-Lemma gen_coprodQ_closed2 (d : measure_display) (I : measurableType d)
+Lemma gen_coprodQ_Mx_const (d : measure_display) (I : measurableType d)
   (X : I -> qbsType R)
   (inh : forall i, X i) :
   forall x : {i : I & X i},
@@ -317,7 +318,7 @@ split; [|split].
   + exfalso; exact: abs erefl.
 Qed.
 
-Lemma gen_coprodQ_closed3 (d : measure_display) (I : measurableType d)
+Lemma gen_coprodQ_Mx_glue (d : measure_display) (I : measurableType d)
   (X : I -> qbsType R) :
   forall (Q : mR -> nat) (Fi : nat -> mR -> {i : I & X i}),
     measurable_fun setT Q ->
@@ -353,12 +354,13 @@ Qed.
 Definition gen_coprodQ (d : measure_display) (I : measurableType d)
   (X : I -> qbsType R)
   (inh : forall i, X i) : qbsType R :=
+  (* NB: manual QBSpace.Pack because sigma types lack a canonical QBS instance *)
   QBSpace.Pack (QBSpace.Class
     (@isQBS.Build R {i : I & X i}
       (gen_coprodQ_random d I X)
-      (gen_coprodQ_closed1 (I:=I) (X:=X))
-      (gen_coprodQ_closed2 (I:=I) inh)
-      (gen_coprodQ_closed3 (I:=I) (X:=X)))).
+      (gen_coprodQ_Mx_comp (I:=I) (X:=X))
+      (gen_coprodQ_Mx_const (I:=I) inh)
+      (gen_coprodQ_Mx_glue (I:=I) (X:=X)))).
 
 Arguments gen_coprodQ : clear implicits.
 
@@ -432,6 +434,7 @@ exact: (@qbs_Mx_glue R (X i) Q (fun n r => Fi n r i) hQ (fun n => hFi n i)).
 Qed.
 
 Definition piQ (I : Type) (X : I -> qbsType R) : qbsType R :=
+  (* NB: manual QBSpace.Pack because dependent products lack a canonical QBS instance *)
   QBSpace.Pack (QBSpace.Class
     (@isQBS.Build R (forall i : I, X i)
       (piQ_random I X)
@@ -612,6 +615,7 @@ Qed.
 (* The list QBS. Requires an inhabitedness witness x0 for the constant
    axiom (needed to extract nth elements from constant lists). *)
 Definition listQ (X : qbsType R) (x0 : X) : qbsType R :=
+  (* NB: manual QBSpace.Pack because list types lack a canonical QBS instance *)
   QBSpace.Pack (QBSpace.Class
     (@isQBS.Build R (seq X)
       (listQ_random X)

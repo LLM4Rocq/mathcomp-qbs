@@ -1,4 +1,11 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
+From HB Require Import structures.
+From mathcomp Require Import all_boot all_algebra.
+From mathcomp.analysis Require Import all_analysis. (* TODO: replace all_analysis with specific imports *)
+From QBS Require Import quasi_borel probability_qbs.
+
+Import Num.Def Num.Theory reals classical_sets.
+
 (**md**************************************************************************)
 (* # Embedding Classical Probability into QBS Probability                     *)
 (*                                                                            *)
@@ -13,13 +20,6 @@
 (*   qbs_uniform == Uniform[0,1] as QBS probability on realQ                 *)
 (* ```                                                                        *)
 (******************************************************************************)
-
-From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp.analysis Require Import all_analysis.
-From QBS Require Import quasi_borel probability_qbs.
-
-Import Num.Def Num.Theory reals classical_sets.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -161,7 +161,7 @@ Qed.
 
 (* The normal distribution, viewed as a function of its mean parameter,
    is a QBS morphism from realQ to monadP(realQ). *)
-Lemma qbs_normal_morph (sigma : R) (hsigma : (0 < sigma)%R) :
+Lemma qbs_normal_morphism (sigma : R) (hsigma : (0 < sigma)%R) :
   @qbs_morphism R (realQ R) (monadP (realQ R))
     (fun mu => qbs_normal_distribution mu sigma hsigma).
 Proof.

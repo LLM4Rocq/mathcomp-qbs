@@ -1,16 +1,10 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp.analysis Require Import all_analysis.
+From mathcomp Require Import all_boot all_algebra.
+From mathcomp.analysis Require Import all_analysis. (* TODO: replace all_analysis with specific imports *)
 From QBS Require Import quasi_borel.
 
 Import Num.Def Num.Theory reals classical_sets.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
-
-Local Open Scope classical_set_scope.
 
 (**md**************************************************************************)
 (* # Adjunction between Measurable Spaces and Quasi-Borel Spaces              *)
@@ -20,6 +14,12 @@ Local Open Scope classical_set_scope.
 (* to the sigma-algebra sigma_Mx of sets whose preimages under random         *)
 (* elements are measurable. These form an adjunction L -| R.                  *)
 (******************************************************************************)
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
+Local Open Scope classical_set_scope.
 
 Section MQA.
 Variable (R : realType).

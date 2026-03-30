@@ -1,4 +1,11 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
+From HB Require Import structures.
+From mathcomp Require Import all_boot all_algebra.
+From mathcomp.analysis Require Import all_analysis. (* TODO: replace all_analysis with specific imports *)
+From QBS Require Import quasi_borel probability_qbs.
+
+Import Num.Def Num.Theory reals classical_sets.
+
 (**md**************************************************************************)
 (* # Product Measures on QBS Probability Spaces                               *)
 (*                                                                            *)
@@ -12,13 +19,6 @@
 (*   qbs_pair_variance X Y px py f g == variance of f(x) + g(y) on product   *)
 (* ```                                                                        *)
 (******************************************************************************)
-
-From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp.analysis Require Import all_analysis.
-From QBS Require Import quasi_borel probability_qbs.
-
-Import Num.Def Num.Theory reals classical_sets.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -93,11 +93,6 @@ Definition qbs_pair_fun (X Y : qbsType R)
   (h : X * Y -> \bar R) : mR * mR -> \bar R :=
   fun rr => h (qbs_prob_alpha p rr.1, qbs_prob_alpha q rr.2).
 
-(* Helper: the setT at the g_sigma_algebraType level equals setT at mR *)
-Local Lemma setT_gsigma_mR :
-  [set: g_sigma_algebraType (R.-ocitv).-measurable] = [set: mR].
-Proof. by []. Qed.
-
 (* ===================================================================== *)
 (* 3. Fubini-type theorems for qbs_pair_integral                         *)
 (* ===================================================================== *)
@@ -105,7 +100,7 @@ Proof. by []. Qed.
 (* Fubini: joint integration = iterated integration.
    Requires integrability of the underlying function w.r.t. the product
    measure. Uses integral12_prod_meas1 from mathcomp-analysis. *)
-Lemma qbs_pair_integral_eq (X Y : qbsType R)
+Lemma qbs_pair_integralE (X Y : qbsType R)
   (p : qbs_prob X) (q : qbs_prob Y)
   (h : X * Y -> \bar R)
   (hint : (qbs_prob_mu p \x qbs_prob_mu q).-integrable
@@ -135,7 +130,7 @@ Lemma qbs_pair_integral_fst (X Y : qbsType R)
   qbs_pair_integral X Y p q (fun xy => h xy.1) =
   @qbs_integral R X p h.
 Proof.
-rewrite qbs_pair_integral_eq //.
+rewrite qbs_pair_integralE //.
 rewrite /qbs_integral /=.
 apply: eq_integral => x _ /=.
 rewrite -(functions.cstE _ (h (qbs_prob_alpha p x))).
@@ -197,7 +192,7 @@ Lemma qbs_integral_pair (X Y : qbsType R)
   qbs_pair_integral X Y p q h =
   @qbs_integral R X p (fun x =>
     @qbs_integral R Y q (fun y => h (x, y))).
-Proof. exact: qbs_pair_integral_eq. Qed.
+Proof. exact: qbs_pair_integralE. Qed.
 
 (* ===================================================================== *)
 (* 5. Independence                                                       *)
@@ -237,7 +232,7 @@ Lemma qbs_integral_indep_mult (X Y : qbsType R)
     (fun xy => (f xy.1 * g xy.2)%:E) =
   (@qbs_expect R X px f * @qbs_expect R Y py g).
 Proof.
-rewrite qbs_pair_integral_eq //.
+rewrite qbs_pair_integralE //.
 rewrite /qbs_integral /qbs_expect /= {1 2}/qbs_integral /=.
 transitivity (\int[qbs_prob_mu px]_r1
   ((f (qbs_prob_alpha px r1))%:E *
@@ -491,3 +486,9 @@ by rewrite fin_numM.
 Qed.
 
 End PairQBSMeasure.
+
+Arguments qbs_prob_pair {R X Y}.
+Arguments qbs_pair_integral {R X Y}.
+Arguments qbs_pair_fun {R X Y}.
+Arguments qbs_indep {R X Y Z}.
+Arguments qbs_pair_variance {R X Y}.

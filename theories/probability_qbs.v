@@ -1,4 +1,10 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
+From HB Require Import structures.
+From mathcomp Require Import all_boot all_algebra reals ereal topology
+  borel_hierarchy numfun measure lebesgue_measure lebesgue_integral
+  probability lebesgue_stieltjes_measure.
+From QBS Require Import quasi_borel.
+
 (**md**************************************************************************)
 (* # Probability Spaces on Quasi-Borel Spaces and the Probability Monad      *)
 (*                                                                            *)
@@ -14,11 +20,6 @@
 (*   qbs_integral  == integration against a QBS probability                   *)
 (* ```                                                                        *)
 (*****************************************************************************)
-
-From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp.analysis Require Import all_analysis.
-From QBS Require Import quasi_borel.
 
 Import Num.Def Num.Theory reals classical_sets.
 
@@ -67,11 +68,11 @@ Definition qbs_prob_equiv (X : qbsType R) (p1 p2 : qbs_prob X) : Prop :=
 
 Arguments qbs_prob_equiv : clear implicits.
 
-Lemma qbs_prob_equiv_refl (X : qbsType R) (p : qbs_prob X) :
+Lemma qbs_prob_equivxx (X : qbsType R) (p : qbs_prob X) :
   qbs_prob_equiv X p p.
 Proof. by move=> U hU. Qed.
 
-Lemma qbs_prob_equiv_sym (X : qbsType R) (p1 p2 : qbs_prob X) :
+Lemma qbs_prob_equivC (X : qbsType R) (p1 p2 : qbs_prob X) :
   qbs_prob_equiv X p1 p2 -> qbs_prob_equiv X p2 p1.
 Proof. by move=> h U hU; rewrite (h U hU). Qed.
 
@@ -140,6 +141,7 @@ Lemma monadP_glue (X : qbsType R) :
     monadP_random' X (fun r => Fi (P r) r).
 Proof. by move=> P Fi hP hFi r; apply: hFi. Qed.
 
+(* NB: manual QBSpace.Pack because monadP creates a non-canonical QBS on qbs_prob X *)
 Definition monadP (X : qbsType R) : qbsType R :=
   QBSpace.Pack (QBSpace.Class
     (@isQBS.Build R (qbs_prob X)
@@ -292,7 +294,7 @@ Qed.
 (*    assuming the strong morphism condition.                             *)
 (* ===================================================================== *)
 
-Lemma qbs_monad_left_unit (X Y : qbsType R) (x : X)
+Lemma qbs_bind_returnl (X Y : qbsType R) (x : X)
   (f : X -> qbs_prob Y)
   (hf : @qbs_morphism R X (monadP Y) f) :
   qbs_prob_equiv Y
@@ -304,14 +306,14 @@ move=> U hU /=.
 by [].
 Qed.
 
-Lemma qbs_monad_right_unit (X : qbsType R) (m : qbs_prob X)
+Lemma qbs_bind_returnr (X : qbsType R) (m : qbs_prob X)
   (mu : probability mR R) :
   qbs_prob_equiv X
     (qbs_bind X X m (qbs_return X ^~ mu)
       (qbs_bind_alpha_random_return m mu)) m.
 Proof. by move=> U hU. Qed.
 
-Lemma qbs_monad_assoc (X Y Z : qbsType R) (m : qbs_prob X)
+Lemma qbs_bindA (X Y Z : qbsType R) (m : qbs_prob X)
   (f : X -> qbs_prob Y) (g : Y -> qbs_prob Z)
   (hf_diag : @qbs_Mx R Y
     (fun r => qbs_prob_alpha (f (qbs_prob_alpha m r)) r))
@@ -489,27 +491,6 @@ Lemma qbs_pushforward_integrable (X : qbsType R) (p : qbs_prob X)
 Proof.
 have hma := hm _ (qbs_prob_alpha_random p).
 exact: (integrable_pushforward hma (@measurable_id _ (\bar R) setT) hint measurableT).
-Qed.
-
-(* The pushforward measure arising from a QBS integral is well-defined   *)
-(* up to equivalence of probability triples.                             *)
-Lemma qbs_pushforward_measure_equiv (X : qbsType R) (p1 p2 : qbs_prob X)
-  (h : X -> \bar R)
-  (hm : qbs_measurable X h)
-  (hequiv : qbs_prob_equiv X p1 p2) :
-  forall (V : set (\bar R)), measurable V ->
-    pushforward (qbs_prob_mu p1) (h \o qbs_prob_alpha p1) V =
-    pushforward (qbs_prob_mu p2) (h \o qbs_prob_alpha p2) V.
-Proof.
-move=> V hV.
-rewrite /pushforward /=.
-have -> : (h \o qbs_prob_alpha p1) @^-1` V =
-          qbs_prob_alpha p1 @^-1` (h @^-1` V) by [].
-have -> : (h \o qbs_prob_alpha p2) @^-1` V =
-          qbs_prob_alpha p2 @^-1` (h @^-1` V) by [].
-apply: hequiv.
-apply: (qbs_measurable_sigma_Mx hm).
-exact: hV.
 Qed.
 
 (* ===================================================================== *)
@@ -718,15 +699,6 @@ apply: hequiv.
 move=> alpha halpha.
 apply: (hU (g \o alpha)).
 exact: hg _ halpha.
-Qed.
-
-(* All returns with the same point are equivalent (canonical form).
-   This is a direct corollary of qbs_return_equiv. *)
-Lemma qbs_return_canonical (X : qbsType R) (x : X)
-  (mu1 mu2 : probability mR R) :
-  qbs_prob_equiv X (qbs_return X x mu1) (qbs_return X x mu2).
-Proof.
-exact: qbs_return_equiv.
 Qed.
 
 End ProbabilityQBS.

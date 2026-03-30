@@ -1,16 +1,10 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp.analysis Require Import all_analysis.
+From mathcomp Require Import all_boot all_algebra.
+From mathcomp.analysis Require Import all_analysis. (* TODO: replace all_analysis with specific imports *)
 From QBS Require Import quasi_borel probability_qbs.
 
 Import Num.Def Num.Theory reals classical_sets.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
-
-Local Open Scope classical_set_scope.
 
 (**md**************************************************************************)
 (* # Quotient Type for QBS Probability Spaces                                 *)
@@ -29,6 +23,12 @@ Local Open Scope classical_set_scope.
 (*   qps_map f hf p    == functorial map lifted to the quotient               *)
 (* ```                                                                        *)
 (******************************************************************************)
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
+Local Open Scope classical_set_scope.
 
 Section QBSProbQuot.
 Variable (R : realType).
@@ -54,13 +54,13 @@ Definition qps_eq (X : qbsType R) (p1 p2 : qbs_prob_space X) : Prop :=
 Arguments qps_eq {X}.
 
 (* qps_eq is an equivalence relation *)
-Lemma qps_eq_refl (X : qbsType R) (p : qbs_prob_space X) :
+Lemma qps_eqxx (X : qbsType R) (p : qbs_prob_space X) :
   qps_eq p p.
-Proof. exact: qbs_prob_equiv_refl. Qed.
+Proof. exact: qbs_prob_equivxx. Qed.
 
-Lemma qps_eq_sym (X : qbsType R) (p1 p2 : qbs_prob_space X) :
+Lemma qps_eqC (X : qbsType R) (p1 p2 : qbs_prob_space X) :
   qps_eq p1 p2 -> qps_eq p2 p1.
-Proof. exact: qbs_prob_equiv_sym. Qed.
+Proof. exact: qbs_prob_equivC. Qed.
 
 Lemma qps_eq_trans (X : qbsType R) (p1 p2 p3 : qbs_prob_space X) :
   qps_eq p1 p2 -> qps_eq p2 p3 -> qps_eq p1 p3.
@@ -123,13 +123,13 @@ Arguments qps_map {X Y}.
 (* ===================================================================== *)
 
 (* Return is well-defined: all returns at the same point are equivalent *)
-Lemma qps_return_wd (X : qbsType R) (x : X)
+Lemma qps_return_equiv (X : qbsType R) (x : X)
   (mu1 mu2 : probability mR R) :
   qps_eq (qps_return x mu1) (qps_return x mu2).
 Proof. exact: qbs_return_equiv. Qed.
 
 (* Integration respects qps_eq for sigma_Mx-measurable integrands *)
-Lemma qps_integral_wd (X : qbsType R) (p1 p2 : qbs_prob_space X)
+Lemma qps_integral_equiv (X : qbsType R) (p1 p2 : qbs_prob_space X)
   (h : X -> \bar R)
   (hm : qbs_measurable X h)
   (hint1 : (qbs_prob_mu (qps_repr p1)).-integrable setT
@@ -144,7 +144,7 @@ exact: (qbs_integral_equiv hm hint1 hint2 heq).
 Qed.
 
 (* Map respects qps_eq *)
-Lemma qps_map_wd (X Y : qbsType R) (f : X -> Y)
+Lemma qps_map_equiv (X Y : qbsType R) (f : X -> Y)
   (hf : @qbs_morphism R X Y f)
   (p1 p2 : qbs_prob_space X) :
   qps_eq p1 p2 -> qps_eq (qps_map f hf p1) (qps_map f hf p2).
@@ -162,26 +162,26 @@ Qed.
 (* ===================================================================== *)
 
 (* Left unit: bind (return x) f ~ f x *)
-Lemma qps_monad_left_unit (X Y : qbsType R) (x : X)
+Lemma qps_bind_returnl (X Y : qbsType R) (x : X)
   (f : X -> qbs_prob Y)
   (hf : @qbs_morphism R X (monadP Y) f) :
   qps_eq
     (qps_bind (qps_return x (qbs_prob_mu (f x))) f
       (qbs_bind_alpha_random_const x f))
     (qps_of (f x)).
-Proof. exact: qbs_monad_left_unit. Qed.
+Proof. exact: qbs_bind_returnl. Qed.
 
 (* Right unit: bind m (return ^~ mu) ~ m *)
-Lemma qps_monad_right_unit (X : qbsType R) (m : qbs_prob_space X)
+Lemma qps_bind_returnr (X : qbsType R) (m : qbs_prob_space X)
   (mu : probability mR R) :
   qps_eq
     (qps_bind m (qbs_return X ^~ mu)
       (qbs_bind_alpha_random_return (qps_repr m) mu))
     m.
-Proof. exact: qbs_monad_right_unit. Qed.
+Proof. exact: qbs_bind_returnr. Qed.
 
 (* Associativity *)
-Lemma qps_monad_assoc (X Y Z : qbsType R) (m : qbs_prob_space X)
+Lemma qps_bindA (X Y Z : qbsType R) (m : qbs_prob_space X)
   (f : X -> qbs_prob Y) (g : Y -> qbs_prob Z)
   (hf_diag : @qbs_Mx R Y
     (fun r => qbs_prob_alpha (f (qbs_prob_alpha (qps_repr m) r)) r))
@@ -197,7 +197,7 @@ Lemma qps_monad_assoc (X Y Z : qbsType R) (m : qbs_prob_space X)
       (fun r => qbs_prob_alpha (g (qbs_prob_alpha (f (qbs_prob_alpha (qps_repr m) r)) r)) r)
       (qbs_prob_mu (qps_repr m))
       hfg_diag)).
-Proof. exact: qbs_monad_assoc. Qed.
+Proof. exact: qbs_bindA. Qed.
 
 (* ===================================================================== *)
 (* 5. Expectation and probability of events on the quotient              *)
@@ -216,7 +216,7 @@ Definition qps_prob_event (X : qbsType R) (p : qbs_prob_space X)
 Arguments qps_prob_event {X}.
 
 (* Probability of events respects qps_eq for sigma_Mx sets *)
-Lemma qps_prob_event_wd (X : qbsType R) (p1 p2 : qbs_prob_space X)
+Lemma qps_prob_event_equiv (X : qbsType R) (p1 p2 : qbs_prob_space X)
   (U : set X) :
   @sigma_Mx R X U ->
   qps_eq p1 p2 ->
@@ -267,6 +267,7 @@ exact: hFi.
 Qed.
 
 Definition qbs_prob_space_qbs (X : qbsType R) : qbsType R :=
+  (* NB: manual QBSpace.Pack to equip the quotient wrapper with a QBS structure *)
   QBSpace.Pack (QBSpace.Class
     (@isQBS.Build R (qbs_prob_space X)
       (@qps_Mx X)
@@ -306,16 +307,16 @@ Proof. by []. Qed.
 (*    a representative that IS equivalent to the original.               *)
 (* ===================================================================== *)
 
-Definition qps_canon (X : qbsType R) (p : qbs_prob_space X) :
+Definition qps_pick_repr (X : qbsType R) (p : qbs_prob_space X) :
   qbs_prob_space X :=
   QPS (proj1_sig (boolp.constructive_indefinite_description
     (ex_intro (fun q => qbs_prob_equiv X (qps_repr p) q)
-      (qps_repr p) (qbs_prob_equiv_refl (qps_repr p))))).
+      (qps_repr p) (qbs_prob_equivxx (qps_repr p))))).
 
-Lemma qps_canon_equiv (X : qbsType R) (p : qbs_prob_space X) :
-  qps_eq p (qps_canon p).
+Lemma qps_pick_repr_equiv (X : qbsType R) (p : qbs_prob_space X) :
+  qps_eq p (qps_pick_repr p).
 Proof.
-rewrite /qps_canon /qps_eq /=.
+rewrite /qps_pick_repr /qps_eq /=.
 exact: (proj2_sig (boolp.constructive_indefinite_description _ )).
 Qed.
 
@@ -334,4 +335,4 @@ Arguments qps_map {R X Y}.
 Arguments qps_expect {R X}.
 Arguments qps_prob_event {R X}.
 Arguments qbs_prob_space_qbs {R}.
-Arguments qps_canon {R X}.
+Arguments qps_pick_repr {R X}.

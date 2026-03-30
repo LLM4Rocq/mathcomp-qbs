@@ -1,4 +1,11 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
+From HB Require Import structures.
+From mathcomp Require Import all_boot all_algebra.
+From mathcomp.analysis Require Import all_analysis. (* TODO: replace all_analysis with specific imports *)
+From QBS Require Import quasi_borel probability_qbs pair_qbs_measure.
+
+Import Num.Def Num.Theory reals classical_sets.
+
 (**md**************************************************************************)
 (* # Bayesian Linear Regression Example                                       *)
 (*                                                                            *)
@@ -18,13 +25,6 @@
 (*   evidence            == marginal likelihood (normalizing constant)        *)
 (* ```                                                                        *)
 (******************************************************************************)
-
-From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp.analysis Require Import all_analysis.
-From QBS Require Import quasi_borel probability_qbs pair_qbs_measure.
-
-Import Num.Def Num.Theory reals classical_sets.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -92,7 +92,7 @@ Definition likelihood_single (obs_x : R) :
    the parameter space, the composition likelihood_single(obs_x) o beta
    produces random elements of monadP(realQ R). This holds because
    the alpha component (identity) is always measurable. *)
-Lemma likelihood_single_morph (obs_x : R) :
+Lemma likelihood_single_morphism (obs_x : R) :
   @qbs_morphism R (prodQ (realQ R) (realQ R)) (monadP (realQ R))
     (likelihood_single obs_x).
 Proof.
@@ -138,7 +138,7 @@ Definition predictive_event (obs_x : R) (U : set (realQ R)) : \bar R :=
 (* 4. Marginalization identity (Fubini)                                  *)
 (*    The predictive integral satisfies the law of total probability:   *)
 (*    predictive_integral(h) = \int\int h(y) dP(y|s,i) dpi(s) dpi(i)  *)
-(*    This is a direct consequence of qbs_pair_integral_eq (Fubini).    *)
+(*    This is a direct consequence of qbs_pair_integralE (Fubini).    *)
 (* ===================================================================== *)
 
 Lemma predictive_marginal (obs_x : R) (h : realQ R -> \bar R)
@@ -151,7 +151,7 @@ Lemma predictive_marginal (obs_x : R) (h : realQ R -> \bar R)
       qbs_integral _ (likelihood_single obs_x (s, i)) h)).
 Proof.
 rewrite /predictive_integral.
-exact: qbs_pair_integral_eq.
+exact: qbs_pair_integralE.
 Qed.
 
 (* ===================================================================== *)
@@ -170,7 +170,7 @@ Lemma predictive_event_marginal (obs_x : R) (U : set (realQ R))
       qbs_prob_event _ (likelihood_single obs_x (s, i)) U)).
 Proof.
 rewrite /predictive_event.
-exact: qbs_pair_integral_eq.
+exact: qbs_pair_integralE.
 Qed.
 
 (* ===================================================================== *)
@@ -209,7 +209,7 @@ Lemma posterior_integral_eq (obs_x obs_y : R)
       g (s, i) * qbs_prob_event _ (likelihood_single obs_x (s, i)) [set obs_y])).
 Proof.
 rewrite /posterior_integral.
-exact: qbs_pair_integral_eq.
+exact: qbs_pair_integralE.
 Qed.
 
 (* The posterior expectation of the slope is given by the pair integral *)
@@ -225,7 +225,7 @@ Lemma posterior_slope_expectation (obs_x obs_y : R)
       s%:E * qbs_prob_event _ (likelihood_single obs_x (s, i)) [set obs_y])).
 Proof.
 rewrite /posterior_integral.
-exact: qbs_pair_integral_eq.
+exact: qbs_pair_integralE.
 Qed.
 
 (* Integration over first component only: when the integrand depends
@@ -266,7 +266,7 @@ Lemma evidence_eq (obs_x obs_y : R)
       (normal_pdf (s * obs_x + i)%R noise_sigma obs_y)%:E)).
 Proof.
 rewrite /evidence.
-exact: qbs_pair_integral_eq.
+exact: qbs_pair_integralE.
 Qed.
 
 (* The evidence is non-negative since normal_pdf is non-negative. *)
@@ -306,7 +306,7 @@ Proof.
 rewrite /posterior_normalized.
 congr (_ / _)%E.
 rewrite /posterior_integral.
-exact: qbs_pair_integral_eq.
+exact: qbs_pair_integralE.
 Qed.
 
 (* When g is constant 1, the normalized posterior integrates to 1
@@ -434,7 +434,7 @@ Lemma concrete_evidence_eq
       likelihood_product data_x data_y (s, i))).
 Proof.
 rewrite /concrete_evidence /evidence_multi.
-exact: qbs_pair_integral_eq.
+exact: qbs_pair_integralE.
 Qed.
 
 End BayesianRegression.
