@@ -1,22 +1,34 @@
-(* -------------------------------------------------------------------- *)
-(* Quotient Type for QBS Probability Spaces                              *)
-(*                                                                        *)
-(* We define a setoid-style quotient over qbs_prob, where equality is    *)
-(* qbs_prob_equiv (same pushforward measure). We lift the monadic         *)
-(* operations (return, bind) and integration to this quotient type, and   *)
-(* prove the monad laws hold as equalities under qps_eq.                  *)
-(* -------------------------------------------------------------------- *)
-
+(* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra.
 From mathcomp.analysis Require Import all_analysis.
 From QBS Require Import quasi_borel probability_qbs.
 
 Import Num.Def Num.Theory reals classical_sets.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
+
 Local Open Scope classical_set_scope.
+
+(**md**************************************************************************)
+(* # Quotient Type for QBS Probability Spaces                                 *)
+(*                                                                            *)
+(* We define a setoid-style quotient over qbs_prob, where equality is         *)
+(* qbs_prob_equiv (same pushforward measure). We lift the monadic             *)
+(* operations (return, bind) and integration to this quotient type, and       *)
+(* prove the monad laws hold as equalities under qps_eq.                      *)
+(*                                                                            *)
+(* ```                                                                        *)
+(*   qbs_prob_space X == setoid-quotient wrapping a qbs_prob X representative *)
+(*   qps_eq p1 p2     == equality via qbs_prob_equiv on representatives       *)
+(*   qps_return x mu   == return lifted to the quotient                       *)
+(*   qps_bind p f hdiag == bind lifted to the quotient                        *)
+(*   qps_integral p h  == integration lifted to the quotient                  *)
+(*   qps_map f hf p    == functorial map lifted to the quotient               *)
+(* ```                                                                        *)
+(******************************************************************************)
 
 Section QBSProbQuot.
 Variable (R : realType).
@@ -29,33 +41,33 @@ Local Notation mR := (measurableTypeR R).
 (*    they induce the same pushforward measure.                          *)
 (* ===================================================================== *)
 
-Record qbs_prob_space (X : qbs R) := QPS {
+Record qbs_prob_space (X : qbsType R) := QPS {
   qps_repr : qbs_prob X ;
 }.
 
 Arguments QPS {X}.
 Arguments qps_repr {X}.
 
-Definition qps_eq (X : qbs R) (p1 p2 : qbs_prob_space X) : Prop :=
+Definition qps_eq (X : qbsType R) (p1 p2 : qbs_prob_space X) : Prop :=
   qbs_prob_equiv X (qps_repr p1) (qps_repr p2).
 
 Arguments qps_eq {X}.
 
 (* qps_eq is an equivalence relation *)
-Lemma qps_eq_refl (X : qbs R) (p : qbs_prob_space X) :
+Lemma qps_eq_refl (X : qbsType R) (p : qbs_prob_space X) :
   qps_eq p p.
 Proof. exact: qbs_prob_equiv_refl. Qed.
 
-Lemma qps_eq_sym (X : qbs R) (p1 p2 : qbs_prob_space X) :
+Lemma qps_eq_sym (X : qbsType R) (p1 p2 : qbs_prob_space X) :
   qps_eq p1 p2 -> qps_eq p2 p1.
 Proof. exact: qbs_prob_equiv_sym. Qed.
 
-Lemma qps_eq_trans (X : qbs R) (p1 p2 p3 : qbs_prob_space X) :
+Lemma qps_eq_trans (X : qbsType R) (p1 p2 p3 : qbs_prob_space X) :
   qps_eq p1 p2 -> qps_eq p2 p3 -> qps_eq p1 p3.
 Proof. exact: qbs_prob_equiv_trans. Qed.
 
 (* Embedding: wrap a qbs_prob into the quotient *)
-Definition qps_of (X : qbs R) (p : qbs_prob X) : qbs_prob_space X :=
+Definition qps_of (X : qbsType R) (p : qbs_prob X) : qbs_prob_space X :=
   QPS p.
 
 Arguments qps_of {X}.
@@ -66,7 +78,7 @@ Arguments qps_of {X}.
 (* ===================================================================== *)
 
 (* Return: X -> qbs_prob_space X *)
-Definition qps_return (X : qbs R) (x : X) (mu : probability mR R) :
+Definition qps_return (X : qbsType R) (x : X) (mu : probability mR R) :
   qbs_prob_space X :=
   qps_of (qbs_return X x mu).
 
@@ -74,9 +86,9 @@ Arguments qps_return {X}.
 
 (* Bind: qbs_prob_space X -> (X -> qbs_prob Y) -> qbs_prob_space Y
    Requires the diagonal randomness proof, just like qbs_bind. *)
-Definition qps_bind (X Y : qbs R) (p : qbs_prob_space X)
+Definition qps_bind (X Y : qbsType R) (p : qbs_prob_space X)
   (f : X -> qbs_prob Y)
-  (hdiag : @qbs_random R Y
+  (hdiag : @qbs_Mx R Y
     (fun r => qbs_prob_alpha (f (qbs_prob_alpha (qps_repr p) r)) r)) :
   qbs_prob_space Y :=
   qps_of (qbs_bind X Y (qps_repr p) f hdiag).
@@ -84,23 +96,23 @@ Definition qps_bind (X Y : qbs R) (p : qbs_prob_space X)
 Arguments qps_bind {X Y}.
 
 (* Bind specialized for strong morphisms *)
-Definition qps_bind_strong (X Y : qbs R) (p : qbs_prob_space X)
+Definition qps_bind_strong (X Y : qbsType R) (p : qbs_prob_space X)
   (f : X -> qbs_prob Y)
-  (hf : qbs_morph_strong X Y f) : qbs_prob_space Y :=
+  (hf : qbs_morphism_strong X Y f) : qbs_prob_space Y :=
   qps_of (qbs_bind_strong X Y (qps_repr p) f hf).
 
 Arguments qps_bind_strong {X Y}.
 
 (* Integration: qbs_prob_space X -> (X -> \bar R) -> \bar R *)
-Definition qps_integral (X : qbs R) (p : qbs_prob_space X)
+Definition qps_integral (X : qbsType R) (p : qbs_prob_space X)
   (h : X -> \bar R) : \bar R :=
   qbs_integral X (qps_repr p) h.
 
 Arguments qps_integral {X}.
 
 (* Functorial map *)
-Definition qps_map (X Y : qbs R) (f : X -> Y)
-  (hf : @qbs_morph R X Y f) (p : qbs_prob_space X) :
+Definition qps_map (X Y : qbsType R) (f : X -> Y)
+  (hf : @qbs_morphism R X Y f) (p : qbs_prob_space X) :
   qbs_prob_space Y :=
   qps_of (monadP_map X Y f hf (qps_repr p)).
 
@@ -111,13 +123,13 @@ Arguments qps_map {X Y}.
 (* ===================================================================== *)
 
 (* Return is well-defined: all returns at the same point are equivalent *)
-Lemma qps_return_wd (X : qbs R) (x : X)
+Lemma qps_return_wd (X : qbsType R) (x : X)
   (mu1 mu2 : probability mR R) :
   qps_eq (qps_return x mu1) (qps_return x mu2).
 Proof. exact: qbs_return_equiv. Qed.
 
 (* Integration respects qps_eq for sigma_Mx-measurable integrands *)
-Lemma qps_integral_wd (X : qbs R) (p1 p2 : qbs_prob_space X)
+Lemma qps_integral_wd (X : qbsType R) (p1 p2 : qbs_prob_space X)
   (h : X -> \bar R)
   (hm : qbs_measurable X h)
   (hint1 : (qbs_prob_mu (qps_repr p1)).-integrable setT
@@ -132,8 +144,8 @@ exact: (qbs_integral_equiv hm hint1 hint2 heq).
 Qed.
 
 (* Map respects qps_eq *)
-Lemma qps_map_wd (X Y : qbs R) (f : X -> Y)
-  (hf : @qbs_morph R X Y f)
+Lemma qps_map_wd (X Y : qbsType R) (f : X -> Y)
+  (hf : @qbs_morphism R X Y f)
   (p1 p2 : qbs_prob_space X) :
   qps_eq p1 p2 -> qps_eq (qps_map f hf p1) (qps_map f hf p2).
 Proof.
@@ -150,9 +162,9 @@ Qed.
 (* ===================================================================== *)
 
 (* Left unit: bind (return x) f ~ f x *)
-Lemma qps_monad_left_unit (X Y : qbs R) (x : X)
+Lemma qps_monad_left_unit (X Y : qbsType R) (x : X)
   (f : X -> qbs_prob Y)
-  (hf : @qbs_morph R X (monadP Y) f) :
+  (hf : @qbs_morphism R X (monadP Y) f) :
   qps_eq
     (qps_bind (qps_return x (qbs_prob_mu (f x))) f
       (qbs_bind_alpha_random_const x f))
@@ -160,7 +172,7 @@ Lemma qps_monad_left_unit (X Y : qbs R) (x : X)
 Proof. exact: qbs_monad_left_unit. Qed.
 
 (* Right unit: bind m (return ^~ mu) ~ m *)
-Lemma qps_monad_right_unit (X : qbs R) (m : qbs_prob_space X)
+Lemma qps_monad_right_unit (X : qbsType R) (m : qbs_prob_space X)
   (mu : probability mR R) :
   qps_eq
     (qps_bind m (qbs_return X ^~ mu)
@@ -169,14 +181,14 @@ Lemma qps_monad_right_unit (X : qbs R) (m : qbs_prob_space X)
 Proof. exact: qbs_monad_right_unit. Qed.
 
 (* Associativity *)
-Lemma qps_monad_assoc (X Y Z : qbs R) (m : qbs_prob_space X)
+Lemma qps_monad_assoc (X Y Z : qbsType R) (m : qbs_prob_space X)
   (f : X -> qbs_prob Y) (g : Y -> qbs_prob Z)
-  (hf_diag : @qbs_random R Y
+  (hf_diag : @qbs_Mx R Y
     (fun r => qbs_prob_alpha (f (qbs_prob_alpha (qps_repr m) r)) r))
   (hg_bind : forall (p : qbs_prob Y),
-    @qbs_random R Z
+    @qbs_Mx R Z
       (fun r => qbs_prob_alpha (g (qbs_prob_alpha p r)) r))
-  (hfg_diag : @qbs_random R Z
+  (hfg_diag : @qbs_Mx R Z
     (fun r => qbs_prob_alpha
       (g (qbs_prob_alpha (f (qbs_prob_alpha (qps_repr m) r)) r)) r)) :
   qps_eq
@@ -191,20 +203,20 @@ Proof. exact: qbs_monad_assoc. Qed.
 (* 5. Expectation and probability of events on the quotient              *)
 (* ===================================================================== *)
 
-Definition qps_expect (X : qbs R) (p : qbs_prob_space X)
+Definition qps_expect (X : qbsType R) (p : qbs_prob_space X)
   (h : X -> R) : \bar R :=
   qbs_expect X (qps_repr p) h.
 
 Arguments qps_expect {X}.
 
-Definition qps_prob_event (X : qbs R) (p : qbs_prob_space X)
+Definition qps_prob_event (X : qbsType R) (p : qbs_prob_space X)
   (U : set X) : \bar R :=
   qbs_prob_event X (qps_repr p) U.
 
 Arguments qps_prob_event {X}.
 
 (* Probability of events respects qps_eq for sigma_Mx sets *)
-Lemma qps_prob_event_wd (X : qbs R) (p1 p2 : qbs_prob_space X)
+Lemma qps_prob_event_wd (X : qbsType R) (p1 p2 : qbs_prob_space X)
   (U : set X) :
   @sigma_Mx R X U ->
   qps_eq p1 p2 ->
@@ -222,61 +234,62 @@ Qed.
 (*    we transfer the QBS structure to qbs_prob_space X.                *)
 (* ===================================================================== *)
 
-Definition qps_random (X : qbs R) : set (mR -> qbs_prob_space X) :=
+Definition qps_Mx (X : qbsType R) : set (mR -> qbs_prob_space X) :=
   [set beta | @monadP_random' R X (fun r => qps_repr (beta r))].
 
-Arguments qps_random {X}.
+Arguments qps_Mx {X}.
 
-Lemma qps_random_comp (X : qbs R) :
+Lemma qps_Mx_comp (X : qbsType R) :
   forall beta f,
-    @qps_random X beta ->
+    @qps_Mx X beta ->
     measurable_fun setT f ->
-    @qps_random X (beta \o f).
+    @qps_Mx X (beta \o f).
 Proof.
 move=> beta f hbeta hf r /=.
 exact: hbeta.
 Qed.
 
-Lemma qps_random_const (X : qbs R) :
-  forall x : qbs_prob_space X, @qps_random X (fun _ => x).
+Lemma qps_Mx_const (X : qbsType R) :
+  forall x : qbs_prob_space X, @qps_Mx X (fun _ => x).
 Proof.
 move=> x r /=.
 exact: (qbs_prob_alpha_random (qps_repr x)).
 Qed.
 
-Lemma qps_random_glue (X : qbs R) :
+Lemma qps_Mx_glue (X : qbsType R) :
   forall (P : mR -> nat) (Fi : nat -> mR -> qbs_prob_space X),
     measurable_fun setT P ->
-    (forall i, @qps_random X (Fi i)) ->
-    @qps_random X (fun r => Fi (P r) r).
+    (forall i, @qps_Mx X (Fi i)) ->
+    @qps_Mx X (fun r => Fi (P r) r).
 Proof.
 move=> P Fi hP hFi r /=.
 exact: hFi.
 Qed.
 
-Definition qbs_prob_space_qbs (X : qbs R) : qbs R :=
-  @mkQBS R (qbs_prob_space X)
-    (@qps_random X)
-    (@qps_random_comp X)
-    (@qps_random_const X)
-    (@qps_random_glue X).
+Definition qbs_prob_space_qbs (X : qbsType R) : qbsType R :=
+  QBSpace.Pack (QBSpace.Class
+    (@isQBS.Build R (qbs_prob_space X)
+      (@qps_Mx X)
+      (@qps_Mx_comp X)
+      (@qps_Mx_const X)
+      (@qps_Mx_glue X))).
 
 (* ===================================================================== *)
 (* 7. Integration on the quotient: linearity properties                  *)
 (* ===================================================================== *)
 
-Lemma qps_integral_const (X : qbs R) (p : qbs_prob_space X) (c : \bar R) :
+Lemma qps_integral_const (X : qbsType R) (p : qbs_prob_space X) (c : \bar R) :
   qps_integral p (fun _ => c) = (\int[qbs_prob_mu (qps_repr p)]_x c)%E.
 Proof. by []. Qed.
 
-Lemma qps_integral_return (X : qbs R) (x : X)
+Lemma qps_integral_return (X : qbsType R) (x : X)
   (mu : probability mR R) (h : X -> \bar R) :
   qps_integral (qps_return x mu) h = (\int[mu]_r h x)%E.
 Proof. by []. Qed.
 
-Lemma qps_integral_bind (X Y : qbs R) (p : qbs_prob_space X)
+Lemma qps_integral_bind (X Y : qbsType R) (p : qbs_prob_space X)
   (f : X -> qbs_prob Y)
-  (hdiag : @qbs_random R Y
+  (hdiag : @qbs_Mx R Y
     (fun r => qbs_prob_alpha (f (qbs_prob_alpha (qps_repr p) r)) r))
   (h : Y -> \bar R) :
   qps_integral (qps_bind p f hdiag) h =
@@ -293,13 +306,13 @@ Proof. by []. Qed.
 (*    a representative that IS equivalent to the original.               *)
 (* ===================================================================== *)
 
-Definition qps_canon (X : qbs R) (p : qbs_prob_space X) :
+Definition qps_canon (X : qbsType R) (p : qbs_prob_space X) :
   qbs_prob_space X :=
   QPS (proj1_sig (boolp.constructive_indefinite_description
     (ex_intro (fun q => qbs_prob_equiv X (qps_repr p) q)
       (qps_repr p) (qbs_prob_equiv_refl (qps_repr p))))).
 
-Lemma qps_canon_equiv (X : qbs R) (p : qbs_prob_space X) :
+Lemma qps_canon_equiv (X : qbsType R) (p : qbs_prob_space X) :
   qps_eq p (qps_canon p).
 Proof.
 rewrite /qps_canon /qps_eq /=.
