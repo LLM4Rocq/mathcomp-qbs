@@ -1,10 +1,18 @@
-(* -------------------------------------------------------------------- *)
-(* Embedding Classical Probability into QBS Probability (Section 12)    *)
-(*                                                                      *)
-(* Shows how standard probability measures on standard Borel spaces     *)
-(* embed into QBS probability triples, and constructs standard          *)
-(* distributions as QBS probabilities.                                  *)
-(* -------------------------------------------------------------------- *)
+(* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
+(**md**************************************************************************)
+(* # Embedding Classical Probability into QBS Probability                     *)
+(*                                                                            *)
+(* Shows how standard probability measures on standard Borel spaces           *)
+(* embed into QBS probability triples, and constructs standard                *)
+(* distributions as QBS probabilities.                                        *)
+(*                                                                            *)
+(* ```                                                                        *)
+(*   as_qbs_prob d M f g hf hg hs P == embed probability P into R_qbs M      *)
+(*   qbs_normal_distribution mu sigma == Normal(mu, sigma) as QBS probability *)
+(*   qbs_bernoulli p == Bernoulli(p) as QBS probability on boolQ             *)
+(*   qbs_uniform == Uniform[0,1] as QBS probability on realQ                 *)
+(* ```                                                                        *)
+(******************************************************************************)
 
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra.
@@ -148,13 +156,13 @@ Qed.
 (*                                                                       *)
 (*    Key insight: since qbs_normal_distribution mu sigma has alpha =    *)
 (*    idfun for all mu, the monadP_random' condition reduces to showing *)
-(*    qbs_random (realQ R) idfun, which is just measurable_id.          *)
+(*    qbs_Mx (realQ R) idfun, which is just measurable_id.              *)
 (* ===================================================================== *)
 
 (* The normal distribution, viewed as a function of its mean parameter,
    is a QBS morphism from realQ to monadP(realQ). *)
 Lemma qbs_normal_morph (sigma : R) (hsigma : (0 < sigma)%R) :
-  @qbs_morph R (realQ R) (monadP (realQ R))
+  @qbs_morphism R (realQ R) (monadP (realQ R))
     (fun mu => qbs_normal_distribution mu sigma hsigma).
 Proof.
 move=> alpha halpha r /=.
@@ -165,7 +173,7 @@ Qed.
    i.e., the constant function mapping any r to qbs_uniform is a
    random element of the probability monad. *)
 Lemma qbs_uniform_random :
-  @qbs_random R (monadP (realQ R)) (fun _ : mR => qbs_uniform).
+  @qbs_Mx R (monadP (realQ R)) (fun _ : mR => qbs_uniform).
 Proof.
 move=> r /=.
 exact: @measurable_id _ mR setT.

@@ -1,13 +1,23 @@
-(* -------------------------------------------------------------------- *)
-(* Bayesian Linear Regression Example (Section 13)                      *)
-(*                                                                      *)
-(* A complete Bayesian linear regression example demonstrating the      *)
-(* QBS probability monad in action:                                     *)
-(*   - Independent priors on slope and intercept (product of normals)   *)
-(*   - Likelihood function                                              *)
-(*   - Predictive distribution via pair integration                     *)
-(*   - Posterior via conditioning                                       *)
-(* -------------------------------------------------------------------- *)
+(* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
+(**md**************************************************************************)
+(* # Bayesian Linear Regression Example                                       *)
+(*                                                                            *)
+(* A complete Bayesian linear regression example demonstrating the            *)
+(* QBS probability monad in action:                                           *)
+(*   - Independent priors on slope and intercept (product of normals)         *)
+(*   - Likelihood function                                                    *)
+(*   - Predictive distribution via pair integration                           *)
+(*   - Posterior via conditioning                                             *)
+(*                                                                            *)
+(* ```                                                                        *)
+(*   slope_prior        == Normal(0,1) prior on slope                         *)
+(*   intercept_prior    == Normal(0,1) prior on intercept                     *)
+(*   likelihood_single  == likelihood for a single data point                 *)
+(*   predictive_integral == predictive integral over the prior                *)
+(*   posterior_integral  == unnormalized posterior integral                    *)
+(*   evidence            == marginal likelihood (normalizing constant)        *)
+(* ```                                                                        *)
+(******************************************************************************)
 
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra.
@@ -83,7 +93,7 @@ Definition likelihood_single (obs_x : R) :
    produces random elements of monadP(realQ R). This holds because
    the alpha component (identity) is always measurable. *)
 Lemma likelihood_single_morph (obs_x : R) :
-  @qbs_morph R (prodQ (realQ R) (realQ R)) (monadP (realQ R))
+  @qbs_morphism R (prodQ (realQ R) (realQ R)) (monadP (realQ R))
     (likelihood_single obs_x).
 Proof.
 move=> alpha halpha r /=.
@@ -93,7 +103,7 @@ Qed.
 (* The likelihood satisfies the strong morphism condition: the alpha
    component (identity) is shared across all parameters. *)
 Lemma likelihood_single_strong (obs_x : R) :
-  @qbs_morph_strong R (prodQ (realQ R) (realQ R)) (realQ R)
+  @qbs_morphism_strong R (prodQ (realQ R) (realQ R)) (realQ R)
     (likelihood_single obs_x).
 Proof.
 move=> alpha halpha.
