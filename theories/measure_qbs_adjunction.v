@@ -42,7 +42,7 @@ Lemma R_qbs_morph (d1 d2 : measure_display)
   measurable_fun setT f ->
   @qbs_morphism R (@R_qbs R _ M1) (@R_qbs R _ M2) f.
 Proof.
-move=> hf alpha /= halpha.
+move=> hf alpha; rewrite /qbs_Mx /= => halpha.
 exact: measurableT_comp hf halpha.
 Qed.
 
@@ -148,7 +148,7 @@ Lemma lr_adj_r2l (X : qbsType R) (d : measure_display)
   (forall U, measurable U -> L_sigma X (f @^-1` U)) ->
   @qbs_morphism R X (@R_qbs R _ Y) f.
 Proof.
-move=> hf alpha /= halpha _ U hU; rewrite setTI.
+move=> hf alpha; rewrite /qbs_Mx /= => halpha _ U hU; rewrite setTI.
 exact: (hf U hU alpha halpha).
 Qed.
 
@@ -177,10 +177,10 @@ Lemma R_preserves_prod (d1 d2 : measure_display)
   @qbs_Mx R (@prodQ R (@R_qbs R _ M1) (@R_qbs R _ M2)) alpha.
 Proof.
 split.
-- move=> /= halpha; split;
+- rewrite /qbs_Mx /= => halpha; split;
     [exact: measurableT_comp measurable_fst halpha |
      exact: measurableT_comp measurable_snd halpha].
-- move=> /= [h1 h2]; apply/measurable_fun_pairP; split; exact.
+- rewrite /qbs_Mx /=; move=> [h1 h2]; apply/measurable_fun_pairP; split; exact.
 Qed.
 
 (* ===================================================================== *)
@@ -241,7 +241,7 @@ Lemma adjunction_counit (d : measure_display) (M : measurableType d)
     (U : set M) :
   measurable U -> L_sigma (@R_qbs R _ M) U.
 Proof.
-move=> hU alpha /= halpha.
+move=> hU alpha; rewrite /qbs_Mx /= => halpha.
 have := halpha measurableT U hU; rewrite setTI; exact.
 Qed.
 

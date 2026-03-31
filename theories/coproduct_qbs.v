@@ -188,13 +188,13 @@ exists P', a', b''; split; [|split; [|split]].
 Qed.
 
 Definition coprodQ (X Y : qbsType R) : qbsType R :=
-  (* NB: manual QBSpace.Pack because sum types lack a canonical QBS instance *)
-  QBSpace.Pack (QBSpace.Class
+  (* NB: manual HB.pack because sum types lack a canonical QBS instance *)
+  HB.pack (X + Y)%type
     (@isQBS.Build R (X + Y)%type
       (coprodQ_random X Y)
       (coprodQ_Mx_comp (X:=X) (Y:=Y))
       (coprodQ_Mx_const (X:=X) (Y:=Y))
-      (coprodQ_Mx_glue (X:=X) (Y:=Y)))).
+      (coprodQ_Mx_glue (X:=X) (Y:=Y))).
 
 Arguments coprodQ : clear implicits.
 
@@ -205,14 +205,14 @@ Arguments coprodQ : clear implicits.
 Lemma qbs_morphism_inl (X Y : qbsType R) :
   @qbs_morphism R X (coprodQ X Y) (@inl X Y).
 Proof.
-move=> h ha /=.
+move=> h ha; rewrite /qbs_Mx /=.
 left; exists h; split => //.
 Qed.
 
 Lemma qbs_morphism_inr (X Y : qbsType R) :
   @qbs_morphism R Y (coprodQ X Y) (@inr X Y).
 Proof.
-move=> h hb /=.
+move=> h hb; rewrite /qbs_Mx /=.
 right; left; exists h; split => //.
 Qed.
 
@@ -359,13 +359,13 @@ Qed.
 Definition gen_coprodQ (d : measure_display) (I : measurableType d)
   (X : I -> qbsType R)
   (inh : forall i, X i) : qbsType R :=
-  (* NB: manual QBSpace.Pack because sigma types lack a canonical QBS instance *)
-  QBSpace.Pack (QBSpace.Class
+  (* NB: manual HB.pack because sigma types lack a canonical QBS instance *)
+  HB.pack {i : I & X i}
     (@isQBS.Build R {i : I & X i}
       (gen_coprodQ_random d I X)
       (gen_coprodQ_Mx_comp (I:=I) (X:=X))
       (gen_coprodQ_Mx_const (I:=I) inh)
-      (gen_coprodQ_Mx_glue (I:=I) (X:=X)))).
+      (gen_coprodQ_Mx_glue (I:=I) (X:=X))).
 
 Arguments gen_coprodQ : clear implicits.
 
@@ -375,7 +375,7 @@ Lemma qbs_morphism_gen_inj (d : measure_display) (I : measurableType d)
   (inh : forall i, X i) (i : I) :
   @qbs_morphism R (X i) (gen_coprodQ d I X inh) (fun x => existT _ i x).
 Proof.
-move=> alpha halpha /=.
+move=> alpha halpha; rewrite /qbs_Mx /=.
 exists (fun _ => i), (fun j => match boolp.pselect (j = i) with
   | left H => fun r => eq_rect _ (fun k => X k) (alpha r) _ (esym H)
   | right _ => fun _ => inh j
@@ -439,13 +439,13 @@ exact: (@qbs_Mx_glue R (X i) Q (fun n r => Fi n r i) hQ (fun n => hFi n i)).
 Qed.
 
 Definition piQ (I : Type) (X : I -> qbsType R) : qbsType R :=
-  (* NB: manual QBSpace.Pack because dependent products lack a canonical QBS instance *)
-  QBSpace.Pack (QBSpace.Class
+  (* NB: manual HB.pack because dependent products lack a canonical QBS instance *)
+  HB.pack (forall i : I, X i)
     (@isQBS.Build R (forall i : I, X i)
       (piQ_random I X)
       (piQ_closed1 (X:=X))
       (piQ_closed2 (X:=X))
-      (piQ_closed3 (X:=X)))).
+      (piQ_closed3 (X:=X))).
 
 Arguments piQ : clear implicits.
 
@@ -453,7 +453,7 @@ Arguments piQ : clear implicits.
 Lemma qbs_morphism_proj (I : Type) (X : I -> qbsType R) (i : I) :
   @qbs_morphism R (piQ I X) (X i) (fun f => f i).
 Proof.
-move=> alpha halpha /=.
+move=> alpha halpha; rewrite /qbs_Mx /=.
 exact: (halpha i).
 Qed.
 
@@ -463,7 +463,7 @@ Lemma qbs_morphism_tuple (I : Type) (X : I -> qbsType R) (W : qbsType R)
   (hfi : forall i, @qbs_morphism R W (X i) (fi i)) :
   @qbs_morphism R W (piQ I X) (fun w i => fi i w).
 Proof.
-move=> alpha halpha /= i.
+move=> alpha halpha; rewrite /qbs_Mx /= => i.
 have -> : (fun r => fi i (alpha r)) = (fi i) \o alpha by [].
 exact: (hfi i) _ halpha.
 Qed.
@@ -620,19 +620,19 @@ Qed.
 (* The list QBS. Requires an inhabitedness witness x0 for the constant
    axiom (needed to extract nth elements from constant lists). *)
 Definition listQ (X : qbsType R) (x0 : X) : qbsType R :=
-  (* NB: manual QBSpace.Pack because list types lack a canonical QBS instance *)
-  QBSpace.Pack (QBSpace.Class
+  (* NB: manual HB.pack because list types lack a canonical QBS instance *)
+  HB.pack (seq X)
     (@isQBS.Build R (seq X)
       (listQ_random X)
       (listQ_closed1 (X:=X))
       (listQ_closed2 x0)
-      (listQ_closed3 (X:=X)))).
+      (listQ_closed3 (X:=X))).
 
 (* Length is a QBS morphism from listQ to natQ *)
 Lemma qbs_morphism_length (X : qbsType R) (x0 : X) :
   @qbs_morphism R (listQ x0) (natQ R) (@size X).
 Proof.
-move=> alpha [len [Fi [hlen [hFi hdef]]]] /=.
+move=> alpha [len [Fi [hlen [hFi hdef]]]]; rewrite /qbs_Mx /=.
 have heq : size \o alpha = len.
   apply: boolp.funext => r; rewrite /= hdef size_mkseq //.
 by rewrite heq.

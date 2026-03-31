@@ -98,7 +98,7 @@ Lemma likelihood_single_morphism (obs_x : R) :
   @qbs_morphism R (prodQ (realQ R) (realQ R)) (monadP (realQ R))
     (likelihood_single obs_x).
 Proof.
-move=> alpha halpha r /=.
+move=> alpha halpha; rewrite /qbs_Mx /= => r.
 exact: (@measurable_id _ mR setT).
 Qed.
 

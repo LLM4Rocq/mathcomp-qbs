@@ -49,7 +49,7 @@ Lemma qbs_pair_alpha_random (X Y : qbsType R)
   (p : qbs_prob X) (q : qbs_prob Y) :
   @qbs_Mx R (prodQ X Y) (qbs_pair_alpha p q).
 Proof.
-split => /=.
+rewrite /qbs_Mx /=; split.
 - have -> : fst \o qbs_pair_alpha p q = qbs_prob_alpha p by [].
   exact: (qbs_prob_alpha_random p).
 - have -> : snd \o qbs_pair_alpha p q = qbs_prob_alpha q by [].

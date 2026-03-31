@@ -114,16 +114,16 @@ apply: bigcupT_measurable => i; apply: measurableI.
 - have := hFi i measurableT U mU; rewrite setTI; exact.
 Qed.
 
-(* NB: manual QBSpace.Pack because R_qbs builds a non-canonical QBS on an
+(* NB: manual HB.pack because R_qbs builds a non-canonical QBS on an
    existing measurableType *)
 Definition R_qbs (d : measure_display) (M : measurableType d) : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
+  HB.pack M
     (@isQBS.Build R M
       [set f : mR -> M | measurable_fun setT f]
       (fun alpha f (ha : measurable_fun setT alpha) hf =>
          measurableT_comp ha hf)
       (fun x => @measurable_cst _ _ mR M setT x)
-      (fun P Fi hP hFi => @measurable_glue d M P Fi hP hFi))).
+      (fun P Fi hP hFi => @measurable_glue d M P Fi hP hFi)).
 
 Definition realQ : qbsType R := R_qbs mR.
 Definition natQ : qbsType R := R_qbs nat.
@@ -175,14 +175,14 @@ move=> P Fi hP hFi; split.
   by have [] := hFi i.
 Qed.
 
-(* NB: manual QBSpace.Pack because this is a non-canonical QBS on (X * Y)%type *)
+(* NB: manual HB.pack because this is a non-canonical QBS on (X * Y)%type *)
 Definition prodQ (X Y : qbsType R) : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
+  HB.pack (X * Y)%type
     (@isQBS.Build R (X * Y)%type
       [set f | @qbs_Mx R X (fst \o f) /\ @qbs_Mx R Y (snd \o f)]
       (@prodQ_Mx_comp X Y)
       (@prodQ_Mx_const X Y)
-      (@prodQ_Mx_glue X Y))).
+      (@prodQ_Mx_glue X Y)).
 
 Arguments prodQ : clear implicits.
 
@@ -257,16 +257,16 @@ apply: (@qbs_Mx_glue _ Y Q
 move=> i; exact: hFi i _ (conj hb1 hb2).
 Qed.
 
-(* NB: manual QBSpace.Pack because this is a non-canonical QBS on (qbs_hom X Y) *)
+(* NB: manual HB.pack because this is a non-canonical QBS on (qbs_hom X Y) *)
 Definition expQ (X Y : qbsType R) : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
+  HB.pack (qbs_hom X Y)
     (@isQBS.Build R (qbs_hom X Y)
       [set g : mR -> qbs_hom X Y |
         @qbs_morphism (prodQ realQ X) Y
           (fun p : realQ * X => qbs_hom_val (g p.1) p.2)]
       (@expQ_Mx_comp X Y)
       (@expQ_Mx_const X Y)
-      (@expQ_Mx_glue X Y))).
+      (@expQ_Mx_glue X Y)).
 
 Arguments expQ : clear implicits.
 
@@ -312,7 +312,7 @@ Lemma qbs_morphism_curry (X Y Z : qbsType R)
        (fun alpha hα => qbs_hom_proof f _
           (prodQ_const_random x hα))).
 Proof.
-move=> beta hbeta /= gamma [hg1 hg2].
+move=> beta hbeta; rewrite /qbs_Mx /= => gamma [hg1 hg2].
 apply: (qbs_hom_proof f); split => /=.
 - have -> : fst \o (fun x : mR => (beta (gamma x).1, (gamma x).2)) =
             beta \o (fst \o gamma) by [].
@@ -324,14 +324,14 @@ Qed.
 
 (* ----- 6. Unit QBS ----- *)
 
-(* NB: manual QBSpace.Pack because this is a non-canonical QBS on unit *)
+(* NB: manual HB.pack because this is a non-canonical QBS on unit *)
 Definition unitQ : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
+  HB.pack unit
     (@isQBS.Build R unit
       [set _ : mR -> unit | True]
       (fun _ _ _ _ => I)
       (fun _ => I)
-      (fun _ _ _ _ => I))).
+      (fun _ _ _ _ => I)).
 
 (* Unit is terminal: unique morphism to unit *)
 Lemma qbs_morphism_unit (X : qbsType R) :
@@ -441,11 +441,11 @@ have -> : sub_proj \o (fun r => Fi (Q r) r) =
 exact: (@qbs_Mx_glue _ X Q (fun i r => sub_proj (Fi i r)) hQ (fun i => hFi i)).
 Qed.
 
-(* NB: manual QBSpace.Pack because this is a non-canonical QBS on {x : X | P x} *)
+(* NB: manual HB.pack because this is a non-canonical QBS on {x : X | P x} *)
 Definition sub_qbs : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
+  HB.pack sub_car
     (@isQBS.Build R sub_car sub_Mx
-      sub_qbs_closed1 sub_qbs_closed2 sub_qbs_closed3)).
+      sub_qbs_closed1 sub_qbs_closed2 sub_qbs_closed3).
 
 End sub_qbs_def.
 
@@ -466,13 +466,13 @@ Inductive generating_Mx (T : Type) (G : set (mR -> T))
       (forall i, generating_Mx G (Fi i)) ->
       generating_Mx G (fun r => Fi (P r) r).
 
-(* NB: manual QBSpace.Pack because this is a non-canonical QBS on T *)
+(* NB: manual HB.pack because this is a non-canonical QBS on T *)
 Definition generating_qbs (T : Type) (G : set (mR -> T)) : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
+  HB.pack T
     (@isQBS.Build R T (generating_Mx G)
       (fun alpha f ha hf => gen_comp ha hf)
       (fun x => gen_const G x)
-      (fun P Fi hP hFi => gen_glue hP hFi))).
+      (fun P Fi hP hFi => gen_glue hP hFi)).
 
 Lemma generating_qbs_incl (T : Type) (G : set (mR -> T)) :
   G `<=` @qbs_Mx R (generating_qbs G).
@@ -582,7 +582,7 @@ Lemma qbs_morphism_arg_swap (X Y Z : qbsType R) (f : qbs_hom X (expQ Y Z)) :
           (conj (@measurable_id _ mR setT) (qbs_Mx_const y))
        )).
 Proof.
-move=> beta hbeta /= gamma [hg1 hg2].
+move=> beta hbeta; rewrite /qbs_Mx /= => gamma [hg1 hg2].
 have hf_sg : @qbs_Mx R (expQ Y Z) (f \o (snd \o gamma)).
   exact: (qbs_hom_proof f) _ hg2.
 have hbfg : @qbs_Mx R Y (beta \o (fst \o gamma)).

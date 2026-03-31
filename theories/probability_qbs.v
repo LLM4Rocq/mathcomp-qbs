@@ -141,14 +141,14 @@ Lemma monadP_glue (X : qbsType R) :
     monadP_random' X (fun r => Fi (P r) r).
 Proof. by move=> P Fi hP hFi r; apply: hFi. Qed.
 
-(* NB: manual QBSpace.Pack because monadP creates a non-canonical QBS on qbs_prob X *)
+(* NB: manual HB.pack because monadP creates a non-canonical QBS on qbs_prob X *)
 Definition monadP (X : qbsType R) : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
+  HB.pack (qbs_prob X)
     (@isQBS.Build R (qbs_prob X)
       (monadP_random' X)
       (@monadP_comp X)
       (@monadP_const X)
-      (@monadP_glue X))).
+      (@monadP_glue X)).
 
 Arguments monadP : clear implicits.
 
@@ -188,7 +188,7 @@ Qed.
 Lemma qbs_return_random (X : qbsType R) (mu : probability mR R) :
   @qbs_morphism R X (monadP X) (qbs_return X ^~ mu).
 Proof.
-move=> alpha halpha r /=.
+move=> alpha halpha; rewrite /qbs_Mx /= => r.
 exact: (@qbs_Mx_const R X).
 Qed.
 
@@ -284,7 +284,7 @@ Lemma qbs_bind_morph (X Y : qbsType R) (f : X -> qbs_prob Y)
   @qbs_morphism R (monadP X) (monadP Y)
     (fun p => qbs_bind_strong X Y p f hf).
 Proof.
-move=> beta hbeta r /=.
+move=> beta hbeta; rewrite /qbs_Mx /= => r.
 exact: (qbs_bind_alpha_random_strong (beta r) hf).
 Qed.
 
@@ -510,7 +510,7 @@ Lemma monadP_map_morph (X Y : qbsType R) (f : qbs_hom X Y) :
   @qbs_morphism R (monadP X) (monadP Y)
     (monadP_map X Y (qbs_hom_val f) (qbs_hom_proof f)).
 Proof.
-move=> beta hbeta r /=.
+move=> beta hbeta; rewrite /qbs_Mx /= => r.
 exact: (qbs_hom_proof f) _ (hbeta r).
 Qed.
 

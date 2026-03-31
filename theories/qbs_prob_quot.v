@@ -274,13 +274,13 @@ exact: hFi.
 Qed.
 
 Definition qbs_prob_space_qbs (X : qbsType R) : qbsType R :=
-  (* NB: manual QBSpace.Pack to equip the quotient wrapper with a QBS structure *)
-  QBSpace.Pack (QBSpace.Class
+  (* NB: manual HB.pack to equip the quotient wrapper with a QBS structure *)
+  HB.pack (qbs_prob_space X)
     (@isQBS.Build R (qbs_prob_space X)
       (@qps_Mx X)
       (@qps_Mx_comp X)
       (@qps_Mx_const X)
-      (@qps_Mx_glue X))).
+      (@qps_Mx_glue X)).
 
 (* ===================================================================== *)
 (* 7. Integration on the quotient: linearity properties                  *)

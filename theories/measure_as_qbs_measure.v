@@ -166,7 +166,7 @@ Lemma qbs_normal_morphism (sigma : R) (hsigma : (0 < sigma)%R) :
   @qbs_morphism R (realQ R) (monadP (realQ R))
     (fun mu => qbs_normal_distribution mu sigma hsigma).
 Proof.
-move=> alpha halpha r /=.
+move=> alpha halpha; rewrite /qbs_Mx /= => r.
 exact: @measurable_id _ mR setT.
 Qed.
 
@@ -176,7 +176,7 @@ Qed.
 Lemma qbs_uniform_random :
   @qbs_Mx R (monadP (realQ R)) (fun _ : mR => qbs_uniform).
 Proof.
-move=> r /=.
+rewrite /qbs_Mx /= => r.
 exact: @measurable_id _ mR setT.
 Qed.
 
