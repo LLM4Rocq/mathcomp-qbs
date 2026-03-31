@@ -701,6 +701,65 @@ apply: (hU (g \o alpha)).
 exact: hg _ halpha.
 Qed.
 
+(* ===================================================================== *)
+(* 14. Strength Naturality and Coherence Laws                            *)
+(*     The monad strength commutes with morphisms and satisfies the      *)
+(*     standard coherence conditions for a strong monad.                 *)
+(* ===================================================================== *)
+
+(* Naturality: strength commutes with morphisms f : W -> W', g : X -> X' *)
+Lemma qbs_strength_natural (W W' X X' : qbsType R)
+  (f : W -> W') (g : X -> X')
+  (hf : @qbs_morphism R W W' f) (hg : @qbs_morphism R X X' g)
+  (w : W) (p : qbs_prob X) :
+  qbs_prob_equiv (prodQ W' X')
+    (monadP_map (prodQ W X) (prodQ W' X')
+      (fun wx => (f wx.1, g wx.2))
+      (@qbs_morphism_pair R (prodQ W X) W' X'
+        (f \o fst) (g \o snd)
+        (qbs_morphism_comp (@qbs_morphism_fst R W X) hf)
+        (qbs_morphism_comp (@qbs_morphism_snd R W X) hg))
+      (qbs_strength W X w p))
+    (qbs_strength W' X' (f w) (monadP_map X X' g hg p)).
+Proof. by move=> U hU. Qed.
+
+(* Unit law: projecting away the unit component recovers p *)
+Lemma qbs_strength_unit (X : qbsType R) (p : qbs_prob X) :
+  qbs_prob_equiv X
+    (monadP_map (prodQ (unitQ R) X) X snd
+      (@qbs_morphism_snd R (unitQ R) X)
+      (qbs_strength (unitQ R) X tt p))
+    p.
+Proof. by move=> U hU. Qed.
+
+(* Associativity: strength with (u,v) then reassociate = strength u then
+   strength v *)
+Lemma qbs_strength_assoc (U V X : qbsType R) (u : U) (v : V)
+  (p : qbs_prob X) :
+  qbs_prob_equiv (prodQ U (prodQ V X))
+    (monadP_map (prodQ (prodQ U V) X) (prodQ U (prodQ V X))
+      (fun t => (t.1.1, (t.1.2, t.2)))
+      (@qbs_morphism_pair R (prodQ (prodQ U V) X) U (prodQ V X)
+        (fst \o fst) (fun t => (t.1.2, t.2))
+        (qbs_morphism_comp (@qbs_morphism_fst R (prodQ U V) X)
+          (@qbs_morphism_fst R U V))
+        (@qbs_morphism_pair R (prodQ (prodQ U V) X) V X
+          (snd \o fst) snd
+          (qbs_morphism_comp (@qbs_morphism_fst R (prodQ U V) X)
+            (@qbs_morphism_snd R U V))
+          (@qbs_morphism_snd R (prodQ U V) X)))
+      (qbs_strength (prodQ U V) X (u, v) p))
+    (qbs_strength U (prodQ V X) u (qbs_strength V X v p)).
+Proof. by move=> S hS. Qed.
+
+(* Strength + return: strength of a return is a return of the pair *)
+Lemma qbs_strength_return (W X : qbsType R) (w : W) (x : X)
+  (mu : probability mR R) :
+  qbs_prob_equiv (prodQ W X)
+    (qbs_strength W X w (qbs_return X x mu))
+    (qbs_return (prodQ W X) (w, x) mu).
+Proof. by move=> U hU. Qed.
+
 End ProbabilityQBS.
 
 Arguments qbs_prob {R}.
