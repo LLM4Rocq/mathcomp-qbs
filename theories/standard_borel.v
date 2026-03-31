@@ -311,11 +311,82 @@ Definition unit_to_pair (r : R) : R * R :=
 
 Lemma bin_digits_reconstruction (x : R) :
   0 <= x < 1 -> bin_sum (bin_digits x) = x.
-Proof. Admitted.
+Proof.
+move=> /andP[hx0 hx1].
+rewrite /bin_sum /bin_digits.
+suff hcvg : (fun n => bin_partial_sum (bin_digit x) n : R^o) n
+              @[n --> \oo] --> x.
+  exact: (separation_axioms.cvg_lim _ hcvg).
+pose step := fun (y : R) => if 2%:R^-1 <= y then y *+ 2 - 1 else y *+ 2.
+pose rem := fix f n := match n with 0%N => x | n'.+1 => step (f n') end.
+have hrem_digit : forall n, bin_digit x n = (2%:R^-1 <= rem n).
+  suff hgen : forall n y, bin_digit y n = (2%:R^-1 <= iter n step y).
+    by move=> n; rewrite hgen; congr (_ <= _); elim: n => //= k ->.
+  by elim => [|k IHk] //= y; rewrite IHk -iterSr iterS.
+have hinv : forall n : nat,
+    x - bin_partial_sum (bin_digit x) n = rem n * 2%:R^-1 ^+ n :> R.
+  elim => [|k IHk].
+    by rewrite /bin_partial_sum big_ord0 subr0 expr0 mulr1.
+  rewrite /bin_partial_sum big_ord_recr /= -/bin_partial_sum hrem_digit exprSr.
+  case hle: (2%:R^-1 <= rem k).
+  - rewrite /= mul1r /step hle opprD addrA -/bin_partial_sum.
+    have -> : x - bin_partial_sum (bin_digit x) k - (2%:R^-1 ^+ k / 2) =
+              rem k * 2%:R^-1 ^+ k - 2%:R^-1 ^+ k / 2 by rewrite IHk.
+    set h := 2%:R^-1 ^+ k; rewrite mulrBl mul1r mulrnAl -mulrnAr.
+    by congr (_ * _ - _); rewrite mulr2n -splitr.
+  - rewrite /= mul0r addr0 -/bin_partial_sum IHk /step hle.
+    set h := 2%:R^-1 ^+ k; rewrite mulrnAl mulrCA.
+    by rewrite -mulrnAr mulr2n -splitr mulrC.
+have half2 : 2%:R^-1 *+ 2 = (1 : R).
+  have h : (1 : R) / 2%:R = 2%:R^-1 by rewrite div1r.
+  by rewrite /GRing.natmul /= -[2%:R^-1]h -(@Num.Theory.splitr R 1).
+have hrem_bound : forall n, 0 <= rem n /\ rem n < 1.
+  elim => [|k [IHk0 IHk1]] /=; first by split.
+  rewrite /step; case: ifP => hle; split.
+  - by rewrite subr_ge0 -half2 ler_pMn2r.
+  - by rewrite ltrBlDr -mulr2n ltr_pMn2r.
+  - have := @Num.Theory.mulrn_wge0 R (rem k) 2 IHk0; done.
+  - by rewrite -half2 ltr_pMn2r // Num.Theory.real_ltNge ?num_real // hle.
+have habs_half : `|(2%:R^-1 : R)| < 1.
+  by rewrite ger0_norm ?invr_ge0 ?ler0n // invf_lt1 ?ltr0n // ltr1n.
+have hrem_cvg : (fun n => rem n * 2%:R^-1 ^+ n : R^o) n
+                  @[n --> \oo] --> (0 : R^o).
+  apply: (@squeeze_cvgr _ _ _ _
+    (fun _ => 0 : R^o) (fun n => 2%:R^-1 ^+ n : R^o)).
+  - near=> n; apply/andP; split.
+    + apply: mulr_ge0; first by have [] := hrem_bound n.
+      by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n.
+    + rewrite -[X in _ <= X]mul1r; apply: ler_pM.
+      * by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n.
+      * by have [_ h] := hrem_bound n;
+           exact: order.Order.POrderTheory.ltW h.
+  - exact: topology_structure.cvg_cst.
+  - have := @cvg_geometric R 1 _ habs_half.
+    rewrite /geometric /=.
+    by move=> h; have : (fun n0 => 1 * 2%:R^-1 ^+ n0 : R^o) n
+      @[n --> \oo] --> 0 := h; under eq_cvg do rewrite mul1r.
+have heq : forall n, bin_partial_sum (bin_digit x) n =
+    x - rem n * 2%:R^-1 ^+ n :> R.
+  by move=> m; have h := hinv m; rewrite -h opprB addrCA subrr addr0.
+suff : (fun n => x - rem n * 2%:R^-1 ^+ n : R^o) n
+         @[n --> \oo] --> (x : R^o).
+  by move=> h; under eq_cvg do rewrite heq; exact: h.
+have -> : (x : R^o) = ((x : R^o) - (0 : R^o)) by rewrite subr0.
+apply: cvgB; first exact: topology_structure.cvg_cst.
+exact: hrem_cvg.
+Unshelve. all: end_near.
+Qed.
 
 (******************************************************************************)
 (* Round-trip properties (up to dyadic rationals, a measure-zero set)         *)
 (******************************************************************************)
+
+(* Round-trip: these follow from bin_digits_reconstruction combined with
+   the fact that bin_digits (bin_sum d) =1 d for digit sequences arising
+   from reals in [0,1). The latter is essentially uniqueness of binary
+   expansions for non-dyadic rationals. We leave these admitted pending
+   the completion of bin_digits_reconstruction by the other agent, and
+   the additional converse direction. *)
 
 Lemma unit_to_pair_to_unit (r : R) :
   0 <= r < 1 -> pair_to_unit (unit_to_pair r) = r.
@@ -327,23 +398,175 @@ Lemma pair_to_unit_to_pair (xy : R * R) :
 Proof. Admitted.
 
 (******************************************************************************)
+(* Measurability helpers                                                      *)
+(******************************************************************************)
+
+(* The doubling-and-testing step function *)
+Let step : R -> R := fun x => if (2%:R^-1 <= x) then x *+ 2 - 1 else x *+ 2.
+
+Lemma measurable_step : measurable_fun [set: R] step.
+Proof.
+rewrite /step; apply: measurable_fun_ifT.
+- apply: measurable_fun_ler; first exact: measurable_cst.
+  exact: measurable_id.
+- apply: measurable_funB; first exact: (natmul_measurable 2).
+  exact: measurable_cst.
+- exact: (natmul_measurable 2).
+Qed.
+
+Lemma measurable_iter_step (k : nat) :
+  measurable_fun [set: R] (iter k step).
+Proof.
+elim: k => [|k IHk] /=.
+- exact: measurable_id.
+- exact: measurableT_comp measurable_step IHk.
+Qed.
+
+Lemma bin_digit_iter (n : nat) (x : R) :
+  bin_digit x n = (2%:R^-1 <= iter n step x).
+Proof.
+elim: n x => [|n IHn] x //=.
+by rewrite IHn -iterSr.
+Qed.
+
+Lemma measurable_bin_digit (n : nat) :
+  measurable_fun [set: R] (fun x : R => bin_digit x n : bool).
+Proof.
+rewrite (_ : (fun x : R => _) = (fun x => 2%:R^-1 <= iter n step x)); last first.
+  by apply: boolp.funext => x; rewrite bin_digit_iter.
+apply: measurable_fun_ler.
+- exact: measurable_cst.
+- exact: measurable_iter_step.
+Qed.
+
+Lemma measurable_interleave_digit (m : nat) :
+  measurable_fun [set: R * R]
+    (fun xy : R * R => interleave (bin_digits xy.1) (bin_digits xy.2) m : bool).
+Proof.
+rewrite /interleave /bin_digits.
+case: (boolP (odd m)) => hodd /=.
+- exact: (measurableT_comp (measurable_bin_digit m./2) measurable_snd).
+- exact: (measurableT_comp (measurable_bin_digit m./2) measurable_fst).
+Qed.
+
+Lemma measurable_deinterleave_even_digit (m : nat) :
+  measurable_fun [set: R]
+    (fun x : R => deinterleave_even (bin_digits x) m : bool).
+Proof.
+rewrite /deinterleave_even /bin_digits.
+exact: measurable_bin_digit.
+Qed.
+
+Lemma measurable_deinterleave_odd_digit (m : nat) :
+  measurable_fun [set: R]
+    (fun x : R => deinterleave_odd (bin_digits x) m : bool).
+Proof.
+rewrite /deinterleave_odd /bin_digits.
+exact: measurable_bin_digit.
+Qed.
+
+(******************************************************************************)
+(* Measurability of bin_sum as a limit of measurable partial sums             *)
+(******************************************************************************)
+
+(* Helper: measurability of a single summand b%:R * c for measurable bool b *)
+Lemma measurable_bool_scale {d : measure_display} {T : measurableType d}
+    (f : T -> bool) (c : R) :
+  measurable_fun [set: T] f ->
+  measurable_fun [set: T] (fun x => (f x)%:R * c : R).
+Proof.
+move=> hf.
+rewrite (_ : (fun x => _) = (fun x => if f x then c else (0 : R))); last first.
+  by apply: boolp.funext => x; case: (f x) => /=; rewrite ?mul1r ?mul0r.
+by apply: measurable_fun_ifT => //; exact: measurable_cst.
+Qed.
+
+(******************************************************************************)
 (* Measurability                                                              *)
 (******************************************************************************)
 
-(* The partial sums are measurable as finite sums of measurable functions.    *)
-(* Each bin_digit depends only on whether floor(2^n * x) is even/odd,        *)
-(* which is measurable. The limit is measurable by measurable_fun_cvg.       *)
-
 Lemma measurable_pair_to_unit :
   measurable_fun [set: R * R] pair_to_unit.
-Proof. Admitted.
+Proof.
+rewrite /pair_to_unit /bin_sum.
+apply: (@measurable_fun_cvg _ _ R [set: R * R]
+  (fun n (xy : R * R) =>
+    bin_partial_sum (interleave (bin_digits xy.1) (bin_digits xy.2)) n)
+  (fun xy => limn (fun n =>
+    bin_partial_sum (interleave (bin_digits xy.1) (bin_digits xy.2)) n : R^o))).
+- move=> m; rewrite /bin_partial_sum.
+  elim: m => [|m IHm].
+    rewrite (_ : (fun _ : R * R => _) = (fun _ => (0 : R))); last first.
+      by apply: boolp.funext => xy; rewrite big_ord0.
+    exact: measurable_cst.
+  rewrite (_ : (fun xy : R * R => \sum_(i < m.+1) _) =
+    ((fun xy : R * R =>
+      \sum_(i < m) (interleave (bin_digits xy.1) (bin_digits xy.2) i)%:R *
+        2%:R^-1 ^+ i.+1) \+
+     (fun xy : R * R =>
+      (interleave (bin_digits xy.1) (bin_digits xy.2) m)%:R *
+        2%:R^-1 ^+ m.+1))%R); last first.
+    by apply: boolp.funext => xy; rewrite big_ord_recr.
+  apply: measurable_funD => //.
+  apply: measurable_bool_scale.
+  exact: measurable_interleave_digit.
+- move=> xy _; exact: is_cvg_bin_partial_sum.
+Qed.
 
 Lemma measurable_unit_to_pair_fst :
   measurable_fun [set: R] (fun r => (unit_to_pair r).1).
-Proof. Admitted.
+Proof.
+rewrite /unit_to_pair /= /bin_sum.
+apply: (@measurable_fun_cvg _ _ R [set: R]
+  (fun n (x : R) =>
+    bin_partial_sum (deinterleave_even (bin_digits x)) n)
+  (fun x => limn (fun n =>
+    bin_partial_sum (deinterleave_even (bin_digits x)) n : R^o))).
+- move=> m; rewrite /bin_partial_sum.
+  elim: m => [|m IHm].
+    rewrite (_ : (fun _ : R => _) = (fun _ => (0 : R))); last first.
+      by apply: boolp.funext => x; rewrite big_ord0.
+    exact: measurable_cst.
+  rewrite (_ : (fun x : R => \sum_(i < m.+1) _) =
+    ((fun x : R =>
+      \sum_(i < m) (deinterleave_even (bin_digits x) i)%:R *
+        2%:R^-1 ^+ i.+1) \+
+     (fun x : R =>
+      (deinterleave_even (bin_digits x) m)%:R *
+        2%:R^-1 ^+ m.+1))%R); last first.
+    by apply: boolp.funext => x; rewrite big_ord_recr.
+  apply: measurable_funD => //.
+  apply: measurable_bool_scale.
+  exact: measurable_deinterleave_even_digit.
+- move=> x _; exact: is_cvg_bin_partial_sum.
+Qed.
 
 Lemma measurable_unit_to_pair_snd :
   measurable_fun [set: R] (fun r => (unit_to_pair r).2).
-Proof. Admitted.
+Proof.
+rewrite /unit_to_pair /= /bin_sum.
+apply: (@measurable_fun_cvg _ _ R [set: R]
+  (fun n (x : R) =>
+    bin_partial_sum (deinterleave_odd (bin_digits x)) n)
+  (fun x => limn (fun n =>
+    bin_partial_sum (deinterleave_odd (bin_digits x)) n : R^o))).
+- move=> m; rewrite /bin_partial_sum.
+  elim: m => [|m IHm].
+    rewrite (_ : (fun _ : R => _) = (fun _ => (0 : R))); last first.
+      by apply: boolp.funext => x; rewrite big_ord0.
+    exact: measurable_cst.
+  rewrite (_ : (fun x : R => \sum_(i < m.+1) _) =
+    ((fun x : R =>
+      \sum_(i < m) (deinterleave_odd (bin_digits x) i)%:R *
+        2%:R^-1 ^+ i.+1) \+
+     (fun x : R =>
+      (deinterleave_odd (bin_digits x) m)%:R *
+        2%:R^-1 ^+ m.+1))%R); last first.
+    by apply: boolp.funext => x; rewrite big_ord_recr.
+  apply: measurable_funD => //.
+  apply: measurable_bool_scale.
+  exact: measurable_deinterleave_odd_digit.
+- move=> x _; exact: is_cvg_bin_partial_sum.
+Qed.
 
 End binary_digit_interleaving.
