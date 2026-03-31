@@ -634,7 +634,7 @@ Lemma qbs_morphism_length (X : qbsType R) (x0 : X) :
 Proof.
 move=> alpha [len [Fi [hlen [hFi hdef]]]] /=.
 have heq : size \o alpha = len.
-  apply: boolp.funext => r; rewrite /= hdef size_mkseq //.
+  apply: boolp.funeqE => r; rewrite /= hdef size_mkseq //.
 by rewrite heq.
 Qed.
 
@@ -648,7 +648,7 @@ Proof.
 move=> alpha [len [Fi [hlen [hFi hdef]]]].
 have heq : (fun r => nth x0 (alpha r) i) =
           (fun r => if i < len r then Fi i r else x0).
-  apply: boolp.funext => r; rewrite hdef.
+  apply: boolp.funeqE => r; rewrite hdef.
   case hlt : (i < len r).
   - by rewrite nth_mkseq.
   - rewrite nth_default //; rewrite size_mkseq.
@@ -665,7 +665,7 @@ have hP : measurable_fun setT P.
   - exact: measurable_cst.
 have heq2 : (fun r => if i < len r then Fi i r else x0) =
           (fun r => Gi (P r) r).
-  apply: boolp.funext => r; rewrite /Gi /P.
+  apply: boolp.funeqE => r; rewrite /Gi /P.
   by case: (i < len r).
 rewrite heq2.
 apply: (@qbs_Mx_glue R X P Gi hP).

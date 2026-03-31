@@ -76,7 +76,7 @@ Definition intercept_prior : qbs_prob (realQ R) :=
 
 (* Observation noise standard deviation *)
 Variable (noise_sigma : R).
-Variable (noise_sigma_pos : (0 < noise_sigma)%R).
+Hypothesis noise_sigma_pos : (0 < noise_sigma)%R.
 
 (* The likelihood for a single data point (obs_x, obs_y):
    Given parameters (slope, intercept), produce a distribution on

@@ -221,7 +221,7 @@ move=> [phi1 [psi1 [hphi1 [hpsi1 hpsi1phi1]]]]
 have hfpsi1 : measurable_fun setT (f \o psi1).
   exact: (hf psi1 hpsi1).
 have heq : f = psi2 \o (phi2 \o f \o psi1) \o phi1.
-  apply: boolp.funext => x /=; rewrite hpsi1phi1 hpsi2phi2; reflexivity.
+  by apply: boolp.funext => x /=; rewrite hpsi1phi1 hpsi2phi2.
 rewrite heq; apply: measurableT_comp; last exact: hphi1.
 apply: measurableT_comp; first exact: hpsi2.
 exact: measurableT_comp hphi2 hfpsi1.
