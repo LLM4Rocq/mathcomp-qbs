@@ -19,7 +19,7 @@ From QBS Require Import quasi_borel.
 (*   qbs_return / qbs_bind == monadic operations                              *)
 (*   qbs_integral  == integration against a QBS probability                   *)
 (* ```                                                                        *)
-(*****************************************************************************)
+(******************************************************************************)
 
 Import Num.Def Num.Theory reals classical_sets.
 
