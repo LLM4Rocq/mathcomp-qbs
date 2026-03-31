@@ -386,9 +386,60 @@ Qed.
 (* Round-trip: these follow from bin_digits_reconstruction combined with
    the fact that bin_digits (bin_sum d) =1 d for digit sequences arising
    from reals in [0,1). The latter is essentially uniqueness of binary
-   expansions for non-dyadic rationals. We leave these admitted pending
-   the completion of bin_digits_reconstruction by the other agent, and
-   the additional converse direction. *)
+   expansions for non-dyadic rationals. *)
+
+(* Extensionality: pointwise equal digit sequences have the same sum *)
+Lemma bin_sum_ext (d1 d2 : nat -> bool) :
+  d1 =1 d2 -> bin_sum d1 = bin_sum d2.
+Proof.
+move=> heq; rewrite /bin_sum; congr (limn _).
+apply: boolp.funext => n.
+rewrite /bin_partial_sum; apply: eq_bigr => i _.
+by rewrite (heq i).
+Qed.
+
+(* A digit sequence is "canonical" if it has no infinite trailing ones,
+   i.e., there exists a false digit at or beyond every position. *)
+Definition no_trailing_ones (d : nat -> bool) : Prop :=
+  forall N : nat, exists n, (N <= n)%N /\ d n = false.
+
+(* bin_digits x has no trailing ones for x in [0,1).
+   Proof: if all digits from N onward are 1, then the remainder
+   at position N would satisfy rem(N+k) = 2^k*(rem N - 1) + 1,
+   which goes to -infinity since rem N < 1, contradicting rem >= 0. *)
+Lemma bin_digits_no_trailing_ones (x : R) :
+  0 <= x < 1 -> no_trailing_ones (bin_digits x).
+Proof. Admitted.
+
+(* Interleaving preserves the no-trailing-ones property *)
+Lemma interleave_no_trailing_ones (d1 d2 : nat -> bool) :
+  no_trailing_ones d1 -> no_trailing_ones d2 ->
+  no_trailing_ones (interleave d1 d2).
+Proof.
+move=> h1 h2 N.
+have [n1 [hn1 hd1]] := h1 N./2.+1.
+exists (n1.*2)%N; split.
+  have hlt : (N./2.*2 < n1.*2)%N by rewrite ltn_double.
+  have hN : N = (odd N + N./2.*2)%N by rewrite odd_double_half.
+  by rewrite hN; exact: (leq_trans (leq_add (leq_b1 _) (leqnn _)) hlt).
+by rewrite /interleave odd_double /= half_double.
+Qed.
+
+(* The converse of reconstruction: bin_digits (bin_sum d) =1 d
+   for canonical digit sequences (no trailing ones).
+
+   This is the uniqueness of binary expansions: there is only one
+   representation of a real in [0,1) without trailing ones. *)
+Lemma bin_digits_bin_sum (d : nat -> bool) :
+  no_trailing_ones d -> bin_digits (bin_sum d) =1 d.
+Proof.
+Admitted.
+
+(* bin_sum of a sequence with no trailing ones is < 1 *)
+Lemma bin_sum_no_trailing_lt1 (d : nat -> bool) :
+  no_trailing_ones d -> bin_sum d < 1.
+Proof.
+Admitted.
 
 Lemma unit_to_pair_to_unit (r : R) :
   0 <= r < 1 -> pair_to_unit (unit_to_pair r) = r.
@@ -397,7 +448,27 @@ Proof. Admitted.
 Lemma pair_to_unit_to_pair (xy : R * R) :
   0 <= xy.1 < 1 -> 0 <= xy.2 < 1 ->
   unit_to_pair (pair_to_unit xy) = xy.
-Proof. Admitted.
+Proof.
+move=> hx hy.
+set d1 := bin_digits xy.1.
+set d2 := bin_digits xy.2.
+have hnt1 := bin_digits_no_trailing_ones hx.
+have hnt2 := bin_digits_no_trailing_ones hy.
+have hnt12 := interleave_no_trailing_ones hnt1 hnt2.
+have hconv := bin_digits_bin_sum hnt12.
+rewrite /unit_to_pair /pair_to_unit -/d1 -/d2.
+apply: injective_projections; rewrite /=.
+- have h1 : deinterleave_even (bin_digits (bin_sum (interleave d1 d2))) =1 d1.
+    move=> n; rewrite /deinterleave_even (hconv (n.*2)%N).
+    exact: deinterleave_interleaveK_even.
+  rewrite (bin_sum_ext h1).
+  by rewrite /d1 bin_digits_reconstruction.
+- have h2 : deinterleave_odd (bin_digits (bin_sum (interleave d1 d2))) =1 d2.
+    move=> n; rewrite /deinterleave_odd (hconv (n.*2.+1)%N).
+    exact: deinterleave_interleaveK_odd.
+  rewrite (bin_sum_ext h2).
+  by rewrite /d2 bin_digits_reconstruction.
+Qed.
 
 (******************************************************************************)
 (* Measurability helpers                                                      *)
