@@ -488,6 +488,43 @@ have hgp_fin := expectation_fin_num (Lfun_subset12 mu_q_fin hg1).
 by rewrite fin_numM.
 Qed.
 
+(* ===================================================================== *)
+(* 7. Commutativity of the probability monad (Proposition 22)            *)
+(*    The two ways of combining P(X) x P(Y) -> P(X x Y) agree:          *)
+(*    integrating h w.r.t. the product mu_p x mu_q with alphas          *)
+(*    (alpha_p, alpha_q) equals integrating h(swap) w.r.t. mu_q x mu_p  *)
+(*    with alphas (alpha_q, alpha_p). Follows from Fubini's theorem.     *)
+(* ===================================================================== *)
+
+Lemma qbs_pair_integral_comm (X Y : qbsType R)
+  (p : qbs_prob X) (q : qbs_prob Y)
+  (h : X * Y -> \bar R)
+  (hint : (qbs_prob_mu p \x qbs_prob_mu q).-integrable
+    setT (qbs_pair_fun p q h))
+  (hint' : (qbs_prob_mu q \x qbs_prob_mu p).-integrable
+    setT (qbs_pair_fun q p (fun yx => h (yx.2, yx.1)))) :
+  qbs_pair_integral X Y p q h =
+  qbs_pair_integral Y X q p (fun yx => h (yx.2, yx.1)).
+Proof.
+rewrite /qbs_pair_integral.
+set f := (fun rr : mR * mR =>
+  h (qbs_prob_alpha p rr.1, qbs_prob_alpha q rr.2)).
+transitivity (\int[qbs_prob_mu p]_r1 \int[qbs_prob_mu q]_r2 f (r1, r2)).
+  symmetry; exact: integral12_prod_meas1.
+transitivity (\int[qbs_prob_mu q]_r2 \int[qbs_prob_mu p]_r1 f (r1, r2)).
+  exact: Fubini.
+set g := (fun rr : mR * mR =>
+  h (qbs_prob_alpha p rr.2, qbs_prob_alpha q rr.1)).
+have fg : forall r2 r1, f (r1, r2) = g (r2, r1) by [].
+under eq_integral do under eq_integral do rewrite fg.
+have hint'' : (qbs_prob_mu q \x qbs_prob_mu p).-integrable setT g.
+  rewrite /g /qbs_pair_fun in hint' |- *.
+  exact: hint'.
+rewrite -(@integral12_prod_meas1 _ _ _ _ _
+  (qbs_prob_mu q) (qbs_prob_mu p) g hint'').
+by apply: eq_integral => r1 _; apply: eq_integral => r2 _.
+Qed.
+
 End PairQBSMeasure.
 
 Arguments qbs_prob_pair {R X Y}.
