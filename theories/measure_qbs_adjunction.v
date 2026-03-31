@@ -1,7 +1,11 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
-From mathcomp.analysis Require Import all_analysis. (* TODO: replace all_analysis with specific imports *)
+From mathcomp.reals Require Import reals.
+From mathcomp.classical Require Import classical_sets.
+From mathcomp.analysis Require Import measure_theory.measurable_structure.
+From mathcomp.analysis Require Import measure_theory.measurable_function.
+From mathcomp.analysis Require Import borel_hierarchy lebesgue_stieltjes_measure.
 From QBS Require Import quasi_borel.
 
 Import Num.Def Num.Theory reals classical_sets.
