@@ -538,7 +538,33 @@ Qed.
    representation of a real in [0,1) without trailing ones. *)
 Lemma bin_sum_shift (d : nat -> bool) :
   bin_sum d = (d 0%N)%:R * 2%:R^-1 + bin_sum (d \o succn) * 2%:R^-1.
-Proof. Admitted.
+Proof.
+have hrel : forall n : nat,
+  bin_partial_sum d n.+1 = (d 0%N)%:R * 2%:R^-1 + bin_partial_sum (d \o succn) n * 2%:R^-1.
+  move=> n; rewrite /bin_partial_sum big_ord_recl /=.
+  congr (_ + _).
+  rewrite /= mulr_suml; apply: eq_bigr => i _.
+  by rewrite /bump leq0n /= exprSr mulrA.
+rewrite /bin_sum.
+have hcvg1 : cvgn (fun n => bin_partial_sum d n : R^o).
+  exact: is_cvg_bin_partial_sum.
+have hcvg2 : cvgn (fun n => bin_partial_sum (d \o succn) n : R^o).
+  exact: is_cvg_bin_partial_sum.
+have hlim_shift : limn [eta bin_partial_sum d] =
+  limn (fun n => bin_partial_sum d n.+1 : R^o).
+  apply/esym; apply: separation_axioms.cvg_lim => //.
+  by rewrite cvg_shiftS.
+rewrite hlim_shift.
+have -> : (fun n => bin_partial_sum d n.+1 : R^o) =
+  (fun n => (d 0%N)%:R * 2%:R^-1 + bin_partial_sum (d \o succn) n * 2%:R^-1 : R^o).
+  by apply: boolp.funext => n; rewrite hrel.
+apply: separation_axioms.cvg_lim => //.
+have hcst : (fun _ : nat => (d 0%N)%:R * 2%:R^-1 : R^o) n @[n --> \oo] --> ((d 0%N)%:R * 2%:R^-1 : R^o).
+  exact: topology_structure.cvg_cst.
+have hprod : (fun n : nat => bin_partial_sum (d \o succn) n * 2%:R^-1 : R^o) n @[n --> \oo] --> (limn [eta bin_partial_sum (d \o succn)] * 2%:R^-1 : R^o).
+  exact: cvgMr_tmp.
+exact: cvgD hcst hprod.
+Qed.
 
 Lemma no_trailing_ones_shift (d : nat -> bool) :
   no_trailing_ones d -> no_trailing_ones (d \o succn).
@@ -560,39 +586,60 @@ elim: n d hnt => [|n IHn] dd hnt.
   + rewrite mul1r; apply/idP.
     have hge0 : 0 <= bin_sum (dd \o succn) * 2%:R^-1.
       by apply: mulr_ge0; [exact: bin_sum_ge0|rewrite invr_ge0; apply: ler0n].
-    exact: order.Order.POrderTheory.le_trans (lerDl _ _) (lerDr _ _).
-  + rewrite mul0r add0r; apply/negP; rewrite -real_ltNge ?num_real //.
-    rewrite ltr_pdivrMr ?ltr0n // mul1r.
+    rewrite lerDl //.
+  + rewrite mul0r add0r; apply: order.Order.POrderTheory.lt_geF.
+    rewrite ltr_pdivrMr ?ltr0n // mulVf ?pnatr_eq0 //.
     exact: bin_sum_no_trailing_lt1 (no_trailing_ones_shift hnt).
 - rewrite /bin_digits /=.
   have hnt' := no_trailing_ones_shift hnt.
-  rewrite -(IHn (dd \o succn) hnt') /bin_digits.
-  congr (bin_digit _ n).
-  rewrite bin_sum_shift.
-  case hd0 : (dd 0%N) => /=.
-  + rewrite mul1r.
-    have hge : 2%:R^-1 <= 2%:R^-1 + bin_sum (dd \o succn) * 2%:R^-1.
-      by rewrite -(addr0 (2%:R^-1)) lerD2l; apply: mulr_ge0;
-         [exact: bin_sum_ge0|rewrite invr_ge0; apply: ler0n].
-    rewrite hge -mulr_natr.
-    change ((2%:R^-1 + bin_sum (dd \o succn) * 2%:R^-1) * 2 - 1 =
-            bin_sum (dd \o succn) :> R).
-    by rewrite mulrDl divff ?pnatr_eq0 // mulrCA divff ?pnatr_eq0 // mulr1
-               addrC addKr.
-  + rewrite mul0r add0r.
-    have hlt : bin_sum (dd \o succn) * 2%:R^-1 < 2%:R^-1.
-      rewrite ltr_pdivrMr ?ltr0n // mulrC -ltr_pdivrMr ?ltr0n //.
-      rewrite divff ?lt0r_neq0 ?ltr0n //.
-      exact: bin_sum_no_trailing_lt1 hnt'.
-    rewrite (negbTE (negP _)); last by rewrite -real_ltNge ?num_real.
-    rewrite -mulr_natr.
-    change (bin_sum (dd \o succn) * 2%:R^-1 * 2 = bin_sum (dd \o succn) :> R).
-    by rewrite mulrCA divff ?pnatr_eq0 // mulr1.
+  have hstep : (if 2%:R^-1 <= bin_sum dd then bin_sum dd *+ 2 - 1
+                else bin_sum dd *+ 2) = bin_sum (dd \o succn).
+    rewrite bin_sum_shift.
+    case hd0 : (dd 0%N) => /=.
+    + rewrite mul1r.
+      have hge : 2%:R^-1 <= (2%:R^-1 + bin_sum (dd \o succn) * 2%:R^-1).
+        by rewrite lerDl //; apply: mulr_ge0;
+           [exact: bin_sum_ge0|rewrite invr_ge0; apply: ler0n].
+      rewrite hge.
+      rewrite mulrnDl -[2^-1 *+ 2]mulr_natr mulVf ?pnatr_eq0 //.
+      rewrite -[_ / 2 *+ 2]mulr_natr -mulrA mulVf ?pnatr_eq0 // mulr1.
+      by rewrite addrC addKr.
+    + rewrite mul0r add0r.
+      have hlt : bin_sum (dd \o succn) / 2 < 2%:R^-1.
+        have hlt1 := bin_sum_no_trailing_lt1 hnt'.
+        rewrite ltr_pdivrMr ?ltr0n // mulVf ?pnatr_eq0 //.
+      rewrite (order.Order.POrderTheory.lt_geF hlt).
+      rewrite -[_ / 2 *+ 2]mulr_natr -mulrA mulVf ?pnatr_eq0 // mulr1 //.
+  rewrite hstep.
+  exact: (IHn (dd \o succn) hnt').
 Qed.
 
 Lemma unit_to_pair_to_unit (r : R) :
-  0 <= r < 1 -> pair_to_unit (unit_to_pair r) = r.
-Proof. Admitted.
+  0 <= r < 1 ->
+  no_trailing_ones (deinterleave_even (bin_digits r)) ->
+  no_trailing_ones (deinterleave_odd (bin_digits r)) ->
+  pair_to_unit (unit_to_pair r) = r.
+Proof.
+move=> hr hnte hnto.
+set de := deinterleave_even (bin_digits r).
+set do_ := deinterleave_odd (bin_digits r).
+have hnt := bin_digits_no_trailing_ones hr.
+have hnt_de : no_trailing_ones de := hnte.
+have hnt_do : no_trailing_ones do_ := hnto.
+have hconv_de := bin_digits_bin_sum hnt_de.
+have hconv_do := bin_digits_bin_sum hnt_do.
+rewrite /pair_to_unit /unit_to_pair /= -/de -/do_.
+have heq : interleave (bin_digits (bin_sum de)) (bin_digits (bin_sum do_)) =1 bin_digits r.
+  move=> n; rewrite /interleave.
+  case: (boolP (odd n)) => hodd /=.
+  - have := odd_double_half n; rewrite hodd /= add1n => heq.
+    rewrite (hconv_do n./2) /do_ /deinterleave_odd.
+    by rewrite heq.
+  - rewrite (hconv_de n./2) /de /deinterleave_even.
+    by rewrite even_halfK.
+rewrite (bin_sum_ext heq).
+by rewrite /de /do_ bin_digits_reconstruction.
+Qed.
 
 Lemma pair_to_unit_to_pair (xy : R * R) :
   0 <= xy.1 < 1 -> 0 <= xy.2 < 1 ->
