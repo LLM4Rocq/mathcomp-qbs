@@ -235,24 +235,24 @@ case=> [[a [ha hdef]] | [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
 - (* gamma factors through inl *)
   have heq : (fun s => match s with inl x => f x | inr y => g y end) \o gamma =
               f \o a.
-  { rewrite boolp.funeqE => r; rewrite /= hdef //. }
+  { apply: boolp.funext => r; rewrite /= hdef //. }
   by rewrite heq; exact: hf _ ha.
 - (* gamma factors through inr *)
   have heq : (fun s => match s with inl x => f x | inr y => g y end) \o gamma =
               g \o b'.
-  { rewrite boolp.funeqE => r; rewrite /= hdef //. }
+  { apply: boolp.funext => r; rewrite /= hdef //. }
   by rewrite heq; exact: hg _ hb.
 - (* gamma is a measurable gluing: use qbs_Mx_glue *)
   have heq : (fun s => match s with inl x => f x | inr y => g y end) \o gamma =
               fun r => if P r then f (a r) else g (b' r).
-  { rewrite boolp.funeqE => r; rewrite /= hdef; by case: (P r). }
+  { apply: boolp.funext => r; rewrite /= hdef; by case: (P r). }
   rewrite heq.
   set Pn : mR -> nat := fun r => if P r then 0 else 1.
   set Gi : nat -> mR -> Z :=
     fun i => if i == 0 then f \o a else g \o b'.
   have heq2 : (fun r => if P r then f (a r) else g (b' r)) =
                (fun r => Gi (Pn r) r).
-  { rewrite boolp.funeqE => r; rewrite /Gi /Pn.
+  { apply: boolp.funext => r; rewrite /Gi /Pn.
     by case: (P r). }
   rewrite heq2.
   apply: (@qbs_Mx_glue R Z Pn Gi).
@@ -634,7 +634,7 @@ Lemma qbs_morphism_length (X : qbsType R) (x0 : X) :
 Proof.
 move=> alpha [len [Fi [hlen [hFi hdef]]]] /=.
 have heq : size \o alpha = len.
-  apply: boolp.funeqE => r; rewrite /= hdef size_mkseq //.
+  apply: boolp.funext => r; rewrite /= hdef size_mkseq //.
 by rewrite heq.
 Qed.
 
@@ -648,7 +648,7 @@ Proof.
 move=> alpha [len [Fi [hlen [hFi hdef]]]].
 have heq : (fun r => nth x0 (alpha r) i) =
           (fun r => if i < len r then Fi i r else x0).
-  apply: boolp.funeqE => r; rewrite hdef.
+  apply: boolp.funext => r; rewrite hdef.
   case hlt : (i < len r).
   - by rewrite nth_mkseq.
   - rewrite nth_default //; rewrite size_mkseq.
@@ -665,7 +665,7 @@ have hP : measurable_fun setT P.
   - exact: measurable_cst.
 have heq2 : (fun r => if i < len r then Fi i r else x0) =
           (fun r => Gi (P r) r).
-  apply: boolp.funeqE => r; rewrite /Gi /P.
+  apply: boolp.funext => r; rewrite /Gi /P.
   by case: (i < len r).
 rewrite heq2.
 apply: (@qbs_Mx_glue R X P Gi hP).
