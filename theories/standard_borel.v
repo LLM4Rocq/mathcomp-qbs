@@ -354,11 +354,14 @@ have hrem_cvg : (fun n => rem n * 2%:R^-1 ^+ n : R^o) n
   apply: (@squeeze_cvgr _ _ _ _
     (fun _ => 0 : R^o) (fun n => 2%:R^-1 ^+ n : R^o)).
   - near=> n; apply/andP; split.
-    + by have [] := hrem_bound n.
-    + by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n.
-    + by have [_ h] := hrem_bound n;
-         exact: order.Order.POrderTheory.ltW h.
-    + by [].
+    + apply: mulr_ge0; first by have [] := hrem_bound n.
+      by apply: Num.Theory.exprn_ge0; rewrite invr_ge0; apply: ler0n.
+    + rewrite -[X in _ <= X]mul1r; apply: ler_pM.
+      * by have [] := hrem_bound n.
+      * by apply: (@Num.Theory.exprn_ge0 R); rewrite invr_ge0; apply: ler0n.
+      * by have [_ h] := hrem_bound n;
+           exact: order.Order.POrderTheory.ltW h.
+      * by [].
   - exact: topology_structure.cvg_cst.
   - have := @cvg_geometric R 1 _ habs_half.
     rewrite /geometric /=.
@@ -372,7 +375,7 @@ suff : (fun n => x - rem n * 2%:R^-1 ^+ n : R^o) n
   by move=> h; under eq_cvg do rewrite heq; exact: h.
 have : (fun n : nat => (x : R^o)) n @[n --> \oo] --> x.
   exact: topology_structure.cvg_cst.
-by move=> hcstx; have := cvgB hcstx hrem_cvg; rewrite subr0.
+move=> hcstx; have := cvgB hcstx hrem_cvg; rewrite subr0; exact.
 Unshelve. all: end_near.
 Qed.
 
