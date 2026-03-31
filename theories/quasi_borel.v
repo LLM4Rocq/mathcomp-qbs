@@ -6,11 +6,10 @@ From mathcomp.classical Require Import classical_sets.
 From mathcomp.analysis Require Import topology_theory.num_topology.
 From mathcomp.analysis Require Import measure_theory.measurable_structure.
 From mathcomp.analysis Require Import measure_theory.measurable_function.
-From mathcomp.analysis Require Import borel_hierarchy.
 From mathcomp.analysis Require Import lebesgue_stieltjes_measure.
 From mathcomp.analysis Require Import measurable_realfun.
 
-Import Num.Def Num.Theory reals classical_sets.
+Import Num.Def Num.Theory.
 Import numFieldTopology.Exports.
 
 Set Implicit Arguments.
@@ -635,7 +634,7 @@ move=> beta; elim => {beta}.
 Qed.
 
 (* map_qbs is functorial: identity *)
-Lemma map_qbs_morph_id (X Y Z : qbsType R) (f : X -> Y) (g : Y -> Z)
+Lemma map_qbs_morphism_out (X Y Z : qbsType R) (f : X -> Y) (g : Y -> Z)
   (hf : @qbs_morphism X Y f) (hg : @qbs_morphism Y Z g) :
   @qbs_morphism (map_qbs hf) Z g.
 Proof.
