@@ -3,9 +3,9 @@
 **Project:** QBS -- Quasi-Borel Spaces in Rocq/Coq
 **Repository:** `/home/rocq/QBS`
 **Date:** 2026-03-26
-**Status:** 124 proofs completed (Qed/Defined), 0 Admitted, 0 custom axioms
-**Lines of Rocq:** 3856 across 8 files
-**Declarations:** 253 total (79 Definitions, 167 Lemmas, 3 Records, 1 HB mixin, 1 HB structure, 1 Inductive)
+**Status:** 175 proofs completed (173 Qed + 2 Defined), 0 Admitted, 0 custom axioms
+**Lines of Rocq:** 5174 across 9 files
+**Declarations:** 330 total (92 Definitions, 226 Lemmas, 2 Theorems, 3 Records, 1 Fixpoint, 1 Inductive, 1 HB mixin, 1 HB structure)
 
 **Primary references:**
 - C. Heunen, O. Kammar, S. Staton, H. Yang.
@@ -42,7 +42,7 @@
   - [1.15 Image QBS](#115-image-qbs)
   - [1.16 Order Structure](#116-order-structure)
   - [1.17 L-R Adjunction](#117-l-r-adjunction)
-  - [1.18 Standard Borel Spaces](#118-standard-borel-spaces)
+  - [1.18 Standard Borel Spaces (Definition and Full Faithfulness)](#118-standard-borel-spaces-definition-and-full-faithfulness)
   - [1.19 Coproducts (Binary)](#119-coproducts-binary)
   - [1.20 Coproducts (General / Sigma Type)](#120-coproducts-general--sigma-type)
   - [1.21 Dependent Products (Pi Type)](#121-dependent-products-pi-type)
@@ -61,26 +61,35 @@
   - [2.11 Variance](#211-variance)
   - [2.12 Monad Join](#212-monad-join)
   - [2.13 Monad Strength](#213-monad-strength)
-  - [2.14 Bind Respects Equivalence](#214-bind-respects-equivalence)
-  - [2.15 Quotient Type for QBS Probability](#215-quotient-type-for-qbs-probability)
-  - [2.16 Product Measures and Fubini](#216-product-measures-and-fubini)
-  - [2.17 Independence](#217-independence)
-  - [2.18 Variance of Independent Sums](#218-variance-of-independent-sums)
-  - [2.19 Classical Distributions](#219-classical-distributions)
-  - [2.20 Bayesian Linear Regression](#220-bayesian-linear-regression)
-- [Part III: Architecture and Comparison](#part-iii-architecture-and-comparison)
-  - [3.1 File Dependency Graph](#31-file-dependency-graph)
-  - [3.2 Design Decisions](#32-design-decisions)
-  - [3.3 Comparison with Isabelle AFP](#33-comparison-with-isabelle-afp)
-  - [3.4 Math-Comp Analysis Dependencies](#34-math-comp-analysis-dependencies)
-  - [3.5 Statistics](#35-statistics)
-  - [3.6 Remaining Work](#36-remaining-work)
+  - [2.14 Strength Naturality and Coherence](#214-strength-naturality-and-coherence)
+  - [2.15 Bind Respects Equivalence](#215-bind-respects-equivalence)
+  - [2.16 Quotient Type for QBS Probability](#216-quotient-type-for-qbs-probability)
+  - [2.17 Product Measures and Fubini](#217-product-measures-and-fubini)
+  - [2.18 Independence](#218-independence)
+  - [2.19 Variance of Independent Sums](#219-variance-of-independent-sums)
+  - [2.20 Commutativity of the Probability Monad](#220-commutativity-of-the-probability-monad)
+  - [2.21 Classical Distributions](#221-classical-distributions)
+  - [2.22 Bayesian Linear Regression](#222-bayesian-linear-regression)
+- [Part III: Standard Borel Spaces and Architecture](#part-iii-standard-borel-spaces-and-architecture)
+  - [3.1 Standard Borel: R to (0,1) Bijection](#31-standard-borel-r-to-01-bijection)
+  - [3.2 Binary Digit Machinery](#32-binary-digit-machinery)
+  - [3.3 Digit Interleaving and Pairing](#33-digit-interleaving-and-pairing)
+  - [3.4 Round-Trip Properties](#34-round-trip-properties)
+  - [3.5 Measurability of the Bijection Components](#35-measurability-of-the-bijection-components)
+  - [3.6 Composed Bijection R x R to R](#36-composed-bijection-r-x-r-to-r)
+  - [3.7 The Punchline: pair_standard_borel](#37-the-punchline-pair_standard_borel)
+  - [3.8 File Dependency Graph](#38-file-dependency-graph)
+  - [3.9 Design Decisions](#39-design-decisions)
+  - [3.10 Comparison with Isabelle AFP](#310-comparison-with-isabelle-afp)
+  - [3.11 Math-Comp Analysis Dependencies](#311-math-comp-analysis-dependencies)
+  - [3.12 Statistics](#312-statistics)
+  - [3.13 Remaining Work](#313-remaining-work)
 
 ---
 
 ## Part I: Core QBS Theory
 
-Source files: `theories/quasi_borel.v` (741 lines, 35 Qed), `theories/measure_qbs_adjunction.v` (248 lines, 12 Qed), `theories/coproduct_qbs.v` (676 lines, 22 Qed).
+Source files: `theories/quasi_borel.v` (742 lines, 35 Qed), `theories/measure_qbs_adjunction.v` (248 lines, 12 Qed), `theories/coproduct_qbs.v` (676 lines, 22 Qed).
 
 ### 1.1 The isQBS Mixin and QBSpace Structure
 
@@ -117,7 +126,7 @@ HB.structure Definition QBSpace (R : realType) := { T of isQBS R T }.
 
 **Axiom 3 (Gluing, `qbs_Mx_glue`):** Given a measurable partition selector `P : mR -> nat` and a family of random elements `Fi`, the glued function `fun r => Fi (P r) r` is a random element. This is the key axiom distinguishing QBS from mere function spaces.
 
-**NB comments on QBSpace.Pack:** Throughout the development, concrete QBS constructions (products, exponentials, coproducts, etc.) use manual `QBSpace.Pack` calls rather than HB canonical instances, because the carrier types are non-canonical (e.g., `X * Y`, `qbs_hom X Y`, `X + Y`). Each such usage is annotated with an NB comment explaining why.
+**NB comments on HB.pack:** Throughout the development, concrete QBS constructions (products, exponentials, coproducts, etc.) use manual `HB.pack` calls rather than HB canonical instances, because the carrier types are non-canonical (e.g., `X * Y`, `qbs_hom X Y`, `X + Y`). Each such usage is annotated with an NB comment explaining why.
 
 ### 1.2 Morphisms
 
@@ -169,13 +178,13 @@ Arguments qbs_hom_proof {R X Y}.
 The R functor sends a measurable type to its QBS of measurable functions:
 
 ```
-(* NB: manual QBSpace.Pack because R_qbs builds a non-canonical QBS on an
+(* NB: manual HB.pack because R_qbs builds a non-canonical QBS on an
    existing measurableType *)
 Definition R_qbs (d : measure_display) (M : measurableType d) : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
+  HB.pack M
     (@isQBS.Build R M
       [set f : mR -> M | measurable_fun setT f]
-      ...)).
+      ...).
 ```
 
 Random elements of `R_qbs M` are exactly the measurable functions `mR -> M`.
@@ -213,12 +222,12 @@ This key lemma shows that the measurable functions on a measurable type satisfy 
 **File:** `theories/quasi_borel.v`, lines 132--200
 
 ```
-(* NB: manual QBSpace.Pack because this is a non-canonical QBS on (X * Y)%type *)
+(* NB: manual HB.pack because this is a non-canonical QBS on (X * Y)%type *)
 Definition prodQ (X Y : qbsType R) : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
+  HB.pack (X * Y)%type
     (@isQBS.Build R (X * Y)%type
       [set f | @qbs_Mx R X (fst \o f) /\ @qbs_Mx R Y (snd \o f)]
-      ...)).
+      ...).
 ```
 
 A function `f : mR -> X * Y` is random in the product iff both projections are random. The three closure axioms are established by `prodQ_Mx_comp`, `prodQ_Mx_const`, `prodQ_Mx_glue`.
@@ -249,21 +258,21 @@ These are used extensively in the exponential and probability monad construction
 The exponential `expQ X Y` has bundled morphisms `qbs_hom X Y` as its carrier. A function `g : mR -> qbs_hom X Y` is random iff the uncurried map `(r, x) |-> g(r)(x)` is a morphism `prodQ realQ X -> Y`:
 
 ```
-(* NB: manual QBSpace.Pack because this is a non-canonical QBS on (qbs_hom X Y) *)
+(* NB: manual HB.pack because this is a non-canonical QBS on (qbs_hom X Y) *)
 Definition expQ (X Y : qbsType R) : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
+  HB.pack (qbs_hom X Y)
     (@isQBS.Build R (qbs_hom X Y)
       [set g : mR -> qbs_hom X Y |
         @qbs_morphism (prodQ realQ X) Y
           (fun p : realQ * X => qbs_hom_val (g p.1) p.2)]
-      ...)).
+      ...).
 ```
 
 **Post-section Arguments declaration:** `Arguments expQ : clear implicits.`
 
 The three closure axioms are established by `expQ_Mx_comp`, `expQ_Mx_const`, `expQ_Mx_glue`.
 
-**Design note:** The carrier of `expQ X Y` is `qbs_hom X Y`, a sigma type. This is one reason concrete QBS constructions use manual `QBSpace.Pack` -- the exponential carrier cannot be expressed as a canonical HB instance on bare function types.
+**Design note:** The carrier of `expQ X Y` is `qbs_hom X Y`, a sigma type. This is one reason concrete QBS constructions use manual `HB.pack` -- the exponential carrier cannot be expressed as a canonical HB instance on bare function types.
 
 ### 1.7 Cartesian Closure
 
@@ -300,14 +309,14 @@ Together, `qbs_morphism_eval` and `qbs_morphism_curry` establish that the catego
 **File:** `theories/quasi_borel.v`, lines 325--339
 
 ```
-(* NB: manual QBSpace.Pack because this is a non-canonical QBS on unit *)
+(* NB: manual HB.pack because this is a non-canonical QBS on unit *)
 Definition unitQ : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
+  HB.pack unit
     (@isQBS.Build R unit
       [set _ : mR -> unit | True]
       (fun _ _ _ _ => I)
       (fun _ => I)
-      (fun _ _ _ _ => I))).
+      (fun _ _ _ _ => I)).
 ```
 
 Every function into `unit` is random.
@@ -381,11 +390,11 @@ These delegate to the corresponding measurability lemmas from math-comp analysis
 Given a QBS `X` and a predicate `P : set X`, the subspace has carrier `{x : X | P x}` and random elements `alpha` such that `proj1_sig \o alpha` is random in X:
 
 ```
-(* NB: manual QBSpace.Pack because this is a non-canonical QBS on {x : X | P x} *)
+(* NB: manual HB.pack because this is a non-canonical QBS on {x : X | P x} *)
 Definition sub_qbs : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
+  HB.pack sub_car
     (@isQBS.Build R sub_car sub_Mx
-      sub_qbs_closed1 sub_qbs_closed2 sub_qbs_closed3)).
+      sub_qbs_closed1 sub_qbs_closed2 sub_qbs_closed3).
 ```
 
 **Closure proofs:** `sub_qbs_closed1` (composition), `sub_qbs_closed2` (constant), `sub_qbs_closed3` (gluing).
@@ -409,10 +418,10 @@ Inductive generating_Mx (T : Type) (G : set (mR -> T)) : (mR -> T) -> Prop :=
       (forall i, generating_Mx G (Fi i)) ->
       generating_Mx G (fun r => Fi (P r) r).
 
-(* NB: manual QBSpace.Pack because this is a non-canonical QBS on T *)
+(* NB: manual HB.pack because this is a non-canonical QBS on T *)
 Definition generating_qbs (T : Type) (G : set (mR -> T)) : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
-    (@isQBS.Build R T (generating_Mx G) ...)).
+  HB.pack T
+    (@isQBS.Build R T (generating_Mx G) ...).
 ```
 
 **Key properties:**
@@ -496,14 +505,6 @@ Definition qbs_supT (T : Type) (MxX MxY : set (mR -> T)) : qbsType R :=
 | `qbs_supT_ub_r` | `qbs_leT MxY (qbs_Mx (qbs_supT MxX MxY))` |
 | `qbs_supT_least` | If `MxZ` is QBS-closed and contains both, then `qbs_leT (qbs_Mx (qbs_supT MxX MxY)) MxZ` |
 
-**Post-section Arguments declarations:**
-
-```
-Arguments QBSHom {R X Y}.
-Arguments qbs_hom_val {R X Y}.
-Arguments qbs_hom_proof {R X Y}.
-```
-
 ### 1.17 L-R Adjunction
 
 **File:** `theories/measure_qbs_adjunction.v`, lines 126--164
@@ -543,7 +544,7 @@ The R functor preserves binary products: `R(M1 x M2) ~ prodQ (R M1) (R M2)`.
 | `adjunction_unit` | `qbs_Mx X alpha -> forall U, L_sigma X U -> measurable (alpha @^-1` U)` |
 | `adjunction_counit` | `measurable U -> L_sigma (R_qbs M) U` |
 
-### 1.18 Standard Borel Spaces
+### 1.18 Standard Borel Spaces (Definition and Full Faithfulness)
 
 **File:** `theories/measure_qbs_adjunction.v`, lines 190--228
 
@@ -597,32 +598,29 @@ Definition coprodQ_random (X Y : qbsType R) : set (mR -> X + Y) :=
       forall r, f r = if P r then inl (a r) else inr (b r))].
 ```
 
-A random element of the coproduct either factors entirely through `inl`, entirely through `inr`, or is a measurable boolean-controlled gluing. The gluing axiom (`coprodQ_Mx_glue`) is the most involved proof in the file, requiring case analysis on the inhabitedness of X and Y (via `boolp.pselectT`), normalization of each case to the gluing form, and use of `boolp.choice` to extract uniform witnesses.
+A random element either factors entirely through `inl`, entirely through `inr`, or is a measurable gluing of the two cases via a boolean predicate `P`. The closure proof `coprodQ_Mx_glue` is the most involved: it handles the cases where both X and Y are inhabited (normalizing each `Fi i` to case-3 form), where X is empty, and where Y is empty.
 
-```
-(* NB: manual QBSpace.Pack because sum types lack a canonical QBS instance *)
-Definition coprodQ (X Y : qbsType R) : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
-    (@isQBS.Build R (X + Y)%type ...)).
-```
-
-**Post-section Arguments declarations:** `Arguments coprodQ : clear implicits.`
-
-**Injection and case analysis morphisms:**
+**Injection morphisms:**
 
 | Name | Statement |
 |------|-----------|
 | `qbs_morphism_inl` | `qbs_morphism X (coprodQ X Y) inl` |
 | `qbs_morphism_inr` | `qbs_morphism Y (coprodQ X Y) inr` |
-| `qbs_morphism_case` | `qbs_morphism X Z f -> qbs_morphism Y Z g -> qbs_morphism (coprodQ X Y) Z (fun s => match s with inl x => f x \| inr y => g y end)` |
 
-The case analysis lemma uses `measurable_fun_ifT` and `qbs_Mx_glue` to handle the three-way disjunction in `coprodQ_random`.
+**Case analysis morphism:**
+
+```
+Lemma qbs_morphism_case (X Y Z : qbsType R) (f : X -> Z) (g : Y -> Z) :
+  qbs_morphism X Z f -> qbs_morphism Y Z g ->
+  qbs_morphism (coprodQ X Y) Z
+    (fun s => match s with inl x => f x | inr y => g y end).
+```
 
 ### 1.20 Coproducts (General / Sigma Type)
 
 **File:** `theories/coproduct_qbs.v`, lines 264--395
 
-For a family `X : I -> qbsType R` indexed by a measurable type `I`:
+The general coproduct over a measurable index type `I`:
 
 ```
 Definition gen_coprodQ_random (d : measure_display) (I : measurableType d)
@@ -633,36 +631,15 @@ Definition gen_coprodQ_random (d : measure_display) (I : measurableType d)
     (forall r, f r = existT _ (P r) (Fi (P r) r))].
 ```
 
-A random element selects an index via a measurable `P : mR -> I` and a value in the corresponding fiber via `Fi`.
+Requires an inhabitedness witness `inh : forall i, X i` for the constant axiom. The constant axiom proof uses `pselect` and `eq_rect` to transport values across fiber types.
 
-```
-(* NB: manual QBSpace.Pack because sigma types lack a canonical QBS instance *)
-Definition gen_coprodQ (d : measure_display) (I : measurableType d)
-  (X : I -> qbsType R) (inh : forall i, X i) : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
-    (@isQBS.Build R {i : I & X i} ...)).
-```
-
-**Post-section Arguments declarations:** `Arguments gen_coprodQ : clear implicits.`
-
-**Note:** The constant axiom requires an inhabitedness witness `inh : forall i, X i`, needed to construct fiber values at indices different from the constant's index.
-
-**Injection morphism:**
-
-```
-Lemma qbs_morphism_gen_inj (d : measure_display) (I : measurableType d)
-  (X : I -> qbsType R) (inh : forall i, X i) (i : I) :
-  @qbs_morphism R (X i) (gen_coprodQ d I X inh) (fun x => existT _ i x).
-```
-
-**Binary-general isomorphism:**
+**Key lemmas:**
 
 | Name | Statement |
 |------|-----------|
-| `qbs_morphism_coprod_to_gen` | `qbs_morphism (coprodQ X Y) (gen_coprodQ bool ...) (fun s => match s ...)` |
-| `qbs_morphism_gen_to_coprod` | `qbs_morphism (gen_coprodQ bool ...) (coprodQ X Y) (fun s => ...)` |
-
-The binary coproduct `coprodQ X Y` is isomorphic to the general coproduct over `bool` with `true |-> X, false |-> Y`.
+| `qbs_morphism_gen_inj` | `qbs_morphism (X i) (gen_coprodQ ...) (fun x => existT _ i x)` |
+| `qbs_morphism_coprod_to_gen` | Binary coproduct embeds into general coproduct over `bool` |
+| `qbs_morphism_gen_to_coprod` | General coproduct over `bool` embeds back into binary coproduct |
 
 ### 1.21 Dependent Products (Pi Type)
 
@@ -672,27 +649,22 @@ The binary coproduct `coprodQ X Y` is isomorphic to the general coproduct over `
 Definition piQ_random (I : Type) (X : I -> qbsType R) :
   set (mR -> forall i : I, X i) :=
   [set alpha | forall i, @qbs_Mx R (X i) (fun r => alpha r i)].
-
-(* NB: manual QBSpace.Pack because dependent products lack a canonical QBS instance *)
-Definition piQ (I : Type) (X : I -> qbsType R) : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
-    (@isQBS.Build R (forall i : I, X i) ...)).
 ```
 
-**Post-section Arguments declarations:** `Arguments piQ : clear implicits.`
+A random element of the dependent product is a function that is random in each fiber. The closure proofs delegate to the fiber-level QBS axioms.
 
-A random element of the Pi type is one whose restriction to each index is random. Note that `I` need not be measurable for the Pi type (unlike the Sigma type, which requires a measurable index selection).
+**Key morphisms:**
 
 | Name | Statement |
 |------|-----------|
 | `qbs_morphism_proj` | `qbs_morphism (piQ I X) (X i) (fun f => f i)` |
-| `qbs_morphism_tuple` | If `fi : forall i, qbs_morphism W (X i) (fi i)`, then `qbs_morphism W (piQ I X) (fun w i => fi i w)` |
+| `qbs_morphism_tuple` | If all `fi : W -> X i` are morphisms, then `fun w i => fi i w` is a morphism |
 
 ### 1.22 List Type
 
 **File:** `theories/coproduct_qbs.v`, lines 544--676
 
-Following Isabelle's `Product_QuasiBorel.thy`, the list type is formalized as a countable coproduct of finite products:
+Following Isabelle's `Product_QuasiBorel.thy`, the list type is a QBS on `seq X`:
 
 ```
 Definition listQ_random (X : qbsType R) : set (mR -> seq X) :=
@@ -700,31 +672,26 @@ Definition listQ_random (X : qbsType R) : set (mR -> seq X) :=
     measurable_fun setT len /\
     (forall i, @qbs_Mx R X (Fi i)) /\
     (forall r, alpha r = mkseq (fun i => Fi i r) (len r))].
-
-(* NB: manual QBSpace.Pack because list types lack a canonical QBS instance *)
-Definition listQ (X : qbsType R) (x0 : X) : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
-    (@isQBS.Build R (seq X) ...)).
 ```
 
-A random element of `listQ X` is determined by a measurable length function and positional random elements. The carrier is `seq X`, the math-comp sequence type.
+Requires an inhabitedness witness `x0 : X` for the constant axiom (needed for `nth`).
 
 | Name | Statement |
 |------|-----------|
 | `qbs_morphism_length` | `qbs_morphism (listQ x0) (natQ R) size` |
 | `listQ_nth_random` | `qbs_Mx (listQ x0) alpha -> qbs_Mx X (fun r => nth x0 (alpha r) i)` |
 
-The `listQ_nth_random` lemma shows that extracting the i-th element preserves randomness. The proof constructs a gluing: when `i < len r`, the result is `Fi i r` (random); when `i >= len r`, the result is the default `x0` (constant, hence random).
+The `listQ_nth_random` proof uses a gluing argument: when `i < len r`, the result is `Fi i r`; otherwise, it is the default `x0`.
 
 ---
 
 ## Part II: Probability Monad and Integration
 
-Source files: `theories/probability_qbs.v` (724 lines, 16 Qed), `theories/pair_qbs_measure.v` (497 lines, 11 Qed), `theories/qbs_prob_quot.v` (345 lines, 7 Qed), `theories/measure_as_qbs_measure.v` (183 lines, 4 Qed + 2 Defined), `theories/bayesian_regression.v` (442 lines, 15 Qed).
+Source files: `theories/probability_qbs.v` (783 lines, 16 Qed), `theories/pair_qbs_measure.v` (534 lines, 12 Qed), `theories/qbs_prob_quot.v` (345 lines, 7 Qed), `theories/measure_as_qbs_measure.v` (183 lines, 4 Qed + 2 Defined), `theories/bayesian_regression.v` (442 lines, 15 Qed).
 
 ### 2.1 QBS Probability Triple
 
-**File:** `theories/probability_qbs.v`, lines 44--54
+**File:** `theories/probability_qbs.v`, lines 44--55
 
 ```
 Record qbs_prob (X : qbsType R) := mkQBSProb {
@@ -734,18 +701,11 @@ Record qbs_prob (X : qbsType R) := mkQBSProb {
 }.
 ```
 
-A probability on a QBS `X` is a pair `(alpha, mu)` where:
-- `alpha : mR -> X` is a random element (in `qbs_Mx`)
-- `mu` is a probability measure on R (type `probability mR R` from math-comp analysis)
-- `qbs_prob_alpha_random` witnesses that `alpha` is indeed in `qbs_Mx`
-
-The interpretation: to sample from a QBS probability, first sample `r` from `mu` on R, then apply `alpha` to get a point in X. The "distribution" on X is the pushforward measure `alpha_*(mu)`.
+A probability on a QBS `X` is a triple `(alpha, mu, proof)` where `alpha : mR -> X` is a random element and `mu` is a probability measure on `mR`. The pushforward `alpha_*(mu)` gives the induced distribution on X.
 
 ### 2.2 Equivalence of Probability Triples
 
-**File:** `theories/probability_qbs.v`, lines 56--82
-
-Two triples are equivalent if they induce the same pushforward measure:
+**File:** `theories/probability_qbs.v`, lines 63--83
 
 ```
 Definition qbs_prob_equiv (X : qbsType R) (p1 p2 : qbs_prob X) : Prop :=
@@ -755,65 +715,38 @@ Definition qbs_prob_equiv (X : qbsType R) (p1 p2 : qbs_prob X) : Prop :=
     qbs_prob_mu p2 (qbs_prob_alpha p2 @^-1` U).
 ```
 
-For every set `U` in the induced sigma-algebra `sigma_Mx(X)`, the measures of the preimages agree.
+Two triples are equivalent iff they induce the same pushforward measure on X (measured against the induced sigma-algebra `sigma_Mx`).
 
 | Name | Statement |
 |------|-----------|
-| `qbs_prob_equivxx` | `qbs_prob_equiv X p p` |
-| `qbs_prob_equivC` | `qbs_prob_equiv X p1 p2 -> qbs_prob_equiv X p2 p1` |
-| `qbs_prob_equiv_trans` | `qbs_prob_equiv X p1 p2 -> qbs_prob_equiv X p2 p3 -> qbs_prob_equiv X p1 p3` |
+| `qbs_prob_equivxx` | Reflexivity |
+| `qbs_prob_equivC` | Symmetry |
+| `qbs_prob_equiv_trans` | Transitivity |
 
 ### 2.3 The Probability Monad P(X)
 
-**File:** `theories/probability_qbs.v`, lines 84--153
+**File:** `theories/probability_qbs.v`, lines 88--153
 
-The QBS structure on `qbs_prob X`:
-
-**Strong definition (for reference):**
-
-```
-Definition monadP_random (X : qbsType R) : set (mR -> qbs_prob X) :=
-  [set beta |
-    exists alpha g,
-      @qbs_Mx R X alpha /\
-      (forall r, qbs_prob_alpha (beta r) = alpha) /\
-      (forall r, qbs_prob_mu (beta r) = g r)].
-```
-
-Requires a *single shared* `alpha` across all `r`.
-
-**Pointwise definition (used for the QBS structure):**
+The probability monad uses the pointwise random element condition:
 
 ```
 Definition monadP_random' (X : qbsType R) : set (mR -> qbs_prob X) :=
   [set beta | forall r, @qbs_Mx R X (qbs_prob_alpha (beta r))].
 ```
 
-Each `beta(r)` individually has a random `alpha`.
+A stronger definition `monadP_random` (requiring a single shared `alpha` across all `r`) is also provided and shown to imply the weaker one (`monadP_random_impl`). The weak definition is used for the QBS structure because it supports return without quotient types.
 
 ```
-(* NB: manual QBSpace.Pack because monadP creates a non-canonical QBS on qbs_prob X *)
+(* NB: manual HB.pack because monadP creates a non-canonical QBS on qbs_prob X *)
 Definition monadP (X : qbsType R) : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
+  HB.pack (qbs_prob X)
     (@isQBS.Build R (qbs_prob X)
-      (monadP_random' X)
-      (@monadP_comp X)
-      (@monadP_const X)
-      (@monadP_glue X))).
-```
-
-**Post-section Arguments declarations:** `Arguments monadP : clear implicits.`
-
-**Design note:** The Isabelle development uses the *strong* definition. This formalization uses the weaker pointwise definition for the QBS structure, which avoids the need for quotient types in the basic monad setup. The strong condition is available as `monadP_random` and used as an additional hypothesis for bind (Section 2.5).
-
-```
-Lemma monadP_random_impl (X : qbsType R) (beta : mR -> qbs_prob X) :
-  monadP_random X beta -> monadP_random' X beta.
+      (monadP_random' X) ...).
 ```
 
 ### 2.4 Return
 
-**File:** `theories/probability_qbs.v`, lines 155--195
+**File:** `theories/probability_qbs.v`, lines 165--195
 
 ```
 Definition qbs_return (X : qbsType R) (x : X) (mu : probability mR R) :
@@ -821,9 +754,7 @@ Definition qbs_return (X : qbsType R) (x : X) (mu : probability mR R) :
   @mkQBSProb X (fun _ => x) mu (@qbs_Mx_const R X x).
 ```
 
-Return takes an explicit measure parameter `mu`. The triple `(fun _ => x, mu)` represents the Dirac distribution at `x`, regardless of `mu`, because the pushforward of any measure through a constant function is the Dirac measure.
-
-**Key property -- all returns at the same point are equivalent:**
+Return takes a measure parameter `mu` so that `qbs_return X x mu = (fun _ => x, mu)`. All returns with the same point are equivalent regardless of `mu`:
 
 ```
 Lemma qbs_return_equiv (X : qbsType R) (x : X)
@@ -831,43 +762,18 @@ Lemma qbs_return_equiv (X : qbsType R) (x : X)
   qbs_prob_equiv X (qbs_return X x mu1) (qbs_return X x mu2).
 ```
 
-The proof case-splits on `U x`: if `x` is in `U`, the preimage is `setT` and `probability_setT` applies; if not, the preimage is `set0` and `measure0` applies.
-
-**Design note:** The explicit measure parameter is crucial for the left unit law: `bind(return(x), f)` must produce a triple equivalent to `f(x)`. By choosing `mu := qbs_prob_mu (f x)`, the bind's base measure matches `f(x)`'s base measure exactly.
+The proof uses `pselect (U x)` to split into the cases where the preimage is `setT` or `set0`.
 
 ```
 Lemma qbs_return_random (X : qbsType R) (mu : probability mR R) :
-  qbs_morphism X (monadP X) (qbs_return X ^~ mu).
+  @qbs_morphism R X (monadP X) (qbs_return X ^~ mu).
 ```
 
 ### 2.5 Bind
 
 **File:** `theories/probability_qbs.v`, lines 197--289
 
-Bind constructs:
-- `alpha_bind(r) = alpha_{f(alpha_p(r))}(r)` (diagonal extraction)
-- `mu_bind = mu_p`
-
-The diagonal extraction requires showing that `r |-> alpha_{f(alpha_p(r))}(r)` is in `qbs_Mx(Y)`. This is the key technical challenge.
-
-**The strong morphism condition:**
-
-```
-Definition qbs_morphism_strong (X Y : qbsType R) (f : X -> qbs_prob Y) : Prop :=
-  forall alpha, @qbs_Mx R X alpha -> monadP_random Y (f \o alpha).
-```
-
-When `f` satisfies the strong condition, each composition `f \o alpha` yields a family with a *single shared* alpha for Y, making the diagonal trivially that shared alpha.
-
-**Diagonal randomness lemmas:**
-
-| Name | Condition | Statement |
-|------|-----------|-----------|
-| `qbs_bind_alpha_random_strong` | Strong morphism `f` | Diagonal is random |
-| `qbs_bind_alpha_random_const` | `alpha_p` is constant (return case) | Diagonal is random |
-| `qbs_bind_alpha_random_return` | `f = qbs_return X ^~ mu` | Diagonal is random |
-
-**General bind:**
+The bind constructs the triple with diagonal extraction:
 
 ```
 Definition qbs_bind (X Y : qbsType R) (p : qbs_prob X)
@@ -876,73 +782,38 @@ Definition qbs_bind (X Y : qbsType R) (p : qbs_prob X)
     (fun r => qbs_prob_alpha (f (qbs_prob_alpha p r)) r)) : qbs_prob Y :=
   @mkQBSProb Y
     (fun r => qbs_prob_alpha (f (qbs_prob_alpha p r)) r)
-    (qbs_prob_mu p) hdiag.
+    (qbs_prob_mu p)
+    hdiag.
 ```
 
-Takes an explicit proof of diagonal randomness.
+The key obligation is showing that the diagonal `r |-> alpha_{f(alpha_p(r))}(r)` is random. Three helper lemmas provide this proof in different cases:
 
-**Specialized bind for strong morphisms:**
+| Name | Case | Description |
+|------|------|-------------|
+| `qbs_bind_alpha_random_strong` | Strong morphism | Extracts the shared `alpha_Y` from `monadP_random` |
+| `qbs_bind_alpha_random_const` | Constant alpha | When `p` comes from `return`, diagonal simplifies to `alpha_{f(x)}` |
+| `qbs_bind_alpha_random_return` | Right return | When `f` is `return`, diagonal is `alpha_p` |
 
-```
-Definition qbs_bind_strong (X Y : qbsType R) (p : qbs_prob X)
-  (f : X -> qbs_prob Y)
-  (hf : qbs_morphism_strong X Y f) : qbs_prob Y :=
-  qbs_bind X Y p f (qbs_bind_alpha_random_strong p hf).
-```
-
-**Bind morphism:**
+**Strong morphism condition:**
 
 ```
-Lemma qbs_bind_morph (X Y : qbsType R) (f : X -> qbs_prob Y)
-  (hf : qbs_morphism_strong X Y f) :
-  qbs_morphism (monadP X) (monadP Y)
-    (fun p => qbs_bind_strong X Y p f hf).
+Definition qbs_morphism_strong (X Y : qbsType R) (f : X -> qbs_prob Y) : Prop :=
+  forall alpha, @qbs_Mx R X alpha -> monadP_random Y (f \o alpha).
 ```
+
+A specialized `qbs_bind_strong` combines bind with the strong morphism proof.
 
 ### 2.6 Monad Laws
 
-**File:** `theories/probability_qbs.v`, lines 291--332
+**File:** `theories/probability_qbs.v`, lines 291--333
 
-All three monad laws hold up to `qbs_prob_equiv`:
+All three monad laws are proved (up to `qbs_prob_equiv`):
 
-**Left unit (`qbs_bind_returnl`):**
-
-```
-Lemma qbs_bind_returnl (X Y : qbsType R) (x : X)
-  (f : X -> qbs_prob Y)
-  (hf : @qbs_morphism R X (monadP Y) f) :
-  qbs_prob_equiv Y
-    (qbs_bind X Y (qbs_return X x (qbs_prob_mu (f x))) f
-      (qbs_bind_alpha_random_const x f))
-    (f x).
-```
-
-`bind(return(x), f) ~ f(x)`. The proof is by definitional equality: the bind's alpha at `r` is `qbs_prob_alpha (f x) r` (since `alpha_p = fun _ => x`), and the bind's measure is `qbs_prob_mu (f x)` (by the choice of measure parameter in return).
-
-**Right unit (`qbs_bind_returnr`):**
-
-```
-Lemma qbs_bind_returnr (X : qbsType R) (m : qbs_prob X)
-  (mu : probability mR R) :
-  qbs_prob_equiv X
-    (qbs_bind X X m (qbs_return X ^~ mu)
-      (qbs_bind_alpha_random_return m mu)) m.
-```
-
-`bind(m, return) ~ m`. Again by definitional equality: the bind's alpha at `r` is `qbs_prob_alpha m r`, and the measure is `qbs_prob_mu m`.
-
-**Associativity (`qbs_bindA`):**
-
-```
-Lemma qbs_bindA (X Y Z : qbsType R) (m : qbs_prob X)
-  (f : X -> qbs_prob Y) (g : Y -> qbs_prob Z)
-  (hf_diag : ...) (hg_bind : ...) (hfg_diag : ...) :
-  qbs_prob_equiv Z
-    (qbs_bind Y Z (qbs_bind X Y m f hf_diag) g (hg_bind _))
-    (mkQBSProb ... (qbs_prob_mu m) hfg_diag).
-```
-
-`bind(bind(m, f), g) ~ bind(m, fun x => bind(f(x), g))`. The proof is again by definitional unfolding.
+| Name | Law | Statement |
+|------|-----|-----------|
+| `qbs_bind_returnl` | Left unit | `bind (return x) f ~ f x` |
+| `qbs_bind_returnr` | Right unit | `bind m return ~ m` |
+| `qbs_bindA` | Associativity | `bind (bind m f) g ~ bind m (fun x => bind (f x) g)` |
 
 ### 2.7 Integration
 
@@ -954,7 +825,7 @@ Definition qbs_integral (X : qbsType R) (p : qbs_prob X)
   (\int[qbs_prob_mu p]_x (h (qbs_prob_alpha p x)))%E.
 ```
 
-Integration against a QBS probability reduces to integration against the base measure `mu`, composing the integrand `h` with the random element `alpha`.
+Integration reduces to Lebesgue integration on `mR` via `h \o alpha` against `mu`.
 
 **Sigma_Mx-measurability:**
 
@@ -963,62 +834,32 @@ Definition qbs_measurable (X : qbsType R) (h : X -> \bar R) : Prop :=
   forall alpha, @qbs_Mx R X alpha -> measurable_fun setT (h \o alpha).
 ```
 
-A function `h : X -> \bar R` is QBS-measurable iff for every random element `alpha`, the composition `h \o alpha` is Borel measurable.
-
-**Key integration lemmas:**
+**Key theorems:**
 
 | Name | Statement |
 |------|-----------|
-| `qbs_integral_const` | `qbs_integral X p (fun _ => c) = \int[mu]_x c` |
-| `qbs_integral_return` | `qbs_integral X (qbs_return X x mu) h = \int[mu]_r h x` |
-| `qbs_integral_bind` | `qbs_integral Y (qbs_bind X Y p f hdiag) h = \int[mu_p]_r h (alpha_{f(alpha_p(r))}(r))` |
-
-**Integration respects equivalence:**
-
-```
-Lemma qbs_integral_equiv (X : qbsType R) (p1 p2 : qbs_prob X)
-  (h : X -> \bar R)
-  (hm : qbs_measurable X h)
-  (hint1 : ...) (hint2 : ...) :
-  qbs_prob_equiv X p1 p2 ->
-  qbs_integral X p1 h = qbs_integral X p2 h.
-```
-
-The proof factors through pushforward measures: `int[mu_i] (h \o alpha_i) = int[pushforward mu_i (h \o alpha_i)] id`, then uses `eq_measure_integral` since the pushforward measures agree on all measurable sets.
-
-**Simpler version for shared alpha:**
-
-```
-Lemma qbs_integral_equiv_same_alpha (X : qbsType R) (p1 p2 : qbs_prob X)
-  (h : X -> \bar R) :
-  qbs_prob_alpha p1 = qbs_prob_alpha p2 ->
-  (forall A, measurable A -> qbs_prob_mu p1 A = qbs_prob_mu p2 A) ->
-  qbs_integral X p1 h = qbs_integral X p2 h.
-```
+| `qbs_measurable_sigma_Mx` | `qbs_measurable X h -> measurable V -> sigma_Mx X (h @^-1` V)` |
+| `qbs_pushforward_agree` | Equivalent triples have the same pushforward through measurable `h` |
+| `qbs_integral_equiv` | Integration respects equivalence for measurable integrands |
+| `qbs_integral_equiv_same_alpha` | Simpler version when both triples share the same `alpha` |
+| `qbs_integral_const` | Integration of constants |
+| `qbs_integral_return` | Integration against return: `int[return x mu] h = int[mu] h(x)` |
+| `qbs_integral_bind` | Integration against bind unfolds to the diagonal |
 
 ### 2.8 Pushforward Infrastructure
 
 **File:** `theories/probability_qbs.v`, lines 455--494
 
-Since X is a QBS (not a `measurableType`), the pushforward is formed by composing with `h : X -> \bar R`:
-
-```
-Lemma qbs_integral_as_pushforward (X : qbsType R) (p : qbs_prob X)
-  (h : X -> \bar R) (hm : qbs_measurable X h)
-  (hint : ...) :
-  qbs_integral X p h =
-  (\int[pushforward (qbs_prob_mu p) (h \o qbs_prob_alpha p)]_y y)%E.
-```
+Connects QBS integration to standard measure-theoretic pushforward:
 
 | Name | Statement |
 |------|-----------|
-| `qbs_pushforward_integrable` | Integrability transfers to the pushforward |
-| `qbs_pushforward_agree` | Pushforward measures agree on measurable sets for equivalent triples |
-| `qbs_measurable_sigma_Mx` | If `h` is QBS-measurable and `V` is Borel, then `h @^-1` V` is in `sigma_Mx` |
+| `qbs_integral_as_pushforward` | `qbs_integral X p h = int[pushforward mu (h \o alpha)] id` |
+| `qbs_pushforward_integrable` | Integrability transfers through pushforward |
 
 ### 2.9 Functorial Map
 
-**File:** `theories/probability_qbs.v`, lines 496--530
+**File:** `theories/probability_qbs.v`, lines 496--531
 
 ```
 Definition monadP_map (X Y : qbsType R) (f : X -> Y)
@@ -1027,98 +868,103 @@ Definition monadP_map (X Y : qbsType R) (f : X -> Y)
     (hf _ (qbs_prob_alpha_random p)).
 ```
 
-The functorial action `P(f)` maps `(alpha, mu)` to `(f \o alpha, mu)`.
-
 | Name | Statement |
 |------|-----------|
-| `monadP_map_morph` | `qbs_morphism (monadP X) (monadP Y) (monadP_map ...)` |
-| `monadP_map_id` | `qbs_prob_equiv X (monadP_map X X idfun ... p) p` |
-| `monadP_map_comp` | `qbs_prob_equiv Z (monadP_map X Z (g \o f) ... p) (monadP_map Y Z g ... (monadP_map X Y f ... p))` |
+| `monadP_map_morph` | `monadP_map` is a QBS morphism `monadP X -> monadP Y` |
+| `monadP_map_id` | `monadP_map id p ~ p` |
+| `monadP_map_comp` | `monadP_map (g \o f) p ~ monadP_map g (monadP_map f p)` |
 
 ### 2.10 Expectation and Events
 
 **File:** `theories/probability_qbs.v`, lines 532--545
 
 ```
-Definition qbs_expect (X : qbsType R) (p : qbs_prob X) (h : X -> R) : \bar R :=
+Definition qbs_expect (X : qbsType R) (p : qbs_prob X)
+  (h : X -> R) : \bar R :=
   qbs_integral X p (fun x => (h x)%:E).
 
-Definition qbs_prob_event (X : qbsType R) (p : qbs_prob X) (U : set X) : \bar R :=
+Definition qbs_prob_event (X : qbsType R) (p : qbs_prob X)
+  (U : set X) : \bar R :=
   qbs_prob_mu p (qbs_prob_alpha p @^-1` U).
 ```
 
 ### 2.11 Variance
 
-**File:** `theories/probability_qbs.v`, lines 547--558
+**File:** `theories/probability_qbs.v`, lines 548--559
 
 ```
-Definition qbs_variance (X : qbsType R) (p : qbs_prob X) (f : X -> R) : \bar R :=
+Definition qbs_variance (X : qbsType R) (p : qbs_prob X)
+  (f : X -> R) : \bar R :=
   variance (qbs_prob_mu p) (f \o qbs_prob_alpha p).
 ```
 
-Delegates to the math-comp analysis `variance` definition applied to the composition `f \o alpha` against the base measure `mu`. This gives `Var(f) = E[(f \o alpha)^2] - E[f \o alpha]^2`.
+Delegates to the math-comp analysis `variance` definition.
 
 ### 2.12 Monad Join
 
-**File:** `theories/probability_qbs.v`, lines 560--577
+**File:** `theories/probability_qbs.v`, lines 561--578
 
 ```
-Definition qbs_join (X : qbsType R)
-  (p : qbs_prob (monadP X))
-  (hdiag : @qbs_Mx R X
-    (fun r => qbs_prob_alpha (id (qbs_prob_alpha p r)) r)) :
-  qbs_prob X :=
+Definition qbs_join (X : qbsType R) (p : qbs_prob (monadP X))
+  (hdiag : ...) : qbs_prob X :=
   qbs_bind (monadP X) X p id hdiag.
 ```
 
-Join flattens `P(P(X)) -> P(X)` via bind with the identity. The diagonal extraction gives `alpha_join(r) = qbs_prob_alpha(qbs_prob_alpha(p)(r))(r)`.
+Flattens `P(P(X)) -> P(X)` via bind with the identity.
 
 ### 2.13 Monad Strength
 
-**File:** `theories/probability_qbs.v`, lines 579--594
+**File:** `theories/probability_qbs.v`, lines 580--594
 
 ```
-Definition qbs_strength (W X : qbsType R)
-  (w : W) (p : qbs_prob X) : qbs_prob (prodQ W X) :=
+Definition qbs_strength (W X : qbsType R) (w : W) (p : qbs_prob X) :
+  qbs_prob (prodQ W X) :=
   @mkQBSProb (prodQ W X)
     (fun r => (w, qbs_prob_alpha p r))
     (qbs_prob_mu p)
     (prodQ_const_random w (qbs_prob_alpha_random p)).
 ```
 
-Pairs a constant `w : W` with a sampled `x ~ p`, producing a probability on `W x X`. Uses `prodQ_const_random` to prove the paired function is random.
+Pairs a constant `w : W` with a probability `p` on X, producing a probability on `W x X`.
 
-### 2.14 Bind Respects Equivalence
+### 2.14 Strength Naturality and Coherence
+
+**File:** `theories/probability_qbs.v`, lines 704--761
+
+Four lemmas establishing the standard coherence conditions for a strong monad:
+
+| Name | Statement |
+|------|-----------|
+| `qbs_strength_natural` | Strength commutes with morphisms: `map (f x g) (strength w p) ~ strength (f w) (map g p)` |
+| `qbs_strength_unit` | Projecting away the unit component recovers `p`: `map snd (strength tt p) ~ p` |
+| `qbs_strength_assoc` | Strength associativity: `map assoc (strength (u,v) p) ~ strength u (strength v p)` |
+| `qbs_strength_return` | Strength of return is return of pair: `strength w (return x mu) ~ return (w,x) mu` |
+
+### 2.15 Bind Respects Equivalence
 
 **File:** `theories/probability_qbs.v`, lines 596--702
 
-The key result for the quotient monad: bind respects equivalence on its first argument, under a factoring condition.
+The key congruence result for the quotient monad construction:
 
 ```
 Lemma qbs_bind_equiv_l (X Y : qbsType R) (p1 p2 : qbs_prob X)
-  (f : X -> qbs_prob Y)
-  (g : X -> Y) (hg : @qbs_morphism R X Y g)
-  (hdiag1 : forall r, qbs_prob_alpha (f (qbs_prob_alpha p1 r)) r =
-    g (qbs_prob_alpha p1 r))
-  (hdiag2 : ...) (hrand1 : ...) (hrand2 : ...)
-  (hequiv : qbs_prob_equiv X p1 p2) :
-  qbs_prob_equiv Y (qbs_bind X Y p1 f hrand1) (qbs_bind X Y p2 f hrand2).
+  (f : X -> qbs_prob Y) (g : X -> Y) (hg : qbs_morphism X Y g)
+  (hdiag1 : ...) (hdiag2 : ...) (hequiv : qbs_prob_equiv X p1 p2) :
+  qbs_prob_equiv Y (qbs_bind X Y p1 f ...) (qbs_bind X Y p2 f ...).
 ```
 
-The proof rewrites the preimage of the bind's alpha as `alpha_p @^-1` (g @^-1` U)`, then uses the equivalence `p1 ~ p2` and the fact that `g @^-1` U` is in `sigma_Mx(X)` (since `g` is a morphism).
+Requires that the diagonal factors through a QBS morphism `g : X -> Y`. Specializations include:
 
-**Specializations:**
+| Name | Use case |
+|------|----------|
+| `qbs_bind_strong_equiv_l` | Strong morphism with factoring |
+| `qbs_bind_equiv_l_return` | `f(x) = return(g(x), mu_x)` for morphism `g` |
 
-| Name | Condition |
-|------|-----------|
-| `qbs_bind_strong_equiv_l` | Strong morphism + factoring |
-| `qbs_bind_equiv_l_return` | `f(x) = qbs_return Y (g x) (mu_f x)` |
-
-### 2.15 Quotient Type for QBS Probability
+### 2.16 Quotient Type for QBS Probability
 
 **File:** `theories/qbs_prob_quot.v` (345 lines, 7 Qed)
 
-A setoid-style quotient over `qbs_prob`:
+A setoid-style quotient wrapping `qbs_prob X`:
 
 ```
 Record qbs_prob_space (X : qbsType R) := QPS {
@@ -1129,211 +975,127 @@ Definition qps_eq (X : qbsType R) (p1 p2 : qbs_prob_space X) : Prop :=
   qbs_prob_equiv X (qps_repr p1) (qps_repr p2).
 ```
 
-**Equivalence relation properties:**
-
-| Name | Statement |
-|------|-----------|
-| `qps_eqxx` | `qps_eq p p` |
-| `qps_eqC` | `qps_eq p1 p2 -> qps_eq p2 p1` |
-| `qps_eq_trans` | `qps_eq p1 p2 -> qps_eq p2 p3 -> qps_eq p1 p3` |
-
 **Lifted operations:**
 
 | Name | Type |
 |------|------|
 | `qps_return` | `X -> probability mR R -> qbs_prob_space X` |
-| `qps_bind` | `qbs_prob_space X -> (X -> qbs_prob Y) -> (diagonal proof) -> qbs_prob_space Y` |
-| `qps_bind_strong` | `qbs_prob_space X -> (X -> qbs_prob Y) -> (strong proof) -> qbs_prob_space Y` |
+| `qps_bind` | `qbs_prob_space X -> (X -> qbs_prob Y) -> qbs_prob_space Y` |
+| `qps_bind_strong` | Specialized for strong morphisms |
 | `qps_integral` | `qbs_prob_space X -> (X -> \bar R) -> \bar R` |
-| `qps_map` | `(X -> Y) -> (morphism proof) -> qbs_prob_space X -> qbs_prob_space Y` |
-| `qps_expect` | `qbs_prob_space X -> (X -> R) -> \bar R` |
-| `qps_prob_event` | `qbs_prob_space X -> set X -> \bar R` |
+| `qps_map` | `(X -> Y) -> qbs_prob_space X -> qbs_prob_space Y` |
+| `qps_expect` | Expectation on the quotient |
+| `qps_prob_event` | Probability of events on the quotient |
 
-**Well-definedness lemmas:**
+**Well-definedness:**
 
 | Name | Statement |
 |------|-----------|
-| `qps_return_equiv` | `qps_eq (qps_return x mu1) (qps_return x mu2)` |
-| `qps_integral_equiv` | `qps_eq p1 p2 -> qps_integral p1 h = qps_integral p2 h` (for measurable `h`) |
-| `qps_map_equiv` | `qps_eq p1 p2 -> qps_eq (qps_map f hf p1) (qps_map f hf p2)` |
-| `qps_prob_event_equiv` | `sigma_Mx X U -> qps_eq p1 p2 -> qps_prob_event p1 U = qps_prob_event p2 U` |
+| `qps_return_equiv` | `qps_eq (return x mu1) (return x mu2)` |
+| `qps_integral_equiv` | Integration respects `qps_eq` for measurable integrands |
+| `qps_map_equiv` | Map respects `qps_eq` |
+| `qps_prob_event_equiv` | Event probability respects `qps_eq` for sigma_Mx sets |
 
 **Monad laws on the quotient (as `qps_eq` equalities):**
 
-| Name | Statement |
-|------|-----------|
-| `qps_bind_returnl` | `qps_eq (qps_bind (qps_return x ...) f ...) (qps_of (f x))` |
-| `qps_bind_returnr` | `qps_eq (qps_bind m (qbs_return X ^~ mu) ...) m` |
-| `qps_bindA` | `qps_eq (qps_bind (qps_bind m f ...) g ...) (qps_of ...)` |
+| Name | Law |
+|------|-----|
+| `qps_bind_returnl` | Left unit |
+| `qps_bind_returnr` | Right unit |
+| `qps_bindA` | Associativity |
 
 **QBS structure on the quotient:**
 
 ```
-(* NB: manual QBSpace.Pack to equip the quotient wrapper with a QBS structure *)
 Definition qbs_prob_space_qbs (X : qbsType R) : qbsType R :=
-  QBSpace.Pack (QBSpace.Class
+  HB.pack (qbs_prob_space X)
     (@isQBS.Build R (qbs_prob_space X)
-      (@qps_Mx X)
-      (@qps_Mx_comp X)
-      (@qps_Mx_const X)
-      (@qps_Mx_glue X))).
+      (@qps_Mx X) ...).
 ```
 
-**Canonical representative via classical choice:**
+**Canonical representative:** `qps_pick_repr` uses `constructive_indefinite_description` to select a representative, with `qps_pick_repr_equiv` proving it is equivalent to the original.
+
+### 2.17 Product Measures and Fubini
+
+**File:** `theories/pair_qbs_measure.v`, lines 32--199
+
+**Product probability:**
 
 ```
-Definition qps_pick_repr (X : qbsType R) (p : qbs_prob_space X) :
-  qbs_prob_space X :=
-  QPS (proj1_sig (boolp.constructive_indefinite_description ...)).
-
-Lemma qps_pick_repr_equiv (X : qbsType R) (p : qbs_prob_space X) :
-  qps_eq p (qps_pick_repr p).
-```
-
-Uses `boolp.constructive_indefinite_description` (classical choice from math-comp's boolP) to extract a representative from the equivalence class. The representative is equivalent to the original by construction.
-
-**Post-section Arguments declarations:**
-
-```
-Arguments qbs_prob_space {R}.
-Arguments QPS {R X}.
-Arguments qps_repr {R X}.
-Arguments qps_eq {R X}.
-Arguments qps_of {R X}.
-Arguments qps_return {R X}.
-Arguments qps_bind {R X Y}.
-Arguments qps_bind_strong {R X Y}.
-Arguments qps_integral {R X}.
-Arguments qps_map {R X Y}.
-Arguments qps_expect {R X}.
-Arguments qps_prob_event {R X}.
-Arguments qbs_prob_space_qbs {R}.
-Arguments qps_pick_repr {R X}.
-```
-
-### 2.16 Product Measures and Fubini
-
-**File:** `theories/pair_qbs_measure.v` (497 lines, 11 Qed)
-
-**Product of QBS probability spaces:**
-
-```
-Definition qbs_pair_alpha (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y) :
-  mR -> X * Y :=
-  fun r => (qbs_prob_alpha p r, qbs_prob_alpha q r).
-
 Definition qbs_prob_pair (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y) :
-  qbs_prob (prodQ X Y) := ...
+  qbs_prob (prodQ X Y) :=
+  mkQBSProb (qbs_pair_alpha p q) (qbs_pair_mu p q) (qbs_pair_alpha_random p q).
 ```
 
-The pair alpha is random in the product by `qbs_pair_alpha_random`.
-
-**Product integration using the actual product measure:**
+**Product integration (using the actual product measure):**
 
 ```
-Definition qbs_pair_integral (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y)
-  (h : X * Y -> \bar R) : \bar R :=
+Definition qbs_pair_integral (X Y : qbsType R)
+  (p : qbs_prob X) (q : qbs_prob Y) (h : X * Y -> \bar R) : \bar R :=
   \int[(qbs_prob_mu p \x qbs_prob_mu q)]_rr
     h (qbs_prob_alpha p rr.1, qbs_prob_alpha q rr.2).
 ```
 
-This uses the product measure `mu_p \x mu_q` directly on `mR * mR`, avoiding the need for a standard Borel isomorphism `R ~ R x R`.
-
-**Fubini theorem (`qbs_pair_integralE`):**
-
-```
-Lemma qbs_pair_integralE (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y)
-  (h : X * Y -> \bar R)
-  (hint : (qbs_prob_mu p \x qbs_prob_mu q).-integrable
-    setT (qbs_pair_fun p q h)) :
-  qbs_pair_integral X Y p q h =
-  @qbs_integral R X p (fun x =>
-    @qbs_integral R Y q (fun y => h (x, y))).
-```
-
-Joint integration equals iterated integration. The proof delegates to `integral12_prod_meas1` from math-comp analysis.
-
-**Marginal integration:**
+**Fubini theorems:**
 
 | Name | Statement |
 |------|-----------|
-| `qbs_pair_integral_fst` | `qbs_pair_integral ... (fun xy => h xy.1) = qbs_integral X p h` |
-| `qbs_pair_integral_snd` | `qbs_pair_integral ... (fun xy => h xy.2) = qbs_integral Y q h` |
+| `qbs_pair_integralE` | Joint integral = iterated integral |
+| `qbs_pair_integral_fst` | Integration over first component marginalizes second |
+| `qbs_pair_integral_snd` | Integration over second component marginalizes first |
+| `qbs_integral_fst` | User-facing version via `qbs_prob_pair` |
+| `qbs_integral_snd` | Symmetric user-facing version |
+| `qbs_integral_pair` | User-facing Fubini |
 
-The proofs use `integral_cst` and `probability_setT` to collapse the inner integral.
-
-**User-facing versions:**
-
-| Name | Statement |
-|------|-----------|
-| `qbs_integral_fst` | First-component integration via `qbs_prob_pair` |
-| `qbs_integral_snd` | Second-component integration via `qbs_pair_integral` |
-| `qbs_integral_pair` | Fubini's theorem (alias for `qbs_pair_integralE`) |
-
-### 2.17 Independence
+### 2.18 Independence
 
 **File:** `theories/pair_qbs_measure.v`, lines 200--250
 
 ```
 Definition qbs_indep (X Y Z : qbsType R) (p : qbs_prob Z)
   (f : Z -> X) (g : Z -> Y)
-  (hf : @qbs_morphism R Z X f) (hg : @qbs_morphism R Z Y g) : Prop :=
-  @qbs_prob_equiv R (prodQ X Y)
-    (@monadP_map R Z (prodQ X Y) (fun z => (f z, g z))
-       (@qbs_morphism_pair R Z X Y f g hf hg) p)
-    (qbs_prob_pair X Y
-       (@monadP_map R Z X f hf p)
-       (@monadP_map R Z Y g hg p)).
+  (hf : qbs_morphism Z X f) (hg : qbs_morphism Z Y g) : Prop :=
+  qbs_prob_equiv (prodQ X Y)
+    (monadP_map Z (prodQ X Y) (fun z => (f z, g z)) ... p)
+    (qbs_prob_pair X Y (monadP_map Z X f hf p) (monadP_map Z Y g hg p)).
 ```
 
-Two random variables `f, g` on a joint space `Z` are independent if the joint pushforward equals the product of marginals.
-
-**E[fg] = E[f] * E[g] for independent random variables:**
+**Key theorem (E[f*g] = E[f]*E[g] for independent variables):**
 
 ```
 Lemma qbs_integral_indep_mult (X Y : qbsType R)
   (px : qbs_prob X) (py : qbs_prob Y)
-  (f : X -> R) (g : Y -> R)
-  (hintf : ...) (hintg : ...) (hintfg : ...) :
+  (f : X -> R) (g : Y -> R) ... :
   qbs_pair_integral X Y px py (fun xy => (f xy.1 * g xy.2)%:E) =
-  (@qbs_expect R X px f * @qbs_expect R Y py g).
+  (qbs_expect X px f * qbs_expect Y py g).
 ```
 
-The proof uses Fubini to factor the product integral: `\int\int f(r1) * g(r2) = \int f(r1) * (\int g(r2)) = E[f] * E[g]`. The inner integral factors out via `integralZl`, and the outer integral via `integralZr`.
+The proof uses Fubini to factor the joint integral into a product of marginal integrals via `integralZl` and `integralZr`.
 
-### 2.18 Variance of Independent Sums
+### 2.19 Variance of Independent Sums
 
 **File:** `theories/pair_qbs_measure.v`, lines 252--489
 
-**Definition:**
-
 ```
-Definition qbs_pair_variance (X Y : qbsType R) (px : qbs_prob X) (py : qbs_prob Y)
-  (f : X -> R) (g : Y -> R) : \bar R :=
+Definition qbs_pair_variance (X Y : qbsType R)
+  (px : qbs_prob X) (py : qbs_prob Y) (f : X -> R) (g : Y -> R) : \bar R :=
   variance (qbs_prob_mu px \x qbs_prob_mu py)
     (fun rr : mR * mR =>
       f (qbs_prob_alpha px rr.1) + g (qbs_prob_alpha py rr.2)).
 ```
 
-**Main theorem: Var(f(X) + g(Y)) = Var(f(X)) + Var(g(Y)) for independent X, Y:**
+**Main theorem:**
 
 ```
-Lemma qbs_variance_indep_sum (X Y : qbsType R) (px : qbs_prob X) (py : qbs_prob Y)
-  (f : X -> R) (g : Y -> R)
-  (hf2 : ...) (hg2 : ...) (hf1 : ...) (hg1 : ...)
-  (hintf : ...) (hintg : ...) (hintf2 : ...) (hintg2 : ...)
-  (hintfg : ...) (hintfm : ...) (hintgm : ...) :
+Lemma qbs_variance_indep_sum (X Y : qbsType R)
+  (px : qbs_prob X) (py : qbs_prob Y) (f : X -> R) (g : Y -> R) ... :
   qbs_pair_variance X Y px py f g =
   (qbs_variance X px f + qbs_variance Y py g)%E.
 ```
 
-The proof strategy:
-1. Apply `varianceD` to get `Var(F+G) = Var(F) + Var(G) + 2*Cov(F,G)`
-2. Use `variance_prod_fst` and `variance_prod_snd` to show `Var(F) = Var_px(f)` and `Var(G) = Var_py(g)` (since F and G depend on separate coordinates)
-3. Show `Cov(F,G) = 0` using `covarianceE` and `expectation_prod_indep` (E[FG] = E[F]*E[G] by Fubini)
-4. Conclude with `subee` (E[F]*E[G] - E[F]*E[G] = 0)
+The proof decomposes `Var(F+G) = Var(F) + Var(G) + 2*Cov(F,G)`, then shows `Cov(F,G) = 0` because `E[F*G] = E[F]*E[G]` (by Fubini / independence).
 
-**Supporting lemmas for the variance proof:**
+**Helper lemmas:**
 
 | Name | Statement |
 |------|-----------|
@@ -1341,9 +1103,25 @@ The proof strategy:
 | `expectation_prod_snd` | `E_{mu1 x mu2}[h(rr.2)] = E_{mu2}[h]` |
 | `variance_prod_fst` | `V_{mu1 x mu2}[h(rr.1)] = V_{mu1}[h]` |
 | `variance_prod_snd` | `V_{mu1 x mu2}[h(rr.2)] = V_{mu2}[h]` |
-| `expectation_prod_indep` | `E_{mu1 x mu2}[h1(rr.1) * h2(rr.2)] = E_{mu1}[h1] * E_{mu2}[h2]` |
+| `expectation_prod_indep` | `E_{mu1 x mu2}[h1(rr.1)*h2(rr.2)] = E_{mu1}[h1] * E_{mu2}[h2]` |
 
-### 2.19 Classical Distributions
+### 2.20 Commutativity of the Probability Monad
+
+**File:** `theories/pair_qbs_measure.v`, lines 491--527
+
+Proposition 22 from the LICS paper: the two ways of combining `P(X) x P(Y) -> P(X x Y)` agree.
+
+```
+Lemma qbs_pair_integral_comm (X Y : qbsType R)
+  (p : qbs_prob X) (q : qbs_prob Y)
+  (h : X * Y -> \bar R) ... :
+  qbs_pair_integral X Y p q h =
+  qbs_pair_integral Y X q p (fun yx => h (yx.2, yx.1)).
+```
+
+The proof applies Fubini's theorem: the joint integral against `mu_p x mu_q` equals the iterated integral (first over `mu_p`, then `mu_q`), which by Fubini equals the reversed iteration (first over `mu_q`, then `mu_p`), which is the joint integral against `mu_q x mu_p` with swapped arguments.
+
+### 2.21 Classical Distributions
 
 **File:** `theories/measure_as_qbs_measure.v` (183 lines, 4 Qed + 2 Defined)
 
@@ -1351,415 +1129,413 @@ The proof strategy:
 
 ```
 Definition as_qbs_prob (d : measure_display) (M : measurableType d)
-  (f : M -> mR) (g : mR -> M)
-  (hf : measurable_fun setT f) (hg : measurable_fun setT g)
-  (h_section : forall x, g (f x) = x)
+  (f : M -> mR) (g : mR -> M) (hf hg h_section : ...)
   (P : probability mR R) : qbs_prob (R_qbs R M).
 ```
 
-Given a measurable space with encoding/decoding and a probability measure, constructs a QBS probability triple. Uses `Defined` (transparent proof term) so the triple's components can compute.
-
 **Concrete distributions:**
 
-| Name | Definition | Type |
-|------|-----------|------|
-| `qbs_normal_distribution` | `mkQBSProb idfun (normal_prob mu sigma) measurable_id` | `qbs_prob (realQ R)` |
-| `qbs_bernoulli` | `mkQBSProb (fun r => r < p) (uniform_prob ltr01) ...` | `qbs_prob (boolQ R)` |
-| `qbs_uniform` | `mkQBSProb idfun (uniform_prob ltr01) measurable_id` | `qbs_prob (realQ R)` |
-
-The normal distribution uses the identity random element with `normal_prob mu sigma` as the base measure. The Bernoulli distribution uses a threshold function `fun r => r < p` with the uniform distribution on `[0,1]`.
+| Name | Construction | Description |
+|------|-------------|-------------|
+| `qbs_normal_distribution` | `(idfun, normal_prob mu sigma)` | Normal(mu, sigma) on `realQ` |
+| `qbs_bernoulli` | `((fun r => r < p), uniform_prob)` | Bernoulli(p) on `boolQ` |
+| `qbs_uniform` | `(idfun, uniform_prob)` | Uniform[0,1] on `realQ` |
 
 **Recovery theorems:**
 
 | Name | Statement |
 |------|-----------|
 | `as_qbs_prob_recover` | `qbs_prob_mu (as_qbs_prob ...) (g @^-1` U) = P (g @^-1` U)` |
-| `as_qbs_prob_recover_full` | `qbs_prob_event (as_qbs_prob ...) U = P (f `` U)` (with retraction) |
+| `as_qbs_prob_recover_full` | `qbs_prob_event (as_qbs_prob ...) U = P (f @` U)` (with retract) |
 
-**Parameterized distribution morphisms:**
+**Parameterized morphisms:**
 
-```
-Lemma qbs_normal_morphism (sigma : R) (hsigma : (0 < sigma)%R) :
-  @qbs_morphism R (realQ R) (monadP (realQ R))
-    (fun mu => qbs_normal_distribution mu sigma hsigma).
-```
+| Name | Statement |
+|------|-----------|
+| `qbs_normal_morphism` | The normal distribution is a morphism `realQ -> monadP(realQ)` (in the mean parameter) |
+| `qbs_uniform_random` | The uniform distribution is a random element of `monadP(realQ)` |
 
-The normal distribution, viewed as a function of its mean, is a QBS morphism into the probability monad. This holds because the alpha component (identity) is always measurable.
-
-```
-Lemma qbs_uniform_random :
-  @qbs_Mx R (monadP (realQ R)) (fun _ : mR => qbs_uniform).
-```
-
-### 2.20 Bayesian Linear Regression
+### 2.22 Bayesian Linear Regression
 
 **File:** `theories/bayesian_regression.v` (442 lines, 15 Qed)
 
-A complete Bayesian linear regression example demonstrating the QBS probability monad.
+A complete Bayesian linear regression example demonstrating the QBS probability monad:
 
-**Model:** `y = slope * x + intercept + noise`, with `noise ~ Normal(0, noise_sigma)`.
+**Model:** `y = slope * x + intercept + noise`, with independent Normal(0,1) priors on `slope` and `intercept`.
 
-**Prior distributions:**
+**Definitions:**
 
-```
-Definition slope_prior : qbs_prob (realQ R) :=
-  @mkQBSProb R (realQ R) idfun (normal_prob 0 1 : probability mR R)
-    (@measurable_id _ mR setT).
+| Name | Description |
+|------|-------------|
+| `slope_prior` | Normal(0,1) prior on slope |
+| `intercept_prior` | Normal(0,1) prior on intercept |
+| `likelihood_single obs_x` | Normal(slope*obs_x + intercept, sigma) likelihood |
+| `predictive_integral obs_x h` | Predictive integral over the prior |
+| `predictive_event obs_x U` | Predictive event probability |
+| `posterior_integral obs_x obs_y g` | Unnormalized posterior integral |
+| `evidence obs_x obs_y` | Marginal likelihood / normalizing constant |
+| `posterior_normalized obs_x obs_y g` | Normalized posterior expectation |
 
-Definition intercept_prior : qbs_prob (realQ R) :=
-  @mkQBSProb R (realQ R) idfun (normal_prob 0 1 : probability mR R)
-    (@measurable_id _ mR setT).
-```
-
-Independent `Normal(0, 1)` priors on slope and intercept.
-
-**Likelihood:**
-
-```
-Definition likelihood_single (obs_x : R) :
-  prodQ (realQ R) (realQ R) -> qbs_prob (realQ R) :=
-  fun params =>
-    @mkQBSProb R (realQ R) idfun
-      (normal_prob (fst params * obs_x + snd params) noise_sigma
-        : probability mR R) (@measurable_id _ mR setT).
-```
-
-For parameters `(slope, intercept)` and observation `x`, the likelihood is `Normal(slope * x + intercept, noise_sigma)`.
+**Key proofs:**
 
 | Name | Statement |
 |------|-----------|
-| `likelihood_single_morphism` | `qbs_morphism (prodQ (realQ R) (realQ R)) (monadP (realQ R)) (likelihood_single obs_x)` |
-| `likelihood_single_strong` | `qbs_morphism_strong (prodQ (realQ R) (realQ R)) (realQ R) (likelihood_single obs_x)` |
+| `likelihood_single_morphism` | Likelihood is a QBS morphism |
+| `likelihood_single_strong` | Likelihood satisfies the strong morphism condition |
+| `predictive_marginal` | Predictive = iterated integral (Fubini) |
+| `predictive_event_marginal` | Event probability marginalizes correctly |
+| `posterior_integral_eq` | Posterior decomposes via Fubini |
+| `posterior_slope_expectation` | Posterior slope expectation formula |
+| `posterior_normalized_total` | Normalized posterior integrates to 1 (given finite evidence) |
+| `evidence_ge0` | Evidence is non-negative |
 
-**Predictive distribution:**
+**Multi-observation extension:**
 
-```
-Definition predictive_integral (obs_x : R) (h : realQ R -> \bar R) : \bar R :=
-  qbs_pair_integral slope_prior intercept_prior
-    (fun params => qbs_integral _ (likelihood_single obs_x params) h).
-```
+| Name | Description |
+|------|-------------|
+| `likelihood_product xs ys` | Product of normal pdf evaluations |
+| `evidence_multi xs ys` | Multi-observation marginal likelihood |
+| `posterior_multi xs ys g` | Multi-observation posterior |
+| `likelihood_product_ge0` | Likelihood product is non-negative |
+| `evidence_multi_ge0` | Multi-observation evidence is non-negative |
+| `posterior_multi_total` | Multi-observation posterior normalization |
 
-Integrates the likelihood over the independent prior using `qbs_pair_integral`.
-
-**Marginalization via Fubini:**
-
-```
-Lemma predictive_marginal (obs_x : R) (h : realQ R -> \bar R) (hint : ...) :
-  predictive_integral obs_x h =
-  qbs_integral _ slope_prior (fun s =>
-    qbs_integral _ intercept_prior (fun i =>
-      qbs_integral _ (likelihood_single obs_x (s, i)) h)).
-```
-
-**Posterior distribution (unnormalized):**
-
-```
-Definition posterior_integral (obs_x obs_y : R)
-  (g : realQ R * realQ R -> \bar R) : \bar R :=
-  qbs_pair_integral slope_prior intercept_prior
-    (fun params =>
-      g params * qbs_prob_event _ (likelihood_single obs_x params) [set obs_y]).
-```
-
-**Evidence (normalizing constant):**
-
-```
-Definition evidence (obs_x obs_y : R) : \bar R :=
-  qbs_pair_integral slope_prior intercept_prior
-    (fun params =>
-      (normal_pdf (fst params * obs_x + snd params) noise_sigma obs_y)%:E).
-```
-
-| Name | Statement |
-|------|-----------|
-| `evidence_ge0` | `0 <= evidence obs_x obs_y` |
-| `evidence_eq` | Fubini decomposition of the evidence |
-
-**Normalized posterior:**
-
-```
-Definition posterior_normalized (obs_x obs_y : R)
-  (g : realQ R * realQ R -> \bar R) : \bar R :=
-  (posterior_integral obs_x obs_y g / evidence obs_x obs_y)%E.
-
-Lemma posterior_normalized_total (obs_x obs_y : R)
-  (hfin : evidence obs_x obs_y \is a fin_num)
-  (hpos : evidence obs_x obs_y != 0%E) :
-  posterior_normalized obs_x obs_y (fun _ => 1%E) =
-  (posterior_integral obs_x obs_y (fun _ => 1%E) / evidence obs_x obs_y)%E.
-```
-
-**Multi-observation posterior:**
-
-```
-Definition likelihood_product (xs ys : seq R) :
-  realQ R * realQ R -> \bar R :=
-  fun params =>
-    \prod_(xy <- zip xs ys)
-      (normal_pdf (fst params * xy.1 + snd params) noise_sigma xy.2)%:E.
-
-Definition evidence_multi (xs ys : seq R) : \bar R :=
-  qbs_pair_integral slope_prior intercept_prior
-    (fun params => likelihood_product xs ys params).
-
-Definition posterior_multi (xs ys : seq R)
-  (g : realQ R * realQ R -> \bar R) : \bar R :=
-  (qbs_pair_integral slope_prior intercept_prior
-    (fun params => g params * likelihood_product xs ys params)
-   / evidence_multi xs ys)%E.
-```
-
-| Name | Statement |
-|------|-----------|
-| `likelihood_product_ge0` | `0 <= likelihood_product xs ys params` |
-| `evidence_multi_ge0` | `0 <= evidence_multi xs ys` |
-| `posterior_multi_total` | Normalization property for multi-observation posterior |
-
-**Concrete instantiation with 5 data points:**
-
-```
-Definition data_x : seq R := [:: 1; 2; 3; 4; 5].
-Definition data_y : seq R := [:: 3; 5; 7; 9; 11].
-```
-
-True model: `y = 2*x + 1`. Definitions `concrete_evidence` and `concrete_posterior` specialize to this data.
-
-| Name | Statement |
-|------|-----------|
-| `concrete_evidence_ge0` | `0 <= concrete_evidence` |
-| `concrete_evidence_eq` | Fubini decomposition with concrete data |
+**Concrete data:** Five data points from `y = 2x + 1`: `{(1,3), (2,5), (3,7), (4,9), (5,11)}`, with `concrete_evidence`, `concrete_posterior`, and Fubini decomposition.
 
 ---
 
-## Part III: Architecture and Comparison
+## Part III: Standard Borel Spaces and Architecture
 
-### 3.1 File Dependency Graph
+Source file: `theories/standard_borel.v` (1222 lines, 50 Qed).
+
+This file constructs a complete measurable bijection R ~ R x R, proving that the product of standard Borel spaces is standard Borel. The construction composes three layers: (1) a bijection R <-> (0,1) via arctangent, (2) a bijection (0,1)^2 <-> (0,1) via binary digit interleaving, and (3) the composed encode/decode pair.
+
+### 3.1 Standard Borel: R to (0,1) Bijection
+
+**File:** `theories/standard_borel.v`, lines 100--193
+
+```
+Definition phi (x : R) : R := atan x / pi + 1 / 2.
+Definition psi (y : R) : R := tan (pi * (y - 1 / 2)).
+```
+
+| Name | Statement |
+|------|-----------|
+| `phi_gt0` | `0 < phi x` for all `x` |
+| `phi_lt1` | `phi x < 1` for all `x` |
+| `psiK` | `cancel phi psi` (psi is left inverse of phi, unconditional) |
+| `phiK` | `{in `](0,1)[, cancel psi phi}` (phi is left inverse of psi on (0,1)) |
+| `measurable_phi` | `measurable_fun setT phi` |
+| `measurable_psi` | `measurable_fun (`](0,1)[) psi` (measurable on the open interval) |
+
+The proofs use `atan_gtNpi2`, `atan_ltpi2`, `atanK`, `tanK`, `cos_gt0_pihalf`, and `continuous_atan`/`continuous_tan` from math-comp analysis.
+
+### 3.2 Binary Digit Machinery
+
+**File:** `theories/standard_borel.v`, lines 196--434
+
+```
+Fixpoint bin_digit (x : R) (n : nat) : bool :=
+  match n with
+  | 0%N => (2%:R^-1 <= x)
+  | n'.+1 => bin_digit (if (2%:R^-1 <= x) then x *+ 2 - 1 else x *+ 2) n'
+  end.
+
+Definition bin_partial_sum (d : nat -> bool) (n : nat) : R :=
+  \sum_(i < n) (d i)%:R * (2%:R^-1) ^+ i.+1.
+
+Definition bin_sum (d : nat -> bool) : R :=
+  limn (fun n => bin_partial_sum d n : R^o).
+```
+
+**Convergence and bounds:**
+
+| Name | Statement |
+|------|-----------|
+| `geom_half_sum` | `sum_{i<n} (1/2)^{i+1} = 1 - (1/2)^n` |
+| `bin_partial_sum_le1` | Partial sums bounded by 1 |
+| `bin_partial_sum_ge0` | Partial sums non-negative |
+| `bin_partial_sum_nd` | Partial sums non-decreasing |
+| `is_cvg_bin_partial_sum` | Convergence of partial sums |
+| `bin_sum_le1` | Binary sum bounded by 1 |
+| `bin_sum_ge0` | Binary sum non-negative |
+
+**Reconstruction theorem:**
+
+```
+Lemma bin_digits_reconstruction (x : R) :
+  0 <= x < 1 -> bin_sum (bin_digits x) = x.
+```
+
+The proof proceeds by showing that `x - bin_partial_sum (bin_digit x) n = rem(n) * (1/2)^n` where `rem(n)` is bounded in `[0,1)`, so the error converges to 0 via the squeeze lemma and `cvg_geometric`.
+
+**Uniqueness of binary expansions:**
+
+| Name | Statement |
+|------|-----------|
+| `no_trailing_ones` | `forall N, exists n, N <= n /\ d n = false` |
+| `bin_digits_no_trailing_ones` | `0 <= x < 1 -> no_trailing_ones (bin_digits x)` |
+| `bin_sum_no_trailing_lt1` | `no_trailing_ones d -> bin_sum d < 1` |
+| `bin_sum_shift` | `bin_sum d = d(0) * 1/2 + bin_sum (d \o S) * 1/2` |
+| `no_trailing_ones_shift` | Shifting preserves no-trailing-ones |
+| `bin_digits_bin_sum` | `no_trailing_ones d -> bin_digits (bin_sum d) =1 d` |
+
+The `bin_digits_no_trailing_ones` proof is by contradiction: if all digits from position N onward are 1, the remainders satisfy `1 - rem(N+k) = (1 - rem(N)) * 2^k`, which eventually exceeds 1, contradicting `rem >= 0`.
+
+### 3.3 Digit Interleaving and Pairing
+
+**File:** `theories/standard_borel.v`, lines 222--360
+
+```
+Definition interleave (d1 d2 : nat -> bool) (n : nat) : bool :=
+  if ~~ odd n then d1 n./2 else d2 n./2.
+
+Definition deinterleave_even (d : nat -> bool) (n : nat) : bool := d (n.*2)%N.
+Definition deinterleave_odd (d : nat -> bool) (n : nat) : bool := d (n.*2.+1)%N.
+```
+
+**Round-trip on digit sequences:**
+
+| Name | Statement |
+|------|-----------|
+| `interleave_deinterleaveK` | `interleave (deinterleave_even d) (deinterleave_odd d) =1 d` |
+| `deinterleave_interleaveK_even` | `deinterleave_even (interleave d1 d2) =1 d1` |
+| `deinterleave_interleaveK_odd` | `deinterleave_odd (interleave d1 d2) =1 d2` |
+| `interleave_no_trailing_ones` | Interleaving preserves no-trailing-ones |
+
+**Pairing functions on (0,1):**
+
+```
+Definition pair_to_unit (xy : R * R) : R :=
+  bin_sum (interleave (bin_digits xy.1) (bin_digits xy.2)).
+
+Definition unit_to_pair (r : R) : R * R :=
+  (bin_sum (deinterleave_even (bin_digits r)),
+   bin_sum (deinterleave_odd (bin_digits r))).
+```
+
+### 3.4 Round-Trip Properties
+
+**File:** `theories/standard_borel.v`, lines 436--750
+
+Two round-trip lemmas are established:
+
+**Direction 1 (UNCONDITIONAL -- needed for `is_standard_borel`):**
+
+```
+Lemma pair_to_unit_to_pair (xy : R * R) :
+  0 <= xy.1 < 1 -> 0 <= xy.2 < 1 ->
+  unit_to_pair (pair_to_unit xy) = xy.
+```
+
+This uses `bin_digits_bin_sum` (with `interleave_no_trailing_ones` providing the no-trailing-ones hypothesis) and then `deinterleave_interleaveK_even/odd` to recover the original digit sequences, followed by `bin_digits_reconstruction`.
+
+**Direction 2 (conditional):**
+
+```
+Lemma unit_to_pair_to_unit (r : R) :
+  0 <= r < 1 ->
+  no_trailing_ones (deinterleave_even (bin_digits r)) ->
+  no_trailing_ones (deinterleave_odd (bin_digits r)) ->
+  pair_to_unit (unit_to_pair r) = r.
+```
+
+This direction requires no-trailing-ones on the deinterleaved subsequences, which does NOT follow from no-trailing-ones on the full sequence. However, this direction is not needed for `is_standard_borel`, which only requires `g(f(x)) = x`. The set of reals where the extra hypotheses fail is a subset of the dyadic rationals (countable, hence measure-zero).
+
+Additional helper lemmas: `bin_sum_ext`, `bin_sum_has_one_gt0`, `phi_has_true_digit`, `phi_ge0`, `phi_in_01`, `pair_to_unit_phi_gt0`, `pair_to_unit_phi_lt1`, `pair_to_unit_phi_in_itv`, `pair_to_unit_phi_in_01`, `unit_to_pair_fst_ge0`, `unit_to_pair_fst_le1`, `unit_to_pair_snd_ge0`, `unit_to_pair_snd_le1`.
+
+### 3.5 Measurability of the Bijection Components
+
+**File:** `theories/standard_borel.v`, lines 752--922
+
+**Binary digit measurability:**
+
+| Name | Statement |
+|------|-----------|
+| `measurable_step` | The doubling-and-testing step is measurable |
+| `measurable_iter_step` | Iterated step is measurable |
+| `measurable_bin_digit` | `measurable_fun setT (fun x => bin_digit x n)` |
+| `measurable_interleave_digit` | `measurable_fun setT (fun xy => interleave ... m)` |
+| `measurable_deinterleave_even_digit` | Even deinterleaving at position m is measurable |
+| `measurable_deinterleave_odd_digit` | Odd deinterleaving at position m is measurable |
+| `measurable_bool_scale` | `measurable_fun setT f -> measurable_fun setT (fun x => (f x)%:R * c)` |
+
+**Composite measurability (via `measurable_fun_cvg` on partial sums):**
+
+| Name | Statement |
+|------|-----------|
+| `measurable_pair_to_unit` | `measurable_fun setT pair_to_unit` |
+| `measurable_unit_to_pair_fst` | `measurable_fun setT (fun r => (unit_to_pair r).1)` |
+| `measurable_unit_to_pair_snd` | `measurable_fun setT (fun r => (unit_to_pair r).2)` |
+
+**Full-domain measurability of psi:**
+
+```
+Lemma measurable_psi_setT : measurable_fun [set: R] (@psi R).
+```
+
+The proof factors `psi = sin * cos^{-1}` on `pi*(y - 1/2)`, proves `sin` and `cos` are measurable via continuity, and handles `cos^{-1}` by approximating `x^{-1}` with `x/(x^2 + 1/(n+1))` (which is continuous) and applying `measurable_fun_cvg`. The convergence `inv_cvg_approx` is proved using `cvgV` and `cvg_harmonic`.
+
+### 3.6 Composed Bijection R x R to R
+
+**File:** `theories/standard_borel.v`, lines 924--1208
+
+```
+Definition encode_RR (xy : R * R) : R :=
+  psi (pair_to_unit (phi xy.1, phi xy.2)).
+
+Definition decode_RR (r : R) : R * R :=
+  let uv := unit_to_pair (phi r) in (psi uv.1, psi uv.2).
+```
+
+**Main round-trip theorems:**
+
+```
+Theorem decode_encode_RR (xy : R * R) :
+  decode_RR (encode_RR xy) = xy.
+```
+
+The proof chains: (1) `phiK` to recover `pair_to_unit(phi x, phi y)` from `phi(psi(...))`, (2) `pair_to_unit_to_pair` to recover `(phi x, phi y)` from `unit_to_pair(pair_to_unit(...))`, and (3) `psiK` twice to recover `(x, y)`.
+
+```
+Theorem encode_decode_RR (r : R)
+  (hnt_even : no_trailing_ones (deinterleave_even (bin_digits (phi r))))
+  (hnt_odd : no_trailing_ones (deinterleave_odd (bin_digits (phi r))))
+  (hu1_pos : 0 < (unit_to_pair (phi r)).1)
+  (hu2_pos : 0 < (unit_to_pair (phi r)).2) :
+  encode_RR (decode_RR r) = r.
+```
+
+This direction requires extra hypotheses (see Section 3.4) but is not needed for `is_standard_borel`.
+
+**Measurability:**
+
+| Name | Statement |
+|------|-----------|
+| `measurable_encode_RR` | `measurable_fun setT encode_RR` |
+| `measurable_decode_RR` | `measurable_fun setT decode_RR` |
+
+The `measurable_encode_RR` proof composes `measurable_phi` (on each component), `measurable_pair_to_unit`, and `measurable_psi` (restricted to `(0,1)` via `measurable_comp` with `pair_to_unit_phi_in_itv`). The `measurable_decode_RR` proof uses `measurable_psi_setT`, `measurable_unit_to_pair_fst/snd`, and `measurable_phi`.
+
+### 3.7 The Punchline: pair_standard_borel
+
+**File:** `theories/standard_borel.v`, lines 1210--1221
+
+```
+Lemma pair_standard_borel :
+  exists (f : R * R -> R) (g : R -> R * R),
+    measurable_fun setT f /\ measurable_fun setT g /\
+    (forall xy, g (f xy) = xy).
+Proof.
+exists encode_RR, decode_RR.
+split; first exact: measurable_encode_RR.
+split; first exact: measurable_decode_RR.
+exact: decode_encode_RR.
+Qed.
+```
+
+This witnesses that `R x R` is standard Borel in the sense of `is_standard_borel` (defined in `measure_qbs_adjunction.v`), which only requires `g(f(x)) = x` (not the reverse). Combined with `R_full_faithful_standard_borel`, this shows the R functor is fully faithful on products of standard Borel spaces.
+
+### 3.8 File Dependency Graph
 
 ```
 quasi_borel.v
-    |
-    +---> measure_qbs_adjunction.v
-    |
-    +---> coproduct_qbs.v
-    |
-    +---> probability_qbs.v
-              |
-              +---> pair_qbs_measure.v
-              |         |
-              |         +---> bayesian_regression.v
-              |
-              +---> measure_as_qbs_measure.v
-              |
-              +---> qbs_prob_quot.v
+  |
+  +--> measure_qbs_adjunction.v
+  |
+  +--> coproduct_qbs.v
+  |
+  +--> probability_qbs.v
+  |       |
+  |       +--> pair_qbs_measure.v
+  |       |       |
+  |       |       +--> bayesian_regression.v
+  |       |
+  |       +--> qbs_prob_quot.v
+  |       |
+  |       +--> measure_as_qbs_measure.v
+  |
+  +--> standard_borel.v (no QBS imports; pure analysis)
 ```
 
-**Build order:**
-1. `quasi_borel.v` -- core definitions (HB mixin + structure, morphisms, products, exponentials, etc.)
-2. `measure_qbs_adjunction.v` -- depends on 1
-3. `coproduct_qbs.v` -- depends on 1
-4. `probability_qbs.v` -- depends on 1
-5. `pair_qbs_measure.v` -- depends on 1, 4
-6. `measure_as_qbs_measure.v` -- depends on 1, 4
-7. `qbs_prob_quot.v` -- depends on 1, 4
-8. `bayesian_regression.v` -- depends on 1, 4, 5
+Note: `standard_borel.v` does not import any QBS files. It is a standalone construction in math-comp analysis. The connection to QBS is made via `is_standard_borel` in `measure_qbs_adjunction.v`.
 
-### 3.2 Design Decisions
+### 3.9 Design Decisions
 
-#### HB Mixin + Structure vs. Plain Record
+**HB.pack for non-canonical instances.** Every concrete QBS construction (`prodQ`, `expQ`, `unitQ`, `coprodQ`, `gen_coprodQ`, `piQ`, `listQ`, `monadP`, `sub_qbs`, `generating_qbs`, `map_qbs`, `qbs_supT`, `qbs_prob_space_qbs`) uses `HB.pack` with an NB comment explaining why. The carrier types are non-canonical (product types, sum types, dependent types, bundled morphisms) and cannot be equipped with canonical HB instances.
 
-**Decision:** Use an HB mixin `isQBS` and structure `QBSpace` with short type `qbsType R`, but build concrete instances via manual `QBSpace.Pack` calls.
+**Granular imports.** All files use specific imports from math-comp analysis sub-modules (e.g., `From mathcomp.analysis Require Import topology_theory.num_topology`, `measure_theory.measurable_structure`, etc.) rather than blanket `all_analysis`/`all_ssreflect` imports. The exception is `all_boot` and `all_algebra` from the core math-comp library.
 
-**Rationale:** The HB mixin/structure pattern gives standard infrastructure (coercions, canonical projections, `qbsType R` as a universe). However, the exponential `expQ X Y` has carrier `qbs_hom X Y`, a sigma type. This and similar non-canonical carriers (products, coproducts, lists, probability triples) cannot be expressed as HB canonical instances, so each concrete construction uses manual `QBSpace.Pack` calls. Every such usage is annotated with an NB comment explaining the reason.
+**Mathcomp naming conventions.** Lemma names follow math-comp style: `qbs_morphism_fst`, `prodQ_Mx_comp`, `bin_partial_sum_le1`, etc.
 
-**Import style:** All 8 files use granular imports (e.g., `From mathcomp.analysis Require Import measure_theory.measurable_structure`) rather than monolithic `all_analysis` or `all_ssreflect`. This makes dependencies explicit and compilation faster.
+**Strong vs. weak morphism condition.** The development factors bind to take an explicit diagonal randomness proof, with helper lemmas for the strong morphism case and the constant-alpha case. This avoids the need for quotient types in the monad construction while preserving compositionality.
 
-#### Pointwise vs. Strong monadP_random
+**Setoid quotient.** Rather than using Rocq's quotient types (which would require showing that all operations respect equivalence), the development uses a setoid-style wrapper `qbs_prob_space` with an explicit equality `qps_eq`. This is lighter-weight and sufficient for the intended applications.
 
-**Decision:** Use the pointwise definition `monadP_random'` for the QBS structure on `qbs_prob X`. The strong definition `monadP_random` is available for bind.
+**Product measure approximation.** The `qbs_prob_pair` construction uses `qbs_prob_mu p` as the base measure (a pragmatic approximation). The proper product construction is handled by `qbs_pair_integral`, which uses `mu_p \x mu_q` on `mR * mR` for genuine product integration.
 
-**Rationale:** The Isabelle development uses the strong definition (single shared alpha), which requires quotient types to make return work correctly (since `qbs_return` produces triples whose alpha varies with `r`). The pointwise definition avoids this dependency. The strong condition is provided as an additional hypothesis for bind when needed, and helper lemmas (`qbs_bind_alpha_random_strong`, `qbs_bind_alpha_random_const`, `qbs_bind_alpha_random_return`) cover the key cases.
+### 3.10 Comparison with Isabelle AFP
 
-#### Parametric qbs_return
+| Feature | Isabelle AFP | This development |
+|---------|-------------|------------------|
+| QBS axioms | Locale-based | HB mixin/structure |
+| Non-canonical carriers | Type classes | Manual `HB.pack` |
+| Probability monad | Quotient type | Setoid wrapper + explicit equivalence |
+| Standard Borel R~RxR | Not formalized | Complete: `pair_standard_borel` via atan + digit interleaving |
+| Bayesian example | Bayesian linear regression (abstract) | Bayesian linear regression with concrete data + multi-observation |
+| Monad strength coherence | Not formalized | 4 coherence lemmas (naturality, unit, assoc, return) |
+| Monad commutativity | Not formalized | `qbs_pair_integral_comm` (Proposition 22) |
+| Integration | Via push-forward | Direct + pushforward infrastructure |
+| Fubini | Not formalized | `qbs_pair_integralE` + marginals |
+| Independence | Not formalized | `qbs_indep` + `qbs_integral_indep_mult` |
+| Variance of sums | Not formalized | `qbs_variance_indep_sum` |
+| Lines | ~5000 | 5174 |
 
-**Decision:** `qbs_return X x mu` takes an explicit measure parameter.
+### 3.11 Math-Comp Analysis Dependencies
 
-**Rationale:** The left unit law requires `bind(return(x), f)` to produce a triple equivalent to `f(x)`. By choosing `mu := qbs_prob_mu (f x)`, the bind's base measure matches `f(x)`'s base measure exactly, making the proof trivial (definitional equality). All returns at the same point are equivalent regardless of measure (`qbs_return_equiv`).
+The development uses the following math-comp analysis components:
 
-#### Direct Product Integration
+| Component | Used for |
+|-----------|----------|
+| `measurableTypeR R` | The Borel measurable space on reals |
+| `measurable_fun` | Measurability of functions |
+| `probability` | Probability measures |
+| `lebesgue_integral` | Integration (`\int[mu]_x f(x)`) |
+| `lebesgue_integral_fubini` | Fubini theorem (`integral12_prod_meas1`, `integral21_prod_meas1`) |
+| `variance`, `covariance` | Variance and covariance definitions |
+| `Lfun`, `Lfun_subset12` | L^p space membership |
+| `normal_prob`, `normal_pdf` | Normal distribution |
+| `uniform_prob` | Uniform distribution |
+| `pushforward`, `integral_pushforward` | Pushforward measures and integrals |
+| `hoelder` | Holder's inequality / L^p products |
+| `atan`, `tan`, `sin`, `cos`, `pi` | Trigonometric functions |
+| `cvg_geometric`, `squeeze_cvgr` | Convergence of geometric series |
 
-**Decision:** Product measures use `product_measure1` from math-comp analysis directly on `mR * mR`.
+### 3.12 Statistics
 
-**Rationale:** The alternative would require a standard Borel isomorphism `R ~ R x R` (binary expansion), which is approximately 1500 lines of hard measure theory. The direct approach uses the existing product measure infrastructure on the product measurable type `mR * mR`, keeping the development lean.
+| File | Lines | Qed | Defined | Defs | Lemmas | Theorems |
+|------|------:|----:|--------:|-----:|-------:|---------:|
+| `quasi_borel.v` | 742 | 35 | 0 | 14 | 45 | 0 |
+| `measure_qbs_adjunction.v` | 248 | 12 | 0 | 2 | 18 | 0 |
+| `coproduct_qbs.v` | 676 | 22 | 0 | 8 | 22 | 0 |
+| `probability_qbs.v` | 783 | 16 | 0 | 16 | 35 | 0 |
+| `pair_qbs_measure.v` | 534 | 12 | 0 | 7 | 15 | 0 |
+| `qbs_prob_quot.v` | 345 | 7 | 0 | 12 | 17 | 0 |
+| `measure_as_qbs_measure.v` | 183 | 4 | 2 | 5 | 4 | 0 |
+| `bayesian_regression.v` | 442 | 15 | 0 | 15 | 16 | 0 |
+| `standard_borel.v` | 1222 | 50 | 0 | 13 | 54 | 2 |
+| **Total** | **5174** | **173** | **2** | **92** | **226** | **2** |
 
-#### Math-comp Naming Conventions
+**Summary:** 175 completed proofs (173 Qed + 2 Defined), 0 Admitted, 0 custom axioms, 330 declarations across 9 files and 5174 lines.
 
-All lemma and definition names follow math-comp conventions:
-- `qbs_Mx` for the random element set (matching field name style)
-- `qbs_morphism` for the morphism predicate
-- `qbs_bind_returnl` / `qbs_bind_returnr` / `qbs_bindA` for monad laws (matching `bind_returnl`/`bindA` style)
-- `qbs_prob_equivxx` / `qbs_prob_equivC` for reflexivity/symmetry (matching `eqxx`/`eqC` style)
-- `qps_eqxx` / `qps_eqC` for the quotient equivalence
+### 3.13 Remaining Work
 
-#### `(**md ... *)` Documentation Headers
+1. **Disintegration / Markov kernels.** The general case of `qbs_bind_equiv_l` (bind respects equivalence for arbitrary strong morphisms) requires the disintegration theorem, which is beyond the current development.
 
-Every source file begins with an `(**md ... *)` documentation header block in math-comp analysis style, listing the key definitions and notations provided by the file. These serve as quick reference and are compatible with Coqdoc markdown output.
+2. **Standard Borel closure under countable products.** The current `pair_standard_borel` covers binary products; extending to countable products (R ~ R^N) would require a Hilbert-cube-style encoding.
 
-#### Classical Axioms
+3. **s-Finite kernels.** Integration with the s-finite kernel framework from math-comp analysis (Affeldt, Cohen, Saito) would enable a more compositional treatment of conditional distributions.
 
-The development uses math-comp's classical logic framework (`boolp.pselect`, `boolp.pselectT`, `boolp.constructive_indefinite_description`, `boolp.funext`, `boolp.propext`, `boolp.choice`, `boolp.Prop_irrelevance`). No additional custom axioms are introduced. The total count of `Admitted` lemmas is **0**.
+4. **Quotient via actual quotient types.** Replacing the setoid wrapper `qbs_prob_space` with Rocq's quotient types would give definitional equality on the quotient, at the cost of requiring all operations to provably respect equivalence.
 
-### 3.3 Comparison with Isabelle AFP
-
-The following table compares coverage with the Isabelle AFP formalization (Hirata, Minamide, Sato, 2022).
-
-| Feature | Isabelle AFP | This Development | Notes |
-|---------|-------------|------------------|-------|
-| Core QBS structure | `quasi_borel` | `isQBS` (HB mixin) / `QBSpace` (HB structure) | Same three axioms; HB infrastructure |
-| Morphisms | `qbs_morphism` | `qbs_morphism` | Same definition |
-| Binary products | `pair_qbs` | `prodQ` | Same characterization |
-| Exponentials | `exp_qbs` | `expQ` | Same carrier (bundled hom) |
-| Eval morphism | `qbs_eval` | `qbs_morphism_eval` | Cartesian closure |
-| Curry morphism | `qbs_curry` | `qbs_morphism_curry` | Cartesian closure |
-| Unit | `unit_qbs` | `unitQ` | Terminal object |
-| Binary coproducts | `coprod_qbs` | `coprodQ` | 3-case random elements |
-| General coproducts | `coprod_qbs_general` | `gen_coprodQ` | Sigma types |
-| Pi types | `PiQ` | `piQ` | Dependent products |
-| List type | `list_qbs` | `listQ` | Countable coprod of prods |
-| R functor | `R_functor` | `R_qbs` | Measurable -> QBS |
-| L functor | `L_functor` | `sigma_Mx` / `L_sigma` | QBS -> sigma-algebra |
-| Adjunction | `LR_adjunction` | `lr_adj_natural` | L -| R |
-| Product preservation | `R_preserves_prod` | `R_preserves_prod` | R(M1xM2) ~ R(M1)xR(M2) |
-| Standard Borel | `standard_borel` | `is_standard_borel` | Definition only |
-| Full faithfulness | `R_full_faithful` | `R_full_faithful_standard_borel` | On standard Borel |
-| Probability triple | `qbs_prob` | `qbs_prob` (Record) | (alpha, mu) pairs |
-| Equivalence | `qbs_prob_equiv` | `qbs_prob_equiv` | Pushforward equality |
-| Probability monad | `monad_qbs` | `monadP` | P(X) as QBS |
-| Return | `return_qbs` | `qbs_return` | Parametric in mu |
-| Bind | `bind_qbs` | `qbs_bind` | Explicit diagonal proof |
-| Left unit | `monad_left_unit` | `qbs_bind_returnl` | Up to equivalence |
-| Right unit | `monad_right_unit` | `qbs_bind_returnr` | Up to equivalence |
-| Associativity | `monad_assoc` | `qbs_bindA` | Up to equivalence |
-| Integration | `qbs_integral` | `qbs_integral` | Via base measure |
-| Fubini | `fubini_qbs` | `qbs_pair_integralE` | Product measure |
-| Independence | Not formalized | `qbs_indep`, `qbs_integral_indep_mult` | E[fg]=E[f]E[g] |
-| Variance | Not formalized | `qbs_variance`, `qbs_variance_indep_sum` | Var(X+Y)=Var(X)+Var(Y) |
-| Quotient type | Isabelle quotient | `qbs_prob_space` (setoid) | Different approach |
-| Normal distribution | Not explicit | `qbs_normal_distribution` | Via math-comp |
-| Bernoulli | Not explicit | `qbs_bernoulli` | Via uniform threshold |
-| Bayesian regression | `Bayesian_Linear_Regression` | `bayesian_regression.v` | Full example |
-| Binary expansion R~RxR | Yes (~1500 lines) | Not formalized | Optional |
-| Product of standard Borel | Yes | Not formalized | Optional |
-
-**Key differences from Isabelle:**
-1. **HB mixin/structure vs. locale:** Isabelle uses locales; this development uses HB's mixin/structure mechanism with manual `QBSpace.Pack` for concrete instances.
-2. **Pointwise vs. strong monadP:** Isabelle uses the strong definition requiring quotient types; this development uses the pointwise definition with explicit diagonal proofs.
-3. **Setoid quotient vs. Isabelle quotient:** Isabelle has native quotient types; this development uses a setoid-style wrapper with `qps_eq`.
-4. **Independence and variance:** This development includes `qbs_integral_indep_mult` (E[fg]=E[f]E[g]) and `qbs_variance_indep_sum` (Var(X+Y)=Var(X)+Var(Y)), which are not in the Isabelle AFP.
-5. **Direct product integration:** This development uses `mR * mR` product measures directly, avoiding the binary expansion `R ~ R x R`.
-6. **Math-comp naming conventions:** All names follow math-comp style (`qbs_bind_returnl`, `qbs_bindA`, `qbs_prob_equivxx`, etc.).
-
-### 3.4 Math-Comp Analysis Dependencies
-
-The formalization builds on the following key components from math-comp analysis 1.15.x:
-
-**Measure theory:**
-- `probability mR R` -- probability measures on R
-- `measurable_fun setT f` -- measurability of functions
-- `measurableT_comp` -- composition preserves measurability
-- `measurable_id`, `measurable_cst` -- identity and constants are measurable
-- `measurable_funD`, `measurable_funM` -- addition and multiplication preserve measurability
-- `measurable_fun_ltr`, `measurable_neg` -- comparison and negation
-- `measurable_fun_ifT` -- conditional functions
-- `measurable_fun_pairP` -- pairing of measurable functions
-
-**Integration:**
-- `integral_ge0`, `integral_cst` -- basic integral properties
-- `integralZl`, `integralZr` -- linearity of integration
-- `eq_integral`, `eq_measure_integral` -- integral extensionality
-- `integral_pushforward` -- pushforward integral theorem
-- `integrable_pushforward` -- integrability transfers through pushforward
-
-**Product measures:**
-- `product_measure1` -- product measure construction
-- `integral12_prod_meas1` -- Fubini: `\int[mu1 \x mu2] f = \int[mu1] \int[mu2] f`
-- `integral21_prod_meas1` -- reverse Fubini
-
-**Probability:**
-- `probability_setT` -- `mu setT = 1` for probability measures
-- `normal_prob` -- normal distribution as a probability measure
-- `normal_pdf`, `normal_pdf_ge0` -- normal density function
-- `uniform_prob` -- uniform distribution
-- `variance`, `varianceE`, `varianceD` -- variance and its properties
-- `covarianceE` -- covariance expansion
-- `Lfun`, `Lfun_subset12`, `Lfun2_mul_Lfun1` -- L^p space membership
-- `expectation_fin_num` -- finiteness of expectation
-
-**Classical logic:**
-- `boolp.pselect`, `boolp.pselectT` -- decidability of propositions / type inhabitedness
-- `boolp.constructive_indefinite_description` -- classical choice
-- `boolp.funext`, `boolp.propext` -- function and propositional extensionality
-- `boolp.choice` -- countable choice
-- `boolp.Prop_irrelevance` -- proof irrelevance
-
-### 3.5 Statistics
-
-| File | Lines | Definitions | Lemmas | Qed | Defined | Admitted |
-|------|-------|-------------|--------|-----|---------|----------|
-| `quasi_borel.v` | 741 | 14 | 45 | 35 | 0 | 0 |
-| `measure_qbs_adjunction.v` | 248 | 2 | 18 | 12 | 0 | 0 |
-| `coproduct_qbs.v` | 676 | 8 | 22 | 22 | 0 | 0 |
-| `probability_qbs.v` | 724 | 16 | 31 | 16 | 0 | 0 |
-| `pair_qbs_measure.v` | 497 | 7 | 14 | 11 | 0 | 0 |
-| `measure_as_qbs_measure.v` | 183 | 5 | 4 | 4 | 2 | 0 |
-| `qbs_prob_quot.v` | 345 | 12 | 17 | 7 | 0 | 0 |
-| `bayesian_regression.v` | 442 | 15 | 16 | 15 | 0 | 0 |
-| **Total** | **3856** | **79** | **167** | **122** | **2** | **0** |
-
-**Additional HB declarations (in `quasi_borel.v`):**
-- 1 `HB.mixin Record isQBS`
-- 1 `HB.structure Definition QBSpace`
-
-**Summary:**
-- **124 completed proofs** (122 Qed + 2 Defined)
-- **0 Admitted** lemmas
-- **0 custom axioms** (all classical reasoning via math-comp's `boolp`)
-- **3 Records** (`qbs_hom`, `qbs_prob`, `qbs_prob_space`)
-- **1 HB mixin** (`isQBS`)
-- **1 HB structure** (`QBSpace`)
-- **1 Inductive** (`generating_Mx`)
-
-### 3.6 Remaining Work
-
-The following items from `TODO.md` represent potential extensions, none of which are required by any current theorem:
-
-**Standard Borel infrastructure (optional):**
-- Binary expansion `R ~ R x R` (~1500 lines, hard) -- would allow the strong `monadP_random` to work without quotient types
-- Product of standard Borel is standard Borel (~200 lines)
-- Subset of standard Borel is standard Borel (~100 lines)
-
-**Completed since initial planning:**
-- HB mixin/structure (`isQBS` / `QBSpace` / `qbsType R`)
-- Granular imports in all 8 files (no `all_analysis`, no `all_ssreflect`)
-- Math-comp naming conventions (`qbs_Mx`, `qbs_morphism`, `qbs_bind_returnl/r`, `qbs_bindA`, `qbs_prob_equivxx/C`, etc.)
-- `(**md ... *)` documentation headers in all files
-- NB comments on all `QBSpace.Pack` usages
-- Post-section `Arguments` declarations
-- Subspaces (`sub_qbs`)
-- Image spaces (`map_qbs`)
-- Generating sets (`generating_Mx`)
-- Order structure on QBS (`qbs_leT`, `qbs_supT`)
-- Dependent products (`piQ`)
-- Swap and associators for products
-- Exponential structural morphisms (`qbs_morphism_exp_comp`, `qbs_morphism_arg_swap`)
-- Comparison morphisms (add, mul, ltr, negb)
-- List type (`listQ`)
-- Binary/general coproduct isomorphism
-- Quotient type (`qbs_prob_space`)
-- Monad join and strength
-- Variance and independence
-- Parameterized distribution morphisms
-- Full Bayesian regression example with normalization, evidence, and multi-observation posterior
-
----
-
-*This report was generated from the source files in `/home/rocq/QBS/theories/`.*
+5. **Standard Borel: full round-trip.** The reverse direction `encode_decode_RR` is proved conditionally (on no-trailing-ones of deinterleaved subsequences). Formalizing that the exception set has measure zero would complete the picture.
