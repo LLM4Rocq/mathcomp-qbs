@@ -1,14 +1,13 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
-From mathcomp.reals Require Import reals constructive_ereal.
+From mathcomp.reals Require Import reals.
 From mathcomp.classical Require Import classical_sets filter.
 From mathcomp.analysis Require Import topology_theory.num_topology.
 From mathcomp.analysis Require Import normedtype_theory.normedtype sequences.
 From mathcomp.analysis Require Import measure_theory.measurable_structure.
 From mathcomp.analysis Require Import measure_theory.measurable_function.
-From mathcomp.analysis Require Import lebesgue_stieltjes_measure.
-From mathcomp.analysis Require Import measurable_realfun trigo exp.
+From mathcomp.analysis Require Import measurable_realfun trigo.
 
 (**md**************************************************************************)
 (* # Standard Borel Spaces                                                     *)
@@ -93,7 +92,8 @@ Unset Printing Implicit Defensive.
 Import Num.Def Num.Theory reals classical_sets.
 Import GRing.Theory.
 Import numFieldTopology.Exports.
-
+Import order.Order.POrderTheory.
+Import boolp.
 Local Open Scope classical_set_scope.
 Local Open Scope ring_scope.
 
@@ -186,7 +186,7 @@ rewrite /psi.
 apply: (@topology_structure.continuous_comp _ _ _
           (fun y0 : R => pi * (y0 - 1/2)) tan).
   apply: continuousM; first exact: topology_structure.cvg_cst.
-  apply: continuousB; first exact: filter.cvg_id.
+  apply: continuousB; first exact: cvg_id.
   exact: topology_structure.cvg_cst.
 exact: continuous_tan.
 Qed.
@@ -292,7 +292,7 @@ suff hgeom : \sum_(i < n) (2%:R : R)^-1 ^+ i.+1 <= 1.
     apply: ler_wpM2r;
       first by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n.
     by case: (d i).
-  exact: (order.Order.POrderTheory.le_trans hle hgeom).
+  exact: (le_trans hle hgeom).
 rewrite geom_half_sum lerBlDr -{1}[1]addr0.
 apply: lerD => //.
 by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n.
@@ -414,7 +414,7 @@ have hrem_cvg : (fun n => rem n * 2%:R^-1 ^+ n : R^o) n
       * by have [] := hrem_bound n.
       * by apply: (@Num.Theory.exprn_ge0 R); rewrite invr_ge0; apply: ler0n.
       * by have [_ h] := hrem_bound n;
-           exact: order.Order.POrderTheory.ltW h.
+           exact: ltW h.
       * by [].
   - exact: topology_structure.cvg_cst.
   - have := @cvg_geometric R 1 _ habs_half.
@@ -468,7 +468,7 @@ Lemma bin_sum_ext (d1 d2 : nat -> bool) :
   d1 =1 d2 -> bin_sum d1 = bin_sum d2.
 Proof.
 move=> heq; rewrite /bin_sum; congr (limn _).
-apply: boolp.funext => n.
+apply: funext => n.
 rewrite /bin_partial_sum; apply: eq_bigr => i _.
 by rewrite (heq i).
 Qed.
@@ -518,12 +518,12 @@ move=> N.
 suff : exists n, (N <= n)%N /\ ~~ (2%:R^-1 <= rem n).
   move=> [n [hn hlt]]; exists n; split=> //.
   by rewrite hrem_digit; apply/negbTE.
-apply: boolp.contrapT => hnex.
+apply: contrapT => hnex.
 have hall : forall n, (N <= n)%N -> 2%:R^-1 <= rem n.
-  move=> n hn; apply: boolp.contrapT => hlt.
+  move=> n hn; apply: contrapT => hlt.
   by apply: hnex; exists n; split => //; apply/negP.
 have hinv : forall k : nat, 1 - rem (N + k)%N = (1 - rem N) *+ 2 ^ k.
-  elim => [|k IHk]; first by simpl; rewrite expn0 mulr1n addn0.
+  elim => [|k IHk]; first by rewrite /= expn0 mulr1n addn0.
   have -> : (N + k.+1)%N = (N + k).+1 by rewrite addnS.
   by rewrite (hstep_eq N) ?leq_addr // IHk -mulrnA expnSr.
 have hle : forall k : nat, (1 - rem N) *+ 2 ^ k <= 1.
@@ -531,7 +531,7 @@ have hle : forall k : nat, (1 - rem N) *+ 2 ^ k <= 1.
   exact: (hrem_bound (N + k)%N).1.
 have hpos : 0 < 1 - rem N by rewrite subr_gt0; exact: (hrem_bound N).2.
 have hinv_ge : 0 <= (1 - rem N)^-1.
-  by rewrite invr_ge0; exact: order.Order.POrderTheory.ltW hpos.
+  by rewrite invr_ge0; exact: ltW hpos.
 have harch := Num.Theory.archi_boundP hinv_ge.
 set m := archi_bound _ in harch.
 have hm : 1 < (1 - rem N) *+ m.
@@ -543,9 +543,9 @@ have [k hk] : exists k, (m <= 2 ^ k)%N.
   by exists m; exact: ltnW (ltn_expl _ (ltnSn 1)).
 have h1 := hle k.
 suff h2 : (1 - rem N) *+ m <= (1 - rem N) *+ 2 ^ k.
-  by have := order.Order.POrderTheory.lt_le_trans hm
-       (order.Order.POrderTheory.le_trans h2 h1);
-     rewrite order.Order.POrderTheory.ltxx.
+  by have := lt_le_trans hm
+       (le_trans h2 h1);
+     rewrite ltxx.
 rewrite -[X in X <= _]mulr_natr -[X in _ <= X]mulr_natr.
 by rewrite ler_pM2l // ler_nat.
 Qed.
@@ -573,7 +573,7 @@ have [n [_ hdn]] := hnt 0%N.
 have heps : (0 : R) < 2%:R^-1 ^+ n.+1.
   by apply: exprn_gt0; rewrite invr_gt0; apply: ltr0n.
 suff hlt1 : bin_sum d <= 1 - 2%:R^-1 ^+ n.+1.
-  apply: (order.Order.POrderTheory.le_lt_trans hlt1).
+  apply: (le_lt_trans hlt1).
   rewrite ltrBlDr -{1}[1]addr0 ltrD2l. exact: heps.
 apply: (@topology_structure.closed_cvg _ _ eventually _
   (fun m => bin_partial_sum d m : R^o) (fun y : R => y <= 1 - 2%:R^-1 ^+ n.+1)
@@ -582,7 +582,7 @@ apply: (@topology_structure.closed_cvg _ _ eventually _
 - near=> m.
   have hmn : (n < m)%N by near: m; exists n.+1.
   rewrite /bin_partial_sum.
-  apply: (order.Order.POrderTheory.le_trans
+  apply: (le_trans
     (y := \sum_(i < m) (2%:R^-1 : R) ^+ i.+1 - 2%:R^-1 ^+ n.+1)).
   + rewrite (bigD1 (Ordinal hmn)) //=
       [X in _ <= X - _](bigD1 (Ordinal hmn)) //=.
@@ -632,7 +632,7 @@ have hlim_shift : limn [eta bin_partial_sum d] =
 rewrite hlim_shift.
 have -> : (fun n => bin_partial_sum d n.+1 : R^o) =
   (fun n => (d 0%N)%:R * 2%:R^-1 + bin_partial_sum (d \o succn) n * 2%:R^-1 : R^o).
-  by apply: boolp.funext => n; rewrite hrel.
+  by apply: funext => n; rewrite hrel.
 apply: separation_axioms.cvg_lim => //.
 have hcst : (fun _ : nat => (d 0%N)%:R * 2%:R^-1 : R^o) n @[n --> \oo] --> ((d 0%N)%:R * 2%:R^-1 : R^o).
   exact: topology_structure.cvg_cst.
@@ -662,7 +662,7 @@ elim: n d hnt => [|n IHn] dd hnt.
     have hge0 : 0 <= bin_sum (dd \o succn) * 2%:R^-1.
       by apply: mulr_ge0; [exact: bin_sum_ge0|rewrite invr_ge0; apply: ler0n].
     rewrite lerDl //.
-  + rewrite mul0r add0r; apply: order.Order.POrderTheory.lt_geF.
+  + rewrite mul0r add0r; apply: lt_geF.
     rewrite ltr_pdivrMr ?ltr0n // mulVf ?pnatr_eq0 //.
     exact: bin_sum_no_trailing_lt1 (no_trailing_ones_shift hnt).
 - rewrite /bin_digits /=.
@@ -683,7 +683,7 @@ elim: n d hnt => [|n IHn] dd hnt.
       have hlt : bin_sum (dd \o succn) / 2 < 2%:R^-1.
         have hlt1 := bin_sum_no_trailing_lt1 hnt'.
         rewrite ltr_pdivrMr ?ltr0n // mulVf ?pnatr_eq0 //.
-      rewrite (order.Order.POrderTheory.lt_geF hlt).
+      rewrite (lt_geF hlt).
       rewrite -[_ / 2 *+ 2]mulr_natr -mulrA mulVf ?pnatr_eq0 // mulr1 //.
   rewrite hstep.
   exact: (IHn (dd \o succn) hnt').
@@ -785,7 +785,7 @@ Lemma measurable_bin_digit (n : nat) :
   measurable_fun [set: R] (fun x : R => bin_digit x n : bool).
 Proof.
 rewrite (_ : (fun x : R => _) = (fun x => 2%:R^-1 <= iter n step x)); last first.
-  by apply: boolp.funext => x; rewrite bin_digit_iter.
+  by apply: funext => x; rewrite bin_digit_iter.
 apply: measurable_fun_ler.
 - exact: measurable_cst.
 - exact: measurable_iter_step.
@@ -829,7 +829,7 @@ Lemma measurable_bool_scale {d : measure_display} {T : measurableType d}
 Proof.
 move=> hf.
 rewrite (_ : (fun x => _) = (fun x => if f x then c else (0 : R))); last first.
-  by apply: boolp.funext => x; case: (f x) => /=; rewrite ?mul1r ?mul0r.
+  by apply: funext => x; case: (f x) => /=; rewrite ?mul1r ?mul0r.
 by apply: measurable_fun_ifT => //; exact: measurable_cst.
 Qed.
 
@@ -849,7 +849,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R * R]
 - move=> m; rewrite /bin_partial_sum.
   elim: m => [|m IHm].
     rewrite (_ : (fun _ : R * R => _) = (fun _ => (0 : R))); last first.
-      by apply: boolp.funext => xy; rewrite big_ord0.
+      by apply: funext => xy; rewrite big_ord0.
     exact: measurable_cst.
   rewrite (_ : (fun xy : R * R => \sum_(i < m.+1) _) =
     ((fun xy : R * R =>
@@ -858,7 +858,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R * R]
      (fun xy : R * R =>
       (interleave (bin_digits xy.1) (bin_digits xy.2) m)%:R *
         2%:R^-1 ^+ m.+1))%R); last first.
-    by apply: boolp.funext => xy; rewrite big_ord_recr.
+    by apply: funext => xy; rewrite big_ord_recr.
   apply: measurable_funD => //.
   apply: measurable_bool_scale.
   exact: measurable_interleave_digit.
@@ -877,7 +877,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R]
 - move=> m; rewrite /bin_partial_sum.
   elim: m => [|m IHm].
     rewrite (_ : (fun _ : R => _) = (fun _ => (0 : R))); last first.
-      by apply: boolp.funext => x; rewrite big_ord0.
+      by apply: funext => x; rewrite big_ord0.
     exact: measurable_cst.
   rewrite (_ : (fun x : R => \sum_(i < m.+1) _) =
     ((fun x : R =>
@@ -886,7 +886,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R]
      (fun x : R =>
       (deinterleave_even (bin_digits x) m)%:R *
         2%:R^-1 ^+ m.+1))%R); last first.
-    by apply: boolp.funext => x; rewrite big_ord_recr.
+    by apply: funext => x; rewrite big_ord_recr.
   apply: measurable_funD => //.
   apply: measurable_bool_scale.
   exact: measurable_deinterleave_even_digit.
@@ -905,7 +905,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R]
 - move=> m; rewrite /bin_partial_sum.
   elim: m => [|m IHm].
     rewrite (_ : (fun _ : R => _) = (fun _ => (0 : R))); last first.
-      by apply: boolp.funext => x; rewrite big_ord0.
+      by apply: funext => x; rewrite big_ord0.
     exact: measurable_cst.
   rewrite (_ : (fun x : R => \sum_(i < m.+1) _) =
     ((fun x : R =>
@@ -914,7 +914,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R]
      (fun x : R =>
       (deinterleave_odd (bin_digits x) m)%:R *
         2%:R^-1 ^+ m.+1))%R); last first.
-    by apply: boolp.funext => x; rewrite big_ord_recr.
+    by apply: funext => x; rewrite big_ord_recr.
   apply: measurable_funD => //.
   apply: measurable_bool_scale.
   exact: measurable_deinterleave_odd_digit.
@@ -934,7 +934,7 @@ Definition decode_RR (r : R) : R * R :=
 
 (** phi x is in [0,1) *)
 Lemma phi_ge0 (x : R) : 0 <= phi x.
-Proof. exact: order.Order.POrderTheory.ltW (phi_gt0 x). Qed.
+Proof. exact: ltW (phi_gt0 x). Qed.
 
 Lemma phi_in_01 (x : R) : 0 <= phi x < 1.
 Proof. by apply/andP; split; [exact: phi_ge0|exact: phi_lt1]. Qed.
@@ -948,7 +948,7 @@ have heps : (0 : R) < (d k)%:R * 2%:R^-1 ^+ k.+1.
   rewrite hdk /= mul1r; apply: exprn_gt0.
   by rewrite invr_gt0; apply: ltr0n.
 suff hle : (d k)%:R * 2%:R^-1 ^+ k.+1 <= bin_sum d.
-  exact: (order.Order.POrderTheory.lt_le_trans heps hle).
+  exact: (lt_le_trans heps hle).
 rewrite /bin_sum.
 apply: (@topology_structure.closed_cvg _ _ eventually _
   (fun n => bin_partial_sum d n : R^o)
@@ -969,9 +969,9 @@ Qed.
 Lemma phi_has_true_digit (x : R) :
   exists k, bin_digits (phi x) k = true.
 Proof.
-apply: boolp.contrapT => hnone.
+apply: contrapT => hnone.
 have hall : forall k, bin_digits (phi x) k = false.
-  move=> k; apply: boolp.contrapT => hk.
+  move=> k; apply: contrapT => hk.
   by apply: hnone; exists k; case: (bin_digits (phi x) k) hk.
 have hd0 : bin_digits (phi x) =1 (fun _ => false).
   by move=> k; rewrite hall.
@@ -985,14 +985,14 @@ have hsum0 : bin_sum (bin_digits (phi x)) = 0.
       (fun n => bin_partial_sum (fun _ => false) n : R^o) (fun z : R => z <= 0)
       _ _ _).
     - exact: closed_le.
-    - by apply: filter.nearW => n; rewrite hbps0.
+    - by apply: nearW => n; rewrite hbps0.
     - exact: is_cvg_bin_partial_sum.
   have hge := bin_sum_ge0 (bin_digits (phi x)).
-  by apply: order.Order.POrderTheory.le_anti; apply/andP; split.
+  by apply: le_anti; apply/andP; split.
 have hphi01 := phi_in_01 x.
 have hrecon := bin_digits_reconstruction hphi01.
 by rewrite hsum0 in hrecon; have := phi_gt0 x; rewrite -hrecon
-   order.Order.POrderTheory.ltxx.
+   ltxx.
 Qed.
 
 (** pair_to_unit of phi values lands in (0,1) *)
@@ -1024,7 +1024,7 @@ Lemma pair_to_unit_phi_in_01 (x y : R) :
   0 <= pair_to_unit (phi x, phi y) < 1.
 Proof.
 apply/andP; split.
-- exact: order.Order.POrderTheory.ltW (pair_to_unit_phi_gt0 x y).
+- exact: ltW (pair_to_unit_phi_gt0 x y).
 - exact: pair_to_unit_phi_lt1.
 Qed.
 
@@ -1139,7 +1139,7 @@ case: (eqVneq x 0) => [->|hx0].
   suff -> : (fun n : nat => 0 / (0 * 0 + n.+1%:R^-1))
             = (fun _ : nat => (0 : R)).
     exact: topology_structure.cvg_cst.
-  apply: boolp.funext => n; by rewrite mul0r.
+  apply: funext => n; by rewrite mul0r.
 - have -> : x^-1 = x / (x * x).
     by rewrite invfM ?unitfE // [x * (x^-1 * x^-1)]mulrCA
                mulrV ?unitfE // mulr1.
@@ -1173,10 +1173,10 @@ apply: (@measurable_fun_cvg _ _ _ _ (fun n (x : R) =>
   have hden_neq0 : y * y + m.+1%:R^-1 != 0.
     rewrite lt0r_neq0 //; apply: ltr_wpDl; first exact: sqr_ge0.
     by rewrite invr_gt0; exact: ltr0Sn.
-  apply: cvgM; first exact: filter.cvg_id.
+  apply: cvgM; first exact: cvg_id.
   apply: cvgV => //.
   apply: cvgD; last exact: topology_structure.cvg_cst.
-  apply: cvgM; exact: filter.cvg_id.
+  apply: cvgM; exact: cvg_id.
 - move=> x _; exact: inv_cvg_approx.
 Qed.
 
@@ -1205,6 +1205,18 @@ apply: measurable_fun_pair.
   apply: measurableT_comp.
     exact: measurable_unit_to_pair_snd.
   exact: measurable_phi.
+Qed.
+
+(* The main application: product of standard Borel spaces is standard Borel *)
+Lemma pair_standard_borel :
+  exists (f : R * R -> R) (g : R -> R * R),
+    measurable_fun setT f /\ measurable_fun setT g /\
+    (forall xy, g (f xy) = xy).
+Proof.
+exists encode_RR, decode_RR.
+split; first exact: measurable_encode_RR.
+split; first exact: measurable_decode_RR.
+exact: decode_encode_RR.
 Qed.
 
 End binary_digit_interleaving.
