@@ -1131,14 +1131,80 @@ Qed.
     (integer values). Since R is a countable union of such open
     intervals plus the countable set of integers (singletons are
     measurable), psi is measurable on setT. *)
+Lemma inv_cvg_approx (x : R) :
+  (fun n : nat => x / (x * x + n.+1%:R^-1)) @ \oo --> x^-1.
+Proof.
+case: (eqVneq x 0) => [->|hx0].
+- rewrite invr0.
+  suff -> : (fun n : nat => 0 / (0 * 0 + n.+1%:R^-1))
+            = (fun _ : nat => (0 : R)).
+    exact: topology_structure.cvg_cst.
+  apply: boolp.funext => n; by rewrite mul0r.
+- have -> : x^-1 = x / (x * x).
+    by rewrite invfM ?unitfE // [x * (x^-1 * x^-1)]mulrCA
+               mulrV ?unitfE // mulr1.
+  apply: cvgM; first exact: topology_structure.cvg_cst.
+  apply: cvgV.
+    by rewrite mulf_neq0.
+  rewrite -[X in _ --> X]addr0.
+  apply: cvgD; first exact: topology_structure.cvg_cst.
+  exact: @cvg_harmonic.
+Qed.
+
 Lemma measurable_psi_setT : measurable_fun [set: R] (@psi R).
-Proof. Admitted.
+Proof.
+rewrite /psi.
+apply: measurableT_comp; last first.
+  apply: measurable_funM; first exact: measurable_cst.
+  apply: measurable_funB; first exact: measurable_id.
+  exact: measurable_cst.
+(* Goal: measurable_fun setT tan *)
+rewrite /tan.
+apply: measurable_funM.
+  apply: continuous_measurable_fun; exact: continuous_sin.
+(* Goal: measurable_fun setT (fun x => (cos x)^-1) *)
+apply: measurableT_comp; last first.
+  apply: continuous_measurable_fun; exact: continuous_cos.
+(* Goal: measurable_fun setT inv *)
+apply: (@measurable_fun_cvg _ _ _ _ (fun n (x : R) =>
+  x * (x * x + n.+1%:R^-1)^-1)).
+- move=> m; apply: continuous_measurable_fun => y.
+  rewrite /continuous_at.
+  have hden_neq0 : y * y + m.+1%:R^-1 != 0.
+    rewrite lt0r_neq0 //; apply: ltr_wpDl; first exact: sqr_ge0.
+    by rewrite invr_gt0; exact: ltr0Sn.
+  apply: cvgM; first exact: filter.cvg_id.
+  apply: cvgV => //.
+  apply: cvgD; last exact: topology_structure.cvg_cst.
+  apply: cvgM; exact: filter.cvg_id.
+- move=> x _; exact: inv_cvg_approx.
+Qed.
 
 (** Measurability of decode_RR.
     This follows from measurability of psi on setT (measurable_psi_setT),
     measurable_unit_to_pair_fst/snd, and measurable_phi, by composition.
     The proof is deferred pending the proof of measurable_psi_setT. *)
 Lemma measurable_decode_RR : measurable_fun [set: R] decode_RR.
-Proof. Admitted.
+Proof.
+rewrite /decode_RR.
+apply: measurable_fun_pair.
+- apply: measurableT_comp; first exact: measurable_psi_setT.
+  rewrite (_ : (fun x => (unit_to_pair (phi x)).1) =
+    (fun x => (unit_to_pair x).1) \o (@phi R)); last by [].
+  apply: measurableT_comp.
+    exact: measurable_unit_to_pair_fst.
+  exact: measurable_phi.
+- rewrite (_ : (fun x => psi (unit_to_pair (phi x)).2) =
+    (@psi R) \o ((fun x => (unit_to_pair x).2) \o (@phi R)));
+    last by [].
+  apply: measurableT_comp; first exact: measurable_psi_setT.
+  rewrite (_ : (fun x => (unit_to_pair x).2) \o (@phi R) =
+    (fun x => (unit_to_pair (@phi R x)).2)); last by [].
+  rewrite (_ : (fun x => (unit_to_pair (phi x)).2) =
+    (fun x => (unit_to_pair x).2) \o (@phi R)); last by [].
+  apply: measurableT_comp.
+    exact: measurable_unit_to_pair_snd.
+  exact: measurable_phi.
+Qed.
 
 End binary_digit_interleaving.
