@@ -9,3 +9,4 @@ theories/qbs_prob_quot.v
 theories/measure_as_qbs_measure.v
 theories/bayesian_regression.v
 theories/standard_borel.v
+theories/qbs_giry.v
