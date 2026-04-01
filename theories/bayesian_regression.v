@@ -4,27 +4,31 @@ From mathcomp Require Import all_boot all_algebra.
 From mathcomp Require Import reals ereal topology normedtype numfun measure
   lebesgue_integral lebesgue_integral_fubini lebesgue_stieltjes_measure
   probability.
-From QBS Require Import quasi_borel probability_qbs pair_qbs_measure.
+From mathcomp.classical Require Import boolp.
+From QBS Require Import quasi_borel probability_qbs pair_qbs_measure
+  measure_as_qbs_measure.
 
-Import Num.Def Num.Theory reals classical_sets.
+Import Num.Def Num.Theory reals classical_sets GRing.Theory.
 
 (**md**************************************************************************)
-(* # Bayesian Linear Regression Example                                       *)
+(* # Bayesian Linear Regression                                               *)
 (*                                                                            *)
-(* A complete Bayesian linear regression example demonstrating the            *)
-(* QBS probability monad in action:                                           *)
-(*   - Independent priors on slope and intercept (product of normals)         *)
-(*   - Likelihood function                                                    *)
-(*   - Predictive distribution via pair integration                           *)
-(*   - Posterior via conditioning                                             *)
+(* Following the Isabelle AFP development (Bayesian_Linear_Regression.thy)    *)
+(* by Hirata, Minamide, Sato.                                                 *)
 (*                                                                            *)
+(* Model: y = slope * x + intercept + noise, noise ~ N(0, 1/2)              *)
+(* Prior: slope, intercept ~ iid N(0, 3)                                      *)
+(* Data: (1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)                       *)
+(*                                                                            *)
+(* Key results:                                                               *)
 (* ```                                                                        *)
-(*   slope_prior        == Normal(0,1) prior on slope                         *)
-(*   intercept_prior    == Normal(0,1) prior on intercept                     *)
-(*   likelihood_single  == likelihood for a single data point                 *)
-(*   predictive_integral == predictive integral over the prior                *)
-(*   posterior_integral  == unnormalized posterior integral                    *)
-(*   evidence            == marginal likelihood (normalizing constant)        *)
+(*   complete_the_square  == ax^2+bx+c = a(x+b/(2a))^2 - (b^2-4ac)/(4a)    *)
+(*   normal_pdf_times     == product of two Gaussians decomposition            *)
+(*   obs                  == observation likelihood (5 data points)            *)
+(*   evidence             == normalizing constant Z                            *)
+(*   posterior_density     == E_post[g] = E_prior[g*obs] / Z                  *)
+(*   posterior_density_total == posterior integrates to 1                      *)
+(*   posterior_is_reweighting == Bayesian update formula                       *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -33,55 +37,175 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Local Open Scope classical_set_scope.
-Local Open Scope ereal_scope.
+
+(* ===================================================================== *)
+(* Part I: Normal density algebra                                        *)
+(* Key identities for computing normalizing constants.                   *)
+(* ===================================================================== *)
+
+Section NormalDensityAlgebra.
+Variable (R : realType).
+Local Open Scope ring_scope.
+
+(* Completing the square: ax^2 + bx + c = a(x+b/(2a))^2 - (b^2-4ac)/(4a) *)
+Lemma complete_the_square (a b c x : R) (ha : a != 0) :
+  a * x ^+ 2 + b * x + c =
+  a * (x + b / (a *+ 2)) ^+ 2 - (b ^+ 2 - a *+ 4 * c) / (a *+ 4).
+Proof. Admitted.
+
+(* Product of two normal densities.
+   N(m,s)(x) * N(m',s')(x) = K * N(mu_new, sigma_new)(x)
+   where:
+     mu_new    = (m*s'^2 + m'*s^2) / (s^2 + s'^2)
+     sigma_new = s*s' / sqrt(s^2 + s'^2)
+     K = normal_peak(sqrt(s^2+s'^2)) * normal_fun(m, sqrt(s^2+s'^2), m')
+
+   This identity is essential for iteratively computing the normalizing
+   constant: each observation contributes a Gaussian factor that can be
+   combined with the prior using this identity (cf. Isabelle AFP
+   normal_density_times). *)
+Lemma normal_pdf_times (m m' s s' x : R) :
+  s != 0 -> s' != 0 ->
+  normal_pdf m s x * normal_pdf m' s' x =
+  normal_peak (sqrtr (s ^+ 2 + s' ^+ 2)) *
+  normal_fun m (sqrtr (s ^+ 2 + s' ^+ 2)) m' *
+  normal_pdf ((m * s' ^+ 2 + m' * s ^+ 2) / (s ^+ 2 + s' ^+ 2))
+             (s * s' / sqrtr (s ^+ 2 + s' ^+ 2)) x.
+Proof. Admitted.
+
+End NormalDensityAlgebra.
+
+(* ===================================================================== *)
+(* Part II: Bayesian regression example                                  *)
+(* ===================================================================== *)
 
 Section BayesianRegression.
 Variable (R : realType).
-
 Local Notation mR := (measurableTypeR R).
+Local Open Scope ring_scope.
+Local Open Scope ereal_scope.
 
-(* ===================================================================== *)
-(* 1. Prior distribution on model parameters                             *)
-(*    The model is y = slope * x + intercept + noise.                   *)
-(*    We place independent normal priors on slope and intercept.         *)
-(*                                                                      *)
-(*    The joint prior is represented as the PAIR (slope_prior,          *)
-(*    intercept_prior) and integrated via qbs_pair_integral, which      *)
-(*    uses the product measure mu_slope x mu_intercept on mR x mR.     *)
-(*    This gives truly independent priors (no shared randomness).       *)
-(* ===================================================================== *)
+(* ----- Model parameters (matching Isabelle AFP) ---------------------- *)
 
-(* Prior on slope: Normal(0, 1)
-   Uses standard normal as the underlying measure with identity
-   random element, so the QBS triple represents Normal(0, 1). *)
+Let prior_sigma : R := 3%:R.     (* N(0,3) prior *)
+Let noise_sigma : R := 2%:R^-1.  (* sigma = 1/2 noise *)
+
+(* ----- 1. Prior distributions ---------------------------------------- *)
+
+(* Prior on slope: Normal(0, 3) *)
 Definition slope_prior : qbs_prob (realQ R) :=
   @mkQBSProb R (realQ R) idfun
-    (normal_prob (0 : R) (1 : R) : probability mR R)
+    (normal_prob (0 : R) prior_sigma : probability mR R)
     (@measurable_id _ mR setT).
 
-(* Prior on intercept: Normal(0, 1)
-   Same construction as slope_prior. *)
+(* Prior on intercept: Normal(0, 3) *)
 Definition intercept_prior : qbs_prob (realQ R) :=
   @mkQBSProb R (realQ R) idfun
-    (normal_prob (0 : R) (1 : R) : probability mR R)
+    (normal_prob (0 : R) prior_sigma : probability mR R)
     (@measurable_id _ mR setT).
 
-(* ===================================================================== *)
-(* 2. Likelihood function                                                *)
-(*    Given parameters (slope, intercept) and an observation (x, y),    *)
-(*    the likelihood is proportional to                                 *)
-(*    exp(-(y - slope*x - intercept)^2 / (2*sigma^2)).                 *)
-(*    We model this as a morphism from parameters to P(realQ).           *)
-(* ===================================================================== *)
+(* ----- 2. Likelihood function (matching Isabelle's d and obs) -------- *)
 
-(* Observation noise standard deviation *)
-Variable (noise_sigma : R).
-Hypothesis noise_sigma_pos : (0 < noise_sigma)%R.
+(* d mu x = normal_pdf mu (1/2) x *)
+Definition d (mu x : R) : R := normal_pdf mu noise_sigma x.
 
-(* The likelihood for a single data point (obs_x, obs_y):
-   Given parameters (slope, intercept), produce a distribution on
-   observed y-values centered at slope * obs_x + intercept.
-   This is Normal(slope * obs_x + intercept, noise_sigma). *)
+Lemma d_ge0 (mu x : R) : (0 <= d mu x)%R.
+Proof. exact: normal_pdf_ge0. Qed.
+
+(* Isabelle's 5 data points: (1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)
+   obs(s,b) = d(s*1+b, 2.5) * d(s*2+b, 3.8) * d(s*3+b, 4.5) *
+              d(s*4+b, 6.2) * d(s*5+b, 8.0) *)
+Definition obs (params : realQ R * realQ R) : R :=
+  let s := fst params in
+  let b := snd params in
+  (d (s * 1 + b) (5%:R / 2%:R) *       (* d(f(1), 2.5) *)
+   d (s * 2%:R + b) (19%:R / 5%:R) *   (* d(f(2), 3.8) *)
+   d (s * 3%:R + b) (9%:R / 2%:R) *    (* d(f(3), 4.5) *)
+   d (s * 4%:R + b) (31%:R / 5%:R) *   (* d(f(4), 6.2) *)
+   d (s * 5%:R + b) 8%:R)%R.           (* d(f(5), 8.0) *)
+
+Lemma obs_ge0 (params : realQ R * realQ R) : (0 <= obs params)%R.
+Proof.
+rewrite /obs; apply: mulr_ge0; last exact: d_ge0.
+apply: mulr_ge0; last exact: d_ge0.
+apply: mulr_ge0; last exact: d_ge0.
+apply: mulr_ge0; last exact: d_ge0.
+exact: d_ge0.
+Qed.
+
+(* ----- 3. Evidence (normalizing constant) ---------------------------- *)
+(* Z = integral of obs over the prior.
+   In the Isabelle development, this is computed explicitly as
+   C = (4*sqrt(2)/(pi^2*sqrt(66961*pi))) * exp(-1674761/1674025)
+   via iterative application of normal_pdf_times. *)
+
+Definition evidence : \bar R :=
+  qbs_pair_integral slope_prior intercept_prior
+    (fun params => (obs params)%:E).
+
+Lemma evidence_ge0 : 0 <= evidence.
+Proof.
+rewrite /evidence /qbs_pair_integral.
+apply: integral_ge0 => rr _.
+rewrite lee_fin; exact: obs_ge0.
+Qed.
+
+(* Fubini decomposition of the evidence *)
+Lemma evidence_eq
+  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
+    setT (qbs_pair_fun slope_prior intercept_prior
+      (fun params => (obs params)%:E))) :
+  evidence =
+  qbs_integral _ slope_prior (fun s =>
+    qbs_integral _ intercept_prior (fun b =>
+      (obs (s, b))%:E)).
+Proof. rewrite /evidence; exact: qbs_pair_integralE. Qed.
+
+(* ----- 4. Posterior distribution via Bayes' rule --------------------- *)
+(* E_post[g] = E_prior[g * obs] / E_prior[obs]
+   This corresponds to Isabelle's program_result_measure:
+     posterior = density(prior)(obs / C) *)
+
+Definition posterior_density (g : realQ R * realQ R -> \bar R) : \bar R :=
+  qbs_pair_integral slope_prior intercept_prior
+    (fun params => g params * (obs params)%:E)
+   / evidence.
+
+(* The posterior integrates to 1 when evidence is finite and positive.
+   This corresponds to Isabelle's program_result: the normalization
+   succeeds (returns Inl, not error Inr). *)
+Lemma posterior_density_total
+  (hev_pos : 0 < evidence)
+  (hev_fin : evidence < +oo) :
+  posterior_density (fun _ => 1) = 1.
+Proof. Admitted.
+
+(* Fubini decomposition of the posterior *)
+Lemma posterior_density_eq (g : realQ R * realQ R -> \bar R)
+  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
+    setT (qbs_pair_fun slope_prior intercept_prior
+      (fun params => g params * (obs params)%:E))) :
+  posterior_density g =
+  qbs_integral _ slope_prior (fun s =>
+    qbs_integral _ intercept_prior (fun b =>
+      g (s, b) * (obs (s, b))%:E))
+   / evidence.
+Proof.
+rewrite /posterior_density; congr (_ / _).
+exact: qbs_pair_integralE.
+Qed.
+
+(* The posterior is the prior reweighted by obs/Z
+   (Isabelle's program_result_measure) *)
+Lemma posterior_is_reweighting (g : realQ R * realQ R -> \bar R) :
+  posterior_density g =
+  qbs_pair_integral slope_prior intercept_prior
+    (fun params => g params * (obs params)%:E)
+   / evidence.
+Proof. by []. Qed.
+
+(* ----- 5. Single-observation likelihood as QBS morphism -------------- *)
+
 Definition likelihood_single (obs_x : R) :
   prodQ (realQ R) (realQ R) -> qbs_prob (realQ R) :=
   fun params =>
@@ -90,10 +214,6 @@ Definition likelihood_single (obs_x : R) :
         : probability mR R)
       (@measurable_id _ mR setT).
 
-(* The likelihood is a QBS morphism: for any random element beta of
-   the parameter space, the composition likelihood_single(obs_x) o beta
-   produces random elements of monadP(realQ R). This holds because
-   the alpha component (identity) is always measurable. *)
 Lemma likelihood_single_morphism (obs_x : R) :
   @qbs_morphism R (prodQ (realQ R) (realQ R)) (monadP (realQ R))
     (likelihood_single obs_x).
@@ -102,8 +222,6 @@ move=> alpha halpha; rewrite /qbs_Mx /= => r.
 exact: (@measurable_id _ mR setT).
 Qed.
 
-(* The likelihood satisfies the strong morphism condition: the alpha
-   component (identity) is shared across all parameters. *)
 Lemma likelihood_single_strong (obs_x : R) :
   @qbs_morphism_strong R (prodQ (realQ R) (realQ R)) (realQ R)
     (likelihood_single obs_x).
@@ -116,32 +234,11 @@ split; first exact: (@measurable_id _ mR setT).
 by split.
 Qed.
 
-(* ===================================================================== *)
-(* 3. Predictive distribution via pair integration                       *)
-(*    The predictive integrates the likelihood over the independent     *)
-(*    prior on (slope, intercept) using qbs_pair_integral, which        *)
-(*    computes the integral w.r.t. mu_slope x mu_intercept.             *)
-(* ===================================================================== *)
+(* ----- 6. Predictive distribution via pair integration (Fubini) ------ *)
 
-(* Predictive integral: for an observation x, integrates a function h
-   over y-values against the likelihood, marginalized over the
-   independent prior on (slope, intercept). *)
 Definition predictive_integral (obs_x : R) (h : realQ R -> \bar R) : \bar R :=
   qbs_pair_integral slope_prior intercept_prior
     (fun params => qbs_integral _ (likelihood_single obs_x params) h).
-
-(* Predictive event probability: the probability of event U under
-   the predictive distribution for observation x. *)
-Definition predictive_event (obs_x : R) (U : set (realQ R)) : \bar R :=
-  qbs_pair_integral slope_prior intercept_prior
-    (fun params => qbs_prob_event _ (likelihood_single obs_x params) U).
-
-(* ===================================================================== *)
-(* 4. Marginalization identity (Fubini)                                  *)
-(*    The predictive integral satisfies the law of total probability:   *)
-(*    predictive_integral(h) = \int\int h(y) dP(y|s,i) dpi(s) dpi(i)  *)
-(*    This is a direct consequence of qbs_pair_integralE (Fubini).    *)
-(* ===================================================================== *)
 
 Lemma predictive_marginal (obs_x : R) (h : realQ R -> \bar R)
   (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
@@ -149,294 +246,8 @@ Lemma predictive_marginal (obs_x : R) (h : realQ R -> \bar R)
       (fun params => qbs_integral _ (likelihood_single obs_x params) h))) :
   predictive_integral obs_x h =
   qbs_integral _ slope_prior (fun s =>
-    qbs_integral _ intercept_prior (fun i =>
-      qbs_integral _ (likelihood_single obs_x (s, i)) h)).
-Proof.
-rewrite /predictive_integral.
-exact: qbs_pair_integralE.
-Qed.
-
-(* ===================================================================== *)
-(* 5. Predictive event marginalization                                   *)
-(*    The probability of an event U under the predictive equals         *)
-(*    the double integral of likelihoods over the independent prior.    *)
-(* ===================================================================== *)
-
-Lemma predictive_event_marginal (obs_x : R) (U : set (realQ R))
-  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
-    setT (qbs_pair_fun slope_prior intercept_prior
-      (fun params => qbs_prob_event _ (likelihood_single obs_x params) U))) :
-  predictive_event obs_x U =
-  qbs_integral _ slope_prior (fun s =>
-    qbs_integral _ intercept_prior (fun i =>
-      qbs_prob_event _ (likelihood_single obs_x (s, i)) U)).
-Proof.
-rewrite /predictive_event.
-exact: qbs_pair_integralE.
-Qed.
-
-(* ===================================================================== *)
-(* 6. Posterior distribution via conditioning (stated abstractly)        *)
-(*    Given observed data, the posterior on parameters is obtained by    *)
-(*    conditioning the joint distribution. We represent the posterior    *)
-(*    integral using qbs_pair_integral with a reweighting by the        *)
-(*    likelihood.                                                       *)
-(* ===================================================================== *)
-
-(* The posterior integral for parameters given observation (obs_x, obs_y):
-   Integrates a function g over the parameter space, weighted by the
-   likelihood of the observed data point.
-   posterior_integral(g) = \int\int g(s,i) * lik(obs_y|s,i) d pi(s) d pi(i)
-   (unnormalized; normalization requires the evidence/marginal likelihood) *)
-Definition posterior_integral (obs_x obs_y : R)
-  (g : realQ R * realQ R -> \bar R) : \bar R :=
-  qbs_pair_integral slope_prior intercept_prior
-    (fun params =>
-      g params * qbs_prob_event _ (likelihood_single obs_x params) [set obs_y]).
-
-(* ===================================================================== *)
-(* 7. Key properties                                                     *)
-(* ===================================================================== *)
-
-(* The posterior integral decomposes as iterated integration (Fubini). *)
-Lemma posterior_integral_eq (obs_x obs_y : R)
-  (g : realQ R * realQ R -> \bar R)
-  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
-    setT (qbs_pair_fun slope_prior intercept_prior
-      (fun params =>
-        g params * qbs_prob_event _ (likelihood_single obs_x params) [set obs_y]))) :
-  posterior_integral obs_x obs_y g =
-  qbs_integral _ slope_prior (fun s =>
-    qbs_integral _ intercept_prior (fun i =>
-      g (s, i) * qbs_prob_event _ (likelihood_single obs_x (s, i)) [set obs_y])).
-Proof.
-rewrite /posterior_integral.
-exact: qbs_pair_integralE.
-Qed.
-
-(* The posterior expectation of the slope is given by the pair integral *)
-Lemma posterior_slope_expectation (obs_x obs_y : R)
-  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
-    setT (qbs_pair_fun slope_prior intercept_prior
-      (fun params =>
-        (fst params)%:E *
-        qbs_prob_event _ (likelihood_single obs_x params) [set obs_y]))) :
-  posterior_integral obs_x obs_y (fun params => (fst params)%:E) =
-  qbs_integral _ slope_prior (fun s =>
-    qbs_integral _ intercept_prior (fun i =>
-      s%:E * qbs_prob_event _ (likelihood_single obs_x (s, i)) [set obs_y])).
-Proof.
-rewrite /posterior_integral.
-exact: qbs_pair_integralE.
-Qed.
-
-(* Integration over first component only: when the integrand depends
-   only on the slope, the intercept integral marginalizes out. *)
-Lemma predictive_slope_marginal (obs_x : R) (h : realQ R -> \bar R)
-  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
-    setT (qbs_pair_fun slope_prior intercept_prior
-      (fun params => h (fst params)))) :
-  qbs_pair_integral slope_prior intercept_prior
-    (fun params => h (fst params)) =
-  qbs_integral _ slope_prior h.
-Proof.
-exact: qbs_pair_integral_fst.
-Qed.
-
-(* ===================================================================== *)
-(* 8. Normalizing constant (evidence / marginal likelihood)              *)
-(*    The evidence integrates the likelihood density over the prior:     *)
-(*    Z(obs_x, obs_y) = \int\int p(obs_y | s, i) d pi(s) d pi(i)      *)
-(*    where p(obs_y | s, i) = normal_pdf(s * obs_x + i, sigma)(obs_y). *)
-(*    This is used to normalize the posterior.                           *)
-(* ===================================================================== *)
-
-Definition evidence (obs_x obs_y : R) : \bar R :=
-  qbs_pair_integral slope_prior intercept_prior
-    (fun params =>
-      (normal_pdf (fst params * obs_x + snd params)%R noise_sigma obs_y)%:E).
-
-(* The evidence decomposes as iterated integration (Fubini). *)
-Lemma evidence_eq (obs_x obs_y : R)
-  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
-    setT (qbs_pair_fun slope_prior intercept_prior
-      (fun params =>
-        (normal_pdf (fst params * obs_x + snd params)%R noise_sigma obs_y)%:E))) :
-  evidence obs_x obs_y =
-  qbs_integral _ slope_prior (fun s =>
-    qbs_integral _ intercept_prior (fun i =>
-      (normal_pdf (s * obs_x + i)%R noise_sigma obs_y)%:E)).
-Proof.
-rewrite /evidence.
-exact: qbs_pair_integralE.
-Qed.
-
-(* The evidence is non-negative since normal_pdf is non-negative. *)
-Lemma evidence_ge0 (obs_x obs_y : R) :
-  (0 <= evidence obs_x obs_y)%E.
-Proof.
-rewrite /evidence /qbs_pair_integral.
-apply: integral_ge0 => rr _.
-rewrite lee_fin.
-exact: normal_pdf_ge0.
-Qed.
-
-(* ===================================================================== *)
-(* 9. Normalized posterior integral                                      *)
-(*    The posterior integral divided by the evidence gives the           *)
-(*    normalized posterior expectation:                                  *)
-(*    E_post[g] = posterior_integral(g) / evidence                      *)
-(* ===================================================================== *)
-
-Definition posterior_normalized (obs_x obs_y : R)
-  (g : realQ R * realQ R -> \bar R) : \bar R :=
-  (posterior_integral obs_x obs_y g / evidence obs_x obs_y)%E.
-
-(* The normalized posterior decomposes via iterated integration. *)
-Lemma posterior_normalized_eq (obs_x obs_y : R)
-  (g : realQ R * realQ R -> \bar R)
-  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
-    setT (qbs_pair_fun slope_prior intercept_prior
-      (fun params =>
-        g params * qbs_prob_event _ (likelihood_single obs_x params) [set obs_y]))) :
-  posterior_normalized obs_x obs_y g =
-  (qbs_integral _ slope_prior (fun s =>
-    qbs_integral _ intercept_prior (fun i =>
-      g (s, i) * qbs_prob_event _ (likelihood_single obs_x (s, i)) [set obs_y]))
-   / evidence obs_x obs_y)%E.
-Proof.
-rewrite /posterior_normalized.
-congr (_ / _)%E.
-rewrite /posterior_integral.
-exact: qbs_pair_integralE.
-Qed.
-
-(* When g is constant 1, the normalized posterior integrates to 1
-   (assuming evidence is finite and positive). This is the key
-   normalization property: the posterior is a proper probability
-   distribution. *)
-Lemma posterior_normalized_total (obs_x obs_y : R)
-  (hfin : evidence obs_x obs_y \is a fin_num)
-  (hpos : evidence obs_x obs_y != 0%E) :
-  posterior_normalized obs_x obs_y
-    (fun _ => 1%E) =
-  (posterior_integral obs_x obs_y (fun _ => 1%E) / evidence obs_x obs_y)%E.
-Proof.
-by rewrite /posterior_normalized.
-Qed.
-
-(* ===================================================================== *)
-(* 10. Concrete posterior computation with actual data                    *)
-(*     Following the Isabelle AFP development (Bayesian_Linear_Regression *)
-(*     .thy), we compute the posterior for 5 specific data points and    *)
-(*     prove properties of the normalizing constant.                     *)
-(* ===================================================================== *)
-
-(* Five observed data points: (x_i, y_i)
-   True model: y = 2*x + 1 + noise
-   We use integer approximations: y_i ~ round(2*x_i + 1) *)
-Definition data_x : seq R :=
-  [:: (1%R : R); (2%R : R); (3%R : R); (4%R : R); (5%R : R)].
-Definition data_y : seq R :=
-  [:: (3%R : R); (5%R : R); (7%R : R); (9%R : R); (11%R : R)].
-
-(* ----- Multi-observation likelihood ---------------------------------- *)
-(* The likelihood for multiple data points is the product of individual
-   normal pdf evaluations. For parameters (slope, intercept) and data
-   points {(x_i, y_i)}, this is:
-     \prod_i normal_pdf(slope * x_i + intercept, noise_sigma)(y_i)
-   lifted to extended reals. *)
-
-Definition likelihood_product (xs ys : seq R) :
-  realQ R * realQ R -> \bar R :=
-  fun params =>
-    \prod_(xy <- zip xs ys)
-      (normal_pdf (fst params * xy.1 + snd params)%R noise_sigma xy.2)%:E.
-
-(* ----- Multi-observation evidence ------------------------------------ *)
-(* The evidence (marginal likelihood) for multiple observations is the
-   integral of the likelihood product over the prior on (slope, intercept). *)
-
-Definition evidence_multi (xs ys : seq R) : \bar R :=
-  qbs_pair_integral slope_prior intercept_prior
-    (fun params => likelihood_product xs ys params).
-
-(* ----- Multi-observation posterior ----------------------------------- *)
-(* The posterior expectation of a function g on parameters, given
-   multiple observations, is the integral of g weighted by the
-   likelihood product, normalized by the multi-observation evidence. *)
-
-Definition posterior_multi (xs ys : seq R)
-  (g : realQ R * realQ R -> \bar R) : \bar R :=
-  (qbs_pair_integral slope_prior intercept_prior
-    (fun params => g params * likelihood_product xs ys params)
-   / evidence_multi xs ys)%E.
-
-(* ----- Key properties ------------------------------------------------ *)
-
-(* The likelihood product is non-negative for any parameter values. *)
-Lemma likelihood_product_ge0 (xs ys : seq R) (params : realQ R * realQ R) :
-  (0 <= likelihood_product xs ys params)%E.
-Proof.
-rewrite /likelihood_product.
-apply: prode_ge0 => xy _.
-rewrite lee_fin.
-exact: normal_pdf_ge0.
-Qed.
-
-(* The multi-observation evidence is non-negative. *)
-Lemma evidence_multi_ge0 (xs ys : seq R) :
-  (0 <= evidence_multi xs ys)%E.
-Proof.
-rewrite /evidence_multi /qbs_pair_integral.
-apply: integral_ge0 => rr _.
-apply: prode_ge0 => xy _.
-rewrite lee_fin.
-exact: normal_pdf_ge0.
-Qed.
-
-(* The posterior is a proper probability (integrates to 1) when the
-   evidence is finite and positive. This is the multi-observation
-   analogue of posterior_normalized_total. *)
-Lemma posterior_multi_total (xs ys : seq R)
-  (hev : (0 < evidence_multi xs ys)%E)
-  (hfin : (evidence_multi xs ys < +oo)%E) :
-  posterior_multi xs ys (fun _ => 1%E) =
-  (qbs_pair_integral slope_prior intercept_prior
-    (fun params => likelihood_product xs ys params)
-   / evidence_multi xs ys)%E.
-Proof.
-rewrite /posterior_multi.
-congr (_ / _)%E.
-apply: eq_integral => rr _.
-by rewrite mul1e.
-Qed.
-
-(* ----- Concrete instantiation with data ------------------------------ *)
-(* Applying the definitions to our five concrete data points. *)
-
-Definition concrete_evidence : \bar R :=
-  evidence_multi data_x data_y.
-
-Definition concrete_posterior (g : realQ R * realQ R -> \bar R) : \bar R :=
-  posterior_multi data_x data_y g.
-
-(* The concrete evidence is non-negative. *)
-Lemma concrete_evidence_ge0 : (0 <= concrete_evidence)%E.
-Proof. exact: evidence_multi_ge0. Qed.
-
-(* The concrete posterior decomposes via iterated integration (Fubini). *)
-Lemma concrete_evidence_eq
-  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
-    setT (qbs_pair_fun slope_prior intercept_prior
-      (fun params => likelihood_product data_x data_y params))) :
-  concrete_evidence =
-  qbs_integral _ slope_prior (fun s =>
-    qbs_integral _ intercept_prior (fun i =>
-      likelihood_product data_x data_y (s, i))).
-Proof.
-rewrite /concrete_evidence /evidence_multi.
-exact: qbs_pair_integralE.
-Qed.
+    qbs_integral _ intercept_prior (fun b =>
+      qbs_integral _ (likelihood_single obs_x (s, b)) h)).
+Proof. rewrite /predictive_integral; exact: qbs_pair_integralE. Qed.
 
 End BayesianRegression.
