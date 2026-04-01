@@ -506,12 +506,12 @@ Definition monadP_map (X Y : qbsType R) (f : X -> Y)
 
 Arguments monadP_map : clear implicits.
 
-Lemma monadP_map_morph (X Y : qbsType R) (f : qbs_hom X Y) :
+Lemma monadP_map_morph (X Y : qbsType R) (f : @qbsHomType R X Y) :
   @qbs_morphism R (monadP X) (monadP Y)
-    (monadP_map X Y (qbs_hom_val f) (qbs_hom_proof f)).
+    (monadP_map X Y f (@qbs_hom_proof R X Y f)).
 Proof.
 move=> beta hbeta; rewrite /qbs_Mx /= => r.
-exact: (qbs_hom_proof f) _ (hbeta r).
+exact: (@qbs_hom_proof R X Y f) _ (hbeta r).
 Qed.
 
 Lemma monadP_map_id (X : qbsType R) (p : qbs_prob X) :
@@ -520,13 +520,13 @@ Lemma monadP_map_id (X : qbsType R) (p : qbs_prob X) :
 Proof. by move=> U hU. Qed.
 
 Lemma monadP_map_comp (X Y Z : qbsType R)
-  (f : qbs_hom X Y) (g : qbs_hom Y Z) (p : qbs_prob X) :
+  (f : @qbsHomType R X Y) (g : @qbsHomType R Y Z) (p : qbs_prob X) :
   qbs_prob_equiv Z
-    (monadP_map X Z (qbs_hom_val g \o qbs_hom_val f)
+    (monadP_map X Z ((g : Y -> Z) \o (f : X -> Y))
        (@qbs_morphism_comp R X Y Z _ _
-          (qbs_hom_proof f) (qbs_hom_proof g)) p)
-    (monadP_map Y Z (qbs_hom_val g) (qbs_hom_proof g)
-       (monadP_map X Y (qbs_hom_val f) (qbs_hom_proof f) p)).
+          (@qbs_hom_proof R X Y f) (@qbs_hom_proof R Y Z g)) p)
+    (monadP_map Y Z g (@qbs_hom_proof R Y Z g)
+       (monadP_map X Y f (@qbs_hom_proof R X Y f) p)).
 Proof. by move=> U hU. Qed.
 
 (* ===================================================================== *)
