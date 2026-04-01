@@ -5,7 +5,7 @@ From mathcomp Require Import reals ereal topology normedtype numfun measure
   lebesgue_integral lebesgue_integral_fubini lebesgue_stieltjes_measure
   probability hoelder.
 From mathcomp.classical Require Import functions.
-From QBS Require Import quasi_borel probability_qbs.
+From QBS Require Import quasi_borel probability_qbs standard_borel.
 
 Import Num.Def Num.Theory reals classical_sets.
 
@@ -41,29 +41,80 @@ Local Notation mR := (measurableTypeR R).
 (*    measure being the product measure.                                 *)
 (* ===================================================================== *)
 
+(* The product probability measure on R.
+   Uses R ≅ R×R (from standard_borel.v): push mu_p × mu_q through
+   encode_RR to obtain a probability measure on mR. *)
+
+Section pair_mu_build.
+Variables (X Y : qbsType R).
+Variables (p : qbs_prob X) (q : qbs_prob Y).
+
+Let mu_p := qbs_prob_mu p.
+Let mu_q := qbs_prob_mu q.
+
+Let pf_mu (A : set mR) : \bar R :=
+  (mu_p \x mu_q) (@encode_RR_mR R @^-1` A).
+
+Local Open Scope ereal_scope.
+
+Let pf_mu0 : pf_mu set0 = 0.
+Proof. by rewrite /pf_mu preimage_set0 measure0. Qed.
+
+Let pf_mu_ge0 (A : set mR) : 0 <= pf_mu A.
+Proof. by rewrite /pf_mu; exact: measure_ge0. Qed.
+
+Let pf_mu_sigma : semi_sigma_additive pf_mu.
+Proof.
+move=> F mF tF mUF; rewrite /pf_mu preimage_bigcup.
+apply: measure_semi_sigma_additive.
+- move=> n; rewrite -[X in measurable X]setTI.
+  exact: (measurable_RR_to_R measurableT (mF n)).
+- apply/trivIsetP => /= i j _ _ ij; rewrite -preimage_setI.
+  by move/trivIsetP : tF => /(_ _ _ _ _ ij) ->//; rewrite preimage_set0.
+- rewrite -preimage_bigcup -[X in measurable X]setTI.
+  exact: (measurable_RR_to_R measurableT mUF).
+Qed.
+
+HB.instance Definition _ := isMeasure.Build _ _ _
+  pf_mu pf_mu0 pf_mu_ge0 pf_mu_sigma.
+
+Let pf_mu_setT : pf_mu setT = 1%:E.
+Proof. by rewrite /pf_mu preimage_setT probability_setT. Qed.
+
+HB.instance Definition _ := Measure_isProbability.Build _ _ _
+  pf_mu pf_mu_setT.
+
+Definition qbs_pair_mu_build : probability mR R :=
+  [the probability mR R of pf_mu].
+
+End pair_mu_build.
+
 Definition qbs_pair_alpha (X Y : qbsType R)
   (p : qbs_prob X) (q : qbs_prob Y) : mR -> X * Y :=
-  fun r => (qbs_prob_alpha p r, qbs_prob_alpha q r).
+  fun r =>
+    let uv := @decode_RR_mR R r in
+    (qbs_prob_alpha p uv.1, qbs_prob_alpha q uv.2).
+
+Definition qbs_pair_mu (X Y : qbsType R)
+  (p : qbs_prob X) (q : qbs_prob Y) : probability mR R :=
+  qbs_pair_mu_build p q.
 
 Lemma qbs_pair_alpha_random (X Y : qbsType R)
   (p : qbs_prob X) (q : qbs_prob Y) :
   @qbs_Mx R (prodQ X Y) (qbs_pair_alpha p q).
 Proof.
 rewrite /qbs_Mx /=; split.
-- have -> : fst \o qbs_pair_alpha p q = qbs_prob_alpha p by [].
-  exact: (qbs_prob_alpha_random p).
-- have -> : snd \o qbs_pair_alpha p q = qbs_prob_alpha q by [].
-  exact: (qbs_prob_alpha_random q).
+- have -> : fst \o qbs_pair_alpha p q =
+    qbs_prob_alpha p \o (fst \o @decode_RR_mR R) by [].
+  apply: qbs_Mx_comp; first exact: (qbs_prob_alpha_random p).
+  apply: measurableT_comp; first exact: measurable_fst.
+  exact: measurable_R_to_RR.
+- have -> : snd \o qbs_pair_alpha p q =
+    qbs_prob_alpha q \o (snd \o @decode_RR_mR R) by [].
+  apply: qbs_Mx_comp; first exact: (qbs_prob_alpha_random q).
+  apply: measurableT_comp; first exact: measurable_snd.
+  exact: measurable_R_to_RR.
 Qed.
-
-(* The product probability measure on R.
-   This uses only qbs_prob_mu p as the base measure (a pragmatic
-   approximation). The proper product construction is handled by
-   qbs_pair_integral below, which uses mu_p \x mu_q on mR * mR. *)
-
-Definition qbs_pair_mu (X Y : qbsType R)
-  (p : qbs_prob X) (q : qbs_prob Y) : probability mR R :=
-  qbs_prob_mu p.
 
 Definition qbs_prob_pair (X Y : qbsType R)
   (p : qbs_prob X) (q : qbs_prob Y) : qbs_prob (prodQ X Y) :=
@@ -75,9 +126,8 @@ Definition qbs_prob_pair (X Y : qbsType R)
 Arguments qbs_prob_pair : clear implicits.
 
 (* ===================================================================== *)
-(* 2. Pair integration using the actual product measure on mR * mR       *)
-(*    This bypasses the broken qbs_prob_pair and uses the product        *)
-(*    measure mu_p \x mu_q directly on mR * mR.                         *)
+(* 2. Pair integration using the product measure on mR * mR              *)
+(*    Works directly with mu_p \x mu_q on mR * mR for Fubini etc.       *)
 (* ===================================================================== *)
 
 Local Open Scope ereal_scope.
@@ -165,16 +215,10 @@ Qed.
 
 (* ===================================================================== *)
 (* 4. User-facing Fubini-type theorems                                   *)
+(*    These are thin wrappers around qbs_pair_integral_* lemmas above.   *)
+(*    The pair integration API works directly on mR * mR with the        *)
+(*    product measure mu_p \x mu_q, which is the recommended interface.  *)
 (* ===================================================================== *)
-
-(* Integration over the first component (using qbs_prob_pair) *)
-Lemma qbs_integral_fst (X Y : qbsType R)
-  (p : qbs_prob X) (q : qbs_prob Y)
-  (h : X -> \bar R) :
-  @qbs_integral R (prodQ X Y) (qbs_prob_pair X Y p q)
-    (fun xy => h (fst xy)) =
-  @qbs_integral R X p h.
-Proof. by []. Qed.
 
 (* Integration over the second component *)
 Lemma qbs_integral_snd (X Y : qbsType R)

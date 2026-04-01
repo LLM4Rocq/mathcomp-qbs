@@ -8,6 +8,7 @@ From mathcomp.analysis Require Import normedtype_theory.normedtype sequences.
 From mathcomp.analysis Require Import measure_theory.measurable_structure.
 From mathcomp.analysis Require Import measure_theory.measurable_function.
 From mathcomp.analysis Require Import measurable_realfun trigo.
+From mathcomp.analysis Require Import lebesgue_stieltjes_measure.
 
 (**md**************************************************************************)
 (* # Standard Borel Spaces                                                     *)
@@ -1219,4 +1220,40 @@ split; first exact: measurable_decode_RR.
 exact: decode_encode_RR.
 Qed.
 
+(* Clean interface for R ≅ R×R *)
+Definition R_to_RR : R -> R * R := decode_RR.
+Definition RR_to_R : R * R -> R := encode_RR.
+
+Lemma R_to_RR_measurable : measurable_fun setT R_to_RR.
+Proof. exact: measurable_decode_RR. Qed.
+
+Lemma RR_to_R_measurable : measurable_fun setT RR_to_R.
+Proof. exact: measurable_encode_RR. Qed.
+
+Lemma RR_to_R_to_RR : forall xy, R_to_RR (RR_to_R xy) = xy.
+Proof. exact: decode_encode_RR. Qed.
+
 End binary_digit_interleaving.
+
+(* Measurability restated in terms of measurableTypeR for use with
+   lebesgue_stieltjes_measure-based sigma algebras (product measures etc.) *)
+Section standard_borel_mR.
+Variable R : realType.
+Local Notation mR := (measurableTypeR R).
+
+Definition encode_RR_mR : mR * mR -> mR := @encode_RR R.
+Definition decode_RR_mR : mR -> mR * mR := @decode_RR R.
+
+Lemma measurable_RR_to_R :
+  measurable_fun [set: mR * mR] encode_RR_mR.
+Proof. exact: measurable_encode_RR. Qed.
+
+Lemma measurable_R_to_RR :
+  measurable_fun [set: mR] decode_RR_mR.
+Proof. exact: measurable_decode_RR. Qed.
+
+Lemma decode_encode_RR_mR (xy : mR * mR) :
+  decode_RR_mR (encode_RR_mR xy) = xy.
+Proof. exact: decode_encode_RR. Qed.
+
+End standard_borel_mR.
