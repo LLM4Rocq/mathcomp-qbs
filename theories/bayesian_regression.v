@@ -51,7 +51,29 @@ Local Open Scope ring_scope.
 Lemma complete_the_square (a b c x : R) (ha : a != 0) :
   a * x ^+ 2 + b * x + c =
   a * (x + b / (a *+ 2)) ^+ 2 - (b ^+ 2 - a *+ 4 * c) / (a *+ 4).
-Proof. Admitted.
+Proof.
+have ha2 : a *+ 2 != 0 by rewrite mulrn_eq0.
+have ha4 : a *+ 4 != 0 by rewrite mulrn_eq0.
+set t := b / (a *+ 2).
+have ht2 : a * t ^+ 2 = b ^+ 2 / (a *+ 4).
+  rewrite /t exprMn exprVn mulrA [a * b ^+ 2]mulrC -mulrA.
+  congr (b ^+ 2 * _).
+  rewrite exprMn_n.
+  have -> : a ^+ 2 *+ 2 ^ 2 = a * (a *+ 4) by rewrite /= expr2 mulrnAr.
+  by rewrite invfM ?unitfE // mulrA mulfV ?unitfE // mul1r.
+have hat : a * t = b / 2%:R.
+  rewrite /t mulrA -[a *+ 2]mulr_natr invrM ?unitfE //.
+  rewrite mulrCA.
+  have -> : a * b / a = b by rewrite [a * b]mulrC mulfK //.
+  by rewrite mulrC.
+rewrite sqrrD mulrDr !mulrDr ht2.
+have -> : (a * (x * t))%R = (b * x / 2%:R)%R.
+  rewrite mulrCA hat [x * _]mulrC.
+  by rewrite mulrAC.
+rewrite -splitr -!addrA; congr (_ + (_ + _))%E.
+rewrite -mulNr -mulrDl opprB addrCA subrr addr0.
+by rewrite [_ * c]mulrC mulfK.
+Qed.
 
 (* Product of two normal densities.
    N(m,s)(x) * N(m',s')(x) = K * N(mu_new, sigma_new)(x)
