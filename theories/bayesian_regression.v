@@ -178,7 +178,15 @@ Lemma posterior_density_total
   (hev_pos : 0 < evidence)
   (hev_fin : evidence < +oo) :
   posterior_density (fun _ => 1) = 1.
-Proof. Admitted.
+Proof.
+rewrite /posterior_density.
+have -> : (fun params : realQ R * realQ R => 1 * (obs params)%:E) =
+          (fun params => (obs params)%:E) by apply: funext => p; rewrite mul1e.
+rewrite -/(evidence).
+apply: divee.
+- by rewrite gt0_fin_numE.
+- by move: hev_pos; rewrite lt0e => /andP[].
+Qed.
 
 (* Fubini decomposition of the posterior *)
 Lemma posterior_density_eq (g : realQ R * realQ R -> \bar R)
