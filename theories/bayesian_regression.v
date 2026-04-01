@@ -39,65 +39,6 @@ Unset Printing Implicit Defensive.
 Local Open Scope classical_set_scope.
 
 (* ===================================================================== *)
-(* Part I: Normal density algebra                                        *)
-(* Key identities for computing normalizing constants.                   *)
-(* ===================================================================== *)
-
-Section NormalDensityAlgebra.
-Variable (R : realType).
-Local Open Scope ring_scope.
-
-(* Completing the square: ax^2 + bx + c = a(x+b/(2a))^2 - (b^2-4ac)/(4a) *)
-Lemma complete_the_square (a b c x : R) (ha : a != 0) :
-  a * x ^+ 2 + b * x + c =
-  a * (x + b / (a *+ 2)) ^+ 2 - (b ^+ 2 - a *+ 4 * c) / (a *+ 4).
-Proof.
-have ha2 : a *+ 2 != 0 by rewrite mulrn_eq0.
-have ha4 : a *+ 4 != 0 by rewrite mulrn_eq0.
-set t := b / (a *+ 2).
-have ht2 : a * t ^+ 2 = b ^+ 2 / (a *+ 4).
-  rewrite /t exprMn exprVn mulrA [a * b ^+ 2]mulrC -mulrA.
-  congr (b ^+ 2 * _).
-  rewrite exprMn_n.
-  have -> : a ^+ 2 *+ 2 ^ 2 = a * (a *+ 4) by rewrite /= expr2 mulrnAr.
-  by rewrite invfM ?unitfE // mulrA mulfV ?unitfE // mul1r.
-have hat : a * t = b / 2%:R.
-  rewrite /t mulrA -[a *+ 2]mulr_natr invrM ?unitfE //.
-  rewrite mulrCA.
-  have -> : a * b / a = b by rewrite [a * b]mulrC mulfK //.
-  by rewrite mulrC.
-rewrite sqrrD mulrDr !mulrDr ht2.
-have -> : (a * (x * t))%R = (b * x / 2%:R)%R.
-  rewrite mulrCA hat [x * _]mulrC.
-  by rewrite mulrAC.
-rewrite -splitr -!addrA; congr (_ + (_ + _))%E.
-rewrite -mulNr -mulrDl opprB addrCA subrr addr0.
-by rewrite [_ * c]mulrC mulfK.
-Qed.
-
-(* Product of two normal densities.
-   N(m,s)(x) * N(m',s')(x) = K * N(mu_new, sigma_new)(x)
-   where:
-     mu_new    = (m*s'^2 + m'*s^2) / (s^2 + s'^2)
-     sigma_new = s*s' / sqrt(s^2 + s'^2)
-     K = normal_peak(sqrt(s^2+s'^2)) * normal_fun(m, sqrt(s^2+s'^2), m')
-
-   This identity is essential for iteratively computing the normalizing
-   constant: each observation contributes a Gaussian factor that can be
-   combined with the prior using this identity (cf. Isabelle AFP
-   normal_density_times). *)
-Lemma normal_pdf_times (m m' s s' x : R) :
-  s != 0 -> s' != 0 ->
-  normal_pdf m s x * normal_pdf m' s' x =
-  normal_peak (sqrtr (s ^+ 2 + s' ^+ 2)) *
-  normal_fun m (sqrtr (s ^+ 2 + s' ^+ 2)) m' *
-  normal_pdf ((m * s' ^+ 2 + m' * s ^+ 2) / (s ^+ 2 + s' ^+ 2))
-             (s * s' / sqrtr (s ^+ 2 + s' ^+ 2)) x.
-Proof. Admitted.
-
-End NormalDensityAlgebra.
-
-(* ===================================================================== *)
 (* Part II: Bayesian regression example                                  *)
 (* ===================================================================== *)
 
