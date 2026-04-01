@@ -10,6 +10,7 @@ From mathcomp.analysis Require Import measure_theory.measure.
 From mathcomp.analysis Require Import measure_theory.measure_function.
 From mathcomp.analysis Require Import measure_theory.probability_measure.
 From mathcomp.analysis Require Import borel_hierarchy lebesgue_stieltjes_measure.
+From mathcomp.analysis Require Import lebesgue_integral lebesgue_measure.
 From QBS Require Import quasi_borel measure_qbs_adjunction probability_qbs.
 
 Import Num.Def Num.Theory reals classical_sets.
@@ -29,6 +30,7 @@ Import Num.Def Num.Theory reals classical_sets.
 (*   giry_to_qbs P    == inverse map using standard Borel encode/decode       *)
 (*   qbs_to_giry_to_qbs == qbs_to_giry (giry_to_qbs P) = P                  *)
 (*   giry_to_qbs_to_giry == giry_to_qbs (qbs_to_giry p) ~ p (equiv)         *)
+(*   qbs_integral_giry   == qbs_integral p f = \int[qbs_to_giry p] f        *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -187,6 +189,32 @@ move=> U hU.
 rewrite /giry_to_qbs /qbs_to_giry_mu /=.
 congr (qbs_prob_mu p _).
 by apply/seteqP; split => r /=; rewrite decode_encode.
+Qed.
+
+(* ===================================================================== *)
+(* 5. Integral correspondence: QBS integration = classical Lebesgue      *)
+(*    integration against the pushforward measure qbs_to_giry.           *)
+(*                                                                        *)
+(*    qbs_integral p f = \int[qbs_to_giry p] f                           *)
+(*                                                                        *)
+(*    This follows from the change-of-variables (pushforward integral)   *)
+(*    formula: \int[pushforward mu alpha] f = \int[mu] (f o alpha),      *)
+(*    since qbs_to_giry_mu p is definitionally the pushforward of        *)
+(*    qbs_prob_mu p through qbs_prob_alpha p.                            *)
+(* ===================================================================== *)
+
+Lemma qbs_integral_giry
+    (d : measure_display) (M : measurableType d)
+    (p : qbs_prob (@R_qbs R _ M))
+    (f : M -> \bar R)
+    (f_meas : measurable_fun setT f)
+    (f_int : (qbs_prob_mu p).-integrable setT (f \o qbs_prob_alpha p)) :
+  @qbs_integral R (@R_qbs R _ M) p f = \int[qbs_to_giry p]_y f y.
+Proof.
+rewrite /qbs_integral.
+rewrite -(@integral_pushforward _ _ _ M R (qbs_prob_alpha p)
+  (qbs_prob_alpha_random p) (qbs_prob_mu p) setT f f_meas f_int measurableT).
+by congr (integral _ setT f).
 Qed.
 
 End QBSGiry.
