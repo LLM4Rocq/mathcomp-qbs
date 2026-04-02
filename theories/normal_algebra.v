@@ -897,6 +897,208 @@ Proof.
 exact: gaussian_prod_sigma_neq0 phase2_step1_sigma_neq0 phase2_W23_neq0.
 Qed.
 
+(* --- Step 3: Combine result with scalar34 ------------------------------ *)
+
+(* S34 = sqrt(sqrtr(9/109)^2 + (1/2)^2) = sqrt(145/436) *)
+Lemma phase2_S34 :
+  sqrtr (9%:R / 109%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2 = 145%:R / 436%:R.
+Proof.
+rewrite sqr_sqrtr; last by apply: divr_ge0; rewrite ?ler0n.
+by field.
+Qed.
+
+(* Rewrite scalar34's normal_fun as a function of s.
+   center = 287/220, width = sqrt(145/436) * 109/220. *)
+Lemma phase2_scalar34_fun (s : R) :
+  normal_fun ((1944%:R - 1080%:R * s) / 545%:R)
+             (sqrtr (145%:R / 436%:R))
+             (31%:R / 5%:R - 4%:R * s) =
+  normal_fun (287%:R / 220%:R)
+             (sqrtr (145%:R / 436%:R) * 109%:R / 220%:R) s.
+Proof.
+set S34 := sqrtr _.
+have hS : S34 != (0 : R).
+  apply: lt0r_neq0; rewrite sqrtr_gt0.
+  by apply: divr_gt0; rewrite ?ltr0n.
+suff heq : ((31%:R / 5%:R - 4%:R * s) -
+             (1944%:R - 1080%:R * s) / 545%:R) ^+ 2 /
+            (S34 ^+ 2 *+ 2) =
+            (s - 287%:R / 220%:R) ^+ 2 /
+            ((S34 * 109%:R / 220%:R) ^+ 2 *+ 2).
+  rewrite /normal_fun; congr (sequences.expR _).
+  by rewrite !mulNr; congr (- _).
+rewrite -(mulr_natr (S34 ^+ 2) 2)
+        -(mulr_natr ((S34 * 109%:R / 220%:R) ^+ 2) 2).
+rewrite !exprMn exprVn.
+field. by rewrite hS.
+Qed.
+
+(* Width for step 3: W34 = sqrt(145/436) * 109/220 *)
+Let W34 : R := sqrtr (145%:R / 436%:R) * 109%:R / 220%:R.
+
+Lemma phase2_W34_neq0 : W34 != 0.
+Proof.
+apply: lt0r_neq0.
+rewrite /W34.
+apply: divr_gt0; last by rewrite ltr0n.
+apply: mulr_gt0; last by rewrite ltr0n.
+rewrite sqrtr_gt0.
+by apply: divr_gt0; rewrite ?ltr0n.
+Qed.
+
+(* scalar34 = peak_ratio * normal_pdf *)
+Lemma phase2_scalar34_is_pdf (s : R) :
+  gaussian_prod_scalar ((1944%:R - 1080%:R * s) / 545%:R)
+                       (31%:R / 5%:R - 4%:R * s)
+                       (sqrtr (9%:R / 109%:R)) (2%:R^-1) =
+  normal_peak (sqrtr (145%:R / 436%:R)) /
+  normal_peak W34 *
+  normal_pdf (287%:R / 220%:R) W34 s.
+Proof.
+rewrite /gaussian_prod_scalar phase2_S34 /W34 phase2_scalar34_fun -/W34.
+rewrite (normal_pdfE _ phase2_W34_neq0).
+have hpeak : normal_peak W34 != 0.
+  by apply: lt0r_neq0; exact: (normal_peak_gt0 phase2_W34_neq0).
+by rewrite mulrA divfK.
+Qed.
+
+(* Accumulated sigma from step 2 *)
+Let sigma2 : R := gaussian_prod_sigma sigma1 W23.
+
+(* Step 3 combination *)
+Lemma phase2_step3 (s : R) :
+  forall K2 : R,
+  let mu2 := gaussian_prod_mu
+               (gaussian_prod_mu (90%:R / 73%:R) (253%:R / 190%:R)
+                  sigma0 W12)
+               (1017%:R / 1110%:R) sigma1 W23 in
+  K2 * normal_pdf mu2 sigma2 s *
+  gaussian_prod_scalar ((1944%:R - 1080%:R * s) / 545%:R)
+                       (31%:R / 5%:R - 4%:R * s)
+                       (sqrtr (9%:R / 109%:R)) (2%:R^-1) =
+  K2 * (normal_peak (sqrtr (145%:R / 436%:R)) / normal_peak W34) *
+  gaussian_prod_scalar mu2 (287%:R / 220%:R) sigma2 W34 *
+  normal_pdf (gaussian_prod_mu mu2 (287%:R / 220%:R) sigma2 W34)
+             (gaussian_prod_sigma sigma2 W34) s.
+Proof.
+move=> K2.
+rewrite /= phase2_scalar34_is_pdf.
+(* Rearrange: K2 * pdf(mu2,sigma2,s) * (pr * pdf(c34,W34,s))
+     = (K2 * pr) * pdf(mu2,sigma2,s) * pdf(c34,W34,s) *)
+rewrite -mulrA (mulrCA (normal_pdf _ _ _)) !mulrA.
+rewrite (normal_pdf_times_chain _ _ _ _
+           phase2_step2_sigma_neq0 phase2_W34_neq0).
+by rewrite !mulrA.
+Qed.
+
+Lemma phase2_step3_sigma_neq0 :
+  gaussian_prod_sigma sigma2 W34 != 0.
+Proof.
+exact: gaussian_prod_sigma_neq0 phase2_step2_sigma_neq0 phase2_W34_neq0.
+Qed.
+
+(* --- Step 4: Combine result with scalar45 ------------------------------ *)
+
+(* S45 = sqrt(sqrtr(9/145)^2 + (1/2)^2) = sqrt(181/580) *)
+Lemma phase2_S45 :
+  sqrtr (9%:R / 145%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2 = 181%:R / 580%:R.
+Proof.
+rewrite sqr_sqrtr; last by apply: divr_ge0; rewrite ?ler0n.
+by field.
+Qed.
+
+(* Rewrite scalar45's normal_fun as a function of s.
+   center = 548/365, width = sqrt(181/580) * 145/365. *)
+Lemma phase2_scalar45_fun (s : R) :
+  normal_fun ((3060%:R - 1800%:R * s) / 725%:R)
+             (sqrtr (181%:R / 580%:R))
+             (8%:R - 5%:R * s) =
+  normal_fun (548%:R / 365%:R)
+             (sqrtr (181%:R / 580%:R) * 145%:R / 365%:R) s.
+Proof.
+set S45 := sqrtr _.
+have hS : S45 != (0 : R).
+  apply: lt0r_neq0; rewrite sqrtr_gt0.
+  by apply: divr_gt0; rewrite ?ltr0n.
+suff heq : ((8%:R - 5%:R * s) -
+             (3060%:R - 1800%:R * s) / 725%:R) ^+ 2 /
+            (S45 ^+ 2 *+ 2) =
+            (s - 548%:R / 365%:R) ^+ 2 /
+            ((S45 * 145%:R / 365%:R) ^+ 2 *+ 2).
+  rewrite /normal_fun; congr (sequences.expR _).
+  by rewrite !mulNr; congr (- _).
+rewrite -(mulr_natr (S45 ^+ 2) 2)
+        -(mulr_natr ((S45 * 145%:R / 365%:R) ^+ 2) 2).
+rewrite !exprMn exprVn.
+field. by rewrite hS.
+Qed.
+
+(* Width for step 4: W45 = sqrt(181/580) * 145/365 *)
+Let W45 : R := sqrtr (181%:R / 580%:R) * 145%:R / 365%:R.
+
+Lemma phase2_W45_neq0 : W45 != 0.
+Proof.
+apply: lt0r_neq0.
+rewrite /W45.
+apply: divr_gt0; last by rewrite ltr0n.
+apply: mulr_gt0; last by rewrite ltr0n.
+rewrite sqrtr_gt0.
+by apply: divr_gt0; rewrite ?ltr0n.
+Qed.
+
+(* scalar45 = peak_ratio * normal_pdf *)
+Lemma phase2_scalar45_is_pdf (s : R) :
+  gaussian_prod_scalar ((3060%:R - 1800%:R * s) / 725%:R)
+                       (8%:R - 5%:R * s)
+                       (sqrtr (9%:R / 145%:R)) (2%:R^-1) =
+  normal_peak (sqrtr (181%:R / 580%:R)) /
+  normal_peak W45 *
+  normal_pdf (548%:R / 365%:R) W45 s.
+Proof.
+rewrite /gaussian_prod_scalar phase2_S45 /W45 phase2_scalar45_fun -/W45.
+rewrite (normal_pdfE _ phase2_W45_neq0).
+have hpeak : normal_peak W45 != 0.
+  by apply: lt0r_neq0; exact: (normal_peak_gt0 phase2_W45_neq0).
+by rewrite mulrA divfK.
+Qed.
+
+(* Accumulated sigma from step 3 *)
+Let sigma3 : R := gaussian_prod_sigma sigma2 W34.
+
+(* Step 4 combination *)
+Lemma phase2_step4 (s : R) :
+  forall K3 : R,
+  let mu3 := gaussian_prod_mu
+               (gaussian_prod_mu
+                 (gaussian_prod_mu (90%:R / 73%:R) (253%:R / 190%:R)
+                    sigma0 W12)
+                 (1017%:R / 1110%:R) sigma1 W23)
+               (287%:R / 220%:R) sigma2 W34 in
+  K3 * normal_pdf mu3 sigma3 s *
+  gaussian_prod_scalar ((3060%:R - 1800%:R * s) / 725%:R)
+                       (8%:R - 5%:R * s)
+                       (sqrtr (9%:R / 145%:R)) (2%:R^-1) =
+  K3 * (normal_peak (sqrtr (181%:R / 580%:R)) / normal_peak W45) *
+  gaussian_prod_scalar mu3 (548%:R / 365%:R) sigma3 W45 *
+  normal_pdf (gaussian_prod_mu mu3 (548%:R / 365%:R) sigma3 W45)
+             (gaussian_prod_sigma sigma3 W45) s.
+Proof.
+move=> K3.
+rewrite /= phase2_scalar45_is_pdf.
+(* Rearrange: K3 * pdf(mu3,sigma3,s) * (pr * pdf(c45,W45,s))
+     = (K3 * pr) * pdf(mu3,sigma3,s) * pdf(c45,W45,s) *)
+rewrite -mulrA (mulrCA (normal_pdf _ _ _)) !mulrA.
+rewrite (normal_pdf_times_chain _ _ _ _
+           phase2_step3_sigma_neq0 phase2_W45_neq0).
+by rewrite !mulrA.
+Qed.
+
+Lemma phase2_step4_sigma_neq0 :
+  gaussian_prod_sigma sigma3 W45 != 0.
+Proof.
+exact: gaussian_prod_sigma_neq0 phase2_step3_sigma_neq0 phase2_W45_neq0.
+Qed.
+
 (* ===================================================================== *)
 (* Bridge: obs-style products to centered normal_pdf form                 *)
 (* ===================================================================== *)
