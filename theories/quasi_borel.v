@@ -134,53 +134,51 @@ Definition boolQ : qbsType R := R_qbs bool.
 
 Lemma prodQ_Mx_comp (X Y : qbsType R) :
   forall alpha f,
-    (@qbs_Mx R X (fst \o alpha) /\ @qbs_Mx R Y (snd \o alpha)) ->
+    (@qbs_Mx R X (fun r => (alpha r).1) /\
+     @qbs_Mx R Y (fun r => (alpha r).2)) ->
     measurable_fun setT f ->
-    (@qbs_Mx R X (fst \o (alpha \o f)) /\ @qbs_Mx R Y (snd \o (alpha \o f))).
+    (@qbs_Mx R X (fun r => ((alpha \o f) r).1) /\
+     @qbs_Mx R Y (fun r => ((alpha \o f) r).2)).
 Proof.
 move=> alpha f [h1 h2] hf; split.
-- have -> : fst \o (alpha \o f) = (fst \o alpha) \o f by [].
+- have -> : (fun r => ((alpha \o f) r).1) = (fun r => (alpha r).1) \o f by [].
   exact: qbs_Mx_comp h1 hf.
-- have -> : snd \o (alpha \o f) = (snd \o alpha) \o f by [].
+- have -> : (fun r => ((alpha \o f) r).2) = (fun r => (alpha r).2) \o f by [].
   exact: qbs_Mx_comp h2 hf.
 Qed.
 
 Lemma prodQ_Mx_const (X Y : qbsType R) :
   forall xy : X * Y,
-    @qbs_Mx R X (fst \o (fun _ : mR => xy)) /\
-    @qbs_Mx R Y (snd \o (fun _ : mR => xy)).
+    @qbs_Mx R X (fun _ : mR => xy.1) /\
+    @qbs_Mx R Y (fun _ : mR => xy.2).
 Proof.
-move=> [x y]; split.
-- have -> : fst \o (fun _ : mR => (x, y)) = (fun _ => x) by [].
-  exact: qbs_Mx_const.
-- have -> : snd \o (fun _ : mR => (x, y)) = (fun _ => y) by [].
-  exact: qbs_Mx_const.
+move=> [x y]; split; exact: qbs_Mx_const.
 Qed.
 
 Lemma prodQ_Mx_glue (X Y : qbsType R) :
   forall (P : mR -> nat)
          (Fi : nat -> mR -> X * Y),
     measurable_fun setT P ->
-    (forall i, @qbs_Mx R X (fst \o Fi i) /\ @qbs_Mx R Y (snd \o Fi i)) ->
-    @qbs_Mx R X (fst \o (fun r => Fi (P r) r)) /\
-    @qbs_Mx R Y (snd \o (fun r => Fi (P r) r)).
+    (forall i, @qbs_Mx R X (fun r => (Fi i r).1) /\
+               @qbs_Mx R Y (fun r => (Fi i r).2)) ->
+    @qbs_Mx R X (fun r => (Fi (P r) r).1) /\
+    @qbs_Mx R Y (fun r => (Fi (P r) r).2).
 Proof.
 move=> P Fi hP hFi; split.
-- have -> : fst \o (fun r => Fi (P r) r) =
-            (fun r => (fun i => fst \o Fi i) (P r) r) by [].
-  apply: (@qbs_Mx_glue _ X P (fun i => fst \o Fi i)) => // i.
+- apply: (@qbs_Mx_glue _ X P (fun i r => (Fi i r).1)) => // i.
   by have [] := hFi i.
-- have -> : snd \o (fun r => Fi (P r) r) =
-            (fun r => (fun i => snd \o Fi i) (P r) r) by [].
-  apply: (@qbs_Mx_glue _ Y P (fun i => snd \o Fi i)) => // i.
+- apply: (@qbs_Mx_glue _ Y P (fun i r => (Fi i r).2)) => // i.
   by have [] := hFi i.
 Qed.
 
 (* NB: manual HB.pack because this is a non-canonical QBS on (X * Y)%type *)
+(* NB: We use (fun r => (f r).1) instead of (fst \o f) to avoid a universe
+   constraint on Composition.u2 that would conflict with algebra_tactics.ring *)
 Definition prodQ (X Y : qbsType R) : qbsType R :=
   HB.pack (X * Y)%type
     (@isQBS.Build R (X * Y)%type
-      [set f | @qbs_Mx R X (fst \o f) /\ @qbs_Mx R Y (snd \o f)]
+      [set f | @qbs_Mx R X (fun r => (f r).1) /\
+               @qbs_Mx R Y (fun r => (f r).2)]
       (@prodQ_Mx_comp X Y)
       (@prodQ_Mx_const X Y)
       (@prodQ_Mx_glue X Y)).
@@ -219,12 +217,10 @@ have -> : (fun p : realQ * X => (alpha \o f) p.1 p.2) \o beta =
           (fun p : realQ * X => alpha p.1 p.2) \o
             (fun r => (f (fst (beta r)), snd (beta r))) by [].
 apply: halpha; split => /=.
-- have -> : fst \o (fun r : mR => (f (beta r).1, (beta r).2)) =
-            f \o (fst \o beta) by [].
+- have -> : (fun r : mR => f (beta r).1) =
+            f \o (fun r => (beta r).1) by [].
   exact: measurableT_comp hf hb1.
-- have -> : snd \o (fun r : mR => (f (beta r).1, (beta r).2)) =
-            snd \o beta by [].
-  exact: hb2.
+- exact: hb2.
 Qed.
 
 Lemma expQ_Mx_const (X Y : qbsType R) :
@@ -234,7 +230,7 @@ Lemma expQ_Mx_const (X Y : qbsType R) :
 Proof.
 move=> g beta [hb1 hb2].
 have -> : (fun p : realQ * X => (g : X -> Y) p.2) \o beta =
-          (g : X -> Y) \o (snd \o beta) by [].
+          (g : X -> Y) \o (fun r => (beta r).2) by [].
 exact: (@qbs_hom_proof R X Y g) _ hb2.
 Qed.
 
@@ -286,10 +282,9 @@ have hmorph : @qbs_morphism (prodQ realQ X) Y
 set gamma := (fun r : mR => (r, snd (beta r))) : mR -> realQ * X.
 have hgamma : @qbs_Mx R (prodQ realQ X) gamma.
   split => /=.
-  - have -> : fst \o gamma = idfun by [].
+  - have -> : (fun r : mR => (gamma r).1) = idfun by [].
     exact: measurable_id.
-  - have -> : snd \o gamma = snd \o beta by [].
-    exact: hb2.
+  - exact: hb2.
 have := hmorph gamma hgamma.
 have -> : (fun p : realQ * X => (fst \o beta) p.1 p.2) \o gamma =
           (fun r => (fst (beta r) : X -> Y) (snd (beta r))) by [].
@@ -301,10 +296,8 @@ Lemma prodQ_const_random (X Y : qbsType R) (x : X) (alpha : mR -> Y) :
   @qbs_Mx R Y alpha -> @qbs_Mx R (prodQ X Y) (fun r => (x, alpha r)).
 Proof.
 move=> hα; split => /=.
-- have -> : fst \o (fun r : mR => (x, alpha r)) = (fun _ => x) by [].
-  exact: qbs_Mx_const.
-- have -> : snd \o (fun r : mR => (x, alpha r)) = alpha by [].
-  exact: hα.
+- exact: qbs_Mx_const.
+- exact: hα.
 Qed.
 
 (* Curry morphism: if f : prodQ X Y -> Z is morph, then
@@ -320,12 +313,10 @@ Lemma qbs_morphism_curry (X Y Z : qbsType R)
 Proof.
 move=> beta hbeta; rewrite /qbs_Mx /= => gamma [hg1 hg2].
 apply: (@qbs_hom_proof R (prodQ X Y) Z f); split => /=.
-- have -> : fst \o (fun x : mR => (beta (gamma x).1, (gamma x).2)) =
-            beta \o (fst \o gamma) by [].
+- have -> : (fun r : mR => (beta (gamma r).1)) =
+            beta \o (fun r => (gamma r).1) by [].
   exact: qbs_Mx_comp hbeta hg1.
-- have -> : snd \o (fun x : mR => (beta (gamma x).1, (gamma x).2)) =
-            snd \o gamma by [].
-  exact: hg2.
+- exact: hg2.
 Qed.
 
 (* ----- 6. Unit QBS ----- *)
@@ -417,14 +408,18 @@ Variable (X : qbsType R) (P : set X).
 Let sub_car := {x : X | P x}.
 Let sub_proj : sub_car -> X := @proj1_sig _ P.
 
+(* NB: We use (fun r => sub_proj (alpha r)) instead of (sub_proj \o alpha)
+   to avoid a universe constraint on Composition.u2 that would conflict with
+   algebra_tactics.ring *)
 Let sub_Mx : set (mR -> sub_car) :=
-  [set alpha | @qbs_Mx R X (sub_proj \o alpha)].
+  [set alpha | @qbs_Mx R X (fun r => sub_proj (alpha r))].
 
 Lemma sub_qbs_closed1 : forall alpha f,
   sub_Mx alpha -> measurable_fun setT f -> sub_Mx (alpha \o f).
 Proof.
 move=> alpha f halpha hf; rewrite /sub_Mx /=.
-have -> : sub_proj \o (alpha \o f) = (sub_proj \o alpha) \o f by [].
+have -> : (fun r => sub_proj ((alpha \o f) r)) =
+          (fun r => sub_proj (alpha r)) \o f by [].
 exact: qbs_Mx_comp halpha hf.
 Qed.
 
@@ -432,7 +427,6 @@ Lemma sub_qbs_closed2 : forall x : sub_car,
   sub_Mx (fun _ => x).
 Proof.
 move=> x; rewrite /sub_Mx /=.
-have -> : sub_proj \o (fun _ : mR => x) = (fun _ => sub_proj x) by [].
 exact: qbs_Mx_const.
 Qed.
 
@@ -442,8 +436,6 @@ Lemma sub_qbs_closed3 : forall (Q : mR -> nat) (Fi : nat -> mR -> sub_car),
   sub_Mx (fun r => Fi (Q r) r).
 Proof.
 move=> Q Fi hQ hFi; rewrite /sub_Mx /=.
-have -> : sub_proj \o (fun r => Fi (Q r) r) =
-          (fun r => (fun i r => sub_proj (Fi i r)) (Q r) r) by [].
 exact: (@qbs_Mx_glue _ X Q (fun i r => sub_proj (Fi i r)) hQ (fun i => hFi i)).
 Qed.
 
@@ -488,34 +480,15 @@ Proof. by move=> alpha hα; exact: gen_base. Qed.
 
 Lemma qbs_morphism_swap (X Y : qbsType R) :
   @qbs_morphism (prodQ X Y) (prodQ Y X) (fun p => (p.2, p.1)).
-Proof.
-move=> alpha [h1 h2]; split => /=.
-- have -> : fst \o (fun r : mR => ((alpha r).2, (alpha r).1)) =
-            snd \o alpha by [].
-  exact: h2.
-- have -> : snd \o (fun r : mR => ((alpha r).2, (alpha r).1)) =
-            fst \o alpha by [].
-  exact: h1.
-Qed.
+Proof. by move=> alpha [h1 h2]; split. Qed.
 
 Lemma qbs_morphism_assoc_lr (X Y Z : qbsType R) :
   @qbs_morphism (prodQ (prodQ X Y) Z) (prodQ X (prodQ Y Z))
     (fun p => (p.1.1, (p.1.2, p.2))).
 Proof.
 move=> alpha [h12 h3].
-have h12' : @qbs_Mx R (prodQ X Y) (fst \o alpha) by exact: h12.
-have [h1 h2] := h12'.
-split => /=.
-- have -> : fst \o (fun r : mR => ((fst (alpha r)).1, ((fst (alpha r)).2, (alpha r).2))) =
-            fst \o (fst \o alpha) by [].
-  exact: h1.
-- split => /=.
-  + have -> : fst \o (snd \o (fun r : mR => ((fst (alpha r)).1, ((fst (alpha r)).2, (alpha r).2)))) =
-              snd \o (fst \o alpha) by [].
-    exact: h2.
-  + have -> : snd \o (snd \o (fun r : mR => ((fst (alpha r)).1, ((fst (alpha r)).2, (alpha r).2)))) =
-              snd \o alpha by [].
-    exact: h3.
+have [h1 h2] := h12.
+by split => /=; [exact: h1 | split].
 Qed.
 
 Lemma qbs_morphism_assoc_rl (X Y Z : qbsType R) :
@@ -523,19 +496,8 @@ Lemma qbs_morphism_assoc_rl (X Y Z : qbsType R) :
     (fun p => ((p.1, p.2.1), p.2.2)).
 Proof.
 move=> alpha [h1 h23].
-have h23' : @qbs_Mx R (prodQ Y Z) (snd \o alpha) by exact: h23.
-have [h2 h3] := h23'.
-split => /=.
-- split => /=.
-  + have -> : fst \o (fst \o (fun r : mR => (((alpha r).1, (snd (alpha r)).1), (snd (alpha r)).2))) =
-              fst \o alpha by [].
-    exact: h1.
-  + have -> : snd \o (fst \o (fun r : mR => (((alpha r).1, (snd (alpha r)).1), (snd (alpha r)).2))) =
-              fst \o (snd \o alpha) by [].
-    exact: h2.
-- have -> : snd \o (fun r : mR => (((alpha r).1, (snd (alpha r)).1), (snd (alpha r)).2)) =
-            snd \o (snd \o alpha) by [].
-  exact: h3.
+have [h2 h3] := h23.
+by split => /=; [split |].
 Qed.
 
 (* ----- 12. Exponential morphisms ----- *)
@@ -545,10 +507,8 @@ Lemma prodQ_random_const (X Y : qbsType R) (alpha : mR -> X) (y : Y) :
   @qbs_Mx R X alpha -> @qbs_Mx R (prodQ X Y) (fun r => (alpha r, y)).
 Proof.
 move=> hα; split => /=.
-- have -> : fst \o (fun r : mR => (alpha r, y)) = alpha by [].
-  exact: hα.
-- have -> : snd \o (fun r : mR => (alpha r, y)) = (fun _ => y) by [].
-  exact: qbs_Mx_const.
+- exact: hα.
+- exact: qbs_Mx_const.
 Qed.
 
 (* Application/evaluation composed with pairing: given f : W -> expQ X Y
@@ -566,10 +526,9 @@ have hg_alpha : @qbs_Mx R X ((g : W -> X) \o alpha).
 set beta := (fun r : mR => (r, (g : W -> X) (alpha r))) : mR -> realQ * X.
 have hbeta : @qbs_Mx R (prodQ realQ X) beta.
   split => /=.
-  - have -> : fst \o beta = idfun by [].
+  - have -> : (fun r : mR => (beta r).1) = idfun by [].
     exact: measurable_id.
-  - have -> : snd \o beta = (g : W -> X) \o alpha by [].
-    exact: hg_alpha.
+  - exact: hg_alpha.
 have := hf_alpha beta hbeta.
 have -> : (fun p : realQ * X =>
              ((f : W -> expQ X Y) \o alpha) p.1 p.2) \o beta =
@@ -600,26 +559,25 @@ move=> beta hbeta; rewrite /qbs_Mx /= => gamma [hg1 hg2].
 have hf_sg : @qbs_Mx R (expQ Y Z)
     ((f : X -> expQ Y Z) \o (snd \o gamma)).
   exact: (@qbs_hom_proof R X (expQ Y Z) f) _ hg2.
-have hbfg : @qbs_Mx R Y (beta \o (fst \o gamma)).
+have hbfg : @qbs_Mx R Y (beta \o (fun r => (gamma r).1)).
   exact: qbs_Mx_comp hbeta hg1.
-set delta := (fun r : mR => (r, beta ((fst \o gamma) r))) :
+set delta := (fun r : mR => (r, beta ((gamma r).1))) :
   mR -> realQ * Y.
 have hdelta : @qbs_Mx R (prodQ realQ Y) delta.
   split => /=.
-  - have -> : fst \o delta = idfun by [].
+  - have -> : (fun r : mR => (delta r).1) = idfun by [].
     exact: measurable_id.
-  - have -> : snd \o delta = beta \o (fst \o gamma) by [].
-    exact: hbfg.
+  - exact: hbfg.
 have := hf_sg delta hdelta.
 have -> : (fun p : realQ * Y =>
              ((f : X -> expQ Y Z) \o (snd \o gamma)) p.1 p.2) \o delta =
           (fun r : mR => ((f : X -> expQ Y Z) (snd (gamma r)) : Y -> Z)
-             (beta ((fst \o gamma) r))) by [].
+             (beta ((gamma r).1))) by [].
 have -> : (fun p : realQ * X =>
              (fun x : X => ((f : X -> expQ Y Z) x : Y -> Z)
                 (beta p.1)) p.2) \o gamma =
           (fun r : mR => ((f : X -> expQ Y Z) (snd (gamma r)) : Y -> Z)
-             (beta ((fst \o gamma) r))) by [].
+             (beta ((gamma r).1))) by [].
 by [].
 Qed.
 

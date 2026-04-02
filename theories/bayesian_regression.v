@@ -511,9 +511,11 @@ Let phase1_sigma5 : R := sqrtr (9%:R / 181%:R).
    HYPOTHESES:
    - phase1_algebra: The algebraic identity from normal_algebra.v
      (obs_rewrite + phase1_combine5). This is proved in normal_algebra.v
-     using 5 iterative applications of normal_pdf_times, but cannot be
-     imported here because normal_algebra.v depends on algebra_tactics.ring,
-     which causes universe inconsistencies with the QBS universe hierarchy.
+     using 5 iterative applications of normal_pdf_times. The universe
+     inconsistency between algebra_tactics.ring and QBS has been resolved
+     (see quasi_borel.v), so normal_algebra.v can now be imported alongside
+     QBS. This hypothesis can be discharged using the lemmas from
+     normal_algebra.v directly.
 
    - obs_meas: Measurability of obs as a function of b at fixed s.
      This holds because obs is a product of normal_pdfs, each of which
@@ -622,23 +624,19 @@ Qed.
    The final closed-form value (matching Isabelle AFP):
      C = (4 * sqrt(2)) / (pi^2 * sqrt(66961 * pi)) * exp(-1674761/1674025)
 
-   BRIDGING THE UNIVERSE GAP:
-   ~~~~~~~~~~~~~~~~~~~~~~~~~~
+   BRIDGING THE UNIVERSE GAP (RESOLVED):
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    The algebraic identities (phase1_combine5, obs_rewrite, normal_pdf_times,
    and the Phase 2 steps) are proved in normal_algebra.v using the ring
-   and field tactics from algebra_tactics. However, bayesian_regression.v
-   cannot import normal_algebra.v due to universe inconsistencies:
-   algebra_tactics.ring introduces universe constraints that conflict with
-   the QBS type hierarchy.
+   and field tactics from algebra_tactics. The universe inconsistency
+   between algebra_tactics.ring and the QBS type hierarchy has been
+   resolved by refactoring prodQ and sub_qbs in quasi_borel.v to avoid
+   using ssrfun's composition operator (\o) inside set comprehensions
+   (which created universe constraints on Composition.u2 vs mkset.u0).
 
-   The bridge is the phase1_algebra hypothesis of phase1_integration,
-   which captures the exact algebraic identity proved in normal_algebra.v.
-   In a deployment where the universe issue is resolved (e.g., by
-   refactoring algebra_tactics or using universe polymorphism), this
-   hypothesis can be discharged by:
-     exact: fun b => ...  using obs_rewrite and phase1_combine5.
-
-   A similar bridge would be needed for Phase 2 integration.
+   normal_algebra.v can now be imported alongside QBS modules. The
+   phase1_algebra hypothesis of phase1_integration can be discharged
+   using obs_rewrite and phase1_combine5 from normal_algebra.v directly.
 *)
 
 End BayesianRegression.

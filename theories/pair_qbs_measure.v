@@ -104,12 +104,12 @@ Lemma qbs_pair_alpha_random (X Y : qbsType R)
   @qbs_Mx R (prodQ X Y) (qbs_pair_alpha p q).
 Proof.
 rewrite /qbs_Mx /=; split.
-- have -> : fst \o qbs_pair_alpha p q =
+- have -> : (fun r => (qbs_pair_alpha p q r).1) =
     qbs_prob_alpha p \o (fst \o @decode_RR_mR R) by [].
   apply: qbs_Mx_comp; first exact: (qbs_prob_alpha_random p).
   apply: measurableT_comp; first exact: measurable_fst.
   exact: measurable_R_to_RR.
-- have -> : snd \o qbs_pair_alpha p q =
+- have -> : (fun r => (qbs_pair_alpha p q r).2) =
     qbs_prob_alpha q \o (snd \o @decode_RR_mR R) by [].
   apply: qbs_Mx_comp; first exact: (qbs_prob_alpha_random q).
   apply: measurableT_comp; first exact: measurable_snd.
