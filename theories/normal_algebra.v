@@ -632,4 +632,52 @@ Proof. by field. Qed.
      center=10647/7925, S=sqrt(181/1448), width=sqrt(181/1448)*2175/7925
 *)
 
+(* ===================================================================== *)
+(* Bridge: obs-style products to centered normal_pdf form                 *)
+(* ===================================================================== *)
+
+(* Key identity for converting obs(s,b) to the form used by phase1:
+   normal_pdf(s*k+b, sigma, y) = normal_pdf(y-k*s, sigma, b).
+   This combines symmetry (x-m)^2 = (m-x)^2 with the algebraic
+   identity y - (s*k+b) = -(b - (y-k*s)).
+
+   Note: uses s*k (not k*s) to match the obs definition order. *)
+Lemma normal_pdf_recenter (y s k sigma b : R) (hs : sigma != 0) :
+  normal_pdf (s * k + b) sigma y = normal_pdf (y - k * s) sigma b.
+Proof.
+rewrite !(normal_pdfE _ hs); congr (_ * _).
+rewrite /normal_fun; congr (sequences.expR _).
+congr (- _ / _).
+suff -> : (y - ((s * k)%R + b)%E) = - (b - (y - k * s)) by rewrite sqrrN.
+ring.
+Qed.
+
+Arguments normal_pdf_recenter : clear implicits.
+
+(* obs(s,b) = d(s*1+b, 5/2) * d(s*2+b, 19/5) * d(s*3+b, 9/2)
+              * d(s*4+b, 31/5) * d(s*5+b, 8)
+   where d(mu,x) = normal_pdf(mu, 1/2, x).
+
+   Rewrite as a product of normal_pdf's centered at y_k - k*s,
+   evaluated at b, which is the form consumed by phase1_combine5. *)
+Lemma obs_rewrite (s b : R) :
+  normal_pdf (s * 1 + b) (2%:R^-1) (5%:R / 2%:R) *
+  normal_pdf (s * 2%:R + b) (2%:R^-1) (19%:R / 5%:R) *
+  normal_pdf (s * 3%:R + b) (2%:R^-1) (9%:R / 2%:R) *
+  normal_pdf (s * 4%:R + b) (2%:R^-1) (31%:R / 5%:R) *
+  normal_pdf (s * 5%:R + b) (2%:R^-1) 8%:R =
+  normal_pdf (5%:R / 2%:R - s) (2%:R^-1) b *
+  normal_pdf (19%:R / 5%:R - 2%:R * s) (2%:R^-1) b *
+  normal_pdf (9%:R / 2%:R - 3%:R * s) (2%:R^-1) b *
+  normal_pdf (31%:R / 5%:R - 4%:R * s) (2%:R^-1) b *
+  normal_pdf (8%:R - 5%:R * s) (2%:R^-1) b.
+Proof.
+rewrite (normal_pdf_recenter (5%:R/2%:R) s 1 (2%:R^-1) b half_neq0)
+        (normal_pdf_recenter (19%:R/5%:R) s 2%:R (2%:R^-1) b half_neq0)
+        (normal_pdf_recenter (9%:R/2%:R) s 3%:R (2%:R^-1) b half_neq0)
+        (normal_pdf_recenter (31%:R/5%:R) s 4%:R (2%:R^-1) b half_neq0)
+        (normal_pdf_recenter 8%:R s 5%:R (2%:R^-1) b half_neq0).
+congr (_ * _ * _ * _ * _); rewrite ?mul1r //.
+Qed.
+
 End NormalDensityAlgebra.

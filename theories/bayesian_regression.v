@@ -3,7 +3,7 @@ From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
 From mathcomp Require Import reals ereal topology normedtype numfun measure
   lebesgue_integral lebesgue_integral_fubini lebesgue_stieltjes_measure
-  probability.
+  lebesgue_measure probability charge.
 From mathcomp.classical Require Import boolp.
 From QBS Require Import quasi_borel probability_qbs pair_qbs_measure
   measure_as_qbs_measure.
@@ -41,6 +41,45 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Local Open Scope classical_set_scope.
+
+(* ===================================================================== *)
+(* Integration against normal_prob via Radon-Nikodym                     *)
+(* ===================================================================== *)
+
+Section IntegralNormalProb.
+Variable (R : realType).
+Local Notation mu := (@lebesgue_measure R).
+Local Open Scope ring_scope.
+Local Open Scope ereal_scope.
+
+(* Convert integration against normal_prob to Lebesgue integration
+   with the normal_pdf density. This is the normal-distribution
+   analogue of integral_beta_prob from mathcomp-analysis. *)
+Lemma integral_normal_prob (m sigma : R) (hsigma : (sigma != 0)%R)
+    f (f_meas : measurable_fun setT f)
+    (f_int : (\int[normal_prob m sigma]_x `|f x| < +oo)%E) :
+  \int[normal_prob m sigma]_x f x =
+  \int[mu]_x (f x * (normal_pdf m sigma x)%:E).
+Proof.
+rewrite -(Radon_Nikodym_change_of_variables
+            (normal_prob_dominates m sigma) measurableT); last first.
+  by apply/integrableP; split.
+apply: ae_eq_integral => //.
+- apply: emeasurable_funM => //; apply: (measurable_int mu).
+  apply: (integrableS _ _ (@subsetT _ _)) => //=.
+  by apply: Radon_Nikodym_integrable; exact: normal_prob_dominates.
+- apply: emeasurable_funM => //=; apply/measurableT_comp => //=.
+  by apply/measurable_funTS; exact: measurable_normal_pdf.
+- apply: ae_eqe_mul2l => /=.
+  rewrite Radon_NikodymE//=; first exact: normal_prob_dominates.
+  move=> ?.
+  case: cid => /= h [h1 h2 h3].
+  apply: integral_ae_eq => //=.
+  + apply/measurable_EFinP; exact: measurable_normal_pdf.
+  + by move=> E E01 mE; rewrite -h3.
+Qed.
+
+End IntegralNormalProb.
 
 (* ===================================================================== *)
 (* Part II: Bayesian regression example                                  *)
