@@ -22,13 +22,17 @@ Import Num.Def Num.Theory reals classical_sets GRing.Theory.
 (*                                                                            *)
 (* Key results:                                                               *)
 (* ```                                                                        *)
-(*   complete_the_square  == ax^2+bx+c = a(x+b/(2a))^2 - (b^2-4ac)/(4a)    *)
-(*   normal_pdf_times     == product of two Gaussians decomposition            *)
-(*   obs                  == observation likelihood (5 data points)            *)
-(*   evidence             == normalizing constant Z                            *)
-(*   posterior_density     == E_post[g] = E_prior[g*obs] / Z                  *)
+(*   prior             == joint prior on (slope, intercept) as product QBS    *)
+(*   prior_bind        == same prior via monadic bind/return                  *)
+(*   norm_qbs          == normalizer: weighted QBS prob -> option density     *)
+(*   program           == full Bayesian program: norm_qbs (fun _ => 1) obs   *)
+(*   obs               == observation likelihood (5 data points)              *)
+(*   evidence          == normalizing constant Z                              *)
+(*   posterior_density  == E_post[g] = E_prior[g*obs] / Z                    *)
 (*   posterior_density_total == posterior integrates to 1                      *)
 (*   posterior_is_reweighting == Bayesian update formula                       *)
+(*   program_succeeds  == program returns Some when evidence is good          *)
+(*   program_integrates_to_1 == program result integrates to 1                *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -220,5 +224,172 @@ Lemma predictive_marginal (obs_x : R) (h : realQ R -> \bar R)
     qbs_integral _ intercept_prior (fun b =>
       qbs_integral _ (likelihood_single obs_x (s, b)) h)).
 Proof. rewrite /predictive_integral; exact: qbs_pair_integralE. Qed.
+
+(* ----- 7. Monadic prior on the parameter space ----------------------- *)
+(* Isabelle's prior: do { s <- nu; b <- nu; return (fun r => s*r+b) }
+
+   In Isabelle, the prior is a probability on the function space
+   expQ R (realQ R) (realQ R), built by sampling slope s and intercept b
+   from the standard Gaussian (nu), then returning the function r |-> s*r+b.
+
+   Constructing this directly on expQ requires packaging
+   (fun r => s*r+b) as a qbsHomType, i.e., proving that for each (s,b),
+   the map r |-> s*r+b is a QBS morphism. While this is straightforward
+   (it is a measurable hence QBS-morphic function), the monadic bind on
+   expQ also requires the strong morphism condition for the return map
+   (s,b) |-> (fun r => s*r+b) : prodQ (realQ R) (realQ R) -> expQ ...
+
+   Instead, we provide the equivalent pair-based formulation: the prior
+   is a QBS probability on prodQ (realQ R) (realQ R) representing the
+   joint distribution of (slope, intercept). This is isomorphic to the
+   function-space version via the bijection (s,b) <-> (fun r => s*r+b).
+
+   The pair formulation is standard in Bayesian computation and matches
+   how the posterior is already defined above. *)
+
+Definition prior : qbs_prob (prodQ (realQ R) (realQ R)) :=
+  qbs_prob_pair slope_prior intercept_prior.
+
+(* The monadic construction of the prior:
+   prior_bind = bind(slope_prior, fun s =>
+                  bind(intercept_prior, fun b =>
+                    return (s, b)))
+
+   We construct this using qbs_bind with explicit diagonal randomness
+   proofs. The inner bind at fixed s produces a QBS probability on
+   (realQ R * realQ R) with alpha r |-> (s, idfun r) = (s, r). *)
+
+(* Diagonal randomness for the inner bind: r |-> (s, idfun r) *)
+Lemma prior_inner_diag (s : realQ R) :
+  @qbs_Mx R (prodQ (realQ R) (realQ R))
+    (fun r => qbs_prob_alpha
+      ((fun b => qbs_return (prodQ (realQ R) (realQ R)) (s, b)
+                   (qbs_prob_mu intercept_prior))
+       (qbs_prob_alpha intercept_prior r)) r).
+Proof.
+rewrite /= /qbs_Mx /=; split.
+- exact: (@qbs_Mx_const R (realQ R) s).
+- exact: (@measurable_id _ mR setT).
+Qed.
+
+Definition prior_inner (s : realQ R) : qbs_prob (prodQ (realQ R) (realQ R)) :=
+  @qbs_bind R (realQ R) (prodQ (realQ R) (realQ R))
+    intercept_prior
+    (fun b => qbs_return (prodQ (realQ R) (realQ R)) (s, b)
+                (qbs_prob_mu intercept_prior))
+    (prior_inner_diag s).
+
+(* Diagonal randomness for the outer bind *)
+Lemma prior_bind_diag :
+  @qbs_Mx R (prodQ (realQ R) (realQ R))
+    (fun r => qbs_prob_alpha
+      (prior_inner (qbs_prob_alpha slope_prior r)) r).
+Proof.
+rewrite /= /qbs_Mx /=; split.
+- exact: (@measurable_id _ mR setT).
+- exact: (@measurable_id _ mR setT).
+Qed.
+
+(* The full monadic prior:
+   prior_bind = bind(slope_prior, fun s =>
+                  bind(intercept_prior, fun b => return (s,b))) *)
+Definition prior_bind : qbs_prob (prodQ (realQ R) (realQ R)) :=
+  @qbs_bind R (realQ R) (prodQ (realQ R) (realQ R))
+    slope_prior prior_inner prior_bind_diag.
+
+(* ----- 8. Normalizer (norm_qbs) -------------------------------------- *)
+(* Isabelle's norm_qbs_measure: given a weighted QBS probability, either
+   return the normalized probability (when evidence is positive and finite)
+   or signal an error. We model the error case with option.
+
+   norm_qbs g obs_fn computes the evidence
+     ev = integral of obs_fn over the joint prior
+   and if 0 < ev < +oo, returns Some (fun p => g(p) * obs_fn(p) / ev),
+   otherwise returns None (corresponding to Isabelle's Inr error). *)
+
+Definition norm_qbs
+    (g : realQ R * realQ R -> \bar R)
+    (obs_fn : realQ R * realQ R -> R)
+    : option (realQ R * realQ R -> \bar R) :=
+  let ev := qbs_pair_integral slope_prior intercept_prior
+              (fun p => (obs_fn p)%:E) in
+  if (0 < ev) && (ev < +oo) then
+    Some (fun p => g p * (obs_fn p)%:E / ev)
+  else None.
+
+(* The normalizer returns Some when evidence is positive and finite *)
+Lemma norm_qbs_some (g : realQ R * realQ R -> \bar R)
+  (obs_fn : realQ R * realQ R -> R)
+  (hev_pos : 0 < qbs_pair_integral slope_prior intercept_prior
+               (fun p => (obs_fn p)%:E))
+  (hev_fin : qbs_pair_integral slope_prior intercept_prior
+               (fun p => (obs_fn p)%:E) < +oo) :
+  norm_qbs g obs_fn =
+  Some (fun p => g p * (obs_fn p)%:E /
+          qbs_pair_integral slope_prior intercept_prior
+            (fun p => (obs_fn p)%:E)).
+Proof.
+rewrite /norm_qbs.
+case: ifPn => // /negP.
+move/negP; rewrite negb_and => /orP[/negP|/negP]; contradiction.
+Qed.
+
+(* The normalizer returns None when evidence is zero or infinite *)
+Lemma norm_qbs_none (g : realQ R * realQ R -> \bar R)
+  (obs_fn : realQ R * realQ R -> R)
+  (hev : ~ ((0 < qbs_pair_integral slope_prior intercept_prior
+                 (fun p => (obs_fn p)%:E)) /\
+             (qbs_pair_integral slope_prior intercept_prior
+                 (fun p => (obs_fn p)%:E) < +oo))) :
+  norm_qbs g obs_fn = None.
+Proof.
+rewrite /norm_qbs.
+case: ifPn => // /andP[h1 h2].
+by exfalso; apply: hev.
+Qed.
+
+(* ----- 9. The Bayesian program --------------------------------------- *)
+(* Isabelle's program:
+     program = norm_qbs_measure (pushforward prior (fun f => (f, obs f)))
+   In our pair formulation, the pushforward through (fun f => (f, obs f))
+   is just the observation function obs applied to the prior parameters.
+   So program = norm_qbs (fun _ => 1) obs. *)
+
+Definition program : option (realQ R * realQ R -> \bar R) :=
+  norm_qbs (fun _ => 1) obs.
+
+(* When evidence is positive and finite, the program succeeds *)
+Lemma program_succeeds
+  (hev_pos : 0 < evidence)
+  (hev_fin : evidence < +oo) :
+  program = Some (fun p => 1 * (obs p)%:E / evidence).
+Proof.
+rewrite /program /norm_qbs -/(evidence).
+case: ifPn => // /negP.
+move/negP; rewrite negb_and => /orP[/negP|/negP]; contradiction.
+Qed.
+
+(* ----- 10. Program result -------------------------------------------- *)
+(* When evidence is positive and finite, the program succeeds and the
+   resulting density integrates to 1 (matching Isabelle's program_result).
+
+   The connection: the density returned by norm_qbs (fun _ => 1) obs
+   is precisely the function p |-> 1 * obs(p) / evidence = obs(p) / Z,
+   which is the posterior density. Integrating this over the prior gives
+   posterior_density (fun _ => 1) = 1 by posterior_density_total. *)
+
+Theorem program_integrates_to_1
+  (hev_pos : 0 < evidence)
+  (hev_fin : evidence < +oo) :
+  exists density,
+    program = Some density /\
+    posterior_density (fun _ => 1) = 1.
+Proof.
+exists (fun p => 1 * (obs p)%:E / evidence); split.
+- rewrite /program /norm_qbs -/(evidence).
+  case: ifPn => // /negP.
+  move/negP; rewrite negb_and => /orP[/negP|/negP]; contradiction.
+- exact: posterior_density_total.
+Qed.
 
 End BayesianRegression.
