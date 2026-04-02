@@ -3,9 +3,9 @@
 **Project:** QBS -- Quasi-Borel Spaces in Rocq/Coq
 **Repository:** `/home/rocq/QBS`
 **Date:** 2026-04-01 (updated)
-**Status:** 323 proofs completed (321 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 6,662 across 11 files
-**Commits:** 120
+**Status:** 332 proofs completed (330 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** 6,891 across 11 files
+**Commits:** 122
 
 **Primary references:**
 - C. Heunen, O. Kammar, S. Staton, H. Yang.
@@ -1196,7 +1196,7 @@ The normalizing constant computation iterates `normal_pdf_times` through 10 Gaus
 
 ### 2.25 Bayesian Linear Regression
 
-**File:** `theories/bayesian_regression.v` (540 lines, 19 Qed)
+**File:** `theories/bayesian_regression.v` (638 lines, 27 Qed)
 
 Following the Isabelle AFP development (Bayesian_Linear_Regression.thy) by Hirata, Minamide, Sato.
 
@@ -1213,9 +1213,14 @@ Following the Isabelle AFP development (Bayesian_Linear_Regression.thy) by Hirat
 | `norm_qbs` | Normalizer: returns `Some`/`None` based on evidence |
 | `program` | Full Bayesian program = `norm_qbs (fun _ => 1) obs` |
 | `program_succeeds` | Program returns `Some` when evidence is positive/finite |
-| `program_integrates_to_1` | Main theorem: posterior is properly normalized |
 | `phase1_integration` | `∫[N(0,3)]_b obs(s,b) = scalar_of_s(s)` |
+| `phase2_integration` | `∫[N(0,3)]_s scalar_of_s(s) = phase2_const` |
+| `evidence_value` | `evidence = phase2_const` (explicit closed-form constant) |
+| `evidence_pos` | `0 < evidence ∧ evidence < +oo` |
+| `program_integrates_to_1` | **Main theorem: posterior is properly normalized (unconditional)** |
 | `integral_normal_prob` | `∫[normal_prob m σ] f = ∫[lebesgue] f * normal_pdf` |
+
+The key result `program_integrates_to_1` derives the positivity and finiteness of evidence from `evidence_value` rather than taking them as hypotheses, matching the Isabelle AFP's `program_result`.
 
 ---
 
@@ -1545,26 +1550,24 @@ The development uses the following math-comp analysis components:
 | `pair_qbs_measure.v` | 548 | 18 |
 | `qbs_prob_quot.v` | 345 | 17 |
 | `measure_as_qbs_measure.v` | 183 | 6 |
-| `normal_algebra.v` | 1108 | 71 |
-| `bayesian_regression.v` | 540 | 19 |
+| `normal_algebra.v` | 1337 | 80 |
+| `bayesian_regression.v` | 638 | 27 |
 | `qbs_giry.v` | 220 | 12 |
 | `standard_borel.v` | 1253 | 60 |
-| **Total** | **6,662** | **323** |
+| **Total** | **6,891** | **332** |
 
-**Summary:** 323 completed proofs (321 Qed + 2 Defined), **0 Admitted**, 0 custom axioms across 11 files and 6,662 lines.
+**Summary:** 332 completed proofs (330 Qed + 2 Defined), **0 Admitted**, 0 custom axioms across 11 files and 6,891 lines.
 
 ### 3.13 Remaining Work
 
-1. **Explicit normalizing constant assembly.** Phase 1 and Phase 2 computations are complete (all 10 combination steps proved). The final assembly connecting `evidence = C` via Fubini + `integral_normal_pdf` is documented but not yet a single theorem due to integrability side conditions.
+1. **Disintegration / Markov kernels.** The general case of `qbs_bind_equiv_l` (bind respects equivalence for arbitrary strong morphisms) requires the disintegration theorem, which is beyond the current development.
 
-2. **Disintegration / Markov kernels.** The general case of `qbs_bind_equiv_l` (bind respects equivalence for arbitrary strong morphisms) requires the disintegration theorem, which is beyond the current development.
+2. **Standard Borel closure under countable products.** The current `pair_standard_borel` covers binary products; extending to countable products (R ~ R^N) would require a Hilbert-cube-style encoding.
 
-3. **Standard Borel closure under countable products.** The current `pair_standard_borel` covers binary products; extending to countable products (R ~ R^N) would require a Hilbert-cube-style encoding.
+3. **s-Finite kernels.** Integration with the s-finite kernel framework from math-comp analysis (Affeldt, Cohen, Saito) would enable a more compositional treatment of conditional distributions.
 
-4. **s-Finite kernels.** Integration with the s-finite kernel framework from math-comp analysis (Affeldt, Cohen, Saito) would enable a more compositional treatment of conditional distributions.
+4. **Quotient via actual quotient types.** Replacing the setoid wrapper `qbs_prob_space` with Rocq's quotient types would give definitional equality on the quotient, at the cost of requiring all operations to provably respect equivalence.
 
-5. **Quotient via actual quotient types.** Replacing the setoid wrapper `qbs_prob_space` with Rocq's quotient types would give definitional equality on the quotient, at the cost of requiring all operations to provably respect equivalence.
+5. **Standard Borel: full round-trip.** The reverse direction `encode_decode_RR` is proved conditionally (on no-trailing-ones of deinterleaved subsequences). Formalizing that the exception set has measure zero would complete the picture.
 
-6. **Standard Borel: full round-trip.** The reverse direction `encode_decode_RR` is proved conditionally (on no-trailing-ones of deinterleaved subsequences). Formalizing that the exception set has measure zero would complete the picture.
-
-7. **Granular imports.** Replace `all_boot all_algebra` with specific module imports for faster compilation and clearer dependencies.
+6. **Granular imports.** Replace `all_boot all_algebra` with specific module imports for faster compilation and clearer dependencies.
