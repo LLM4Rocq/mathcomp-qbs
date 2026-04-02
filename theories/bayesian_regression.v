@@ -32,7 +32,9 @@ Import Num.Def Num.Theory reals classical_sets GRing.Theory.
 (*   posterior_density  == E_post[g] = E_prior[g*obs] / Z                    *)
 (*   posterior_density_total == posterior integrates to 1                      *)
 (*   program_succeeds  == program returns Some when evidence is good          *)
-(*   program_integrates_to_1 == program result integrates to 1                *)
+(*   evidence_value    == evidence = phase2_const (explicit constant)         *)
+(*   evidence_pos      == 0 < evidence /\ evidence < +oo                     *)
+(*   program_integrates_to_1 == program integrates to 1 (unconditional)      *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -396,29 +398,6 @@ case: ifPn => // /negP.
 move/negP; rewrite negb_and => /orP[/negP|/negP]; contradiction.
 Qed.
 
-(* ----- 10. Program result -------------------------------------------- *)
-(* When evidence is positive and finite, the program succeeds and the
-   resulting density integrates to 1 (matching Isabelle's program_result).
-
-   The connection: the density returned by norm_qbs (fun _ => 1) obs
-   is precisely the function p |-> 1 * obs(p) / evidence = obs(p) / Z,
-   which is the posterior density. Integrating this over the prior gives
-   posterior_density (fun _ => 1) = 1 by posterior_density_total. *)
-
-Theorem program_integrates_to_1
-  (hev_pos : 0 < evidence)
-  (hev_fin : evidence < +oo) :
-  exists density,
-    program = Some density /\
-    posterior_density (fun _ => 1) = 1.
-Proof.
-exists (fun p => 1 * (obs p)%:E / evidence); split.
-- rewrite /program /norm_qbs -/(evidence).
-  case: ifPn => // /negP.
-  move/negP; rewrite negb_and => /orP[/negP|/negP]; contradiction.
-- exact: posterior_density_total.
-Qed.
-
 (* ===================================================================== *)
 (* 11. Phase 1 integration: integrate out the intercept b                *)
 (* ===================================================================== *)
@@ -527,12 +506,137 @@ rewrite ge0_integralZl_EFin //.
 Qed.
 
 (* ===================================================================== *)
-(* 12. Assembly chain: evidence computation                               *)
+(* 12. Phase 2 integration: integrate out the slope s                     *)
 (* ===================================================================== *)
-(* The full evidence computation chain:
-   evidence = ∫∫ obs(s,b) = ∫ scalar_of_s(s) = C
-   Phase 1 (this file): integrate out b using obs_rewrite + phase1_combine5.
-   Phase 2 (normal_algebra.v): integrate out s similarly.
-   Algebraic lemmas live in normal_algebra.v. *)
+
+(* scalar_of_s is the product of 5 gaussian_prod_scalar terms *)
+Lemma scalar_of_s_eq (s : R) :
+  scalar_of_s s =
+  (gaussian_prod_scalar 0 (5%:R / 2%:R - s) 3%:R (2%:R^-1) *
+  gaussian_prod_scalar ((90%:R - 36%:R * s) / 37%:R)
+                       (19%:R / 5%:R - 2%:R * s)
+                       (sqrtr (9%:R / 37%:R)) (2%:R^-1) *
+  gaussian_prod_scalar ((1134%:R - 540%:R * s) / 365%:R)
+                       (9%:R / 2%:R - 3%:R * s)
+                       (sqrtr (9%:R / 73%:R)) (2%:R^-1) *
+  gaussian_prod_scalar ((1944%:R - 1080%:R * s) / 545%:R)
+                       (31%:R / 5%:R - 4%:R * s)
+                       (sqrtr (9%:R / 109%:R)) (2%:R^-1) *
+  gaussian_prod_scalar ((612%:R - 360%:R * s) / 145%:R)
+                       (8%:R - 5%:R * s)
+                       (sqrtr (9%:R / 145%:R)) (2%:R^-1))%R.
+Proof. by rewrite /scalar_of_s /gaussian_prod_scalar. Qed.
+
+(* Bridge: scalar_of_s(s) * N(0,3,s) = phase2_const * N(final_mu, final_sigma, s) *)
+Lemma scalar_of_s_mul_pdf (s : R) :
+  (scalar_of_s s * normal_pdf 0 prior_sigma s =
+   phase2_const R * normal_pdf (phase2_final_mu R) (phase2_final_sigma R) s)%R.
+Proof.
+rewrite (scalar_of_s_eq s).
+pose proof (phase2_combine5 s) as h.
+rewrite /prior_sigma -h; ring.
+Qed.
+
+(* Phase 2 integration: integrating scalar_of_s(s) against the slope
+   prior N(0,3) yields the constant phase2_const.
+   This mirrors phase1_integration but for the s variable. *)
+Lemma phase2_integration
+  (sos_meas : measurable_fun [set: mR]
+    (fun s : mR => (scalar_of_s s)%:E :> \bar R))
+  (sos_int : (\int[normal_prob 0 prior_sigma]_s
+    `|(scalar_of_s s)%:E| < +oo)%E) :
+  \int[normal_prob (0 : R) prior_sigma]_s (scalar_of_s s)%:E =
+  (phase2_const R)%:E.
+Proof.
+have h3 : (prior_sigma != 0)%R by rewrite /prior_sigma pnatr_eq0.
+rewrite (integral_normal_prob h3) //.
+under eq_integral do rewrite -EFinM.
+under eq_integral do rewrite scalar_of_s_mul_pdf.
+under eq_integral do rewrite EFinM.
+rewrite ge0_integralZl_EFin //.
+- rewrite integral_normal_pdf ?mule1 //; exact: phase2_final_sigma_neq0.
+- move=> x _; rewrite lee_fin; exact: normal_pdf_ge0.
+- apply/measurableT_comp => //; exact: measurable_normal_pdf.
+- have := phase2_const_gt0 R; rewrite lt0r => /andP[_]; done.
+Qed.
+
+(* ===================================================================== *)
+(* 13. Evidence value and unconditional program result                    *)
+(* ===================================================================== *)
+
+(* The evidence equals phase2_const, given the necessary measure-theoretic
+   hypotheses for Fubini decomposition and both integration phases. *)
+Theorem evidence_value
+  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
+    setT (qbs_pair_fun slope_prior intercept_prior
+      (fun params => (obs params)%:E)))
+  (obs_meas : forall s, measurable_fun [set: mR]
+    (fun b : mR => (obs (s, b))%:E :> \bar R))
+  (obs_int : forall s, (\int[normal_prob 0 prior_sigma]_b
+    `|(obs (s, b))%:E| < +oo)%E)
+  (sos_meas : measurable_fun [set: mR]
+    (fun s : mR => (scalar_of_s s)%:E :> \bar R))
+  (sos_int : (\int[normal_prob 0 prior_sigma]_s
+    `|(scalar_of_s s)%:E| < +oo)%E) :
+  evidence = (phase2_const R)%:E.
+Proof.
+rewrite (evidence_eq hint) /qbs_integral /=.
+(* Rewrite inner integral using phase1_integration *)
+have inner_eq : forall x : R,
+  \int[normal_prob 0 prior_sigma]_b (obs (x, b))%:E = (scalar_of_s x)%:E.
+  move=> x; apply: phase1_integration; [exact: (obs_meas x) | exact: (obs_int x)].
+under eq_integral do rewrite inner_eq.
+exact: phase2_integration.
+Qed.
+
+(* The evidence is positive and finite, given the measure-theoretic
+   hypotheses. This follows from evidence = phase2_const > 0. *)
+Lemma evidence_pos
+  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
+    setT (qbs_pair_fun slope_prior intercept_prior
+      (fun params => (obs params)%:E)))
+  (obs_meas : forall s, measurable_fun [set: mR]
+    (fun b : mR => (obs (s, b))%:E :> \bar R))
+  (obs_int : forall s, (\int[normal_prob 0 prior_sigma]_b
+    `|(obs (s, b))%:E| < +oo)%E)
+  (sos_meas : measurable_fun [set: mR]
+    (fun s : mR => (scalar_of_s s)%:E :> \bar R))
+  (sos_int : (\int[normal_prob 0 prior_sigma]_s
+    `|(scalar_of_s s)%:E| < +oo)%E) :
+  0 < evidence /\ evidence < +oo.
+Proof.
+rewrite (evidence_value hint obs_meas obs_int sos_meas sos_int).
+split.
+- by rewrite lte_fin; exact: phase2_const_gt0.
+- by rewrite ltey.
+Qed.
+
+(* The Bayesian program succeeds and integrates to 1.
+   This makes the previous conditional theorem unconditional by
+   deriving 0 < evidence and evidence < +oo from evidence_value. *)
+Theorem program_integrates_to_1
+  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
+    setT (qbs_pair_fun slope_prior intercept_prior
+      (fun params => (obs params)%:E)))
+  (obs_meas : forall s, measurable_fun [set: mR]
+    (fun b : mR => (obs (s, b))%:E :> \bar R))
+  (obs_int : forall s, (\int[normal_prob 0 prior_sigma]_b
+    `|(obs (s, b))%:E| < +oo)%E)
+  (sos_meas : measurable_fun [set: mR]
+    (fun s : mR => (scalar_of_s s)%:E :> \bar R))
+  (sos_int : (\int[normal_prob 0 prior_sigma]_s
+    `|(scalar_of_s s)%:E| < +oo)%E) :
+  exists density,
+    program = Some density /\
+    posterior_density (fun _ => 1) = 1.
+Proof.
+have [hev_pos hev_fin] :=
+  evidence_pos hint obs_meas obs_int sos_meas sos_int.
+exists (fun p => 1 * (obs p)%:E / evidence); split.
+- rewrite /program /norm_qbs -/(evidence).
+  case: ifPn => // /negP.
+  move/negP; rewrite negb_and => /orP[/negP|/negP]; contradiction.
+- exact: posterior_density_total.
+Qed.
 
 End BayesianRegression.

@@ -145,6 +145,19 @@ have hsqS : sqrtr (s ^+ 2 + s' ^+ 2) != 0.
 by rewrite /gaussian_prod_sigma mulf_neq0 ?invr_neq0 // mulf_neq0.
 Qed.
 
+(* Positivity of gaussian_prod_scalar: product of positive peak and fun *)
+Lemma gaussian_prod_scalar_gt0 (m m' s s' : R) :
+  s != 0 -> s' != 0 -> (0 < gaussian_prod_scalar m m' s s')%R.
+Proof.
+move=> hs hs'.
+have hsqS : sqrtr (s ^+ 2 + s' ^+ 2) != 0.
+  apply: lt0r_neq0; rewrite sqrtr_gt0.
+  by apply: addr_gt0; rewrite exprn_even_gt0 //=.
+rewrite /gaussian_prod_scalar.
+apply: mulr_gt0; first exact: (normal_peak_gt0 hsqS).
+rewrite /normal_fun; exact: exp.expR_gt0.
+Qed.
+
 (* ===================================================================== *)
 (* Phase 1: Integrate out the intercept b                                *)
 (* ===================================================================== *)
@@ -1105,6 +1118,118 @@ Lemma phase2_step4_sigma_neq0 :
   gaussian_prod_sigma sigma3 W45 != 0.
 Proof.
 exact: gaussian_prod_sigma_neq0 phase2_step3_sigma_neq0 phase2_W45_neq0.
+Qed.
+
+(* ===================================================================== *)
+(* Phase 2: Combined result chaining all 5 steps                         *)
+(* ===================================================================== *)
+
+(* Intermediate means for Phase 2 (accumulated across steps) *)
+Let mu0_s : R := 90%:R / 73%:R.
+Let mu1_s : R := gaussian_prod_mu mu0_s (253%:R / 190%:R) sigma0 W12.
+Let mu2_s : R := gaussian_prod_mu mu1_s (1017%:R / 1110%:R) sigma1 W23.
+Let mu3_s : R := gaussian_prod_mu mu2_s (287%:R / 220%:R) sigma2 W34.
+
+(* Public definitions for Phase 2 outputs *)
+Definition phase2_final_mu : R :=
+  gaussian_prod_mu mu3_s (548%:R / 365%:R) sigma3 W45.
+
+Definition phase2_final_sigma : R :=
+  gaussian_prod_sigma sigma3 W45.
+
+Definition phase2_const : R :=
+  gaussian_prod_scalar 0 (5%:R / 2%:R) 3%:R (sqrtr (37%:R / 4%:R)) *
+  (normal_peak (sqrtr (73%:R / 148%:R)) / normal_peak W12) *
+  gaussian_prod_scalar mu0_s (253%:R / 190%:R) sigma0 W12 *
+  (normal_peak (sqrtr (109%:R / 292%:R)) / normal_peak W23) *
+  gaussian_prod_scalar mu1_s (1017%:R / 1110%:R) sigma1 W23 *
+  (normal_peak (sqrtr (145%:R / 436%:R)) / normal_peak W34) *
+  gaussian_prod_scalar mu2_s (287%:R / 220%:R) sigma2 W34 *
+  (normal_peak (sqrtr (181%:R / 580%:R)) / normal_peak W45) *
+  gaussian_prod_scalar mu3_s (548%:R / 365%:R) sigma3 W45.
+
+Lemma phase2_final_sigma_neq0 : phase2_final_sigma != 0.
+Proof. exact: phase2_step4_sigma_neq0. Qed.
+
+Lemma phase2_const_gt0 : (0 < phase2_const)%R.
+Proof.
+rewrite /phase2_const.
+have sqrtr37_neq0 : sqrtr (37%:R / 4%:R : R) != 0 by
+  apply: lt0r_neq0; rewrite sqrtr_gt0; apply: divr_gt0; rewrite ltr0n.
+have sqrtr73_neq0 : sqrtr (73%:R / 148%:R : R) != 0 by
+  apply: lt0r_neq0; rewrite sqrtr_gt0; apply: divr_gt0; rewrite ltr0n.
+have sqrtr109_neq0 : sqrtr (109%:R / 292%:R : R) != 0 by
+  apply: lt0r_neq0; rewrite sqrtr_gt0; apply: divr_gt0; rewrite ltr0n.
+have sqrtr145_neq0 : sqrtr (145%:R / 436%:R : R) != 0 by
+  apply: lt0r_neq0; rewrite sqrtr_gt0; apply: divr_gt0; rewrite ltr0n.
+have sqrtr181_neq0 : sqrtr (181%:R / 580%:R : R) != 0 by
+  apply: lt0r_neq0; rewrite sqrtr_gt0; apply: divr_gt0; rewrite ltr0n.
+(* Factor 9: gps(mu3, 548/365, sigma3, W45) *)
+apply: mulr_gt0; last first.
+  exact: gaussian_prod_scalar_gt0 phase2_step3_sigma_neq0 phase2_W45_neq0.
+(* Factor 8: peak(sqrt(181/580)) / peak(W45) *)
+apply: mulr_gt0; last first.
+  by apply: divr_gt0;
+    [exact: normal_peak_gt0 sqrtr181_neq0 | exact: normal_peak_gt0 phase2_W45_neq0].
+(* Factor 7: gps(mu2, 287/220, sigma2, W34) *)
+apply: mulr_gt0; last first.
+  exact: gaussian_prod_scalar_gt0 phase2_step2_sigma_neq0 phase2_W34_neq0.
+(* Factor 6: peak(sqrt(145/436)) / peak(W34) *)
+apply: mulr_gt0; last first.
+  by apply: divr_gt0;
+    [exact: normal_peak_gt0 sqrtr145_neq0 | exact: normal_peak_gt0 phase2_W34_neq0].
+(* Factor 5: gps(mu1, 1017/1110, sigma1, W23) *)
+apply: mulr_gt0; last first.
+  exact: gaussian_prod_scalar_gt0 phase2_step1_sigma_neq0 phase2_W23_neq0.
+(* Factor 4: peak(sqrt(109/292)) / peak(W23) *)
+apply: mulr_gt0; last first.
+  by apply: divr_gt0;
+    [exact: normal_peak_gt0 sqrtr109_neq0 | exact: normal_peak_gt0 phase2_W23_neq0].
+(* Factor 3: gps(mu0, 253/190, sigma0, W12) *)
+apply: mulr_gt0; last first.
+  exact: gaussian_prod_scalar_gt0 phase2_step0_sigma_neq0 phase2_W12_neq0.
+(* Factor 2: peak(sqrt(73/148)) / peak(W12) *)
+apply: mulr_gt0; last first.
+  by apply: divr_gt0;
+    [exact: normal_peak_gt0 sqrtr73_neq0 | exact: normal_peak_gt0 phase2_W12_neq0].
+(* Factor 1: gps(0, 5/2, 3, sqrt(37/4)) *)
+exact: gaussian_prod_scalar_gt0 three_neq0 sqrtr37_neq0.
+Qed.
+
+(* The combined Phase 2 result: scalar_of_s(s) * N(0,3,s) = C * N(mu, sigma, s).
+   This chains all 5 Phase 2 combination steps. *)
+Lemma phase2_combine5 (s : R) :
+  normal_pdf 0 3%:R s *
+  gaussian_prod_scalar 0 (5%:R / 2%:R - s) 3%:R (2%:R^-1) *
+  gaussian_prod_scalar ((90%:R - 36%:R * s) / 37%:R)
+                       (19%:R / 5%:R - 2%:R * s)
+                       (sqrtr (9%:R / 37%:R)) (2%:R^-1) *
+  gaussian_prod_scalar ((1134%:R - 540%:R * s) / 365%:R)
+                       (9%:R / 2%:R - 3%:R * s)
+                       (sqrtr (9%:R / 73%:R)) (2%:R^-1) *
+  gaussian_prod_scalar ((1944%:R - 1080%:R * s) / 545%:R)
+                       (31%:R / 5%:R - 4%:R * s)
+                       (sqrtr (9%:R / 109%:R)) (2%:R^-1) *
+  gaussian_prod_scalar ((612%:R - 360%:R * s) / 145%:R)
+                       (8%:R - 5%:R * s)
+                       (sqrtr (9%:R / 145%:R)) (2%:R^-1) =
+  phase2_const * normal_pdf phase2_final_mu phase2_final_sigma s.
+Proof.
+(* Step 0: N(0,3,s) * scalar01 = K0 * N(90/73, sigma0, s) *)
+rewrite phase2_step0.
+(* After step 0, goal is left-associated:
+   ((((K0 * N0) * G2) * G3) * G4) * G5 = ...
+   phase2_step1 rewrites (K0 * N0) * G2 directly. *)
+rewrite (phase2_step1 s).
+(* After step 1: ((((K1 * N1) * G3) * G4) * G5) = ... *)
+rewrite (phase2_step2 s).
+(* After step 2: (((K2 * N2) * G4) * G5) = ... *)
+rewrite (phase2_step3 s).
+(* After step 3: ((K3 * N3) * G5) = ... *)
+rewrite (phase2_step4 s).
+(* Now LHS = K4 * N4, RHS = phase2_const * N(final_mu, final_sigma, s) *)
+rewrite /phase2_const /phase2_final_mu /phase2_final_sigma.
+by rewrite !mulrA.
 Qed.
 
 (* ===================================================================== *)
