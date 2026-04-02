@@ -431,4 +431,214 @@ exists (fun p => 1 * (obs p)%:E / evidence); split.
 - exact: posterior_density_total.
 Qed.
 
+(* ===================================================================== *)
+(* 11. Phase 1 integration: integrate out the intercept b                *)
+(* ===================================================================== *)
+(* The evidence integral decomposes via Fubini as:
+     evidence = ∫[N(0,3)]_s ∫[N(0,3)]_b obs(s,b)
+
+   Phase 1 evaluates the inner integral ∫[N(0,3)]_b obs(s,b) for
+   fixed s.  The key steps are:
+
+   (a) Convert to Lebesgue integral with density via integral_normal_prob:
+         ∫[N(0,3)]_b obs(s,b) = ∫[leb]_b obs(s,b) * N(0,3,b)
+
+   (b) Rewrite obs(s,b) * N(0,3,b) using the algebraic identities
+       obs_rewrite + phase1_combine5 (from normal_algebra.v):
+         N(0,3,b) * obs_factors(s,b) = scalar_of_s(s) * N(mu5(s), sigma5, b)
+
+   (c) Factor out scalar_of_s(s) via ge0_integralZl_EFin:
+         = scalar_of_s(s) * ∫[leb]_b N(mu5(s), sigma5, b)
+
+   (d) Evaluate the remaining integral via integral_normal_pdf:
+         ∫[leb]_b N(mu5(s), sigma5, b) = 1
+
+   Result: ∫[N(0,3)]_b obs(s,b) = scalar_of_s(s).
+
+   The scalar_of_s function is the product of 5 gaussian_prod_scalar
+   factors, each of the form normal_peak(S_k) * normal_fun(mu_k, S_k, m'_k),
+   arising from the iterative combination of the prior N(0,3) with each
+   data-point factor via normal_pdf_times.                                 *)
+
+(* The Phase 1 scalar: product of 5 gaussian_prod_scalar terms.
+   Each factor is normal_peak(sqrt(sigma_k^2 + sigma'^2)) *
+   normal_fun(mu_k, sqrt(sigma_k^2 + sigma'^2), m'_k).
+   This matches the scalar part of phase1_combine5 from normal_algebra.v.
+   The gaussian_prod_scalar definition is:
+     gaussian_prod_scalar m m' s s' := normal_peak(sqrt(s^2+s'^2)) * normal_fun(m, sqrt(s^2+s'^2), m') *)
+Definition scalar_of_s (s : R) : R :=
+  (* Step 0->1: N(0,3) * N(5/2-s, 1/2) *)
+  (normal_peak (sqrtr (3%:R ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
+   normal_fun 0 (sqrtr (3%:R ^+ 2 + (2%:R^-1 : R) ^+ 2)) (5%:R / 2%:R - s)) *
+  (* Step 1->2: result * N(19/5-2s, 1/2) *)
+  (normal_peak (sqrtr (sqrtr (9%:R / 37%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
+   normal_fun ((90%:R - 36%:R * s) / 37%:R)
+     (sqrtr (sqrtr (9%:R / 37%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2))
+     (19%:R / 5%:R - 2%:R * s)) *
+  (* Step 2->3: result * N(9/2-3s, 1/2) *)
+  (normal_peak (sqrtr (sqrtr (9%:R / 73%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
+   normal_fun ((1134%:R - 540%:R * s) / 365%:R)
+     (sqrtr (sqrtr (9%:R / 73%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2))
+     (9%:R / 2%:R - 3%:R * s)) *
+  (* Step 3->4: result * N(31/5-4s, 1/2) *)
+  (normal_peak (sqrtr (sqrtr (9%:R / 109%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
+   normal_fun ((1944%:R - 1080%:R * s) / 545%:R)
+     (sqrtr (sqrtr (9%:R / 109%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2))
+     (31%:R / 5%:R - 4%:R * s)) *
+  (* Step 4->5: result * N(8-5s, 1/2) *)
+  (normal_peak (sqrtr (sqrtr (9%:R / 145%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
+   normal_fun ((3060%:R - 1800%:R * s) / 725%:R)
+     (sqrtr (sqrtr (9%:R / 145%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2))
+     (8%:R - 5%:R * s)).
+
+Lemma scalar_of_s_ge0 (s : R) : (0 <= scalar_of_s s)%R.
+Proof.
+rewrite /scalar_of_s.
+apply: mulr_ge0; last by apply: mulr_ge0; [exact: normal_peak_ge0 | exact: normal_fun_ge0].
+apply: mulr_ge0; last by apply: mulr_ge0; [exact: normal_peak_ge0 | exact: normal_fun_ge0].
+apply: mulr_ge0; last by apply: mulr_ge0; [exact: normal_peak_ge0 | exact: normal_fun_ge0].
+apply: mulr_ge0; last by apply: mulr_ge0; [exact: normal_peak_ge0 | exact: normal_fun_ge0].
+by apply: mulr_ge0; [exact: normal_peak_ge0 | exact: normal_fun_ge0].
+Qed.
+
+(* Intermediate parameters after all 5 Phase 1 combination steps *)
+Let phase1_mu5 (s : R) : R := (4500%:R - 2700%:R * s) / 905%:R.
+Let phase1_sigma5 : R := sqrtr (9%:R / 181%:R).
+
+(* Phase 1 integration: integrating obs(s,b) against the intercept
+   prior N(0,3) yields the scalar_of_s(s).
+
+   HYPOTHESES:
+   - phase1_algebra: The algebraic identity from normal_algebra.v
+     (obs_rewrite + phase1_combine5). This is proved in normal_algebra.v
+     using 5 iterative applications of normal_pdf_times, but cannot be
+     imported here because normal_algebra.v depends on algebra_tactics.ring,
+     which causes universe inconsistencies with the QBS universe hierarchy.
+
+   - obs_meas: Measurability of obs as a function of b at fixed s.
+     This holds because obs is a product of normal_pdfs, each of which
+     is a composition of measurable functions. The proof requires showing
+     that b |-> normal_pdf(s*k+b, sigma, y) is measurable for each k,
+     which follows from measurability of normal_pdf and affine maps.
+
+   - obs_int: Integrability of |obs(s,b)| against N(0,3). This holds
+     because obs is bounded by a product of normal peaks (the exponential
+     factors are all <= 1 when the exponent is negative). *)
+Lemma phase1_integration (s : R)
+  (phase1_algebra : forall b : R,
+    (normal_pdf 0 3%:R b *
+     (normal_pdf (s * 1 + b) (2%:R^-1) (5%:R / 2%:R) *
+      normal_pdf (s * 2%:R + b) (2%:R^-1) (19%:R / 5%:R) *
+      normal_pdf (s * 3%:R + b) (2%:R^-1) (9%:R / 2%:R) *
+      normal_pdf (s * 4%:R + b) (2%:R^-1) (31%:R / 5%:R) *
+      normal_pdf (s * 5%:R + b) (2%:R^-1) 8%:R))%R =
+    (scalar_of_s s * normal_pdf (phase1_mu5 s) phase1_sigma5 b)%R)
+  (obs_meas : measurable_fun [set: mR]
+    (fun b : mR => (obs (s, b))%:E :> \bar R))
+  (obs_int : (\int[normal_prob 0 prior_sigma]_b
+    `|(obs (s, b))%:E| < +oo)%E)
+  :
+  \int[normal_prob (0 : R) prior_sigma]_b (obs (s, b))%:E =
+  (scalar_of_s s)%:E.
+Proof.
+have h3 : (prior_sigma != 0)%R by rewrite /prior_sigma pnatr_eq0.
+rewrite (integral_normal_prob h3) //.
+under eq_integral do rewrite -EFinM.
+have step1 : forall x : R, (obs (s, x) * normal_pdf 0 prior_sigma x =
+  scalar_of_s s * normal_pdf (phase1_mu5 s) phase1_sigma5 x)%R.
+  move=> x; rewrite mulrC /obs /d /prior_sigma /noise_sigma.
+  exact: (phase1_algebra x).
+under eq_integral do rewrite step1.
+under eq_integral do rewrite EFinM.
+rewrite ge0_integralZl_EFin //.
+- rewrite integral_normal_pdf mule1 //.
+- move=> x _; rewrite lee_fin; exact: normal_pdf_ge0.
+- apply/measurableT_comp => //; exact: measurable_normal_pdf.
+- rewrite /scalar_of_s.
+  apply: mulr_ge0; last by apply: mulr_ge0; [exact: normal_peak_ge0 | exact: normal_fun_ge0].
+  apply: mulr_ge0; last by apply: mulr_ge0; [exact: normal_peak_ge0 | exact: normal_fun_ge0].
+  apply: mulr_ge0; last by apply: mulr_ge0; [exact: normal_peak_ge0 | exact: normal_fun_ge0].
+  apply: mulr_ge0; last by apply: mulr_ge0; [exact: normal_peak_ge0 | exact: normal_fun_ge0].
+  by apply: mulr_ge0; [exact: normal_peak_ge0 | exact: normal_fun_ge0].
+Qed.
+
+(* ===================================================================== *)
+(* 12. Assembly chain: evidence computation                               *)
+(* ===================================================================== *)
+(*
+   The full evidence computation connects the normalizing constant to the
+   Bayesian regression model via the following chain:
+
+   evidence
+     = qbs_pair_integral slope_prior intercept_prior (fun p => obs(p)%:E)
+                                                           [by definition]
+     = ∫[N(0,3)]_s ∫[N(0,3)]_b obs(s,b)%:E
+                                                [by evidence_eq (Fubini)]
+     = ∫[N(0,3)]_s (scalar_of_s s)%:E
+                                         [by phase1_integration (Phase 1)]
+     = C                                                          [Phase 2]
+
+   where C is the final closed-form constant.
+
+   PHASE 1 (integrate out b, this file):
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   phase1_integration proves:
+     ∫[N(0,3)]_b obs(s,b) = scalar_of_s(s)
+   using:
+     - integral_normal_prob: convert to Lebesgue integral with density
+     - phase1_algebra hypothesis: N(0,3,b) * obs_factors(s,b)
+         = scalar_of_s(s) * N(mu5(s), sigma5, b)
+       This is proved in normal_algebra.v as phase1_combine5 + obs_rewrite.
+     - integral_normal_pdf: ∫ N(mu5, sigma5, b) db = 1
+
+   PHASE 2 (integrate out s, normal_algebra.v):
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   Each factor of scalar_of_s(s) contains a normal_fun term that is
+   Gaussian in s. Phase 2 iteratively combines these with the slope
+   prior N(0,3,s) using the same normal_pdf_times identity:
+
+   Step 0: N(0,3,s) * scalar01(s)
+     scalar01(s) is actually a normal_pdf in s: phase2_scalar01_is_pdf
+     Combined via phase2_step0
+
+   Step 1: result * scalar12(s)
+     scalar12(s) converted to peak_ratio * normal_pdf: phase2_scalar12_is_pdf
+     Combined via phase2_step1
+
+   Step 2: result * scalar23(s)
+     scalar23(s) converted to peak_ratio * normal_pdf: phase2_scalar23_is_pdf
+     Combined via phase2_step2
+
+   Steps 3-4 follow the same pattern with phase2_scalar34_is_pdf,
+   phase2_scalar45_is_pdf (being added to normal_algebra.v).
+
+   After all 5 Phase 2 combination steps, we get:
+     ∫[N(0,3)]_s scalar_of_s(s) = K_total
+   where K_total is a product of:
+     - 5 normal_peak ratios from converting scalar_k to normal_pdfs
+     - 5 gaussian_prod_scalar factors from the combination steps
+     - integral of the final normal_pdf in s (which equals 1)
+
+   The final closed-form value (matching Isabelle AFP):
+     C = (4 * sqrt(2)) / (pi^2 * sqrt(66961 * pi)) * exp(-1674761/1674025)
+
+   BRIDGING THE UNIVERSE GAP:
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~
+   The algebraic identities (phase1_combine5, obs_rewrite, normal_pdf_times,
+   and the Phase 2 steps) are proved in normal_algebra.v using the ring
+   and field tactics from algebra_tactics. However, bayesian_regression.v
+   cannot import normal_algebra.v due to universe inconsistencies:
+   algebra_tactics.ring introduces universe constraints that conflict with
+   the QBS type hierarchy.
+
+   The bridge is the phase1_algebra hypothesis of phase1_integration,
+   which captures the exact algebraic identity proved in normal_algebra.v.
+   In a deployment where the universe issue is resolved (e.g., by
+   refactoring algebra_tactics or using universe polymorphism), this
+   hypothesis can be discharged by:
+     exact: fun b => ...  using obs_rewrite and phase1_combine5.
+
+   A similar bridge would be needed for Phase 2 integration.
+*)
+
 End BayesianRegression.
