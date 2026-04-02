@@ -20,3 +20,5 @@
 \#*\#
 Makefile*
 .Makefile.d
+QBS-export.tar.gz
+rocq_mcp_cache_*.v
