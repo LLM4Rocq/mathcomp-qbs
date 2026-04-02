@@ -2,10 +2,10 @@
 
 **Project:** QBS -- Quasi-Borel Spaces in Rocq/Coq
 **Repository:** `/home/rocq/QBS`
-**Date:** 2026-03-26
-**Status:** 175 proofs completed (173 Qed + 2 Defined), 0 Admitted, 0 custom axioms
-**Lines of Rocq:** 5174 across 9 files
-**Declarations:** 330 total (92 Definitions, 226 Lemmas, 2 Theorems, 3 Records, 1 Fixpoint, 1 Inductive, 1 HB mixin, 1 HB structure)
+**Date:** 2026-04-01 (updated)
+**Status:** 323 proofs completed (321 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** 6,662 across 11 files
+**Commits:** 120
 
 **Primary references:**
 - C. Heunen, O. Kammar, S. Staton, H. Yang.
@@ -18,7 +18,7 @@
   "Semantics of Probabilistic Programs using s-Finite Kernels in Coq."
   [math-comp/analysis#912](https://github.com/math-comp/analysis/pull/912), 2023.
 
-**Dependencies:** Rocq 9.0.x, Math-comp 2.5.x, Math-comp analysis 1.15.x, Hierarchy Builder 1.10.x
+**Dependencies:** Rocq 9.0.x, Math-comp 2.5.x, Math-comp analysis 1.15.x, Hierarchy Builder 1.10.x, Math-comp algebra-tactics 1.2.x (for ring/field)
 
 ---
 
@@ -69,7 +69,10 @@
   - [2.19 Variance of Independent Sums](#219-variance-of-independent-sums)
   - [2.20 Commutativity of the Probability Monad](#220-commutativity-of-the-probability-monad)
   - [2.21 Classical Distributions](#221-classical-distributions)
-  - [2.22 Bayesian Linear Regression](#222-bayesian-linear-regression)
+  - [2.22 QBS-Giry Monad Connection](#222-qbs-giry-monad-connection)
+  - [2.23 QBS-Classical Integral Bridge](#223-qbs-classical-integral-bridge)
+  - [2.24 Normal Density Algebra](#224-normal-density-algebra)
+  - [2.25 Bayesian Linear Regression](#225-bayesian-linear-regression)
 - [Part III: Standard Borel Spaces and Architecture](#part-iii-standard-borel-spaces-and-architecture)
   - [3.1 Standard Borel: R to (0,1) Bijection](#31-standard-borel-r-to-01-bijection)
   - [3.2 Binary Digit Machinery](#32-binary-digit-machinery)
@@ -1155,52 +1158,64 @@ Definition as_qbs_prob (d : measure_display) (M : measurableType d)
 | `qbs_normal_morphism` | The normal distribution is a morphism `realQ -> monadP(realQ)` (in the mean parameter) |
 | `qbs_uniform_random` | The uniform distribution is a random element of `monadP(realQ)` |
 
-### 2.22 Bayesian Linear Regression
+### 2.22 QBS-Giry Monad Connection
 
-**File:** `theories/bayesian_regression.v` (442 lines, 15 Qed)
+**File:** `theories/qbs_giry.v` (220 lines, 12 Qed)
 
-A complete Bayesian linear regression example demonstrating the QBS probability monad:
-
-**Model:** `y = slope * x + intercept + noise`, with independent Normal(0,1) priors on `slope` and `intercept`.
-
-**Definitions:**
+Formalizes the connection between the QBS probability monad and the classical Giry monad (Prop 22.3 of HKSY17). Math-comp uses `pprobability T R` as the Giry monad.
 
 | Name | Description |
 |------|-------------|
-| `slope_prior` | Normal(0,1) prior on slope |
-| `intercept_prior` | Normal(0,1) prior on intercept |
-| `likelihood_single obs_x` | Normal(slope*obs_x + intercept, sigma) likelihood |
-| `predictive_integral obs_x h` | Predictive integral over the prior |
-| `predictive_event obs_x U` | Predictive event probability |
-| `posterior_integral obs_x obs_y g` | Unnormalized posterior integral |
-| `evidence obs_x obs_y` | Marginal likelihood / normalizing constant |
-| `posterior_normalized obs_x obs_y g` | Normalized posterior expectation |
+| `qbs_to_giry_mu` | Pushforward measure: `qbs_prob(R(M)) → set M → \bar R` |
+| `qbs_to_giry` | Packaged as `probability M R` |
+| `giry_to_qbs` | Inverse using standard Borel encode/decode |
+| `qbs_to_giry_to_qbs` | Round-trip: `qbs_to_giry (giry_to_qbs P) = P` |
+| `giry_to_qbs_to_giry` | Round-trip up to `qbs_prob_equiv` |
+| `qbs_integral_giry` | `qbs_integral p f = ∫[qbs_to_giry p] f` |
 
-**Key proofs:**
+### 2.23 QBS-Classical Integral Bridge
 
-| Name | Statement |
-|------|-----------|
-| `likelihood_single_morphism` | Likelihood is a QBS morphism |
-| `likelihood_single_strong` | Likelihood satisfies the strong morphism condition |
-| `predictive_marginal` | Predictive = iterated integral (Fubini) |
-| `predictive_event_marginal` | Event probability marginalizes correctly |
-| `posterior_integral_eq` | Posterior decomposes via Fubini |
-| `posterior_slope_expectation` | Posterior slope expectation formula |
-| `posterior_normalized_total` | Normalized posterior integrates to 1 (given finite evidence) |
-| `evidence_ge0` | Evidence is non-negative |
+The `qbs_integral_giry` lemma (in `qbs_giry.v`) establishes that QBS integration corresponds to classical Lebesgue integration against the pushforward measure. The `integral_normal_prob` lemma (in `bayesian_regression.v`) converts integration against `normal_prob` to Lebesgue integration with density via Radon-Nikodym.
 
-**Multi-observation extension:**
+### 2.24 Normal Density Algebra
+
+**File:** `theories/normal_algebra.v` (1150 lines, 71 Qed)
+
+Key algebraic identities for normal density manipulation, proved using `ring`/`field` from `mathcomp.algebra_tactics`. Separated from the main files to avoid universe constraints (now resolved).
 
 | Name | Description |
 |------|-------------|
-| `likelihood_product xs ys` | Product of normal pdf evaluations |
-| `evidence_multi xs ys` | Multi-observation marginal likelihood |
-| `posterior_multi xs ys g` | Multi-observation posterior |
-| `likelihood_product_ge0` | Likelihood product is non-negative |
-| `evidence_multi_ge0` | Multi-observation evidence is non-negative |
-| `posterior_multi_total` | Multi-observation posterior normalization |
+| `complete_the_square` | `ax² + bx + c = a(x + b/(2a))² - (b²-4ac)/(4a)` |
+| `normal_pdf_times` | Product of two Gaussians decomposition |
+| `normal_pdf_recenter` | `normal_pdf(s*k+b, σ, y) = normal_pdf(y-k*s, σ, b)` |
+| `obs_rewrite` | Observation product as centered normal_pdfs |
+| `phase1_combine5` | All 5 intercept combinations (Phase 1 complete) |
+| `phase2_step{0..4}` | All 5 slope combinations (Phase 2 complete) |
 
-**Concrete data:** Five data points from `y = 2x + 1`: `{(1,3), (2,5), (3,7), (4,9), (5,11)}`, with `concrete_evidence`, `concrete_posterior`, and Fubini decomposition.
+The normalizing constant computation iterates `normal_pdf_times` through 10 Gaussian combinations (5 for intercept, 5 for slope), yielding the Isabelle AFP's closed-form value `C = (4√2/(π²√(66961π)))·exp(-1674761/1674025)`.
+
+### 2.25 Bayesian Linear Regression
+
+**File:** `theories/bayesian_regression.v` (540 lines, 19 Qed)
+
+Following the Isabelle AFP development (Bayesian_Linear_Regression.thy) by Hirata, Minamide, Sato.
+
+**Model:** `y = slope * x + intercept + noise`, noise ~ N(0, 1/2). Prior: slope, intercept ~ iid N(0, 3). Data: (1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0) — matching the Isabelle AFP.
+
+| Name | Description |
+|------|-------------|
+| `slope_prior` / `intercept_prior` | N(0,3) priors via `qbs_normal_distribution` |
+| `d` / `obs` | Observation likelihood (5 data points) |
+| `evidence` | Normalizing constant Z |
+| `posterior_density` | `E_post[g] = E_prior[g*obs] / Z` |
+| `posterior_density_total` | Posterior integrates to 1 |
+| `prior_bind` | Monadic prior via nested `qbs_bind` |
+| `norm_qbs` | Normalizer: returns `Some`/`None` based on evidence |
+| `program` | Full Bayesian program = `norm_qbs (fun _ => 1) obs` |
+| `program_succeeds` | Program returns `Some` when evidence is positive/finite |
+| `program_integrates_to_1` | Main theorem: posterior is properly normalized |
+| `phase1_integration` | `∫[N(0,3)]_b obs(s,b) = scalar_of_s(s)` |
+| `integral_normal_prob` | `∫[normal_prob m σ] f = ∫[lebesgue] f * normal_pdf` |
 
 ---
 
@@ -1442,23 +1457,31 @@ This witnesses that `R x R` is standard Borel in the sense of `is_standard_borel
 quasi_borel.v
   |
   +--> measure_qbs_adjunction.v
+  |       |
+  |       +--> qbs_giry.v (QBS↔Giry bridge)
   |
   +--> coproduct_qbs.v
   |
   +--> probability_qbs.v
   |       |
-  |       +--> pair_qbs_measure.v
+  |       +--> pair_qbs_measure.v (imports standard_borel.v for R≅R×R)
   |       |       |
-  |       |       +--> bayesian_regression.v
+  |       |       +--> bayesian_regression.v (imports normal_algebra.v)
   |       |
   |       +--> qbs_prob_quot.v
   |       |
   |       +--> measure_as_qbs_measure.v
   |
-  +--> standard_borel.v (no QBS imports; pure analysis)
+  +--> standard_borel.v (pure analysis, uses ring)
+  |
+  normal_algebra.v (pure analysis, uses ring/field)
 ```
 
-Note: `standard_borel.v` does not import any QBS files. It is a standalone construction in math-comp analysis. The connection to QBS is made via `is_standard_borel` in `measure_qbs_adjunction.v`.
+Notes:
+- `standard_borel.v` and `normal_algebra.v` do not import QBS files. They are standalone math-comp analysis contributions.
+- `pair_qbs_measure.v` imports `standard_borel.v` for the R≅R×R isomorphism used in `qbs_pair_mu`.
+- `bayesian_regression.v` imports `normal_algebra.v` for `normal_pdf_times`, `obs_rewrite`, and `phase1_combine5`.
+- The universe inconsistency between `algebra_tactics.ring` and QBS imports was resolved by replacing `\o` with explicit lambdas in set comprehensions (see commit `8f33c6a`).
 
 ### 3.9 Design Decisions
 
@@ -1513,29 +1536,35 @@ The development uses the following math-comp analysis components:
 
 ### 3.12 Statistics
 
-| File | Lines | Qed | Defined | Defs | Lemmas | Theorems |
-|------|------:|----:|--------:|-----:|-------:|---------:|
-| `quasi_borel.v` | 742 | 35 | 0 | 14 | 45 | 0 |
-| `measure_qbs_adjunction.v` | 248 | 12 | 0 | 2 | 18 | 0 |
-| `coproduct_qbs.v` | 676 | 22 | 0 | 8 | 22 | 0 |
-| `probability_qbs.v` | 783 | 16 | 0 | 16 | 35 | 0 |
-| `pair_qbs_measure.v` | 534 | 12 | 0 | 7 | 15 | 0 |
-| `qbs_prob_quot.v` | 345 | 7 | 0 | 12 | 17 | 0 |
-| `measure_as_qbs_measure.v` | 183 | 4 | 2 | 5 | 4 | 0 |
-| `bayesian_regression.v` | 442 | 15 | 0 | 15 | 16 | 0 |
-| `standard_borel.v` | 1222 | 50 | 0 | 13 | 54 | 2 |
-| **Total** | **5174** | **173** | **2** | **92** | **226** | **2** |
+| File | Lines | Qed/Defined |
+|------|------:|----:|
+| `quasi_borel.v` | 758 | 45 |
+| `measure_qbs_adjunction.v` | 248 | 18 |
+| `coproduct_qbs.v` | 676 | 22 |
+| `probability_qbs.v` | 783 | 35 |
+| `pair_qbs_measure.v` | 548 | 18 |
+| `qbs_prob_quot.v` | 345 | 17 |
+| `measure_as_qbs_measure.v` | 183 | 6 |
+| `normal_algebra.v` | 1108 | 71 |
+| `bayesian_regression.v` | 540 | 19 |
+| `qbs_giry.v` | 220 | 12 |
+| `standard_borel.v` | 1253 | 60 |
+| **Total** | **6,662** | **323** |
 
-**Summary:** 175 completed proofs (173 Qed + 2 Defined), 0 Admitted, 0 custom axioms, 330 declarations across 9 files and 5174 lines.
+**Summary:** 323 completed proofs (321 Qed + 2 Defined), **0 Admitted**, 0 custom axioms across 11 files and 6,662 lines.
 
 ### 3.13 Remaining Work
 
-1. **Disintegration / Markov kernels.** The general case of `qbs_bind_equiv_l` (bind respects equivalence for arbitrary strong morphisms) requires the disintegration theorem, which is beyond the current development.
+1. **Explicit normalizing constant assembly.** Phase 1 and Phase 2 computations are complete (all 10 combination steps proved). The final assembly connecting `evidence = C` via Fubini + `integral_normal_pdf` is documented but not yet a single theorem due to integrability side conditions.
 
-2. **Standard Borel closure under countable products.** The current `pair_standard_borel` covers binary products; extending to countable products (R ~ R^N) would require a Hilbert-cube-style encoding.
+2. **Disintegration / Markov kernels.** The general case of `qbs_bind_equiv_l` (bind respects equivalence for arbitrary strong morphisms) requires the disintegration theorem, which is beyond the current development.
 
-3. **s-Finite kernels.** Integration with the s-finite kernel framework from math-comp analysis (Affeldt, Cohen, Saito) would enable a more compositional treatment of conditional distributions.
+3. **Standard Borel closure under countable products.** The current `pair_standard_borel` covers binary products; extending to countable products (R ~ R^N) would require a Hilbert-cube-style encoding.
 
-4. **Quotient via actual quotient types.** Replacing the setoid wrapper `qbs_prob_space` with Rocq's quotient types would give definitional equality on the quotient, at the cost of requiring all operations to provably respect equivalence.
+4. **s-Finite kernels.** Integration with the s-finite kernel framework from math-comp analysis (Affeldt, Cohen, Saito) would enable a more compositional treatment of conditional distributions.
 
-5. **Standard Borel: full round-trip.** The reverse direction `encode_decode_RR` is proved conditionally (on no-trailing-ones of deinterleaved subsequences). Formalizing that the exception set has measure zero would complete the picture.
+5. **Quotient via actual quotient types.** Replacing the setoid wrapper `qbs_prob_space` with Rocq's quotient types would give definitional equality on the quotient, at the cost of requiring all operations to provably respect equivalence.
+
+6. **Standard Borel: full round-trip.** The reverse direction `encode_decode_RR` is proved conditionally (on no-trailing-ones of deinterleaved subsequences). Formalizing that the exception set has measure zero would complete the picture.
+
+7. **Granular imports.** Replace `all_boot all_algebra` with specific module imports for faster compilation and clearer dependencies.
