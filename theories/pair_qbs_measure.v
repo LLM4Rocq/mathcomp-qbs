@@ -214,35 +214,7 @@ by rewrite [X in _ * X]h1 mule1.
 Qed.
 
 (* ===================================================================== *)
-(* 4. User-facing Fubini-type theorems                                   *)
-(*    These are thin wrappers around qbs_pair_integral_* lemmas above.   *)
-(*    The pair integration API works directly on mR * mR with the        *)
-(*    product measure mu_p \x mu_q, which is the recommended interface.  *)
-(* ===================================================================== *)
-
-(* Integration over the second component *)
-Lemma qbs_integral_snd (X Y : qbsType R)
-  (p : qbs_prob X) (q : qbs_prob Y)
-  (h : Y -> \bar R)
-  (hint : (qbs_prob_mu p \x qbs_prob_mu q).-integrable
-    setT (qbs_pair_fun p q (fun xy => h xy.2))) :
-  qbs_pair_integral X Y p q (fun xy => h xy.2) =
-  @qbs_integral R Y q h.
-Proof. exact: qbs_pair_integral_snd. Qed.
-
-(* Fubini's theorem: joint integration = iterated integration *)
-Lemma qbs_integral_pair (X Y : qbsType R)
-  (p : qbs_prob X) (q : qbs_prob Y)
-  (h : X * Y -> \bar R)
-  (hint : (qbs_prob_mu p \x qbs_prob_mu q).-integrable
-    setT (qbs_pair_fun p q h)) :
-  qbs_pair_integral X Y p q h =
-  @qbs_integral R X p (fun x =>
-    @qbs_integral R Y q (fun y => h (x, y))).
-Proof. exact: qbs_pair_integralE. Qed.
-
-(* ===================================================================== *)
-(* 5. Independence                                                       *)
+(* 4. Independence                                                       *)
 (* ===================================================================== *)
 
 Definition qbs_indep (X Y Z : qbsType R)

@@ -86,11 +86,11 @@ Definition qbs_morphism (X Y : qbsType R) (f : X -> Y) : Prop :=
   forall alpha, @qbs_Mx R X alpha -> @qbs_Mx R Y (f \o alpha).
 
 Lemma qbs_morphism_id (X : qbsType R) : @qbs_morphism X X idfun.
-Proof. by move=> alpha hα. Qed.
+Proof. by move=> alpha halpha. Qed.
 
 Lemma qbs_morphism_comp (X Y Z : qbsType R) (f : X -> Y) (g : Y -> Z) :
   @qbs_morphism X Y f -> @qbs_morphism Y Z g -> @qbs_morphism X Z (g \o f).
-Proof. by move=> hf hg alpha hα; apply: hg; apply: hf. Qed.
+Proof. by move=> hf hg alpha halpha; apply: hg; apply: hf. Qed.
 
 Lemma qbs_morphism_const (X Y : qbsType R) (y : Y) :
   @qbs_morphism X Y (fun _ => y).
@@ -195,7 +195,7 @@ Lemma qbs_morphism_pair (W X Y : qbsType R) (f : W -> X) (g : W -> Y) :
   @qbs_morphism W X f -> @qbs_morphism W Y g ->
   @qbs_morphism W (prodQ X Y) (fun w => (f w, g w)).
 Proof.
-by move=> hf hg alpha hα; split; [apply: hf | apply: hg].
+by move=> hf hg alpha halpha; split; [apply: hf | apply: hg].
 Qed.
 
 (* ----- 4. Exponential (Function Space) ----- *)
@@ -295,9 +295,9 @@ Qed.
 Lemma prodQ_const_random (X Y : qbsType R) (x : X) (alpha : mR -> Y) :
   @qbs_Mx R Y alpha -> @qbs_Mx R (prodQ X Y) (fun r => (x, alpha r)).
 Proof.
-move=> hα; split => /=.
+move=> halpha; split => /=.
 - exact: qbs_Mx_const.
-- exact: hα.
+- exact: halpha.
 Qed.
 
 (* Curry morphism: if f : prodQ X Y -> Z is morph, then
@@ -308,8 +308,8 @@ Lemma qbs_morphism_curry (X Y Z : qbsType R)
     (fun x => HB.pack (fun y => (f : prodQ X Y -> Z) (x, y))
        (@isQBSMorphism.Build R Y Z
           (fun y => (f : prodQ X Y -> Z) (x, y))
-          (fun alpha hα => @qbs_hom_proof R (prodQ X Y) Z f _
-             (prodQ_const_random x hα)))).
+          (fun alpha halpha => @qbs_hom_proof R (prodQ X Y) Z f _
+             (prodQ_const_random x halpha)))).
 Proof.
 move=> beta hbeta; rewrite /qbs_Mx /= => gamma [hg1 hg2].
 apply: (@qbs_hom_proof R (prodQ X Y) Z f); split => /=.
@@ -474,7 +474,7 @@ Definition generating_qbs (T : Type) (G : set (mR -> T)) : qbsType R :=
 
 Lemma generating_qbs_incl (T : Type) (G : set (mR -> T)) :
   G `<=` @qbs_Mx R (generating_qbs G).
-Proof. by move=> alpha hα; exact: gen_base. Qed.
+Proof. by move=> alpha halpha; exact: gen_base. Qed.
 
 (* ----- 11. Product swap and associators ----- *)
 
@@ -506,8 +506,8 @@ Qed.
 Lemma prodQ_random_const (X Y : qbsType R) (alpha : mR -> X) (y : Y) :
   @qbs_Mx R X alpha -> @qbs_Mx R (prodQ X Y) (fun r => (alpha r, y)).
 Proof.
-move=> hα; split => /=.
-- exact: hα.
+move=> halpha; split => /=.
+- exact: halpha.
 - exact: qbs_Mx_const.
 Qed.
 
