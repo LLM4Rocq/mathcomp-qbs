@@ -8,6 +8,6 @@ theories/pair_qbs_measure.v
 theories/qbs_prob_quot.v
 theories/measure_as_qbs_measure.v
 theories/normal_algebra.v
-theories/bayesian_regression.v
 theories/standard_borel.v
 theories/qbs_giry.v
+theories/showcase/bayesian_regression.v
