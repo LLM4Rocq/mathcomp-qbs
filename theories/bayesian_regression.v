@@ -475,7 +475,7 @@ Definition scalar_of_s (s : R) : R :=
      (31%:R / 5%:R - 4%:R * s)) *
   (* Step 4->5: result * N(8-5s, 1/2) *)
   (normal_peak (sqrtr (sqrtr (9%:R / 145%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
-   normal_fun ((3060%:R - 1800%:R * s) / 725%:R)
+   normal_fun ((612%:R - 360%:R * s) / 145%:R)
      (sqrtr (sqrtr (9%:R / 145%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2))
      (8%:R - 5%:R * s)).
 
@@ -490,7 +490,7 @@ by apply: mulr_ge0; [exact: normal_peak_ge0 | exact: normal_fun_ge0].
 Qed.
 
 (* Intermediate parameters after all 5 Phase 1 combination steps *)
-Let phase1_mu5 (s : R) : R := (4500%:R - 2700%:R * s) / 905%:R.
+Let phase1_mu5 (s : R) : R := (900%:R - 540%:R * s) / 181%:R.
 Let phase1_sigma5 : R := sqrtr (9%:R / 181%:R).
 
 (* Phase 1 integration: integrating obs(s,b) against the intercept

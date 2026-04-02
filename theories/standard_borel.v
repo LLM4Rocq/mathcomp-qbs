@@ -9,6 +9,7 @@ From mathcomp.analysis Require Import measure_theory.measurable_structure.
 From mathcomp.analysis Require Import measure_theory.measurable_function.
 From mathcomp.analysis Require Import measurable_realfun trigo.
 From mathcomp.analysis Require Import lebesgue_stieltjes_measure.
+From mathcomp.algebra_tactics Require Import ring.
 
 (**md**************************************************************************)
 (* # Standard Borel Spaces                                                     *)
@@ -360,6 +361,12 @@ Definition unit_to_pair (r : R) : R * R :=
   (bin_sum (deinterleave_even (bin_digits r)),
    bin_sum (deinterleave_odd (bin_digits r))).
 
+Lemma half2 : 2%:R^-1 *+ 2 = (1 : R).
+Proof.
+have h : (1 : R) / 2%:R = 2%:R^-1 by rewrite div1r.
+by rewrite /GRing.natmul /= -[2%:R^-1]h -(@Num.Theory.splitr R 1).
+Qed.
+
 (******************************************************************************)
 (* Reconstruction: bin_sum (bin_digits x) = x for x in [0,1)                 *)
 (******************************************************************************)
@@ -392,9 +399,6 @@ have hinv : forall n : nat,
   - rewrite /= mul0r addr0 -/bin_partial_sum IHk /step hle.
     set h := 2%:R^-1 ^+ k; rewrite mulrnAl mulrCA.
     by rewrite -mulrnAr mulr2n -splitr mulrC.
-have half2 : 2%:R^-1 *+ 2 = (1 : R).
-  have h : (1 : R) / 2%:R = 2%:R^-1 by rewrite div1r.
-  by rewrite /GRing.natmul /= -[2%:R^-1]h -(@Num.Theory.splitr R 1).
 have hrem_bound : forall n, 0 <= rem n /\ rem n < 1.
   elim => [|k [IHk0 IHk1]] /=; first by split.
   rewrite /step; case: ifP => hle; split.
@@ -494,9 +498,6 @@ have hrem_digit : forall n, bin_digit x n = (2%:R^-1 <= rem n).
   suff hgen : forall n y, bin_digit y n = (2%:R^-1 <= iter n step y).
     by move=> n; rewrite hgen; congr (_ <= _); elim: n => //= k ->.
   by elim => [|k IHk] //= y; rewrite IHk -iterSr iterS.
-have half2 : 2%:R^-1 *+ 2 = (1 : R).
-  have h : (1 : R) / 2%:R = 2%:R^-1 by rewrite div1r.
-  by rewrite /GRing.natmul /= -[2%:R^-1]h -(@Num.Theory.splitr R 1).
 have hrem_bound : forall n, 0 <= rem n /\ rem n < 1.
   elim => [|k [IHk0 IHk1]] /=; first by split.
   rewrite /step; case: ifP => hle; split.
@@ -512,9 +513,7 @@ have hstep_eq : forall N n, (N <= n)%N ->
     (forall m, (N <= m)%N -> 2%:R^-1 <= rem m) ->
     1 - rem n.+1 = (1 - rem n) *+ 2.
   move=> NN n hn hall; rewrite (hstep_simp NN) //.
-  rewrite -[rem n *+ 2]mulr_natr -[(1 - rem n) *+ 2]mulr_natr.
-  rewrite mulrBl mul1r opprD opprK addrCA.
-  by change ((- (rem n * 2) + (1 + 1) = 2 - rem n * 2 :> R)); rewrite addrC.
+  by rewrite -[rem n *+ 2]mulr_natr -[(1 - rem n) *+ 2]mulr_natr; ring.
 move=> N.
 suff : exists n, (N <= n)%N /\ ~~ (2%:R^-1 <= rem n).
   move=> [n [hn hlt]]; exists n; split=> //.
@@ -1219,19 +1218,6 @@ split; first exact: measurable_encode_RR.
 split; first exact: measurable_decode_RR.
 exact: decode_encode_RR.
 Qed.
-
-(* Clean interface for R ≅ R×R *)
-Definition R_to_RR : R -> R * R := decode_RR.
-Definition RR_to_R : R * R -> R := encode_RR.
-
-Lemma R_to_RR_measurable : measurable_fun setT R_to_RR.
-Proof. exact: measurable_decode_RR. Qed.
-
-Lemma RR_to_R_measurable : measurable_fun setT RR_to_R.
-Proof. exact: measurable_encode_RR. Qed.
-
-Lemma RR_to_R_to_RR : forall xy, R_to_RR (RR_to_R xy) = xy.
-Proof. exact: decode_encode_RR. Qed.
 
 End binary_digit_interleaving.
 

@@ -110,14 +110,14 @@ Definition monadP_random (X : qbsType R) : set (mR -> qbs_prob X) :=
 Arguments monadP_random : clear implicits.
 
 (* Pointwise definition (used for the QBS structure) *)
-Definition monadP_random' (X : qbsType R) : set (mR -> qbs_prob X) :=
+Definition monadP_random_pw (X : qbsType R) : set (mR -> qbs_prob X) :=
   [set beta | forall r, @qbs_Mx R X (qbs_prob_alpha (beta r))].
 
-Arguments monadP_random' : clear implicits.
+Arguments monadP_random_pw : clear implicits.
 
 (* The strong definition implies the weak one *)
 Lemma monadP_random_impl (X : qbsType R) (beta : mR -> qbs_prob X) :
-  monadP_random X beta -> monadP_random' X beta.
+  monadP_random X beta -> monadP_random_pw X beta.
 Proof.
 move=> [alpha [g [halpha [hbeta_a hbeta_g]]]] r.
 by rewrite hbeta_a.
@@ -125,27 +125,27 @@ Qed.
 
 Lemma monadP_comp (X : qbsType R) :
   forall beta f,
-    monadP_random' X beta ->
+    monadP_random_pw X beta ->
     measurable_fun setT f ->
-    monadP_random' X (beta \o f).
+    monadP_random_pw X (beta \o f).
 Proof. by move=> beta f hbeta hf r; apply: hbeta. Qed.
 
 Lemma monadP_const (X : qbsType R) :
-  forall x : qbs_prob X, monadP_random' X (fun _ => x).
+  forall x : qbs_prob X, monadP_random_pw X (fun _ => x).
 Proof. by move=> x r; exact: (qbs_prob_alpha_random x). Qed.
 
 Lemma monadP_glue (X : qbsType R) :
   forall (P : mR -> nat) (Fi : nat -> mR -> qbs_prob X),
     measurable_fun setT P ->
-    (forall i, monadP_random' X (Fi i)) ->
-    monadP_random' X (fun r => Fi (P r) r).
+    (forall i, monadP_random_pw X (Fi i)) ->
+    monadP_random_pw X (fun r => Fi (P r) r).
 Proof. by move=> P Fi hP hFi r; apply: hFi. Qed.
 
 (* NB: manual HB.pack because monadP creates a non-canonical QBS on qbs_prob X *)
 Definition monadP (X : qbsType R) : qbsType R :=
   HB.pack (qbs_prob X)
     (@isQBS.Build R (qbs_prob X)
-      (monadP_random' X)
+      (monadP_random_pw X)
       (@monadP_comp X)
       (@monadP_const X)
       (@monadP_glue X)).
@@ -173,7 +173,7 @@ Lemma qbs_return_equiv (X : qbsType R) (x : X)
   (mu1 mu2 : probability mR R) :
   qbs_prob_equiv X (qbs_return X x mu1) (qbs_return X x mu2).
 Proof.
-move=> U hU; simpl.
+move=> U hU /=.
 have [hx|hx] := boolp.pselect (U x).
   have heq : (fun=> x) @^-1` U = @setT mR.
     rewrite /preimage; apply: boolp.funext => r /=.

@@ -252,7 +252,7 @@ by field.
 Qed.
 
 (* Step 3->4: N(mu3, sqrtr(9/109), b) * N(31/5 - 4*s, 1/2, b)
-   sigma_new^2 = 9/145, mu_new = (3060 - 1800*s)/725
+   sigma_new^2 = 9/145, mu_new = (612 - 360*s)/145
    where mu3 = (1944 - 1080*s)/545 *)
 
 Lemma phase1_step34_sigma2 :
@@ -265,7 +265,7 @@ Lemma phase1_step34_mu (s : R) :
                    (31%:R / 5%:R - 4%:R * s)
                    (sqrtr (9%:R / 109%:R))
                    (2%:R^-1) =
-  (3060%:R - 1800%:R * s) / 725%:R.
+  (612%:R - 360%:R * s) / 145%:R.
 Proof.
 rewrite /gaussian_prod_mu.
 have h9_109 : (0 <= 9%:R / 109%:R :> R)%R.
@@ -275,8 +275,8 @@ by field.
 Qed.
 
 (* Step 4->5: N(mu4, sqrtr(9/145), b) * N(8 - 5*s, 1/2, b)
-   sigma_new^2 = 9/181, mu_new = (4500 - 2700*s)/905
-   where mu4 = (3060 - 1800*s)/725 *)
+   sigma_new^2 = 9/181, mu_new = (900 - 540*s)/181
+   where mu4 = (612 - 360*s)/145 *)
 
 Lemma phase1_step45_sigma2 :
   (9%:R / 145%:R) * (2%:R^-1 : R) ^+ 2 /
@@ -284,11 +284,11 @@ Lemma phase1_step45_sigma2 :
 Proof. by field. Qed.
 
 Lemma phase1_step45_mu (s : R) :
-  gaussian_prod_mu ((3060%:R - 1800%:R * s) / 725%:R)
+  gaussian_prod_mu ((612%:R - 360%:R * s) / 145%:R)
                    (8%:R - 5%:R * s)
                    (sqrtr (9%:R / 145%:R))
                    (2%:R^-1) =
-  (4500%:R - 2700%:R * s) / 905%:R.
+  (900%:R - 540%:R * s) / 181%:R.
 Proof.
 rewrite /gaussian_prod_mu.
 have h9_145 : (0 <= 9%:R / 145%:R :> R)%R.
@@ -305,44 +305,52 @@ Qed.
 
    where Ki(s) are the scalar factors from each step. *)
 
+(* Parameterized positivity for 9/n fractions *)
+Lemma nine_div_gt0 (n : nat) : (0 < n)%N -> (0 < 9%:R / n%:R :> R)%R.
+Proof. by move=> hn; apply: divr_gt0; rewrite ?ltr0n. Qed.
+
+Lemma sqrtr_nine_div_neq0 (n : nat) : (0 < n)%N ->
+  sqrtr (9%:R / n%:R) != (0 : R).
+Proof. by move=> hn; apply: lt0r_neq0; rewrite sqrtr_gt0; exact: nine_div_gt0. Qed.
+
 (* Positivity lemmas for the intermediate variances *)
 Lemma phase1_var1_gt0 : (0 < 9%:R / 37%:R :> R)%R.
-Proof. by apply: divr_gt0; rewrite ?ltr0n. Qed.
+Proof. exact: nine_div_gt0. Qed.
 
 Lemma phase1_var2_gt0 : (0 < 9%:R / 73%:R :> R)%R.
-Proof. by apply: divr_gt0; rewrite ?ltr0n. Qed.
+Proof. exact: nine_div_gt0. Qed.
 
 Lemma phase1_var3_gt0 : (0 < 9%:R / 109%:R :> R)%R.
-Proof. by apply: divr_gt0; rewrite ?ltr0n. Qed.
+Proof. exact: nine_div_gt0. Qed.
 
 Lemma phase1_var4_gt0 : (0 < 9%:R / 145%:R :> R)%R.
-Proof. by apply: divr_gt0; rewrite ?ltr0n. Qed.
+Proof. exact: nine_div_gt0. Qed.
 
 Lemma phase1_var5_gt0 : (0 < 9%:R / 181%:R :> R)%R.
-Proof. by apply: divr_gt0; rewrite ?ltr0n. Qed.
+Proof. exact: nine_div_gt0. Qed.
 
 (* The sqrtr of each variance is nonzero *)
 Lemma phase1_sqrtr_var1_neq0 : sqrtr (9%:R / 37%:R) != (0 : R).
-Proof. apply: lt0r_neq0; rewrite sqrtr_gt0; exact: phase1_var1_gt0. Qed.
+Proof. exact: sqrtr_nine_div_neq0. Qed.
 
 Lemma phase1_sqrtr_var2_neq0 : sqrtr (9%:R / 73%:R) != (0 : R).
-Proof. apply: lt0r_neq0; rewrite sqrtr_gt0; exact: phase1_var2_gt0. Qed.
+Proof. exact: sqrtr_nine_div_neq0. Qed.
 
 Lemma phase1_sqrtr_var3_neq0 : sqrtr (9%:R / 109%:R) != (0 : R).
-Proof. apply: lt0r_neq0; rewrite sqrtr_gt0; exact: phase1_var3_gt0. Qed.
+Proof. exact: sqrtr_nine_div_neq0. Qed.
 
 Lemma phase1_sqrtr_var4_neq0 : sqrtr (9%:R / 145%:R) != (0 : R).
-Proof. apply: lt0r_neq0; rewrite sqrtr_gt0; exact: phase1_var4_gt0. Qed.
+Proof. exact: sqrtr_nine_div_neq0. Qed.
 
 Lemma phase1_sqrtr_var5_neq0 : sqrtr (9%:R / 181%:R) != (0 : R).
-Proof. apply: lt0r_neq0; rewrite sqrtr_gt0; exact: phase1_var5_gt0. Qed.
+Proof. exact: sqrtr_nine_div_neq0. Qed.
 
 (* Helper: 2^-1 != 0 *)
-Lemma half_neq0 : (2%:R^-1 : R) != 0.
+Let half_neq0 : (2%:R^-1 : R) != 0.
 Proof. by rewrite invr_neq0 // pnatr_eq0. Qed.
 
 (* Helper: 3 != 0 *)
-Lemma three_neq0 : (3%:R : R) != 0.
+Let three_neq0 : (3%:R : R) != 0.
 Proof. by rewrite pnatr_eq0. Qed.
 
 (* The main Phase 1 result for the first 3 steps:
@@ -422,10 +430,10 @@ Lemma phase1_combine5 (s b : R) :
   gaussian_prod_scalar ((1944%:R - 1080%:R * s) / 545%:R)
                        (31%:R / 5%:R - 4%:R * s)
                        (sqrtr (9%:R / 109%:R)) (2%:R^-1) *
-  gaussian_prod_scalar ((3060%:R - 1800%:R * s) / 725%:R)
+  gaussian_prod_scalar ((612%:R - 360%:R * s) / 145%:R)
                        (8%:R - 5%:R * s)
                        (sqrtr (9%:R / 145%:R)) (2%:R^-1) *
-  normal_pdf ((4500%:R - 2700%:R * s) / 905%:R)
+  normal_pdf ((900%:R - 540%:R * s) / 181%:R)
              (sqrtr (9%:R / 181%:R)) b.
 Proof.
 (* Use set to control term sizes during rewriting *)
@@ -590,11 +598,11 @@ Lemma phase2_scalar34_diff (s : R) :
   (287%:R - 220%:R * s) / 109%:R.
 Proof. by field. Qed.
 
-(* Step 4->5: m=(3060-1800s)/725, m'=8-5s, S=sqrt(9/145+1/4)=sqrt(181/580)
-   diff = 8-5s - (3060-1800s)/725 = (548 - 365*s)/145
+(* Step 4->5: m=(612-360s)/145, m'=8-5s, S=sqrt(9/145+1/4)=sqrt(181/580)
+   diff = 8-5s - (612-360s)/145 = (548 - 365*s)/145
    A=548, B=365, C=145 *)
 Lemma phase2_scalar45_diff (s : R) :
-  (8%:R - 5%:R * s) - (3060%:R - 1800%:R * s) / 725%:R =
+  (8%:R - 5%:R * s) - (612%:R - 360%:R * s) / 145%:R =
   (548%:R - 365%:R * s) / 145%:R.
 Proof. by field. Qed.
 
@@ -712,7 +720,7 @@ Lemma phase2_scalar12_fun (s : R) :
              (sqrtr (73%:R / 148%:R))
              (19%:R / 5%:R - 2%:R * s) =
   normal_fun (253%:R / 190%:R)
-             (sqrtr (73%:R / 148%:R) * 185%:R / 190%:R) s.
+             (sqrtr (73%:R / 148%:R) * 37%:R / 38%:R) s.
 Proof.
 set S12 := sqrtr _.
 have hS : S12 != (0 : R).
@@ -722,17 +730,17 @@ suff heq : ((19%:R / 5%:R - 2%:R * s) -
              (90%:R - 36%:R * s) / 37%:R) ^+ 2 /
             (S12 ^+ 2 *+ 2) =
             (s - 253%:R / 190%:R) ^+ 2 /
-            ((S12 * 185%:R / 190%:R) ^+ 2 *+ 2).
+            ((S12 * 37%:R / 38%:R) ^+ 2 *+ 2).
   rewrite /normal_fun; congr (sequences.expR _).
   by rewrite !mulNr; congr (- _).
 rewrite -(mulr_natr (S12 ^+ 2) 2)
-        -(mulr_natr ((S12 * 185%:R / 190%:R) ^+ 2) 2).
+        -(mulr_natr ((S12 * 37%:R / 38%:R) ^+ 2) 2).
 rewrite !exprMn exprVn.
 field. by rewrite hS.
 Qed.
 
-(* Width for step 1: W12 = sqrt(73/148) * 185/190 *)
-Let W12 : R := sqrtr (73%:R / 148%:R) * 185%:R / 190%:R.
+(* Width for step 1: W12 = sqrt(73/148) * 37/38 *)
+Let W12 : R := sqrtr (73%:R / 148%:R) * 37%:R / 38%:R.
 
 Lemma phase2_W12_neq0 : W12 != 0.
 Proof.
@@ -816,7 +824,7 @@ Lemma phase2_scalar23_fun (s : R) :
              (sqrtr (109%:R / 292%:R))
              (9%:R / 2%:R - 3%:R * s) =
   normal_fun (1017%:R / 1110%:R)
-             (sqrtr (109%:R / 292%:R) * 730%:R / 1110%:R) s.
+             (sqrtr (109%:R / 292%:R) * 73%:R / 111%:R) s.
 Proof.
 set S23 := sqrtr _.
 have hS : S23 != (0 : R).
@@ -826,17 +834,17 @@ suff heq : ((9%:R / 2%:R - 3%:R * s) -
              (1134%:R - 540%:R * s) / 365%:R) ^+ 2 /
             (S23 ^+ 2 *+ 2) =
             (s - 1017%:R / 1110%:R) ^+ 2 /
-            ((S23 * 730%:R / 1110%:R) ^+ 2 *+ 2).
+            ((S23 * 73%:R / 111%:R) ^+ 2 *+ 2).
   rewrite /normal_fun; congr (sequences.expR _).
   by rewrite !mulNr; congr (- _).
 rewrite -(mulr_natr (S23 ^+ 2) 2)
-        -(mulr_natr ((S23 * 730%:R / 1110%:R) ^+ 2) 2).
+        -(mulr_natr ((S23 * 73%:R / 111%:R) ^+ 2) 2).
 rewrite !exprMn exprVn.
 field. by rewrite hS.
 Qed.
 
-(* Width for step 2: W23 = sqrt(109/292) * 730/1110 *)
-Let W23 : R := sqrtr (109%:R / 292%:R) * 730%:R / 1110%:R.
+(* Width for step 2: W23 = sqrt(109/292) * 73/111 *)
+Let W23 : R := sqrtr (109%:R / 292%:R) * 73%:R / 111%:R.
 
 Lemma phase2_W23_neq0 : W23 != 0.
 Proof.
@@ -1010,31 +1018,31 @@ Qed.
 (* Rewrite scalar45's normal_fun as a function of s.
    center = 548/365, width = sqrt(181/580) * 145/365. *)
 Lemma phase2_scalar45_fun (s : R) :
-  normal_fun ((3060%:R - 1800%:R * s) / 725%:R)
+  normal_fun ((612%:R - 360%:R * s) / 145%:R)
              (sqrtr (181%:R / 580%:R))
              (8%:R - 5%:R * s) =
   normal_fun (548%:R / 365%:R)
-             (sqrtr (181%:R / 580%:R) * 145%:R / 365%:R) s.
+             (sqrtr (181%:R / 580%:R) * 29%:R / 73%:R) s.
 Proof.
 set S45 := sqrtr _.
 have hS : S45 != (0 : R).
   apply: lt0r_neq0; rewrite sqrtr_gt0.
   by apply: divr_gt0; rewrite ?ltr0n.
 suff heq : ((8%:R - 5%:R * s) -
-             (3060%:R - 1800%:R * s) / 725%:R) ^+ 2 /
+             (612%:R - 360%:R * s) / 145%:R) ^+ 2 /
             (S45 ^+ 2 *+ 2) =
             (s - 548%:R / 365%:R) ^+ 2 /
-            ((S45 * 145%:R / 365%:R) ^+ 2 *+ 2).
+            ((S45 * 29%:R / 73%:R) ^+ 2 *+ 2).
   rewrite /normal_fun; congr (sequences.expR _).
   by rewrite !mulNr; congr (- _).
 rewrite -(mulr_natr (S45 ^+ 2) 2)
-        -(mulr_natr ((S45 * 145%:R / 365%:R) ^+ 2) 2).
+        -(mulr_natr ((S45 * 29%:R / 73%:R) ^+ 2) 2).
 rewrite !exprMn exprVn.
 field. by rewrite hS.
 Qed.
 
-(* Width for step 4: W45 = sqrt(181/580) * 145/365 *)
-Let W45 : R := sqrtr (181%:R / 580%:R) * 145%:R / 365%:R.
+(* Width for step 4: W45 = sqrt(181/580) * 29/73 *)
+Let W45 : R := sqrtr (181%:R / 580%:R) * 29%:R / 73%:R.
 
 Lemma phase2_W45_neq0 : W45 != 0.
 Proof.
@@ -1048,7 +1056,7 @@ Qed.
 
 (* scalar45 = peak_ratio * normal_pdf *)
 Lemma phase2_scalar45_is_pdf (s : R) :
-  gaussian_prod_scalar ((3060%:R - 1800%:R * s) / 725%:R)
+  gaussian_prod_scalar ((612%:R - 360%:R * s) / 145%:R)
                        (8%:R - 5%:R * s)
                        (sqrtr (9%:R / 145%:R)) (2%:R^-1) =
   normal_peak (sqrtr (181%:R / 580%:R)) /
@@ -1075,7 +1083,7 @@ Lemma phase2_step4 (s : R) :
                  (1017%:R / 1110%:R) sigma1 W23)
                (287%:R / 220%:R) sigma2 W34 in
   K3 * normal_pdf mu3 sigma3 s *
-  gaussian_prod_scalar ((3060%:R - 1800%:R * s) / 725%:R)
+  gaussian_prod_scalar ((612%:R - 360%:R * s) / 145%:R)
                        (8%:R - 5%:R * s)
                        (sqrtr (9%:R / 145%:R)) (2%:R^-1) =
   K3 * (normal_peak (sqrtr (181%:R / 580%:R)) / normal_peak W45) *

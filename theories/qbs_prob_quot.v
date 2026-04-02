@@ -242,7 +242,7 @@ Qed.
 (* ===================================================================== *)
 
 Definition qps_Mx (X : qbsType R) : set (mR -> qbs_prob_space X) :=
-  [set beta | @monadP_random' R X (fun r => qps_repr (beta r))].
+  [set beta | @monadP_random_pw R X (fun r => qps_repr (beta r))].
 
 Arguments qps_Mx {X}.
 

@@ -156,7 +156,7 @@ Qed.
 (*    the parameter space to the probability monad.                      *)
 (*                                                                       *)
 (*    Key insight: since qbs_normal_distribution mu sigma has alpha =    *)
-(*    idfun for all mu, the monadP_random' condition reduces to showing *)
+(*    idfun for all mu, the monadP_random_pw condition reduces to showing *)
 (*    qbs_Mx (realQ R) idfun, which is just measurable_id.              *)
 (* ===================================================================== *)
 
