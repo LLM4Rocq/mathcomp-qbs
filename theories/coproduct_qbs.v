@@ -1,4 +1,4 @@
-(* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
+(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
 From mathcomp Require Import reals.
@@ -65,7 +65,8 @@ Lemma coprodQ_Mx_comp (X Y : qbsType R) :
     coprodQ_random X Y (h \o f).
 Proof.
 move=> h f Hh hf.
-case: Hh => [[a [ha hdef]] | [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
+case: Hh => [[a [ha hdef]] |
+  [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
 - left; exists (a \o f); split.
   + exact: qbs_Mx_comp ha hf.
   + by move=> r; rewrite /= hdef.
@@ -101,87 +102,106 @@ Proof.
 move=> Q Fi hQ hFi.
 (* We handle the cases based on whether X and Y are inhabited *)
 have [Xempty | x0] := boolp.pselectT X.
-{ (* X is empty: cases 1 and 3 of coprodQ_random are impossible *)
+- (* X is empty: cases 1 and 3 of coprodQ_random are impossible *)
   (* So all Fi i must factor through inr *)
   have hFi2 : forall i, exists b : mR -> Y,
     @qbs_Mx R Y b /\ forall r, Fi i r = inr (b r).
-  { move=> i; case: (hFi i) => [[a [_ hdef]] | [[b' [hb hdef]] | [P [a _]]]].
-    - exfalso; exact: Xempty (a (0%R : mR)).
-    - by exists b'.
-    - exfalso; exact: Xempty (a (0%R : mR)). }
+    move=> i; case: (hFi i).
+    + move=> [a [_ hdef]].
+      exfalso; exact: Xempty (a (0%R : mR)).
+    + case=> [[b' [hb hdef]] | [P [a _]]].
+      * by exists b'.
+      * exfalso; exact: Xempty (a (0%R : mR)).
   have := @boolp.choice _ _ _ hFi2; move=> [getB hgetB].
   right; left; exists (fun r => getB (Q r) r); split.
-  - exact: (@qbs_Mx_glue R Y Q getB hQ (fun i => (hgetB i).1)).
-  - move=> r; exact: (hgetB (Q r)).2.
-}
-have [Yempty | y0] := boolp.pselectT Y.
-{ (* Y is empty: all Fi i must factor through inl *)
-  have hFi1 : forall i, exists a : mR -> X,
-    @qbs_Mx R X a /\ forall r, Fi i r = inl (a r).
-  { move=> i; case: (hFi i) => [[a [ha hdef]] | [[b' [_ hdef]] | [_ [_ [b' _]]]]].
-    - by exists a.
-    - exfalso; exact: Yempty (b' (0%R : mR)).
-    - exfalso; exact: Yempty (b' (0%R : mR)). }
-  have := @boolp.choice _ _ _ hFi1; move=> [getA hgetA].
-  left; exists (fun r => getA (Q r) r); split.
-  - exact: (@qbs_Mx_glue R X Q getA hQ (fun i => (hgetA i).1)).
-  - move=> r; exact: (hgetA (Q r)).2.
-}
-(* Both X and Y are inhabited *)
-(* Normalize each Fi i to case 3 form *)
-have hFi3 : forall i, exists triple : (mR -> bool) * (mR -> X) * (mR -> Y),
-  measurable_fun setT triple.1.1 /\
-  @qbs_Mx R X triple.1.2 /\
-  @qbs_Mx R Y triple.2 /\
-  forall r, Fi i r = if triple.1.1 r then inl (triple.1.2 r) else inr (triple.2 r).
-{ move=> i; case: (hFi i) => [[a [ha hdef]] | [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
-  - (* case 1: pure inl *)
-    exists ((fun _ => true), a, (fun _ => y0)); split; [|split; [|split]] => /=.
-    + exact: measurable_cst.
-    + exact: ha.
-    + exact: qbs_Mx_const.
-    + by move=> r; rewrite hdef.
-  - (* case 2: pure inr *)
-    exists ((fun _ => false), (fun _ => x0), b'); split; [|split; [|split]] => /=.
-    + exact: measurable_cst.
-    + exact: qbs_Mx_const.
-    + exact: hb.
-    + by move=> r; rewrite hdef.
-  - (* case 3: already gluing *)
-    exists (P, a, b'); split; [|split; [|split]] => //. }
-have := @boolp.choice _ _ _ hFi3; move=> [getTriple hgetTriple].
-(* Extract the components *)
-set Pi := fun i => (getTriple i).1.1.
-set ai := fun i => (getTriple i).1.2.
-set bi := fun i => (getTriple i).2.
-have hPi_meas : forall i, measurable_fun setT (Pi i).
-{ move=> i; exact: (hgetTriple i).1. }
-have hai : forall i, @qbs_Mx R X (ai i).
-{ move=> i; exact: (hgetTriple i).2.1. }
-have hbi : forall i, @qbs_Mx R Y (bi i).
-{ move=> i; exact: (hgetTriple i).2.2.1. }
-have hFi_eq : forall i r, Fi i r = if Pi i r then inl (ai i r) else inr (bi i r).
-{ move=> i; exact: (hgetTriple i).2.2.2. }
-(* Now construct the result in case 3 *)
-right; right.
-(* The combined P: P'(r) = Pi(Q(r))(r) *)
-set P' : mR -> bool := fun r => Pi (Q r) r.
-(* The combined a: a'(r) = ai(Q(r))(r) *)
-set a' : mR -> X := fun r => ai (Q r) r.
-(* The combined b: b'(r) = bi(Q(r))(r) *)
-set b'' : mR -> Y := fun r => bi (Q r) r.
-exists P', a', b''; split; [|split; [|split]].
-- (* P' is measurable *)
-  rewrite /P'.
-  exact: (@measurable_glue R _ _ Q (fun i => Pi i) hQ hPi_meas).
-- (* a' is in Mx(X) *)
-  rewrite /a'.
-  exact: (@qbs_Mx_glue R X Q (fun i => ai i) hQ hai).
-- (* b'' is in Mx(Y) *)
-  rewrite /b''.
-  exact: (@qbs_Mx_glue R Y Q (fun i => bi i) hQ hbi).
-- (* extensional equality *)
-  move=> r; rewrite /P' /a' /b'' hFi_eq //.
+  + exact: (@qbs_Mx_glue R Y Q getB hQ
+      (fun i => (hgetB i).1)).
+  + move=> r; exact: (hgetB (Q r)).2.
+- have [Yempty | y0] := boolp.pselectT Y.
+  + (* Y is empty: all Fi i must factor through inl *)
+    have hFi1 : forall i, exists a : mR -> X,
+      @qbs_Mx R X a /\ forall r, Fi i r = inl (a r).
+      move=> i; case: (hFi i).
+      * move=> [a [ha hdef]]; by exists a.
+      * case=> [[b' [_ hdef]] | [_ [_ [b' _]]]].
+        -- exfalso; exact: Yempty (b' (0%R : mR)).
+        -- exfalso; exact: Yempty (b' (0%R : mR)).
+    have := @boolp.choice _ _ _ hFi1; move=> [getA hgetA].
+    left; exists (fun r => getA (Q r) r); split.
+    * exact: (@qbs_Mx_glue R X Q getA hQ
+        (fun i => (hgetA i).1)).
+    * move=> r; exact: (hgetA (Q r)).2.
+  + (* Both X and Y are inhabited *)
+    (* Normalize each Fi i to case 3 form *)
+    have hFi3 : forall i,
+      exists triple : (mR -> bool) * (mR -> X) * (mR -> Y),
+      measurable_fun setT triple.1.1 /\
+      @qbs_Mx R X triple.1.2 /\
+      @qbs_Mx R Y triple.2 /\
+      forall r, Fi i r =
+        if triple.1.1 r then inl (triple.1.2 r)
+        else inr (triple.2 r).
+      move=> i; case: (hFi i).
+      * move=> [a [ha hdef]].
+        (* case 1: pure inl *)
+        exists ((fun _ => true), a, (fun _ => y0)).
+        split; [|split; [|split]] => /=.
+        -- exact: measurable_cst.
+        -- exact: ha.
+        -- exact: qbs_Mx_const.
+        -- by move=> r; rewrite hdef.
+      * case=> [[b' [hb hdef]] |
+          [P [a [b' [hP [ha [hb hdef]]]]]]].
+        (* case 2: pure inr *)
+        -- exists ((fun _ => false), (fun _ => x0), b').
+           split; [|split; [|split]] => /=.
+           ++ exact: measurable_cst.
+           ++ exact: qbs_Mx_const.
+           ++ exact: hb.
+           ++ by move=> r; rewrite hdef.
+        (* case 3: already gluing *)
+        -- exists (P, a, b').
+           split; [|split; [|split]] => //.
+    have := @boolp.choice _ _ _ hFi3.
+    move=> [getTriple hgetTriple].
+    (* Extract the components *)
+    set Pi := fun i => (getTriple i).1.1.
+    set ai := fun i => (getTriple i).1.2.
+    set bi := fun i => (getTriple i).2.
+    have hPi_meas :
+      forall i, measurable_fun setT (Pi i).
+      move=> i; exact: (hgetTriple i).1.
+    have hai : forall i, @qbs_Mx R X (ai i).
+      move=> i; exact: (hgetTriple i).2.1.
+    have hbi : forall i, @qbs_Mx R Y (bi i).
+      move=> i; exact: (hgetTriple i).2.2.1.
+    have hFi_eq : forall i r,
+      Fi i r = if Pi i r then inl (ai i r)
+               else inr (bi i r).
+      move=> i; exact: (hgetTriple i).2.2.2.
+    (* Now construct the result in case 3 *)
+    right; right.
+    (* The combined P: P'(r) = Pi(Q(r))(r) *)
+    set P' : mR -> bool := fun r => Pi (Q r) r.
+    (* The combined a: a'(r) = ai(Q(r))(r) *)
+    set a' : mR -> X := fun r => ai (Q r) r.
+    (* The combined b: b'(r) = bi(Q(r))(r) *)
+    set b'' : mR -> Y := fun r => bi (Q r) r.
+    exists P', a', b''; split; [|split; [|split]].
+    * (* P' is measurable *)
+      rewrite /P'.
+      exact: (@measurable_glue R _ _ Q
+        (fun i => Pi i) hQ hPi_meas).
+    * (* a' is in Mx(X) *)
+      rewrite /a'.
+      exact: (@qbs_Mx_glue R X Q
+        (fun i => ai i) hQ hai).
+    * (* b'' is in Mx(Y) *)
+      rewrite /b''.
+      exact: (@qbs_Mx_glue R Y Q
+        (fun i => bi i) hQ hbi).
+    * (* extensional equality *)
+      move=> r; rewrite /P' /a' /b'' hFi_eq //.
 Qed.
 
 Definition coprodQ (X Y : qbsType R) : qbsType R :=
@@ -326,19 +346,23 @@ have hFi' : forall n, exists triple :
   measurable_fun setT triple.1.1 /\
   (forall i, @qbs_Mx R (X i) (triple.1.2 i)) /\
   (forall r, Fi n r = existT _ (triple.1.1 r) (triple.1.2 (triple.1.1 r) r)).
-{ move=> n; case: (hFi n) => [Pn [Gin [hPn [hGin hdef]]]].
-  by exists (Pn, Gin, True). }
-have := @boolp.choice _ _ _ hFi'; move=> [getTriple hgetTriple].
+  move=> n; case: (hFi n) => [Pn [Gin [hPn [hGin hdef]]]].
+  by exists (Pn, Gin, True).
+have := @boolp.choice _ _ _ hFi'.
+move=> [getTriple hgetTriple].
 set Pn := fun n => (getTriple n).1.1.
 set Gin := fun n => (getTriple n).1.2.
 have hPn_meas : forall n, measurable_fun setT (Pn n).
-{ move=> n; exact: (hgetTriple n).1. }
-have hGin : forall n i, @qbs_Mx R (X i) (Gin n i).
-{ move=> n i; exact: (hgetTriple n).2.1 i. }
-have hFi_eq : forall n r, Fi n r = existT _ (Pn n r) (Gin n (Pn n r) r).
-{ move=> n; exact: (hgetTriple n).2.2. }
+  move=> n; exact: (hgetTriple n).1.
+have hGin :
+  forall n i, @qbs_Mx R (X i) (Gin n i).
+  move=> n i; exact: (hgetTriple n).2.1 i.
+have hFi_eq : forall n r,
+  Fi n r = existT _ (Pn n r) (Gin n (Pn n r) r).
+  move=> n; exact: (hgetTriple n).2.2.
 (* Construct the result *)
-exists (fun r => Pn (Q r) r), (fun i => fun r => Gin (Q r) i r); split; [|split].
+exists (fun r => Pn (Q r) r),
+  (fun i => fun r => Gin (Q r) i r); split; [|split].
 - exact: (@measurable_glue R _ _ Q (fun n => Pn n) hQ hPn_meas).
 - move=> i.
   exact: (@qbs_Mx_glue R (X i) Q (fun n => Gin n i) hQ (fun n => hGin n i)).
@@ -395,7 +419,7 @@ Definition piQ_random (I : Type) (X : I -> qbsType R) :
 
 Arguments piQ_random : clear implicits.
 
-Lemma piQ_closed1 (I : Type) (X : I -> qbsType R) :
+Lemma piQ_Mx_comp (I : Type) (X : I -> qbsType R) :
   forall (h : mR -> forall i, X i) (f : mR -> mR),
     piQ_random I X h ->
     measurable_fun setT f ->
@@ -406,7 +430,7 @@ have -> : (fun r => (h \o f) r i) = (fun r => h r i) \o f by [].
 exact: qbs_Mx_comp (Hh i) hf.
 Qed.
 
-Lemma piQ_closed2 (I : Type) (X : I -> qbsType R) :
+Lemma piQ_Mx_const (I : Type) (X : I -> qbsType R) :
   forall x : (forall i : I, X i),
     piQ_random I X (fun _ => x).
 Proof.
@@ -414,7 +438,7 @@ move=> x i.
 exact: qbs_Mx_const.
 Qed.
 
-Lemma piQ_closed3 (I : Type) (X : I -> qbsType R) :
+Lemma piQ_Mx_glue (I : Type) (X : I -> qbsType R) :
   forall (Q : mR -> nat) (Fi : nat -> mR -> forall i, X i),
     measurable_fun setT Q ->
     (forall n, piQ_random I X (Fi n)) ->
@@ -425,13 +449,13 @@ exact: (@qbs_Mx_glue R (X i) Q (fun n r => Fi n r i) hQ (fun n => hFi n i)).
 Qed.
 
 Definition piQ (I : Type) (X : I -> qbsType R) : qbsType R :=
-  (* NB: manual HB.pack because dependent products lack a canonical QBS instance *)
+  (* NB: manual HB.pack; dependent products lack a QBS instance *)
   HB.pack (forall i : I, X i)
     (@isQBS.Build R (forall i : I, X i)
       (piQ_random I X)
-      (piQ_closed1 (X:=X))
-      (piQ_closed2 (X:=X))
-      (piQ_closed3 (X:=X))).
+      (piQ_Mx_comp (X:=X))
+      (piQ_Mx_const (X:=X))
+      (piQ_Mx_glue (X:=X))).
 
 Arguments piQ : clear implicits.
 
@@ -542,7 +566,7 @@ Definition listQ_random (X : qbsType R) :
 
 Arguments listQ_random : clear implicits.
 
-Lemma listQ_closed1 (X : qbsType R) :
+Lemma listQ_Mx_comp (X : qbsType R) :
   forall (h : mR -> seq X) (f : mR -> mR),
     listQ_random X h ->
     measurable_fun setT f ->
@@ -555,7 +579,7 @@ exists (len \o f), (fun i => Fi i \o f); split; [|split].
 - move=> r; rewrite /= hdef //.
 Qed.
 
-Lemma listQ_closed2 (X : qbsType R) (x0 : X) :
+Lemma listQ_Mx_const (X : qbsType R) (x0 : X) :
   forall x : seq X,
     listQ_random X (fun _ => x).
 Proof.
@@ -567,7 +591,7 @@ split; [|split].
 - move=> r; symmetry; exact: mkseq_nth.
 Qed.
 
-Lemma listQ_closed3 (X : qbsType R) :
+Lemma listQ_Mx_glue (X : qbsType R) :
   forall (Q : mR -> nat) (Gi : nat -> mR -> seq X),
     measurable_fun setT Q ->
     (forall i, listQ_random X (Gi i)) ->
@@ -578,17 +602,19 @@ have hGi' : forall n, exists pair : (mR -> nat) * (nat -> mR -> X),
   measurable_fun setT pair.1 /\
   (forall i, @qbs_Mx R X (pair.2 i)) /\
   (forall r, Gi n r = mkseq (fun i => pair.2 i r) (pair.1 r)).
-{ move=> n; case: (hGi n) => [len [Fi [hlen [hFi hdef]]]].
-  by exists (len, Fi). }
-have := @boolp.choice _ _ _ hGi'; move=> [getPair hgetPair].
+  move=> n; case: (hGi n) => [len [Fi [hlen [hFi hdef]]]].
+  by exists (len, Fi).
+have := @boolp.choice _ _ _ hGi'.
+move=> [getPair hgetPair].
 set lenN := fun n => (getPair n).1.
 set FiN := fun n => (getPair n).2.
 have hlenN : forall n, measurable_fun setT (lenN n).
-{ move=> n; exact: (hgetPair n).1. }
+  move=> n; exact: (hgetPair n).1.
 have hFiN : forall n i, @qbs_Mx R X (FiN n i).
-{ move=> n i; exact: (hgetPair n).2.1 i. }
-have hGi_eq : forall n r, Gi n r = mkseq (fun i => FiN n i r) (lenN n r).
-{ move=> n; exact: (hgetPair n).2.2. }
+  move=> n i; exact: (hgetPair n).2.1 i.
+have hGi_eq : forall n r,
+  Gi n r = mkseq (fun i => FiN n i r) (lenN n r).
+  move=> n; exact: (hgetPair n).2.2.
 exists (fun r => lenN (Q r) r), (fun i r => FiN (Q r) i r); split; [|split].
 - exact: (@measurable_glue _ _ _ Q (fun n => lenN n) hQ hlenN).
 - move=> i.
@@ -603,9 +629,9 @@ Definition listQ (X : qbsType R) (x0 : X) : qbsType R :=
   HB.pack (seq X)
     (@isQBS.Build R (seq X)
       (listQ_random X)
-      (listQ_closed1 (X:=X))
-      (listQ_closed2 x0)
-      (listQ_closed3 (X:=X))).
+      (listQ_Mx_comp (X:=X))
+      (listQ_Mx_const x0)
+      (listQ_Mx_glue (X:=X))).
 
 (* Length is a QBS morphism from listQ to natQ *)
 Lemma qbs_morphism_length (X : qbsType R) (x0 : X) :

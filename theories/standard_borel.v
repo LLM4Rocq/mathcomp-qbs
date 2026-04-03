@@ -1,4 +1,4 @@
-(* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
+(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
 From mathcomp Require Import reals.
@@ -12,13 +12,13 @@ From mathcomp Require Import lebesgue_stieltjes_measure.
 From mathcomp Require Import ring.
 
 (**md**************************************************************************)
-(* # Standard Borel Spaces                                                     *)
-(* Measurable bijection R ≅ R × R for standard Borel space closure.           *)
+(* # Standard Borel Spaces                                                    *)
+(* Measurable bijection R ~ R x R for standard Borel space closure.           *)
 (*                                                                            *)
 (* This file constructs a measurable bijection between R and the open         *)
 (* interval (0,1) using the arctangent function, and then between (0,1) and   *)
 (* (0,1) x (0,1) using binary digit interleaving, composing into a           *)
-(* measurable bijection R ≅ R x R.                                           *)
+(* measurable bijection R ~ R x R.                                            *)
 (*                                                                            *)
 (* ## Bijection R <-> (0,1)                                                   *)
 (* ```                                                                        *)
@@ -28,25 +28,25 @@ From mathcomp Require Import ring.
 (*                                                                            *)
 (* ## Binary digit machinery                                                  *)
 (* ```                                                                        *)
-(*   bin_digit x n == the n-th binary digit of x in [0,1), obtained by        *)
-(*                    iterative doubling-and-testing                           *)
-(*   bin_partial_sum d n == sum of the first n terms of the binary expansion   *)
-(*                          given digit sequence d                             *)
-(*   bin_sum d == limit of the partial sums (full binary expansion value)      *)
-(*   bin_digits x == the digit sequence of x (i.e., bin_digit x)              *)
+(*   bin_digit x n == the n-th binary digit of x in [0,1), obtained by       *)
+(*                    iterative doubling-and-testing                          *)
+(*   bin_partial_sum d n == sum of the first n terms of the binary expansion  *)
+(*                          given digit sequence d                            *)
+(*   bin_sum d == limit of the partial sums (full binary expansion value)     *)
+(*   bin_digits x == the digit sequence of x (i.e., bin_digit x)             *)
 (* ```                                                                        *)
 (*                                                                            *)
 (* ## Digit interleaving                                                      *)
 (* ```                                                                        *)
 (*   interleave d1 d2 == interleave two digit sequences: even positions       *)
-(*                       from d1, odd positions from d2                        *)
-(*   deinterleave_even d == extract even-indexed digits from d                 *)
-(*   deinterleave_odd d == extract odd-indexed digits from d                   *)
+(*                       from d1, odd positions from d2                       *)
+(*   deinterleave_even d == extract even-indexed digits from d                *)
+(*   deinterleave_odd d == extract odd-indexed digits from d                  *)
 (* ```                                                                        *)
 (*                                                                            *)
 (* ## Pairing functions on (0,1)                                              *)
 (* ```                                                                        *)
-(*   no_trailing_ones d == digit sequence d has no infinite suffix of ones     *)
+(*   no_trailing_ones d == digit sequence d has no infinite suffix of ones    *)
 (*   pair_to_unit xy == (0,1) x (0,1) -> (0,1) via digit interleaving        *)
 (*   unit_to_pair r == (0,1) -> (0,1) x (0,1) via digit deinterleaving       *)
 (* ```                                                                        *)
@@ -58,32 +58,32 @@ From mathcomp Require Import ring.
 (* ```                                                                        *)
 (*                                                                            *)
 (* ## Main results                                                            *)
-(*   phi_gt0 == phi x > 0 for all x                                           *)
-(*   phi_lt1 == phi x < 1 for all x                                           *)
+(*   phi_gt0 == phi x > 0 for all x                                          *)
+(*   phi_lt1 == phi x < 1 for all x                                          *)
 (*   psiK    == cancel phi psi (psi is left inverse of phi)                   *)
 (*   phiK    == cancel psi phi on (0,1)                                       *)
 (*   measurable_phi == phi is measurable on R                                 *)
 (*   measurable_psi == psi is measurable on (0,1)                             *)
-(*   bin_digits_reconstruction == bin_sum (bin_digits x) = x for x in [0,1)   *)
-(*   pair_to_unit_to_pair == unit_to_pair (pair_to_unit (x,y)) = (x,y)        *)
-(*                           (unconditional on [0,1)^2)                       *)
-(*   unit_to_pair_to_unit == pair_to_unit (unit_to_pair r) = r                 *)
-(*                           (conditional on no_trailing_ones)                 *)
-(*   decode_encode_RR == decode_RR (encode_RR xy) = xy                         *)
-(*   measurable_encode_RR == encode_RR is measurable                           *)
-(*   measurable_decode_RR == decode_RR is measurable                           *)
-(*   measurable_pair_to_unit == pair_to_unit is measurable                     *)
-(*   measurable_unit_to_pair_fst == first projection of unit_to_pair is        *)
-(*                                  measurable                                 *)
-(*   measurable_unit_to_pair_snd == second projection of unit_to_pair is       *)
-(*                                  measurable                                 *)
+(*   bin_digits_reconstruction == bin_sum (bin_digits x) = x for [0,1)       *)
+(*   unit_to_pairK == unit_to_pair (pair_to_unit (x,y)) = (x,y)              *)
+(*                    (unconditional on [0,1)^2)                              *)
+(*   pair_to_unitK == pair_to_unit (unit_to_pair r) = r                      *)
+(*                    (conditional on no_trailing_ones)                       *)
+(*   encode_RRK == decode_RR (encode_RR xy) = xy                             *)
+(*   measurable_encode_RR == encode_RR is measurable                         *)
+(*   measurable_decode_RR == decode_RR is measurable                         *)
+(*   measurable_pair_to_unit == pair_to_unit is measurable                   *)
+(*   measurable_unit_to_pair_fst == fst projection of unit_to_pair is        *)
+(*                                  measurable                               *)
+(*   measurable_unit_to_pair_snd == snd projection of unit_to_pair is        *)
+(*                                  measurable                               *)
 (*                                                                            *)
 (* ## Note on the no_trailing_ones gap                                        *)
-(* The round-trip unit_to_pair_to_unit requires no_trailing_ones on the       *)
+(* The round-trip pair_to_unitK requires no_trailing_ones on the       *)
 (* deinterleaved subsequences, which does NOT follow from no_trailing_ones    *)
 (* on the full binary expansion. However, for is_standard_borel (R * R),     *)
-(* only the OTHER direction (decode_encode_RR, i.e. g(f(x))=x) is needed,   *)
-(* and that direction (pair_to_unit_to_pair / decode_encode_RR) is proved    *)
+(* only the OTHER direction (encode_RRK, i.e. g(f(x))=x) is needed,   *)
+(* and that direction (unit_to_pairK / encode_RRK) is proved    *)
 (* unconditionally. See the detailed comments in the Round-trip section.     *)
 (******************************************************************************)
 
@@ -173,8 +173,8 @@ Proof.
 apply: open_continuous_measurable_fun; first exact: interval_open.
 move=> y hy.
 have hy01 : 0 < y < 1.
-  by move: hy; rewrite inE /= => /andP []; rewrite !bnd_simp => ? ?;
-     apply/andP.
+  move: hy; rewrite inE /= => /andP [].
+  by rewrite !bnd_simp => ? ?; apply/andP.
 have /andP [hy0 hy1] := hy01.
 have hcos : cos (pi * (y - 1 / 2)) != 0.
   rewrite lt0r_neq0 //; apply: cos_gt0_pihalf.
@@ -291,8 +291,8 @@ suff hgeom : \sum_(i < n) (2%:R : R)^-1 ^+ i.+1 <= 1.
     apply: ler_sum => i _.
     rewrite -[X in _ <= X]mul1r.
     apply: ler_wpM2r;
-      first by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n.
-    by case: (d i).
+      [by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n|
+       by case: (d i)].
   exact: (le_trans hle hgeom).
 rewrite geom_half_sum lerBlDr -{1}[1]addr0.
 apply: lerD => //.
@@ -383,10 +383,10 @@ pose rem := fix f n := match n with 0%N => x | n'.+1 => step (f n') end.
 have hrem_digit : forall n, bin_digit x n = (2%:R^-1 <= rem n).
   suff hgen : forall n y, bin_digit y n = (2%:R^-1 <= iter n step y).
     by move=> n; rewrite hgen; congr (_ <= _); elim: n => //= k ->.
-  by elim => [|k IHk] //= y; rewrite IHk -iterSr iterS.
+  by elim=> [|k IHk] //= y; rewrite IHk -iterSr iterS.
 have hinv : forall n : nat,
     x - bin_partial_sum (bin_digit x) n = rem n * 2%:R^-1 ^+ n :> R.
-  elim => [|k IHk].
+  elim=> [|k IHk].
     by rewrite /bin_partial_sum big_ord0 subr0 expr0 mulr1.
   rewrite /bin_partial_sum big_ord_recr /= -/bin_partial_sum hrem_digit exprSr.
   case hle: (2%:R^-1 <= rem k).
@@ -399,7 +399,7 @@ have hinv : forall n : nat,
     set h := 2%:R^-1 ^+ k; rewrite mulrnAl mulrCA.
     by rewrite -mulrnAr mulr2n -splitr mulrC.
 have hrem_bound : forall n, 0 <= rem n /\ rem n < 1.
-  elim => [|k [IHk0 IHk1]] /=; first by split.
+  elim=> [|k [IHk0 IHk1]] /=; first by split.
   rewrite /step; case: ifP => hle; split.
   - by rewrite subr_ge0 -half2 ler_pMn2r.
   - by rewrite ltrBlDr -mulr2n ltr_pMn2r.
@@ -417,8 +417,7 @@ have hrem_cvg : (fun n => rem n * 2%:R^-1 ^+ n : R^o) n
     + rewrite -[X in _ <= X]mul1r; apply: ler_pM.
       * by have [] := hrem_bound n.
       * by apply: (@Num.Theory.exprn_ge0 R); rewrite invr_ge0; apply: ler0n.
-      * by have [_ h] := hrem_bound n;
-           exact: ltW h.
+      * by have [_ h] := hrem_bound n; exact: ltW h.
       * by [].
   - exact: topology_structure.cvg_cst.
   - have := @cvg_geometric R 1 _ habs_half.
@@ -442,12 +441,12 @@ Qed.
 (*                                                                            *)
 (* We prove two round-trip lemmas:                                            *)
 (*                                                                            *)
-(* 1. pair_to_unit_to_pair: unit_to_pair (pair_to_unit (x,y)) = (x,y)        *)
+(* 1. unit_to_pairK: unit_to_pair (pair_to_unit (x,y)) = (x,y)        *)
 (*    This holds UNCONDITIONALLY for all (x,y) in [0,1)^2.                   *)
 (*    This is the direction needed for is_standard_borel (R * R), which       *)
 (*    only requires g(f(x)) = x (i.e., decode after encode = identity).      *)
 (*                                                                            *)
-(* 2. unit_to_pair_to_unit: pair_to_unit (unit_to_pair r) = r                 *)
+(* 2. pair_to_unitK: pair_to_unit (unit_to_pair r) = r                 *)
 (*    This requires no_trailing_ones on the deinterleaved subsequences.       *)
 (*    The full binary expansion bin_digits(r) has no trailing ones for        *)
 (*    r in [0,1) (proved in bin_digits_no_trailing_ones), but this does NOT   *)
@@ -496,9 +495,9 @@ pose rem := fix f n := match n with 0%N => x | n'.+1 => step (f n') end.
 have hrem_digit : forall n, bin_digit x n = (2%:R^-1 <= rem n).
   suff hgen : forall n y, bin_digit y n = (2%:R^-1 <= iter n step y).
     by move=> n; rewrite hgen; congr (_ <= _); elim: n => //= k ->.
-  by elim => [|k IHk] //= y; rewrite IHk -iterSr iterS.
+  by elim=> [|k IHk] //= y; rewrite IHk -iterSr iterS.
 have hrem_bound : forall n, 0 <= rem n /\ rem n < 1.
-  elim => [|k [IHk0 IHk1]] /=; first by split.
+  elim=> [|k [IHk0 IHk1]] /=; first by split.
   rewrite /step; case: ifP => hle; split.
   - by rewrite subr_ge0 -half2 ler_pMn2r.
   - by rewrite ltrBlDr -mulr2n ltr_pMn2r.
@@ -522,7 +521,7 @@ have hall : forall n, (N <= n)%N -> 2%:R^-1 <= rem n.
   move=> n hn; apply: contrapT => hlt.
   by apply: hnex; exists n; split => //; apply/negP.
 have hinv : forall k : nat, 1 - rem (N + k)%N = (1 - rem N) *+ 2 ^ k.
-  elim => [|k IHk]; first by rewrite /= expn0 mulr1n addn0.
+  elim=> [|k IHk]; first by rewrite /= expn0 mulr1n addn0.
   have -> : (N + k.+1)%N = (N + k).+1 by rewrite addnS.
   by rewrite (hstep_eq N) ?leq_addr // IHk -mulrnA expnSr.
 have hle : forall k : nat, (1 - rem N) *+ 2 ^ k <= 1.
@@ -542,8 +541,7 @@ have [k hk] : exists k, (m <= 2 ^ k)%N.
   by exists m; exact: ltnW (ltn_expl _ (ltnSn 1)).
 have h1 := hle k.
 suff h2 : (1 - rem N) *+ m <= (1 - rem N) *+ 2 ^ k.
-  by have := lt_le_trans hm
-       (le_trans h2 h1);
+  by have := lt_le_trans hm (le_trans h2 h1);
      rewrite ltxx.
 rewrite -[X in X <= _]mulr_natr -[X in _ <= X]mulr_natr.
 by rewrite ler_pM2l // ler_nat.
@@ -614,7 +612,9 @@ Lemma bin_sum_shift (d : nat -> bool) :
   bin_sum d = (d 0%N)%:R * 2%:R^-1 + bin_sum (d \o succn) * 2%:R^-1.
 Proof.
 have hrel : forall n : nat,
-  bin_partial_sum d n.+1 = (d 0%N)%:R * 2%:R^-1 + bin_partial_sum (d \o succn) n * 2%:R^-1.
+  bin_partial_sum d n.+1 =
+  (d 0%N)%:R * 2%:R^-1 +
+  bin_partial_sum (d \o succn) n * 2%:R^-1.
   move=> n; rewrite /bin_partial_sum big_ord_recl /=.
   congr (_ + _).
   rewrite /= mulr_suml; apply: eq_bigr => i _.
@@ -630,12 +630,20 @@ have hlim_shift : limn [eta bin_partial_sum d] =
   by rewrite cvg_shiftS.
 rewrite hlim_shift.
 have -> : (fun n => bin_partial_sum d n.+1 : R^o) =
-  (fun n => (d 0%N)%:R * 2%:R^-1 + bin_partial_sum (d \o succn) n * 2%:R^-1 : R^o).
+  (fun n => (d 0%N)%:R * 2%:R^-1 +
+    bin_partial_sum (d \o succn) n * 2%:R^-1 : R^o).
   by apply: funext => n; rewrite hrel.
 apply: separation_axioms.cvg_lim => //.
-have hcst : (fun _ : nat => (d 0%N)%:R * 2%:R^-1 : R^o) n @[n --> \oo] --> ((d 0%N)%:R * 2%:R^-1 : R^o).
+have hcst :
+  (fun _ : nat => (d 0%N)%:R * 2%:R^-1 : R^o) n
+  @[n --> \oo] --> ((d 0%N)%:R * 2%:R^-1 : R^o).
   exact: topology_structure.cvg_cst.
-have hprod : (fun n : nat => bin_partial_sum (d \o succn) n * 2%:R^-1 : R^o) n @[n --> \oo] --> (limn [eta bin_partial_sum (d \o succn)] * 2%:R^-1 : R^o).
+have hprod :
+  (fun n : nat =>
+    bin_partial_sum (d \o succn) n * 2%:R^-1 : R^o) n
+  @[n --> \oo] -->
+  (limn [eta bin_partial_sum (d \o succn)] *
+    2%:R^-1 : R^o).
   exact: cvgMr_tmp.
 exact: cvgD hcst hprod.
 Qed.
@@ -672,8 +680,8 @@ elim: n d hnt => [|n IHn] dd hnt.
     case hd0 : (dd 0%N) => /=.
     + rewrite mul1r.
       have hge : 2%:R^-1 <= (2%:R^-1 + bin_sum (dd \o succn) * 2%:R^-1).
-        by rewrite lerDl //; apply: mulr_ge0;
-           [exact: bin_sum_ge0|rewrite invr_ge0; apply: ler0n].
+        rewrite lerDl //; apply: mulr_ge0;
+          [exact: bin_sum_ge0|by rewrite invr_ge0; apply: ler0n].
       rewrite hge.
       rewrite mulrnDl -[2^-1 *+ 2]mulr_natr mulVf ?pnatr_eq0 //.
       rewrite -[_ / 2 *+ 2]mulr_natr -mulrA mulVf ?pnatr_eq0 // mulr1.
@@ -691,9 +699,9 @@ Qed.
 (* Note: The no_trailing_ones hypotheses on deinterleaved subsequences do NOT
    follow from no_trailing_ones on the full sequence. This lemma is therefore
    not usable unconditionally. However, it is NOT needed for is_standard_borel:
-   only pair_to_unit_to_pair (the other direction, proved below without extra
+   only unit_to_pairK (the other direction, proved below without extra
    hypotheses) is required. See the comment block above for details. *)
-Lemma unit_to_pair_to_unit (r : R) :
+Lemma pair_to_unitK (r : R) :
   0 <= r < 1 ->
   no_trailing_ones (deinterleave_even (bin_digits r)) ->
   no_trailing_ones (deinterleave_odd (bin_digits r)) ->
@@ -708,7 +716,9 @@ have hnt_do : no_trailing_ones do_ := hnto.
 have hconv_de := bin_digits_bin_sum hnt_de.
 have hconv_do := bin_digits_bin_sum hnt_do.
 rewrite /pair_to_unit /unit_to_pair /= -/de -/do_.
-have heq : interleave (bin_digits (bin_sum de)) (bin_digits (bin_sum do_)) =1 bin_digits r.
+have heq :
+  interleave (bin_digits (bin_sum de))
+    (bin_digits (bin_sum do_)) =1 bin_digits r.
   move=> n; rewrite /interleave.
   case: (boolP (odd n)) => hodd /=.
   - have := odd_double_half n; rewrite hodd /= add1n => heq.
@@ -723,7 +733,7 @@ Qed.
 (* This is the KEY round-trip lemma: decode after encode is the identity.
    It holds unconditionally for (x,y) in [0,1)^2, with no trailing-ones
    hypothesis needed. This is the direction required by is_standard_borel. *)
-Lemma pair_to_unit_to_pair (xy : R * R) :
+Lemma unit_to_pairK (xy : R * R) :
   0 <= xy.1 < 1 -> 0 <= xy.2 < 1 ->
   unit_to_pair (pair_to_unit xy) = xy.
 Proof.
@@ -783,7 +793,8 @@ Qed.
 Lemma measurable_bin_digit (n : nat) :
   measurable_fun [set: R] (fun x : R => bin_digit x n : bool).
 Proof.
-rewrite (_ : (fun x : R => _) = (fun x => 2%:R^-1 <= iter n step x)); last first.
+rewrite (_ : (fun x : R => _) =
+  (fun x => 2%:R^-1 <= iter n step x)); last first.
   by apply: funext => x; rewrite bin_digit_iter.
 apply: measurable_fun_ler.
 - exact: measurable_cst.
@@ -1009,14 +1020,15 @@ Lemma pair_to_unit_phi_lt1 (x y : R) :
 Proof.
 apply: bin_sum_no_trailing_lt1.
 apply: interleave_no_trailing_ones;
-  exact: bin_digits_no_trailing_ones (phi_in_01 _).
+  [exact: bin_digits_no_trailing_ones (phi_in_01 _)|
+   exact: bin_digits_no_trailing_ones (phi_in_01 _)].
 Qed.
 
 Lemma pair_to_unit_phi_in_itv (x y : R) :
   pair_to_unit (phi x, phi y) \in `](0:R), 1[.
 Proof.
-rewrite in_itv /=; apply/andP; split;
-  [exact: pair_to_unit_phi_gt0|exact: pair_to_unit_phi_lt1].
+rewrite in_itv /=; apply/andP.
+split; [exact: pair_to_unit_phi_gt0|exact: pair_to_unit_phi_lt1].
 Qed.
 
 Lemma pair_to_unit_phi_in_01 (x y : R) :
@@ -1045,7 +1057,7 @@ Lemma unit_to_pair_snd_le1 (r : R) :
 Proof. exact: bin_sum_le1. Qed.
 
 (** Round-trip: decode (encode (x,y)) = (x,y) -- UNCONDITIONAL *)
-Theorem decode_encode_RR (xy : R * R) :
+Theorem encode_RRK (xy : R * R) :
   decode_RR (encode_RR xy) = xy.
 Proof.
 rewrite /decode_RR /encode_RR.
@@ -1055,7 +1067,7 @@ have hv_eq : phi (psi v) = v := phiK hv_itv.
 have hx01 : 0 <= (phi xy.1) < 1 := phi_in_01 xy.1.
 have hy01 : 0 <= (phi xy.2) < 1 := phi_in_01 xy.2.
 have hutp : unit_to_pair v = (phi xy.1, phi xy.2).
-  rewrite /v; apply: pair_to_unit_to_pair.
+  rewrite /v; apply: unit_to_pairK.
   - exact: hx01.
   - exact: hy01.
 rewrite hv_eq hutp !psiK.
@@ -1066,14 +1078,14 @@ Qed.
 
    This direction requires:
    1. no_trailing_ones on the deinterleaved even/odd subsequences of
-      bin_digits(phi(r)) -- needed for unit_to_pair_to_unit
+      bin_digits(phi(r)) -- needed for pair_to_unitK
    2. The components (unit_to_pair(phi r)).1 and .2 must be in (0,1)
       (strictly positive) -- needed for phiK (cancel psi phi)
 
    Condition (2) follows from (1) when the deinterleaved subsequences
    each contain at least one true digit, which holds generically
    (the set of exceptions is countable, hence measure-zero). *)
-Theorem encode_decode_RR (r : R)
+Theorem decode_RRK (r : R)
   (hnt_even : no_trailing_ones (deinterleave_even (bin_digits (phi r))))
   (hnt_odd : no_trailing_ones (deinterleave_odd (bin_digits (phi r))))
   (hu1_pos : 0 < (unit_to_pair (phi r)).1)
@@ -1094,7 +1106,7 @@ have hu2_01 : u2 \in `](0:R), 1[.
 rewrite (phiK hu1_01) (phiK hu2_01).
 have hphi01 := phi_in_01 r.
 rewrite -/u1 -/u2 /u1 /u2.
-rewrite (unit_to_pair_to_unit hphi01 hnt_even hnt_odd).
+rewrite (pair_to_unitK hphi01 hnt_even hnt_odd).
 by rewrite psiK.
 Qed.
 
@@ -1194,8 +1206,8 @@ apply: measurable_fun_pair.
     exact: measurable_unit_to_pair_fst.
   exact: measurable_phi.
 - rewrite (_ : (fun x => psi (unit_to_pair (phi x)).2) =
-    (@psi R) \o ((fun x => (unit_to_pair x).2) \o (@phi R)));
-    last by [].
+    (@psi R) \o
+    ((fun x => (unit_to_pair x).2) \o (@phi R))); last by [].
   apply: measurableT_comp; first exact: measurable_psi_setT.
   rewrite (_ : (fun x => (unit_to_pair x).2) \o (@phi R) =
     (fun x => (unit_to_pair (@phi R x)).2)); last by [].
@@ -1215,7 +1227,7 @@ Proof.
 exists encode_RR, decode_RR.
 split; first exact: measurable_encode_RR.
 split; first exact: measurable_decode_RR.
-exact: decode_encode_RR.
+exact: encode_RRK.
 Qed.
 
 End binary_digit_interleaving.
@@ -1237,8 +1249,8 @@ Lemma measurable_R_to_RR :
   measurable_fun [set: mR] decode_RR_mR.
 Proof. exact: measurable_decode_RR. Qed.
 
-Lemma decode_encode_RR_mR (xy : mR * mR) :
+Lemma encode_RR_mRK (xy : mR * mR) :
   decode_RR_mR (encode_RR_mR xy) = xy.
-Proof. exact: decode_encode_RR. Qed.
+Proof. exact: encode_RRK. Qed.
 
 End standard_borel_mR.

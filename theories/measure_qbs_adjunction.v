@@ -1,4 +1,4 @@
-(* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
+(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
 From mathcomp Require Import reals.
@@ -169,9 +169,9 @@ Lemma R_preserves_prod (d1 d2 : measure_display)
   @qbs_Mx R (@prodQ R (@R_qbs R _ M1) (@R_qbs R _ M2)) alpha.
 Proof.
 split.
-- rewrite /qbs_Mx /= => halpha; split;
-    [exact: measurableT_comp measurable_fst halpha |
-     exact: measurableT_comp measurable_snd halpha].
+- rewrite /qbs_Mx /= => halpha; split.
+  + exact: measurableT_comp measurable_fst halpha.
+  + exact: measurableT_comp measurable_snd halpha.
 - rewrite /qbs_Mx /=; move=> [h1 h2]; apply/measurable_fun_pairP; split; exact.
 Qed.
 

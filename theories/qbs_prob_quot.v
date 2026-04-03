@@ -1,4 +1,4 @@
-(* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
+(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
 From mathcomp Require Import reals.
@@ -193,7 +193,9 @@ Lemma qps_bindA (X Y Z : qbsType R) (m : qbs_prob_space X)
   qps_eq
     (qps_bind (qps_bind m f hf_diag) g (hg_bind _))
     (qps_of (mkQBSProb
-      (fun r => qbs_prob_alpha (g (qbs_prob_alpha (f (qbs_prob_alpha (qps_repr m) r)) r)) r)
+      (fun r => qbs_prob_alpha
+        (g (qbs_prob_alpha
+          (f (qbs_prob_alpha (qps_repr m) r)) r)) r)
       (qbs_prob_mu (qps_repr m))
       hfg_diag)).
 Proof. exact: qbs_bindA. Qed.

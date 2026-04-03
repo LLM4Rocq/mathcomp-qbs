@@ -1,4 +1,4 @@
-(* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
+(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
 From mathcomp Require Import reals ereal topology normedtype numfun measure
@@ -6,6 +6,19 @@ From mathcomp Require Import reals ereal topology normedtype numfun measure
   probability.
 From mathcomp.classical Require Import boolp.
 From mathcomp.algebra_tactics Require Import ring.
+
+(**md**************************************************************************)
+(* # Normal Density Algebra                                                  *)
+(*                                                                           *)
+(* Algebraic identities for products of normal (Gaussian) probability        *)
+(* density functions, used to compute evidence integrals in Bayesian         *)
+(* inference. The main result `normal_pdf_times` expresses the product       *)
+(* of two normal PDFs as a scalar times a third normal PDF.                  *)
+(*                                                                           *)
+(* The file also develops the concrete Phase 1 and Phase 2 computations      *)
+(* for the Bayesian linear regression example, iteratively combining         *)
+(* normal PDFs via `normal_pdf_times_chain`.                                 *)
+(******************************************************************************)
 
 Import GRing.Theory Num.Def Num.Theory.
 
@@ -81,9 +94,7 @@ congr (_ * _).
   by rewrite hS hs hs'.
 Qed.
 
-
 (* Helper definitions for iterating normal_pdf_times                     *)
-
 
 (* After combining N(m,s,x) * N(m',s',x) via normal_pdf_times,
    the new parameters are: *)
@@ -158,7 +169,6 @@ apply: mulr_gt0; first exact: (normal_peak_gt0 hsqS).
 rewrite /normal_fun; exact: exp.expR_gt0.
 Qed.
 
-
 (* Phase 1: Integrate out the intercept b                                *)
 
 (* The evidence integral is:
@@ -180,7 +190,7 @@ Qed.
    After integrating out b (using that integral of a normal pdf is 1),
    we get a scalar function of s times the remaining s-prior. *)
 
-(* --- Variance recurrence ------------------------------------------------ *)
+(* Variance recurrence *)
 
 Local Notation ltW := order.Order.POrderTheory.ltW.
 
@@ -202,7 +212,7 @@ rewrite sqr_sqrtr; last exact: (ltW hV).
 field. by rewrite mulr_natr.
 Qed.
 
-(* --- Concrete Phase 1 combination steps -------------------------------- *)
+(* Concrete Phase 1 combination steps *)
 
 (* Step 0->1: N(0, 3, b) * N(5/2 - s, 1/2, b)
    sigma_new^2 = 9/37, mu_new = (90 - 36*s)/37
@@ -310,7 +320,7 @@ rewrite sqr_sqrtr //.
 by field.
 Qed.
 
-(* --- Combined product after all 5 steps ------------------------------- *)
+(* Combined product after all 5 steps *)
 
 (* After combining all 5 data points with the prior:
    N(0,3,b) * prod_{k=1}^{5} N(y_k - k*s, 1/2, b)
@@ -324,7 +334,10 @@ Proof. by move=> hn; apply: divr_gt0; rewrite ?ltr0n. Qed.
 
 Lemma sqrtr_nine_div_neq0 (n : nat) : (0 < n)%N ->
   sqrtr (9%:R / n%:R) != (0 : R).
-Proof. by move=> hn; apply: lt0r_neq0; rewrite sqrtr_gt0; exact: nine_div_gt0. Qed.
+Proof.
+by move=> hn; apply: lt0r_neq0; rewrite sqrtr_gt0;
+   exact: nine_div_gt0.
+Qed.
 
 (* Positivity lemmas for the intermediate variances *)
 Lemma phase1_var1_gt0 : (0 < 9%:R / 37%:R :> R)%R.
@@ -466,8 +479,10 @@ rewrite mulrA (normal_pdf_times_chain _ _ _ _ phase1_sqrtr_var3_neq0 half_neq0).
 rewrite phase1_step34_mu.
 have sigma34 : gaussian_prod_sigma (sqrtr (9%:R / 109%:R)) (2%:R^-1 : R) =
                sqrtr (9%:R / 145%:R).
-  have hge0 : (0 <= gaussian_prod_sigma (sqrtr (9%:R / 109%:R)) (2%:R^-1 : R))%R.
-    by apply: divr_ge0; rewrite ?mulr_ge0 ?invr_ge0 ?ler0n ?sqrtr_ge0.
+  have hge0 : (0 <= gaussian_prod_sigma
+    (sqrtr (9%:R / 109%:R)) (2%:R^-1 : R))%R.
+    by apply: divr_ge0;
+       rewrite ?mulr_ge0 ?invr_ge0 ?ler0n ?sqrtr_ge0.
   rewrite -[LHS](ger0_norm hge0) -sqrtr_sqr.
   congr (sqrtr _).
   rewrite gaussian_prod_sigma_sqr ?invr_neq0 ?pnatr_eq0 //.
@@ -480,8 +495,10 @@ rewrite (normal_pdf_times_chain _ _ _ _ phase1_sqrtr_var4_neq0 half_neq0).
 rewrite phase1_step45_mu.
 have sigma45 : gaussian_prod_sigma (sqrtr (9%:R / 145%:R)) (2%:R^-1 : R) =
                sqrtr (9%:R / 181%:R).
-  have hge0 : (0 <= gaussian_prod_sigma (sqrtr (9%:R / 145%:R)) (2%:R^-1 : R))%R.
-    by apply: divr_ge0; rewrite ?mulr_ge0 ?invr_ge0 ?ler0n ?sqrtr_ge0.
+  have hge0 : (0 <= gaussian_prod_sigma
+    (sqrtr (9%:R / 145%:R)) (2%:R^-1 : R))%R.
+    by apply: divr_ge0;
+       rewrite ?mulr_ge0 ?invr_ge0 ?ler0n ?sqrtr_ge0.
   rewrite -[LHS](ger0_norm hge0) -sqrtr_sqr.
   congr (sqrtr _).
   rewrite gaussian_prod_sigma_sqr ?invr_neq0 ?pnatr_eq0 //.
@@ -492,16 +509,16 @@ rewrite /gaussian_prod_scalar.
 by rewrite !mulrA.
 Qed.
 
-
 (* Phase 2: Integrate out the slope s                                    *)
-
 
 (* After Phase 1, integrating out b gives:
      integral_b [N(0,3,b) * obs_b(s,b)] db = Scalar(s)
    where Scalar(s) = prod_{k=1}^{5} gaussian_prod_scalar_k(s).
 
-   Each gaussian_prod_scalar_k(s) = normal_peak(S_k) * normal_fun(mu_k(s), S_k, m'_k(s))
-   where S_k = sqrt(sigma_k^2 + 1/4) is a constant and mu_k, m'_k are linear in s.
+   Each gaussian_prod_scalar_k(s) =
+     normal_peak(S_k) * normal_fun(mu_k(s), S_k, m'_k(s))
+   where S_k = sqrt(sigma_k^2 + 1/4) is a constant and
+   mu_k, m'_k are linear in s.
 
    The normal_fun factors, when viewed as functions of s, are Gaussians in s.
    To iterate normal_pdf_times through these with the prior N(0,3,s),
@@ -556,9 +573,7 @@ field.
 by rewrite hsigma hB hc.
 Qed.
 
-
 (* Phase 2: Rewriting each gaussian_prod_scalar as a function of s       *)
-
 
 (* For each Phase 1 combination step k, the scalar factor
      gaussian_prod_scalar(mu_k(s), m'_k(s), sigma_k, 1/2)
@@ -653,11 +668,9 @@ Proof. by field. Qed.
      center=10647/7925, S=sqrt(181/1448), width=sqrt(181/1448)*2175/7925
 *)
 
-
 (* Phase 2 Steps 0-2: Iteratively combine Phase 1 scalars with N(0,3,s) *)
 
-
-(* --- Step 0: Combine N(0,3,s) with scalar01 --------------------------- *)
+(* Step 0: Combine N(0,3,s) with scalar01 *)
 
 (* The scalar01 factor simplifies to a normal_pdf because the width
    equals S01 = sqrt(37/4), making the peaks cancel. *)
@@ -716,7 +729,7 @@ have hsqrt_neq0 : sqrtr (37%:R / 4%:R : R) != 0.
 exact: gaussian_prod_sigma_neq0.
 Qed.
 
-(* --- Step 1: Combine result with scalar12 ------------------------------ *)
+(* Step 1: Combine result with scalar12 *)
 
 (* S12 = sqrt(sqrtr(9/37)^2 + (1/2)^2) = sqrt(73/148) *)
 Lemma phase2_S12 :
@@ -820,7 +833,7 @@ Proof.
 exact: gaussian_prod_sigma_neq0 phase2_step0_sigma_neq0 phase2_W12_neq0.
 Qed.
 
-(* --- Step 2: Combine result with scalar23 ------------------------------ *)
+(* Step 2: Combine result with scalar23 *)
 
 (* S23 = sqrt(sqrtr(9/73)^2 + (1/2)^2) = sqrt(109/292) *)
 Lemma phase2_S23 :
@@ -918,7 +931,7 @@ Proof.
 exact: gaussian_prod_sigma_neq0 phase2_step1_sigma_neq0 phase2_W23_neq0.
 Qed.
 
-(* --- Step 3: Combine result with scalar34 ------------------------------ *)
+(* Step 3: Combine result with scalar34 *)
 
 (* S34 = sqrt(sqrtr(9/109)^2 + (1/2)^2) = sqrt(145/436) *)
 Lemma phase2_S34 :
@@ -1018,7 +1031,7 @@ Proof.
 exact: gaussian_prod_sigma_neq0 phase2_step2_sigma_neq0 phase2_W34_neq0.
 Qed.
 
-(* --- Step 4: Combine result with scalar45 ------------------------------ *)
+(* Step 4: Combine result with scalar45 *)
 
 (* S45 = sqrt(sqrtr(9/145)^2 + (1/2)^2) = sqrt(181/580) *)
 Lemma phase2_S45 :
@@ -1120,9 +1133,7 @@ Proof.
 exact: gaussian_prod_sigma_neq0 phase2_step3_sigma_neq0 phase2_W45_neq0.
 Qed.
 
-
 (* Phase 2: Combined result chaining all 5 steps                         *)
-
 
 (* Intermediate means for Phase 2 (accumulated across steps) *)
 Let mu0_s : R := 90%:R / 73%:R.
@@ -1170,28 +1181,34 @@ apply: mulr_gt0; last first.
 (* Factor 8: peak(sqrt(181/580)) / peak(W45) *)
 apply: mulr_gt0; last first.
   by apply: divr_gt0;
-    [exact: normal_peak_gt0 sqrtr181_neq0 | exact: normal_peak_gt0 phase2_W45_neq0].
+    [exact: normal_peak_gt0 sqrtr181_neq0|
+     exact: normal_peak_gt0 phase2_W45_neq0].
 (* Factor 7: gps(mu2, 287/220, sigma2, W34) *)
 apply: mulr_gt0; last first.
-  exact: gaussian_prod_scalar_gt0 phase2_step2_sigma_neq0 phase2_W34_neq0.
+  exact: gaussian_prod_scalar_gt0
+    phase2_step2_sigma_neq0 phase2_W34_neq0.
 (* Factor 6: peak(sqrt(145/436)) / peak(W34) *)
 apply: mulr_gt0; last first.
   by apply: divr_gt0;
-    [exact: normal_peak_gt0 sqrtr145_neq0 | exact: normal_peak_gt0 phase2_W34_neq0].
+    [exact: normal_peak_gt0 sqrtr145_neq0|
+     exact: normal_peak_gt0 phase2_W34_neq0].
 (* Factor 5: gps(mu1, 1017/1110, sigma1, W23) *)
 apply: mulr_gt0; last first.
-  exact: gaussian_prod_scalar_gt0 phase2_step1_sigma_neq0 phase2_W23_neq0.
+  exact: gaussian_prod_scalar_gt0
+    phase2_step1_sigma_neq0 phase2_W23_neq0.
 (* Factor 4: peak(sqrt(109/292)) / peak(W23) *)
 apply: mulr_gt0; last first.
   by apply: divr_gt0;
-    [exact: normal_peak_gt0 sqrtr109_neq0 | exact: normal_peak_gt0 phase2_W23_neq0].
+    [exact: normal_peak_gt0 sqrtr109_neq0|
+     exact: normal_peak_gt0 phase2_W23_neq0].
 (* Factor 3: gps(mu0, 253/190, sigma0, W12) *)
 apply: mulr_gt0; last first.
   exact: gaussian_prod_scalar_gt0 phase2_step0_sigma_neq0 phase2_W12_neq0.
 (* Factor 2: peak(sqrt(73/148)) / peak(W12) *)
 apply: mulr_gt0; last first.
   by apply: divr_gt0;
-    [exact: normal_peak_gt0 sqrtr73_neq0 | exact: normal_peak_gt0 phase2_W12_neq0].
+    [exact: normal_peak_gt0 sqrtr73_neq0|
+     exact: normal_peak_gt0 phase2_W12_neq0].
 (* Factor 1: gps(0, 5/2, 3, sqrt(37/4)) *)
 exact: gaussian_prod_scalar_gt0 three_neq0 sqrtr37_neq0.
 Qed.
@@ -1232,9 +1249,7 @@ rewrite /phase2_const /phase2_final_mu /phase2_final_sigma.
 by rewrite !mulrA.
 Qed.
 
-
 (* Bridge: obs-style products to centered normal_pdf form                 *)
-
 
 (* Key identity for converting obs(s,b) to the form used by phase1:
    normal_pdf(s*k+b, sigma, y) = normal_pdf(y-k*s, sigma, b).

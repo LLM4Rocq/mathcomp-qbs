@@ -1,4 +1,4 @@
-(* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
+(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
 From mathcomp Require Import reals.
@@ -26,8 +26,8 @@ From QBS Require Import quasi_borel measure_qbs_adjunction probability_qbs.
 (*   qbs_to_giry_mu p == pushforward measure on M from qbs_prob(R(M))        *)
 (*   qbs_to_giry p    == packaged as probability M R                          *)
 (*   giry_to_qbs P    == inverse map using standard Borel encode/decode       *)
-(*   qbs_to_giry_to_qbs == qbs_to_giry (giry_to_qbs P) = P                  *)
-(*   giry_to_qbs_to_giry == giry_to_qbs (qbs_to_giry p) ~ p (equiv)         *)
+(*   qbs_to_giryK == qbs_to_giry (giry_to_qbs P) = P                  *)
+(*   giry_to_qbsK == giry_to_qbs (qbs_to_giry p) ~ p (equiv)         *)
 (*   qbs_integral_giry   == qbs_integral p f = \int[qbs_to_giry p] f        *)
 (* ```                                                                        *)
 (******************************************************************************)
@@ -149,7 +149,7 @@ End giry_to_qbs.
 
 (** Round-trip: qbs_to_giry (giry_to_qbs P) = P on measurable sets. *)
 
-Lemma qbs_to_giry_to_qbs
+Lemma qbs_to_giryK
     (d : measure_display) (M : measurableType d)
     (encode : M -> mR) (decode : mR -> M)
     (encode_meas : measurable_fun setT encode)
@@ -166,7 +166,7 @@ Qed.
 
 (** Round-trip: giry_to_qbs (qbs_to_giry p) ~ p up to qbs_prob_equiv. *)
 
-Lemma giry_to_qbs_to_giry
+Lemma giry_to_qbsK
     (d : measure_display) (M : measurableType d)
     (encode : M -> mR) (decode : mR -> M)
     (encode_meas : measurable_fun setT encode)

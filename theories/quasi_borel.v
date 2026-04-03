@@ -1,4 +1,4 @@
-(* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
+(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
 From mathcomp Require Import reals.
@@ -409,7 +409,7 @@ Let sub_proj : sub_car -> X := @proj1_sig _ P.
 Let sub_Mx : set (mR -> sub_car) :=
   [set alpha | @qbs_Mx R X (fun r => sub_proj (alpha r))].
 
-Lemma sub_qbs_closed1 : forall alpha f,
+Lemma sub_qbs_Mx_comp : forall alpha f,
   sub_Mx alpha -> measurable_fun setT f -> sub_Mx (alpha \o f).
 Proof.
 move=> alpha f halpha hf; rewrite /sub_Mx /=.
@@ -418,14 +418,14 @@ have -> : (fun r => sub_proj ((alpha \o f) r)) =
 exact: qbs_Mx_comp halpha hf.
 Qed.
 
-Lemma sub_qbs_closed2 : forall x : sub_car,
+Lemma sub_qbs_Mx_const : forall x : sub_car,
   sub_Mx (fun _ => x).
 Proof.
 move=> x; rewrite /sub_Mx /=.
 exact: qbs_Mx_const.
 Qed.
 
-Lemma sub_qbs_closed3 : forall (Q : mR -> nat) (Fi : nat -> mR -> sub_car),
+Lemma sub_qbs_Mx_glue : forall (Q : mR -> nat) (Fi : nat -> mR -> sub_car),
   measurable_fun setT Q ->
   (forall i, sub_Mx (Fi i)) ->
   sub_Mx (fun r => Fi (Q r) r).
@@ -438,7 +438,7 @@ Qed.
 Definition sub_qbs : qbsType R :=
   HB.pack sub_car
     (@isQBS.Build R sub_car sub_Mx
-      sub_qbs_closed1 sub_qbs_closed2 sub_qbs_closed3).
+      sub_qbs_Mx_comp sub_qbs_Mx_const sub_qbs_Mx_glue).
 
 End sub_qbs_def.
 
@@ -600,7 +600,7 @@ Lemma map_qbs_sub (X Y : qbsType R) (f : X -> Y)
   (hf : @qbs_morphism X Y f) :
   forall beta, @qbs_Mx R (map_qbs hf) beta -> @qbs_Mx R Y beta.
 Proof.
-move=> beta; elim => {beta}.
+move=> beta; elim=> {beta}.
 - move=> beta [alpha [halpha ->]]; exact: hf _ halpha.
 - move=> alpha g _ hIH hg; exact: qbs_Mx_comp hIH hg.
 - move=> x; exact: qbs_Mx_const.

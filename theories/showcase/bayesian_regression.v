@@ -1,4 +1,4 @@
-(* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
+(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
 From mathcomp Require Import reals ereal topology classical_sets normedtype
@@ -28,7 +28,7 @@ From QBS Require Import quasi_borel probability_qbs pair_qbs_measure
 (*   obs               == observation likelihood (5 data points)              *)
 (*   evidence          == normalizing constant Z                              *)
 (*   posterior_density  == E_post[g] = E_prior[g*obs] / Z                    *)
-(*   posterior_density_total == posterior integrates to 1                      *)
+(*   posterior_density_total == posterior integrates to 1                     *)
 (*   program_succeeds  == program returns Some when evidence is good          *)
 (*   evidence_value    == evidence = phase2_const (explicit constant)         *)
 (*   evidence_pos      == 0 < evidence /\ evidence < +oo                     *)
@@ -426,7 +426,9 @@ Qed.
    normal_fun(mu_k, sqrt(sigma_k^2 + sigma'^2), m'_k).
    This matches the scalar part of phase1_combine5 from normal_algebra.v.
    The gaussian_prod_scalar definition is:
-     gaussian_prod_scalar m m' s s' := normal_peak(sqrt(s^2+s'^2)) * normal_fun(m, sqrt(s^2+s'^2), m') *)
+     gaussian_prod_scalar m m' s s' :=
+       normal_peak(sqrt(s^2+s'^2)) *
+       normal_fun(m, sqrt(s^2+s'^2), m') *)
 Definition scalar_of_s (s : R) : R :=
   (* Step 0->1: N(0,3) * N(5/2-s, 1/2) *)
   (normal_peak (sqrtr (3%:R ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
@@ -455,10 +457,18 @@ Definition scalar_of_s (s : R) : R :=
 Lemma scalar_of_s_ge0 (s : R) : (0 <= scalar_of_s s)%R.
 Proof.
 rewrite /scalar_of_s.
-apply: mulr_ge0; last by apply: mulr_ge0; [exact: normal_peak_ge0 | exact: normal_fun_ge0].
-apply: mulr_ge0; last by apply: mulr_ge0; [exact: normal_peak_ge0 | exact: normal_fun_ge0].
-apply: mulr_ge0; last by apply: mulr_ge0; [exact: normal_peak_ge0 | exact: normal_fun_ge0].
-apply: mulr_ge0; last by apply: mulr_ge0; [exact: normal_peak_ge0 | exact: normal_fun_ge0].
+apply: mulr_ge0; last first.
+  by apply: mulr_ge0; [exact: normal_peak_ge0|
+     exact: normal_fun_ge0].
+apply: mulr_ge0; last first.
+  by apply: mulr_ge0; [exact: normal_peak_ge0|
+     exact: normal_fun_ge0].
+apply: mulr_ge0; last first.
+  by apply: mulr_ge0; [exact: normal_peak_ge0|
+     exact: normal_fun_ge0].
+apply: mulr_ge0; last first.
+  by apply: mulr_ge0; [exact: normal_peak_ge0|
+     exact: normal_fun_ge0].
 by apply: mulr_ge0; [exact: normal_peak_ge0 | exact: normal_fun_ge0].
 Qed.
 
@@ -519,7 +529,8 @@ Lemma scalar_of_s_eq (s : R) :
                        (sqrtr (9%:R / 145%:R)) (2%:R^-1))%R.
 Proof. by rewrite /scalar_of_s /gaussian_prod_scalar. Qed.
 
-(* Bridge: scalar_of_s(s) * N(0,3,s) = phase2_const * N(final_mu, final_sigma, s) *)
+(* Bridge: scalar_of_s(s) * N(0,3,s) =
+   phase2_const * N(final_mu, final_sigma, s) *)
 Lemma scalar_of_s_mul_pdf (s : R) :
   (scalar_of_s s * normal_pdf 0 prior_sigma s =
    phase2_const R * normal_pdf (phase2_final_mu R) (phase2_final_sigma R) s)%R.
@@ -574,7 +585,8 @@ rewrite (evidence_eq hint) /qbs_integral /=.
 (* Rewrite inner integral using phase1_integration *)
 have inner_eq : forall x : R,
   \int[normal_prob 0 prior_sigma]_b (obs (x, b))%:E = (scalar_of_s x)%:E.
-  move=> x; apply: phase1_integration; [exact: (obs_meas x) | exact: (obs_int x)].
+  move=> x; apply: phase1_integration;
+    [exact: (obs_meas x)|exact: (obs_int x)].
 under eq_integral do rewrite inner_eq.
 exact: phase2_integration.
 Qed.

@@ -1,4 +1,4 @@
-(* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
+(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
 From mathcomp Require Import reals ereal topology classical_sets
@@ -54,6 +54,7 @@ Proof.
 apply: (@mkQBSProb R (realQ R) decode).
 - exact: P.
 - exact: h_decode_meas.
+(* Defined for computational transparency *)
 Defined.
 
 (* More general version: embedding into an arbitrary R_qbs *)
@@ -66,6 +67,7 @@ Definition as_qbs_prob (d : measure_display) (M : measurableType d)
 Proof.
 apply: (@mkQBSProb R (R_qbs R M) g P).
 exact: hg.
+(* Defined for computational transparency *)
 Defined.
 
 Arguments as_qbs_prob : clear implicits.
