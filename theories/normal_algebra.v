@@ -7,14 +7,14 @@ From mathcomp Require Import reals ereal topology normedtype numfun measure
 From mathcomp.classical Require Import boolp.
 From mathcomp.algebra_tactics Require Import ring.
 
-Import Num.Def Num.Theory reals classical_sets GRing.Theory.
+Import GRing.Theory Num.Def Num.Theory.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Section NormalDensityAlgebra.
-Variable (R : realType).
+Section normal_density_algebra.
+Variable R : realType.
 Local Open Scope ring_scope.
 
 (* Completing the square: ax^2 + bx + c = a(x+b/(2a))^2 - (b^2-4ac)/(4a) *)
@@ -81,9 +81,9 @@ congr (_ * _).
   by rewrite hS hs hs'.
 Qed.
 
-(* ===================================================================== *)
+
 (* Helper definitions for iterating normal_pdf_times                     *)
-(* ===================================================================== *)
+
 
 (* After combining N(m,s,x) * N(m',s',x) via normal_pdf_times,
    the new parameters are: *)
@@ -158,9 +158,9 @@ apply: mulr_gt0; first exact: (normal_peak_gt0 hsqS).
 rewrite /normal_fun; exact: exp.expR_gt0.
 Qed.
 
-(* ===================================================================== *)
+
 (* Phase 1: Integrate out the intercept b                                *)
-(* ===================================================================== *)
+
 (* The evidence integral is:
      integrate integrate obs(s,b) * N(0,3,s) * N(0,3,b) ds db
 
@@ -492,9 +492,9 @@ rewrite /gaussian_prod_scalar.
 by rewrite !mulrA.
 Qed.
 
-(* ===================================================================== *)
+
 (* Phase 2: Integrate out the slope s                                    *)
-(* ===================================================================== *)
+
 
 (* After Phase 1, integrating out b gives:
      integral_b [N(0,3,b) * obs_b(s,b)] db = Scalar(s)
@@ -556,9 +556,9 @@ field.
 by rewrite hsigma hB hc.
 Qed.
 
-(* ===================================================================== *)
+
 (* Phase 2: Rewriting each gaussian_prod_scalar as a function of s       *)
-(* ===================================================================== *)
+
 
 (* For each Phase 1 combination step k, the scalar factor
      gaussian_prod_scalar(mu_k(s), m'_k(s), sigma_k, 1/2)
@@ -653,9 +653,9 @@ Proof. by field. Qed.
      center=10647/7925, S=sqrt(181/1448), width=sqrt(181/1448)*2175/7925
 *)
 
-(* ===================================================================== *)
+
 (* Phase 2 Steps 0-2: Iteratively combine Phase 1 scalars with N(0,3,s) *)
-(* ===================================================================== *)
+
 
 (* --- Step 0: Combine N(0,3,s) with scalar01 --------------------------- *)
 
@@ -1120,9 +1120,9 @@ Proof.
 exact: gaussian_prod_sigma_neq0 phase2_step3_sigma_neq0 phase2_W45_neq0.
 Qed.
 
-(* ===================================================================== *)
+
 (* Phase 2: Combined result chaining all 5 steps                         *)
-(* ===================================================================== *)
+
 
 (* Intermediate means for Phase 2 (accumulated across steps) *)
 Let mu0_s : R := 90%:R / 73%:R.
@@ -1232,9 +1232,9 @@ rewrite /phase2_const /phase2_final_mu /phase2_final_sigma.
 by rewrite !mulrA.
 Qed.
 
-(* ===================================================================== *)
+
 (* Bridge: obs-style products to centered normal_pdf form                 *)
-(* ===================================================================== *)
+
 
 (* Key identity for converting obs(s,b) to the form used by phase1:
    normal_pdf(s*k+b, sigma, y) = normal_pdf(y-k*s, sigma, b).
@@ -1280,4 +1280,4 @@ rewrite (normal_pdf_recenter (5%:R/2%:R) s 1 (2%:R^-1) b half_neq0)
 congr (_ * _ * _ * _ * _); rewrite ?mul1r //.
 Qed.
 
-End NormalDensityAlgebra.
+End normal_density_algebra.
