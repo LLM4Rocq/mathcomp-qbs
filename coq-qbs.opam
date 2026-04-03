@@ -10,16 +10,15 @@ programming semantics, built on math-comp analysis.
 maintainer: "Guillaume Baudart <guillaume.baudart@inria.fr>"
 authors: ["Guillaume Baudart"]
 license: "CeCILL-C"
-homepage: "https://github.com/gbaudart/QBS"
-bug-reports: "https://github.com/gbaudart/QBS/issues"
-dev-repo: "git+https://github.com/gbaudart/QBS.git"
+homepage: "https://github.com/LLM4Rocq/mathcomp-qbs"
+bug-reports: "https://github.com/LLM4Rocq/mathcomp-qbs/issues"
+dev-repo: "git+https://github.com/LLM4Rocq/mathcomp-qbs.git"
 
 depends: [
-
-  "coq" {= "9.0.1"}
+  "coq" {>= "9.0" & < "9.2~"}
   "coq-mathcomp-ssreflect" {>= "2.5.0"}
   "coq-mathcomp-algebra" {>= "2.5.0"}
-  "coq-mathcomp-analysis" {= "1.15.0"}
+  "coq-mathcomp-analysis" {>= "1.15.0"}
   "coq-hierarchy-builder" {>= "1.10.0"}
   "coq-mathcomp-algebra-tactics" {>= "1.2.0"}
 ]
