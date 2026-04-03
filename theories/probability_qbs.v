@@ -714,6 +714,138 @@ Lemma qbs_strength_return (W X : qbsType R) (w : W) (x : X)
     (qbs_return (prodQ W X) (w, x) mu).
 Proof. by move=> U hU. Qed.
 
+Local Open Scope ereal_scope.
+
+(* 15. QBS-level integrability predicate *)
+
+Definition qbs_integrable (X : qbsType R) (p : qbs_prob X)
+    (h : X -> \bar R) :=
+  (qbs_prob_mu p).-integrable setT (h \o qbs_prob_alpha p).
+
+Arguments qbs_integrable : clear implicits.
+
+(* 16. Integrability closure under arithmetic *)
+
+Lemma qbs_integrableD (X : qbsType R) (p : qbs_prob X)
+    (f g : X -> \bar R) :
+  qbs_integrable X p f -> qbs_integrable X p g ->
+  qbs_integrable X p (f \+ g).
+Proof. exact: integrableD. Qed.
+
+Lemma qbs_integrableB (X : qbsType R) (p : qbs_prob X)
+    (f g : X -> \bar R) :
+  qbs_integrable X p f -> qbs_integrable X p g ->
+  qbs_integrable X p (f \- g).
+Proof. exact: integrableB. Qed.
+
+Lemma qbs_integrableN (X : qbsType R) (p : qbs_prob X)
+    (f : X -> \bar R) :
+  qbs_integrable X p f ->
+  qbs_integrable X p (-%E \o f).
+Proof. exact: integrableN. Qed.
+
+Lemma qbs_integrableZl (X : qbsType R) (p : qbs_prob X)
+    (k : R) (f : X -> \bar R) :
+  qbs_integrable X p f ->
+  qbs_integrable X p (fun x => k%:E * f x).
+Proof. exact: integrableZl. Qed.
+
+(* 17. Integral arithmetic *)
+
+Lemma qbs_integralD (X : qbsType R) (p : qbs_prob X)
+    (f g : X -> \bar R) :
+  qbs_integrable X p f -> qbs_integrable X p g ->
+  qbs_integral X p (f \+ g) = qbs_integral X p f + qbs_integral X p g.
+Proof. exact: integralD. Qed.
+
+Lemma qbs_integralB (X : qbsType R) (p : qbs_prob X)
+    (f g : X -> \bar R) :
+  qbs_integrable X p f -> qbs_integrable X p g ->
+  qbs_integral X p (f \- g) = qbs_integral X p f - qbs_integral X p g.
+Proof. exact: integralB. Qed.
+
+Lemma qbs_integralZl (X : qbsType R) (p : qbs_prob X)
+    (k : R) (f : X -> \bar R) :
+  qbs_integrable X p f ->
+  qbs_integral X p (fun x => k%:E * f x) =
+  k%:E * qbs_integral X p f.
+Proof. rewrite /qbs_integrable /qbs_integral => hf; exact: integralZl. Qed.
+
+(* 18. Variance formulas *)
+
+Lemma qbs_varianceE (X : qbsType R) (p : qbs_prob X) (h : X -> R) :
+  h \o qbs_prob_alpha p \in hoelder.Lfun (qbs_prob_mu p) 2 ->
+  qbs_variance X p h =
+  qbs_expect X p (fun x => h x ^+ 2)%R - (qbs_expect X p h) ^+ 2.
+Proof.
+move=> hL2; rewrite /qbs_variance /qbs_expect /qbs_integral.
+by rewrite varianceE //; congr (_ - _); rewrite unlock.
+Qed.
+
+Lemma qbs_varianceZ (X : qbsType R) (p : qbs_prob X) (a : R)
+    (h : X -> R) :
+  h \o qbs_prob_alpha p \in hoelder.Lfun (qbs_prob_mu p) 2 ->
+  qbs_variance X p (a \o* h)%R =
+  (a ^+ 2)%:E * qbs_variance X p h.
+Proof.
+move=> hL2; rewrite /qbs_variance.
+have -> : ((a \o* h)%R \o qbs_prob_alpha p) =
+          (a \o* (h \o qbs_prob_alpha p))%R.
+  by apply: boolp.funext => r.
+exact: varianceZ.
+Qed.
+
+(* 19. Markov inequality for QBS *)
+
+Lemma qbs_markov (X : qbsType R) (p : qbs_prob X)
+    (h : X -> R) (f : R -> R) (eps : R)
+    (hm : measurable_fun setT (h \o qbs_prob_alpha p))
+    (heps : (0 < eps)%R)
+    (hmf : measurable_fun [set: R] f)
+    (hf0 : forall r, (0 <= r)%R -> (0 <= f r)%R)
+    (hfnd : {in Num.nneg &, {homo f : x y / (x <= y)%R}}) :
+  (f eps)%:E * qbs_prob_event X p [set x | eps%:E <= `|(h x)%:E|] <=
+  qbs_integral X p (fun x => ((f \o normr \o h) x)%:E).
+Proof.
+rewrite /qbs_prob_event /qbs_integral /=.
+set X0 := @isMeasurableFun.phant_Build _ _ _ _ (h \o qbs_prob_alpha p) hm.
+pose rv : {RV (qbs_prob_mu p) >-> R} :=
+  HB.pack (h \o qbs_prob_alpha p) X0.
+have -> : qbs_prob_alpha p @^-1` [set x | eps%:E <= `|(h x)%:E|] =
+          [set x | eps%:E <= `|(rv x)%:E|] by [].
+have -> : (fun x => ((f \o normr \o h) (qbs_prob_alpha p x))%:E) =
+          (fun x => ((f \o normr \o rv) x)%:E) by [].
+have := @markov _ _ R (qbs_prob_mu p) rv f eps heps hmf hf0 hfnd.
+suff -> : (\int[qbs_prob_mu p]_x (((f \o normr) \o rv) x)%:E)%E =
+          'E_(qbs_prob_mu p)[((f \o [eta normr]) \o rv)] by [].
+by rewrite unlock.
+Qed.
+
+(* 20. Chebyshev inequality for QBS *)
+
+Lemma qbs_chebyshev (X : qbsType R) (p : qbs_prob X)
+    (h : X -> R) (eps : R)
+    (hm : measurable_fun setT (h \o qbs_prob_alpha p))
+    (heps : (0 < eps)%R) :
+  qbs_prob_mu p
+    [set x | (eps <= `|h (qbs_prob_alpha p x) -
+      fine (qbs_expect X p h)|)%R] <=
+  (eps ^- 2)%:E * qbs_variance X p h.
+Proof.
+rewrite /qbs_variance /qbs_expect /qbs_integral.
+set X0 := @isMeasurableFun.phant_Build _ _ _ _ (h \o qbs_prob_alpha p) hm.
+pose rv : {RV (qbs_prob_mu p) >-> R} :=
+  HB.pack (h \o qbs_prob_alpha p) X0.
+have hE : (\int[qbs_prob_mu p]_x (h (qbs_prob_alpha p x))%:E)%E =
+          'E_(qbs_prob_mu p)[rv] by rewrite unlock.
+rewrite hE.
+have -> : (h \o qbs_prob_alpha p) = (rv : mR -> R) by [].
+have -> : [set x | (eps <= `|h (qbs_prob_alpha p x) -
+    fine 'E_(qbs_prob_mu p)[rv]|)%R] =
+  [set x | (eps <= `|rv x - fine 'E_(qbs_prob_mu p)[rv]|)%R] by [].
+exact: chebyshev.
+Qed.
+
 End probability_qbs.
 
 Arguments qbs_prob {R}.
@@ -735,3 +867,4 @@ Arguments qbs_prob_event {R}.
 Arguments qbs_variance {R}.
 Arguments qbs_join {R}.
 Arguments qbs_strength {R}.
+Arguments qbs_integrable {R}.
