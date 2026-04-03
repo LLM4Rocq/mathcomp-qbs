@@ -1,8 +1,8 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra reals ereal topology
-  borel_hierarchy numfun measure lebesgue_measure lebesgue_integral
-  probability lebesgue_stieltjes_measure.
+  classical_sets borel_hierarchy numfun measure lebesgue_measure
+  lebesgue_integral probability lebesgue_stieltjes_measure.
 From QBS Require Import quasi_borel.
 
 (**md**************************************************************************)
@@ -21,7 +21,7 @@ From QBS Require Import quasi_borel.
 (* ```                                                                        *)
 (******************************************************************************)
 
-Import Num.Def Num.Theory reals classical_sets.
+Import GRing.Theory Num.Def Num.Theory.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -29,23 +29,20 @@ Unset Printing Implicit Defensive.
 
 Local Open Scope classical_set_scope.
 
-Section ProbabilityQBS.
-Variable (R : realType).
+Section probability_qbs.
+Variable R : realType.
 
 Local Notation mR := (measurableTypeR R).
 
-(* ===================================================================== *)
-(* 1. QBS Probability Triple                                             *)
-(*    A probability on a QBS X is a pair (alpha, mu) where               *)
-(*    alpha : R -> X is a random element (in Mx) and                     *)
-(*    mu is a probability measure on R.                                  *)
-(* ===================================================================== *)
+(* 1. QBS Probability Triple
+   A probability on a QBS X is a pair (alpha, mu) where
+   alpha : R -> X is a random element (in Mx) and
+   mu is a probability measure on R. *)
 
 Record qbs_prob (X : qbsType R) := mkQBSProb {
   qbs_prob_alpha : mR -> X ;
   qbs_prob_mu : probability mR R ;
-  qbs_prob_alpha_random : @qbs_Mx R X qbs_prob_alpha ;
-}.
+  qbs_prob_alpha_random : @qbs_Mx R X qbs_prob_alpha }.
 
 Arguments qbs_prob : clear implicits.
 Arguments mkQBSProb {X}.
@@ -53,12 +50,11 @@ Arguments qbs_prob_alpha {X}.
 Arguments qbs_prob_mu {X}.
 Arguments qbs_prob_alpha_random {X}.
 
-(* ===================================================================== *)
-(* 2. Equivalence of Probability Triples                                 *)
-(*    Two triples (alpha1, mu1) ~ (alpha2, mu2) iff they induce the      *)
-(*    same pushforward measure on X, i.e., for all measurable U in       *)
-(*    sigma_Mx(X), mu1(alpha1^{-1}(U)) = mu2(alpha2^{-1}(U)).          *)
-(* ===================================================================== *)
+(* 2. Equivalence of Probability Triples
+   Two triples (alpha1, mu1) ~ (alpha2, mu2) iff they induce
+   the same pushforward measure on X, i.e., for all measurable
+   U in sigma_Mx(X),
+   mu1(alpha1^{-1}(U)) = mu2(alpha2^{-1}(U)). *)
 
 Definition qbs_prob_equiv (X : qbsType R) (p1 p2 : qbs_prob X) : Prop :=
   forall (U : set X),
@@ -81,24 +77,23 @@ Lemma qbs_prob_equiv_trans (X : qbsType R) (p1 p2 p3 : qbs_prob X) :
   qbs_prob_equiv X p1 p3.
 Proof. by move=> h12 h23 U hU; rewrite (h12 U hU) (h23 U hU). Qed.
 
-(* ===================================================================== *)
-(* 3. The Probability Monad P(X)                                         *)
-(* ===================================================================== *)
+(* 3. The Probability Monad P(X)
 
-(* Random elements for the probability monad.
-   We use the "pointwise" definition: beta : mR -> qbs_prob X is random iff
-   for all r, qbs_prob_alpha(beta(r)) is in Mx(X).
+   Random elements for the probability monad.
+   We use the "pointwise" definition: beta : mR -> qbs_prob X
+   is random iff for all r, qbs_prob_alpha(beta(r)) is in Mx(X).
 
-   NOTE: The Isabelle development uses a STRONGER definition requiring a
-   single shared alpha across all r (monadP_qbs_MPx). This stronger version
-   needs quotient types to work with return (since qbs_return produces
-   triples whose alpha varies with r, but which are equivalent in the
-   quotient). Without quotient types, we use the weaker pointwise condition
-   The current development avoids quotient types by factoring qbs_bind to
-   take an explicit diagonal randomness proof, with helper lemmas for the
-   strong morphism and constant-alpha cases. See Section 5. *)
+   NB: The Isabelle development uses a STRONGER definition
+   requiring a single shared alpha across all r. This stronger
+   version needs quotient types to work with return. Without
+   quotient types, we use the weaker pointwise condition. The
+   current development avoids quotient types by factoring
+   qbs_bind to take an explicit diagonal randomness proof,
+   with helper lemmas for the strong morphism and
+   constant-alpha cases. See Section 5. *)
 
-(* Strong definition (for reference; used in bind under additional hypotheses) *)
+(* Strong definition (for reference; used in bind
+   under additional hypotheses) *)
 Definition monadP_random (X : qbsType R) : set (mR -> qbs_prob X) :=
   [set beta |
     exists (alpha : mR -> X),
@@ -141,7 +136,8 @@ Lemma monadP_glue (X : qbsType R) :
     monadP_random_pw X (fun r => Fi (P r) r).
 Proof. by move=> P Fi hP hFi r; apply: hFi. Qed.
 
-(* NB: manual HB.pack because monadP creates a non-canonical QBS on qbs_prob X *)
+(* NB: manual HB.pack because monadP creates a
+   non-canonical QBS on qbs_prob X *)
 Definition monadP (X : qbsType R) : qbsType R :=
   HB.pack (qbs_prob X)
     (@isQBS.Build R (qbs_prob X)
@@ -152,15 +148,14 @@ Definition monadP (X : qbsType R) : qbsType R :=
 
 Arguments monadP : clear implicits.
 
-(* ===================================================================== *)
-(* 4. Return: X -> P(X)                                                  *)
-(*    The return operation takes a measure parameter mu, so that          *)
-(*    qbs_return X x mu = (fun _ => x, mu). This is crucial for the      *)
-(*    left unit law: all triples (fun _ => x, mu) are equivalent for     *)
-(*    any mu, since pushforward mu (fun _ => x) = Dirac(x) regardless    *)
-(*    of mu. The monad law uses qbs_return X x (qbs_prob_mu (f x)) so   *)
-(*    that bind(return(x), f) has the same mu as f(x).                   *)
-(* ===================================================================== *)
+(* 4. Return: X -> P(X)
+   The return operation takes a measure parameter mu, so that
+   qbs_return X x mu = (fun _ => x, mu). This is crucial for
+   the left unit law: all triples (fun _ => x, mu) are
+   equivalent for any mu, since pushforward mu (fun _ => x) =
+   Dirac(x) regardless of mu. The monad law uses
+   qbs_return X x (qbs_prob_mu (f x)) so that
+   bind(return(x), f) has the same mu as f(x). *)
 
 Definition qbs_return (X : qbsType R) (x : X) (mu : probability mR R) :
   qbs_prob X :=
@@ -194,30 +189,27 @@ Qed.
 
 Arguments qbs_return_random : clear implicits.
 
-(* ===================================================================== *)
-(* 5. Bind: P(X) -> (X -> P(Y)) -> P(Y)                                 *)
-(*                                                                        *)
-(*    The bind operation constructs the triple:                           *)
-(*      alpha_bind(r) = alpha_{f(alpha_p(r))}(r)   (diagonal extraction) *)
-(*      mu_bind       = mu_p                                              *)
-(*                                                                        *)
-(*    The diagonal extraction requires showing that                       *)
-(*      r |-> alpha_{f(alpha_p(r))}(r)                                    *)
-(*    is in Mx(Y). This is the "bind_alpha_random" obligation.            *)
-(*                                                                        *)
-(*    With the STRONG monadP_random condition (requiring a single shared  *)
-(*    alpha across all r), the diagonal is trivially that shared alpha.   *)
-(*    The weak pointwise condition is insufficient.                       *)
-(*                                                                        *)
-(*    We factor qbs_bind to take an explicit proof of the diagonal        *)
-(*    randomness. Helper lemmas provide this proof in two key cases:      *)
-(*    (1) Strong morphism hypothesis (qbs_bind_alpha_random_strong)       *)
-(*    (2) Constant alpha in p (qbs_bind_alpha_random_const, used for      *)
-(*        return and right_unit)                                          *)
-(*                                                                        *)
-(*    The general case (arbitrary weak morphism) requires quotient types  *)
-(*    or a standard Borel isomorphism R ~ nat x R; see Section 10.       *)
-(* ===================================================================== *)
+(* 5. Bind: P(X) -> (X -> P(Y)) -> P(Y)
+
+   The bind operation constructs the triple:
+     alpha_bind(r) = alpha_{f(alpha_p(r))}(r)
+     mu_bind       = mu_p
+
+   The diagonal extraction requires showing that
+     r |-> alpha_{f(alpha_p(r))}(r)
+   is in Mx(Y). This is the "bind_alpha_random" obligation.
+
+   With the STRONG monadP_random condition (requiring a single
+   shared alpha across all r), the diagonal is trivially that
+   shared alpha. The weak pointwise condition is insufficient.
+
+   We factor qbs_bind to take an explicit proof of the diagonal
+   randomness. Helper lemmas provide this proof in two cases:
+   (1) Strong morphism (qbs_bind_alpha_random_strong)
+   (2) Constant alpha in p (qbs_bind_alpha_random_const)
+
+   The general case requires quotient types or a standard
+   Borel isomorphism R ~ nat x R; see Section 10. *)
 
 (* Strong morphism condition: f composed with any random alpha in X
    yields a family in monadP_random (strong) for Y. *)
@@ -288,11 +280,9 @@ move=> beta hbeta; rewrite /qbs_Mx /= => r.
 exact: (qbs_bind_alpha_random_strong (beta r) hf).
 Qed.
 
-(* ===================================================================== *)
-(* 6. Monad Laws (up to qbs_prob_equiv)                                  *)
-(*    Left unit and right unit are fully proved. Associativity is proved  *)
-(*    assuming the strong morphism condition.                             *)
-(* ===================================================================== *)
+(* 6. Monad Laws (up to qbs_prob_equiv)
+   Left unit and right unit are fully proved. Associativity
+   is proved assuming the strong morphism condition. *)
 
 Lemma qbs_bind_returnl (X Y : qbsType R) (x : X)
   (f : X -> qbs_prob Y)
@@ -326,14 +316,13 @@ Lemma qbs_bindA (X Y Z : qbsType R) (m : qbs_prob X)
   qbs_prob_equiv Z
     (qbs_bind Y Z (qbs_bind X Y m f hf_diag) g (hg_bind _))
     (mkQBSProb
-      (fun r => qbs_prob_alpha (g (qbs_prob_alpha (f (qbs_prob_alpha m r)) r)) r)
+      (fun r => qbs_prob_alpha
+        (g (qbs_prob_alpha (f (qbs_prob_alpha m r)) r)) r)
       (qbs_prob_mu m)
       hfg_diag).
 Proof. by move=> U hU. Qed.
 
-(* ===================================================================== *)
-(* 7. Integration on QBS Probability Spaces                              *)
-(* ===================================================================== *)
+(* 7. Integration on QBS Probability Spaces *)
 
 Definition qbs_integral (X : qbsType R) (p : qbs_prob X)
   (h : X -> \bar R) : \bar R :=
@@ -341,17 +330,18 @@ Definition qbs_integral (X : qbsType R) (p : qbs_prob X)
 
 Arguments qbs_integral : clear implicits.
 
-(* Sigma_Mx-measurability for functions h : X -> \bar R.                 *)
-(* h is sigma_Mx-measurable iff for every random element alpha in Mx(X), *)
-(* the composition h o alpha : R -> \bar R is Borel measurable.          *)
+(* Sigma_Mx-measurability for functions h : X -> \bar R.
+   h is sigma_Mx-measurable iff for every random element alpha
+   in Mx(X), the composition h o alpha : R -> \bar R is Borel
+   measurable. *)
 Definition qbs_measurable (X : qbsType R) (h : X -> \bar R) : Prop :=
   forall alpha, @qbs_Mx R X alpha ->
     measurable_fun setT (h \o alpha).
 
 Arguments qbs_measurable : clear implicits.
 
-(* If h is sigma_Mx-measurable, then preimages of measurable sets are    *)
-(* in sigma_Mx.                                                          *)
+(* If h is sigma_Mx-measurable, then preimages of
+   measurable sets are in sigma_Mx. *)
 Lemma qbs_measurable_sigma_Mx (X : qbsType R) (h : X -> \bar R)
   (hm : qbs_measurable X h) (V : set (\bar R)) :
   measurable V -> @sigma_Mx R X (h @^-1` V).
@@ -364,8 +354,8 @@ have -> : (h \o alpha) @^-1` V = alpha @^-1` (h @^-1` V) by [].
 done.
 Qed.
 
-(* When h is sigma_Mx-measurable, the pushforward measures through       *)
-(* (h o alpha_i) agree on all measurable sets of \bar R.                 *)
+(* When h is sigma_Mx-measurable, the pushforward measures
+   through (h o alpha_i) agree on all measurable sets. *)
 Lemma qbs_pushforward_agree (X : qbsType R) (p1 p2 : qbs_prob X)
   (h : X -> \bar R)
   (hm : qbs_measurable X h)
@@ -385,12 +375,9 @@ apply: (qbs_measurable_sigma_Mx hm).
 exact: hV.
 Qed.
 
-(* Integration respects equivalence for sigma_Mx-measurable integrands.  *)
-(* The proof factors through pushforward measures on \bar R:             *)
-(*   int[mu_i] (h o alpha_i) = int[pushforward mu_i (h o alpha_i)] id   *)
-(* by the pushforward integral theorem (integral_pushforward). Since     *)
-(* the pushforward measures agree (qbs_pushforward_agree), the integrals *)
-(* against them agree by eq_measure_integral.                            *)
+(* Integration respects equivalence for sigma_Mx-measurable
+   integrands. The proof factors through pushforward measures
+   on \bar R and uses eq_measure_integral. *)
 Lemma qbs_integral_equiv (X : qbsType R) (p1 p2 : qbs_prob X)
   (h : X -> \bar R)
   (hm : qbs_measurable X h)
@@ -418,8 +405,8 @@ apply: (qbs_pushforward_agree hm hequiv).
 exact: hA.
 Qed.
 
-(* Simpler version: when both triples share the same random element and  *)
-(* the base measures agree on all measurable sets.                       *)
+(* Simpler version: when both triples share the same random
+   element and the base measures agree on all measurable sets. *)
 Lemma qbs_integral_equiv_same_alpha (X : qbsType R) (p1 p2 : qbs_prob X)
   (h : X -> \bar R) :
   qbs_prob_alpha p1 = qbs_prob_alpha p2 ->
@@ -452,19 +439,12 @@ Lemma qbs_integral_bind (X Y : qbsType R) (p : qbs_prob X)
     h (qbs_prob_alpha (f (qbs_prob_alpha p r)) r))%E.
 Proof. by []. Qed.
 
-(* ===================================================================== *)
-(* 7b. Pushforward integral infrastructure                               *)
-(*     Connects QBS integration to the standard measure-theoretic        *)
-(*     pushforward machinery from mathcomp-analysis.                     *)
-(*                                                                       *)
-(*     Key idea: since X is a QBS (not a measurableType), we cannot      *)
-(*     form pushforward mu alpha directly. Instead, we compose with      *)
-(*     h : X -> \bar R to obtain pushforward mu (h o alpha), which maps  *)
-(*     between measurableTypes (mR and \bar R).                          *)
-(* ===================================================================== *)
+(* 7b. Pushforward integral infrastructure
+   Since X is a QBS (not a measurableType), we compose with
+   h : X -> \bar R to obtain pushforward mu (h o alpha). *)
 
-(* The QBS integral equals the integral of id against the pushforward    *)
-(* of mu through (h o alpha).                                            *)
+(* The QBS integral equals the integral of id against the
+   pushforward of mu through (h o alpha). *)
 Lemma qbs_integral_as_pushforward (X : qbsType R) (p : qbs_prob X)
   (h : X -> \bar R)
   (hm : qbs_measurable X h)
@@ -481,8 +461,8 @@ rewrite -(@integral_pushforward _ _ mR (\bar R : measurableType _) R
 by [].
 Qed.
 
-(* Pushforward integrability: if h o alpha is mu-integrable, then        *)
-(* id is integrable w.r.t. the pushforward measure.                      *)
+(* Pushforward integrability: if h o alpha is mu-integrable,
+   then id is integrable w.r.t. the pushforward measure. *)
 Lemma qbs_pushforward_integrable (X : qbsType R) (p : qbs_prob X)
   (h : X -> \bar R)
   (hm : qbs_measurable X h)
@@ -490,12 +470,11 @@ Lemma qbs_pushforward_integrable (X : qbsType R) (p : qbs_prob X)
   (pushforward (qbs_prob_mu p) (h \o qbs_prob_alpha p)).-integrable setT id.
 Proof.
 have hma := hm _ (qbs_prob_alpha_random p).
-exact: (integrable_pushforward hma (@measurable_id _ (\bar R) setT) hint measurableT).
+exact: (integrable_pushforward hma
+  (@measurable_id _ (\bar R) setT) hint measurableT).
 Qed.
 
-(* ===================================================================== *)
-(* 8. Functorial action of the probability monad                         *)
-(* ===================================================================== *)
+(* 8. Functorial action of the probability monad *)
 
 Definition monadP_map (X Y : qbsType R) (f : X -> Y)
   (hf : @qbs_morphism R X Y f) (p : qbs_prob X) : qbs_prob Y :=
@@ -529,9 +508,7 @@ Lemma monadP_map_comp (X Y Z : qbsType R)
        (monadP_map X Y f (@qbs_hom_proof R X Y f) p)).
 Proof. by move=> U hU. Qed.
 
-(* ===================================================================== *)
-(* 9. Expectation and probability of events                              *)
-(* ===================================================================== *)
+(* 9. Expectation and probability of events *)
 
 Definition qbs_expect (X : qbsType R) (p : qbs_prob X)
   (h : X -> R) : \bar R :=
@@ -545,12 +522,9 @@ Definition qbs_prob_event (X : qbsType R) (p : qbs_prob X)
 
 Arguments qbs_prob_event : clear implicits.
 
-(* ===================================================================== *)
-(* 10. Variance                                                          *)
-(*     Defined via the mathcomp-analysis variance applied to             *)
-(*     the composition f o alpha against the base measure mu.            *)
-(*     This gives: Var(f) = E[(f o alpha)^2] - E[f o alpha]^2           *)
-(* ===================================================================== *)
+(* 10. Variance
+   Defined via the mathcomp-analysis variance applied to
+   f o alpha against the base measure mu. *)
 
 Definition qbs_variance (X : qbsType R) (p : qbs_prob X)
   (f : X -> R) : \bar R :=
@@ -558,15 +532,9 @@ Definition qbs_variance (X : qbsType R) (p : qbs_prob X)
 
 Arguments qbs_variance : clear implicits.
 
-(* ===================================================================== *)
-(* 11. Monad Join: P(P(X)) -> P(X)                                      *)
-(*     Flattens a probability over probabilities into a single           *)
-(*     probability, defined via bind with the identity function.         *)
-(*     Given p : qbs_prob (monadP X), the outer alpha maps              *)
-(*     r |-> qbs_prob X, and the diagonal extraction gives:             *)
-(*       alpha_join(r) = qbs_prob_alpha(qbs_prob_alpha(p)(r))(r)        *)
-(*       mu_join       = qbs_prob_mu(p)                                 *)
-(* ===================================================================== *)
+(* 11. Monad Join: P(P(X)) -> P(X)
+   Flattens a probability over probabilities into a single
+   probability, defined via bind with the identity function. *)
 
 Definition qbs_join (X : qbsType R)
   (p : qbs_prob (monadP X))
@@ -577,12 +545,9 @@ Definition qbs_join (X : qbsType R)
 
 Arguments qbs_join : clear implicits.
 
-(* ===================================================================== *)
-(* 12. Monad Strength: W x P(X) -> P(W x X)                             *)
-(*     Given a constant value w : W and a probability p on X,           *)
-(*     produce a probability on W x X where W is held constant          *)
-(*     and X is sampled from p.                                         *)
-(* ===================================================================== *)
+(* 12. Monad Strength: W x P(X) -> P(W x X)
+   Given a constant w : W and a probability p on X, produce a
+   probability on W x X where W is held constant. *)
 
 Definition qbs_strength (W X : qbsType R)
   (w : W) (p : qbs_prob X) : qbs_prob (prodQ W X) :=
@@ -593,22 +558,13 @@ Definition qbs_strength (W X : qbsType R)
 
 Arguments qbs_strength : clear implicits.
 
-(* ===================================================================== *)
-(* 13. Bind respects equivalence (prerequisite for the quotient monad)   *)
-(*                                                                       *)
-(*     The key result: bind respects equivalence on the first argument.  *)
-(*     The proof requires that the diagonal extraction factors through   *)
-(*     a QBS morphism g : X -> Y, i.e., for each p with random element  *)
-(*     alpha_p, the bind's alpha equals g o alpha_p.                     *)
-(*                                                                       *)
-(*     This factoring condition holds when f produces triples whose      *)
-(*     alpha component depends on x only through a morphism g (e.g.,    *)
-(*     when f(x) = return(g(x), mu_x) for a morphism g).               *)
-(*                                                                       *)
-(*     The general case (arbitrary strong morphism) requires the         *)
-(*     disintegration theorem / Markov kernel representation, which is   *)
-(*     beyond the current development.                                   *)
-(* ===================================================================== *)
+(* 13. Bind respects equivalence
+   The key result: bind respects equivalence on the first
+   argument. The proof requires the diagonal extraction to
+   factor through a QBS morphism g : X -> Y.
+
+   The general case requires the disintegration theorem,
+   which is beyond the current development. *)
 
 (* Bind respects equivalence on the first argument when the diagonal
    factors through a QBS morphism g : X -> Y.
@@ -701,11 +657,9 @@ apply: (hU (g \o alpha)).
 exact: hg _ halpha.
 Qed.
 
-(* ===================================================================== *)
-(* 14. Strength Naturality and Coherence Laws                            *)
-(*     The monad strength commutes with morphisms and satisfies the      *)
-(*     standard coherence conditions for a strong monad.                 *)
-(* ===================================================================== *)
+(* 14. Strength Naturality and Coherence Laws
+   The monad strength commutes with morphisms and satisfies
+   the standard coherence conditions for a strong monad. *)
 
 (* Naturality: strength commutes with morphisms f : W -> W', g : X -> X' *)
 Lemma qbs_strength_natural (W W' X X' : qbsType R)
@@ -760,7 +714,7 @@ Lemma qbs_strength_return (W X : qbsType R) (w : W) (x : X)
     (qbs_return (prodQ W X) (w, x) mu).
 Proof. by move=> U hU. Qed.
 
-End ProbabilityQBS.
+End probability_qbs.
 
 Arguments qbs_prob {R}.
 Arguments mkQBSProb {R X}.

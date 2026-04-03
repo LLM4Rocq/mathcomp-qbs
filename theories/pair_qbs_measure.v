@@ -1,13 +1,11 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
-From mathcomp Require Import reals ereal topology normedtype numfun measure
-  lebesgue_integral lebesgue_integral_fubini lebesgue_stieltjes_measure
-  probability hoelder.
-From mathcomp.classical Require Import functions.
+From mathcomp Require Import reals ereal topology classical_sets normedtype
+  numfun measure lebesgue_integral lebesgue_integral_fubini
+  lebesgue_stieltjes_measure probability hoelder.
+From mathcomp Require Import functions.
 From QBS Require Import quasi_borel probability_qbs standard_borel.
-
-Import Num.Def Num.Theory reals classical_sets.
 
 (**md**************************************************************************)
 (* # Product Measures on QBS Probability Spaces                               *)
@@ -23,23 +21,23 @@ Import Num.Def Num.Theory reals classical_sets.
 (* ```                                                                        *)
 (******************************************************************************)
 
+Import GRing.Theory Num.Def Num.Theory.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Local Open Scope classical_set_scope.
 
-Section PairQBSMeasure.
-Variable (R : realType).
+Section pair_qbs_measure.
+Variable R : realType.
 
 Local Notation mR := (measurableTypeR R).
 
-(* ===================================================================== *)
-(* 1. Product of QBS probability spaces                                  *)
-(*    Given p : qbs_prob X and q : qbs_prob Y, construct                 *)
-(*    qbs_prob (prodQ X Y) with alpha pairing the two alphas and         *)
-(*    measure being the product measure.                                 *)
-(* ===================================================================== *)
+(** Product of QBS probability spaces.
+    Given p : qbs_prob X and q : qbs_prob Y, construct
+    qbs_prob (prodQ X Y) with alpha pairing the two alphas and
+    measure being the product measure. *)
 
 (* The product probability measure on R.
    Uses R ≅ R×R (from standard_borel.v): push mu_p × mu_q through
@@ -125,10 +123,8 @@ Definition qbs_prob_pair (X Y : qbsType R)
 
 Arguments qbs_prob_pair : clear implicits.
 
-(* ===================================================================== *)
-(* 2. Pair integration using the product measure on mR * mR              *)
-(*    Works directly with mu_p \x mu_q on mR * mR for Fubini etc.       *)
-(* ===================================================================== *)
+(** Pair integration using the product measure on mR * mR.
+    Works directly with mu_p \x mu_q on mR * mR for Fubini etc. *)
 
 Local Open Scope ereal_scope.
 
@@ -146,9 +142,7 @@ Definition qbs_pair_fun (X Y : qbsType R)
   (h : X * Y -> \bar R) : mR * mR -> \bar R :=
   fun rr => h (qbs_prob_alpha p rr.1, qbs_prob_alpha q rr.2).
 
-(* ===================================================================== *)
-(* 3. Fubini-type theorems for qbs_pair_integral                         *)
-(* ===================================================================== *)
+(** Fubini-type theorems for qbs_pair_integral. *)
 
 (* Fubini: joint integration = iterated integration.
    Requires integrability of the underlying function w.r.t. the product
@@ -213,9 +207,7 @@ have h1 := @probability_setT _ _ _ (qbs_prob_mu p).
 by rewrite [X in _ * X]h1 mule1.
 Qed.
 
-(* ===================================================================== *)
-(* 4. Independence                                                       *)
-(* ===================================================================== *)
+(** Independence. *)
 
 Definition qbs_indep (X Y Z : qbsType R)
   (p : qbs_prob Z)
@@ -265,21 +257,18 @@ transitivity (\int[qbs_prob_mu px]_r1
   rewrite integralZr //.
 Qed.
 
-(* ===================================================================== *)
-(* 6. Variance of sum of independent random variables                    *)
-(*    For independent X, Y (on separate probability spaces px, py),     *)
-(*    define the sum f(x) + g(y) on the product space. The variance     *)
-(*    of this sum w.r.t. the product measure mu_px x mu_py equals       *)
-(*    Var_px(f) + Var_py(g).                                            *)
-(*                                                                       *)
-(*    Key idea: varianceD gives                                          *)
-(*      Var(F+G) = Var(F) + Var(G) + 2*Cov(F,G)                        *)
-(*    For independent F, G (functions of separate coordinates),          *)
-(*    Cov(F,G) = E[FG] - E[F]*E[G] = 0 by Fubini (the product          *)
-(*    integral of f(r1)*g(r2) factors as E[f]*E[g]).                    *)
-(*    Also, Var(F) w.r.t. product = Var_px(f) since F only depends      *)
-(*    on the first coordinate, and similarly Var(G) = Var_py(g).        *)
-(* ===================================================================== *)
+(** Variance of sum of independent random variables.
+    For independent X, Y (on separate probability spaces px, py),
+    define the sum f(x) + g(y) on the product space. The variance
+    of this sum w.r.t. the product measure mu_px x mu_py equals
+    Var_px(f) + Var_py(g).
+    Key idea: varianceD gives
+      Var(F+G) = Var(F) + Var(G) + 2*Cov(F,G)
+    For independent F, G (functions of separate coordinates),
+    Cov(F,G) = E[FG] - E[F]*E[G] = 0 by Fubini (the product
+    integral of f(r1)*g(r2) factors as E[f]*E[g]).
+    Also, Var(F) w.r.t. product = Var_px(f) since F only depends
+    on the first coordinate, and similarly Var(G) = Var_py(g). *)
 
 (* Variance of f(x) + g(y) on the product space w.r.t. product measure *)
 Definition qbs_pair_variance (X Y : qbsType R)
@@ -504,13 +493,11 @@ have hgp_fin := expectation_fin_num (Lfun_subset12 mu_q_fin hg1).
 by rewrite fin_numM.
 Qed.
 
-(* ===================================================================== *)
-(* 7. Commutativity of the probability monad (Proposition 22)            *)
-(*    The two ways of combining P(X) x P(Y) -> P(X x Y) agree:          *)
-(*    integrating h w.r.t. the product mu_p x mu_q with alphas          *)
-(*    (alpha_p, alpha_q) equals integrating h(swap) w.r.t. mu_q x mu_p  *)
-(*    with alphas (alpha_q, alpha_p). Follows from Fubini's theorem.     *)
-(* ===================================================================== *)
+(** Commutativity of the probability monad (Proposition 22).
+    The two ways of combining P(X) x P(Y) -> P(X x Y) agree:
+    integrating h w.r.t. the product mu_p x mu_q with alphas
+    (alpha_p, alpha_q) equals integrating h(swap) w.r.t. mu_q x mu_p
+    with alphas (alpha_q, alpha_p). Follows from Fubini's theorem. *)
 
 Lemma qbs_pair_integral_comm (X Y : qbsType R)
   (p : qbs_prob X) (q : qbs_prob Y)
@@ -541,7 +528,7 @@ rewrite -(@integral12_prod_meas1 _ _ _ _ _
 by apply: eq_integral => r1 _; apply: eq_integral => r2 _.
 Qed.
 
-End PairQBSMeasure.
+End pair_qbs_measure.
 
 Arguments qbs_prob_pair {R X Y}.
 Arguments qbs_pair_integral {R X Y}.

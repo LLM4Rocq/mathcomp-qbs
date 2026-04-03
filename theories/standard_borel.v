@@ -1,15 +1,15 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
-From mathcomp.reals Require Import reals.
-From mathcomp.classical Require Import classical_sets filter.
-From mathcomp.analysis Require Import topology_theory.num_topology.
-From mathcomp.analysis Require Import normedtype_theory.normedtype sequences.
-From mathcomp.analysis Require Import measure_theory.measurable_structure.
-From mathcomp.analysis Require Import measure_theory.measurable_function.
-From mathcomp.analysis Require Import measurable_realfun trigo.
-From mathcomp.analysis Require Import lebesgue_stieltjes_measure.
-From mathcomp.algebra_tactics Require Import ring.
+From mathcomp Require Import reals.
+From mathcomp Require Import classical_sets filter.
+From mathcomp Require Import num_topology.
+From mathcomp Require Import normedtype sequences.
+From mathcomp Require Import measurable_structure.
+From mathcomp Require Import measurable_function.
+From mathcomp Require Import measurable_realfun trigo.
+From mathcomp Require Import lebesgue_stieltjes_measure.
+From mathcomp Require Import ring.
 
 (**md**************************************************************************)
 (* # Standard Borel Spaces                                                     *)
@@ -87,15 +87,14 @@ From mathcomp.algebra_tactics Require Import ring.
 (* unconditionally. See the detailed comments in the Round-trip section.     *)
 (******************************************************************************)
 
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
-
-Import Num.Def Num.Theory reals classical_sets.
-Import GRing.Theory.
+Import GRing.Theory Num.Def Num.Theory.
 Import numFieldTopology.Exports.
 Import order.Order.POrderTheory.
 Import boolp.
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
 Local Open Scope classical_set_scope.
 Local Open Scope ring_scope.
 

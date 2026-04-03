@@ -1,19 +1,17 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
-From mathcomp.reals Require Import reals.
-From mathcomp.classical Require Import classical_sets boolp.
-From mathcomp.analysis Require Import ereal.
-From mathcomp.analysis Require Import measure_theory.measurable_structure.
-From mathcomp.analysis Require Import measure_theory.measurable_function.
-From mathcomp.analysis Require Import measure_theory.measure.
-From mathcomp.analysis Require Import measure_theory.measure_function.
-From mathcomp.analysis Require Import measure_theory.probability_measure.
-From mathcomp.analysis Require Import borel_hierarchy lebesgue_stieltjes_measure.
-From mathcomp.analysis Require Import lebesgue_integral lebesgue_measure.
+From mathcomp Require Import reals.
+From mathcomp Require Import classical_sets boolp.
+From mathcomp Require Import ereal.
+From mathcomp Require Import measurable_structure.
+From mathcomp Require Import measurable_function.
+From mathcomp Require Import measure.
+From mathcomp Require Import measure_function.
+From mathcomp Require Import probability_measure.
+From mathcomp Require Import borel_hierarchy lebesgue_stieltjes_measure.
+From mathcomp Require Import lebesgue_integral lebesgue_measure.
 From QBS Require Import quasi_borel measure_qbs_adjunction probability_qbs.
-
-Import Num.Def Num.Theory reals classical_sets.
 
 (**md**************************************************************************)
 (* # Connection between QBS Probability Monad and Giry Monad                  *)
@@ -34,6 +32,8 @@ Import Num.Def Num.Theory reals classical_sets.
 (* ```                                                                        *)
 (******************************************************************************)
 
+Import GRing.Theory Num.Def Num.Theory.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -41,15 +41,13 @@ Unset Printing Implicit Defensive.
 Local Open Scope classical_set_scope.
 Local Open Scope ereal_scope.
 
-Section QBSGiry.
-Variable (R : realType).
+Section qbs_giry.
+Variable R : realType.
 Local Notation mR := (measurableTypeR R).
 
-(* ===================================================================== *)
-(* 1. Forward map: qbs_prob(R(M)) -> probability M R                     *)
-(*    Given a QBS probability triple (alpha, mu) on R(M), the            *)
-(*    pushforward mu o alpha^{-1} is a probability on M.                 *)
-(* ===================================================================== *)
+(** Forward map: qbs_prob(R(M)) -> probability M R.
+    Given a QBS probability triple (alpha, mu) on R(M), the
+    pushforward mu o alpha^{-1} is a probability on M. *)
 
 Section qbs_to_giry.
 Variables (d : measure_display) (M : measurableType d).
@@ -101,13 +99,11 @@ Definition qbs_to_giry (d : measure_display) (M : measurableType d)
     (p : qbs_prob (@R_qbs R _ M)) : probability M R :=
   [the probability M R of qbs_to_giry_mu p].
 
-(* ===================================================================== *)
-(* 2. Backward map: probability M R -> qbs_prob(R(M))                    *)
-(*    Requires standard Borel witnesses: encode : M -> R, decode : R -> M *)
-(*    with decode o encode = id.                                          *)
-(*    Given P : probability M R, the triple (decode, P o encode^{-1})     *)
-(*    is a QBS probability on R(M).                                       *)
-(* ===================================================================== *)
+(** Backward map: probability M R -> qbs_prob(R(M)).
+    Requires standard Borel witnesses: encode : M -> R, decode : R -> M
+    with decode o encode = id.
+    Given P : probability M R, the triple (decode, P o encode^{-1})
+    is a QBS probability on R(M). *)
 
 Section giry_to_qbs.
 Variables (d : measure_display) (M : measurableType d).
@@ -151,9 +147,7 @@ Definition giry_to_qbs : qbs_prob (@R_qbs R _ M) :=
 
 End giry_to_qbs.
 
-(* ===================================================================== *)
-(* 3. Round-trip: qbs_to_giry (giry_to_qbs P) = P on measurable sets    *)
-(* ===================================================================== *)
+(** Round-trip: qbs_to_giry (giry_to_qbs P) = P on measurable sets. *)
 
 Lemma qbs_to_giry_to_qbs
     (d : measure_display) (M : measurableType d)
@@ -170,9 +164,7 @@ congr (P _).
 by apply/seteqP; split => x /=; rewrite decode_encode.
 Qed.
 
-(* ===================================================================== *)
-(* 4. Round-trip: giry_to_qbs (qbs_to_giry p) ~ p up to qbs_prob_equiv  *)
-(* ===================================================================== *)
+(** Round-trip: giry_to_qbs (qbs_to_giry p) ~ p up to qbs_prob_equiv. *)
 
 Lemma giry_to_qbs_to_giry
     (d : measure_display) (M : measurableType d)
@@ -191,17 +183,13 @@ congr (qbs_prob_mu p _).
 by apply/seteqP; split => r /=; rewrite decode_encode.
 Qed.
 
-(* ===================================================================== *)
-(* 5. Integral correspondence: QBS integration = classical Lebesgue      *)
-(*    integration against the pushforward measure qbs_to_giry.           *)
-(*                                                                        *)
-(*    qbs_integral p f = \int[qbs_to_giry p] f                           *)
-(*                                                                        *)
-(*    This follows from the change-of-variables (pushforward integral)   *)
-(*    formula: \int[pushforward mu alpha] f = \int[mu] (f o alpha),      *)
-(*    since qbs_to_giry_mu p is definitionally the pushforward of        *)
-(*    qbs_prob_mu p through qbs_prob_alpha p.                            *)
-(* ===================================================================== *)
+(** Integral correspondence: QBS integration = classical Lebesgue
+    integration against the pushforward measure qbs_to_giry.
+    qbs_integral p f = \int[qbs_to_giry p] f.
+    This follows from the change-of-variables (pushforward integral)
+    formula: \int[pushforward mu alpha] f = \int[mu] (f o alpha),
+    since qbs_to_giry_mu p is definitionally the pushforward of
+    qbs_prob_mu p through qbs_prob_alpha p. *)
 
 Lemma qbs_integral_giry
     (d : measure_display) (M : measurableType d)
@@ -217,4 +205,4 @@ rewrite -(@integral_pushforward _ _ _ M R (qbs_prob_alpha p)
 by congr (integral _ setT f).
 Qed.
 
-End QBSGiry.
+End qbs_giry.

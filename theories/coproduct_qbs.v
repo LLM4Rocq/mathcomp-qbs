@@ -1,15 +1,13 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
-From mathcomp.reals Require Import reals.
-From mathcomp.classical Require Import classical_sets.
-From mathcomp.analysis Require Import measure_theory.measurable_structure.
-From mathcomp.analysis Require Import measure_theory.measurable_function.
-From mathcomp.analysis Require Import borel_hierarchy lebesgue_stieltjes_measure.
-From mathcomp.analysis Require Import measurable_realfun.
+From mathcomp Require Import reals.
+From mathcomp Require Import classical_sets.
+From mathcomp Require Import measurable_structure.
+From mathcomp Require Import measurable_function.
+From mathcomp Require Import borel_hierarchy lebesgue_stieltjes_measure.
+From mathcomp Require Import measurable_realfun.
 From QBS Require Import quasi_borel.
-
-Import Num.Def Num.Theory reals classical_sets.
 
 (**md**************************************************************************)
 (* # Coproducts for Quasi-Borel Spaces                                        *)
@@ -25,25 +23,24 @@ Import Num.Def Num.Theory reals classical_sets.
 (* ```                                                                        *)
 (******************************************************************************)
 
+Import GRing.Theory Num.Def Num.Theory.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Local Open Scope classical_set_scope.
 
-Section CoProductQBS.
-Variable (R : realType).
+Section coproduct_qbs.
+Variable R : realType.
 
 Local Notation mR := (measurableTypeR R).
 
-(* ===================================================================== *)
-(* 1. Binary Coproduct                                                    *)
-(*                                                                        *)
-(* For QBS X and Y, the coproduct X + Y has carrier (X + Y) (Coq sum).   *)
-(* A function f : mR -> X + Y is a random element iff it factors through  *)
-(* inl, through inr, or is a measurable gluing of an inl-part and an     *)
-(* inr-part via a measurable boolean predicate.                           *)
-(* ===================================================================== *)
+(** Binary coproduct.
+    For QBS X and Y, the coproduct X + Y has carrier (X + Y) (Coq sum).
+    A function f : mR -> X + Y is a random element iff it factors through
+    inl, through inr, or is a measurable gluing of an inl-part and an
+    inr-part via a measurable boolean predicate. *)
 
 Definition coprodQ_random (X Y : qbsType R) : set (mR -> X + Y) :=
   [set f |
@@ -198,9 +195,7 @@ Definition coprodQ (X Y : qbsType R) : qbsType R :=
 
 Arguments coprodQ : clear implicits.
 
-(* ===================================================================== *)
-(* 2. Injection Morphisms                                                 *)
-(* ===================================================================== *)
+(** Injection morphisms. *)
 
 Lemma qbs_morphism_inl (X Y : qbsType R) :
   @qbs_morphism R X (coprodQ X Y) (@inl X Y).
@@ -216,12 +211,9 @@ move=> h hb; rewrite /qbs_Mx /=.
 right; left; exists h; split => //.
 Qed.
 
-(* ===================================================================== *)
-(* 3. Case Analysis Morphism                                              *)
-(*                                                                        *)
-(* If f : X -> Z and g : Y -> Z are morphisms, then                      *)
-(* case analysis : coprodQ X Y -> Z is a morphism.                       *)
-(* ===================================================================== *)
+(** Case analysis morphism.
+    If f : X -> Z and g : Y -> Z are morphisms, then
+    case analysis : coprodQ X Y -> Z is a morphism. *)
 
 Lemma qbs_morphism_case (X Y Z : qbsType R)
   (f : X -> Z) (g : Y -> Z) :
@@ -261,14 +253,11 @@ case=> [[a [ha hdef]] | [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
   by case: (i == 0); [exact: hf _ ha | exact: hg _ hb].
 Qed.
 
-(* ===================================================================== *)
-(* 4. General Coproduct (Sigma Type)                                      *)
-(*                                                                        *)
-(* For a family X : I -> qbsType R, the general coproduct has carrier    *)
-(* {i : I & X i} (dependent sum / sigma type).                           *)
-(* A random element f selects an index via P : mR -> I and then a        *)
-(* random element in the corresponding fiber.                             *)
-(* ===================================================================== *)
+(** General coproduct (Sigma type).
+    For a family X : I -> qbsType R, the general coproduct has carrier
+    {i : I & X i} (dependent sum / sigma type).
+    A random element f selects an index via P : mR -> I and then a
+    random element in the corresponding fiber. *)
 
 Definition gen_coprodQ_random (d : measure_display) (I : measurableType d)
   (X : I -> qbsType R) :
@@ -394,14 +383,11 @@ split; [|split].
   + exfalso; exact: abs erefl.
 Qed.
 
-(* ===================================================================== *)
-(* 5. Dependent Product (Pi Type)                                         *)
-(*                                                                        *)
-(* For a family X : I -> qbsType R, the dependent product (Pi type) has  *)
-(* carrier forall i, X i (dependent function type).                       *)
-(* A function alpha : mR -> (forall i, X i) is a random element          *)
-(* iff for each i, (fun r => alpha r i) is in qbs_Mx (X i).             *)
-(* ===================================================================== *)
+(** Dependent product (Pi type).
+    For a family X : I -> qbsType R, the dependent product (Pi type) has
+    carrier forall i, X i (dependent function type).
+    A function alpha : mR -> (forall i, X i) is a random element
+    iff for each i, (fun r => alpha r i) is in qbs_Mx (X i). *)
 
 Definition piQ_random (I : Type) (X : I -> qbsType R) :
   set (mR -> forall i : I, X i) :=
@@ -468,12 +454,9 @@ have -> : (fun r => fi i (alpha r)) = (fi i) \o alpha by [].
 exact: (hfi i) _ halpha.
 Qed.
 
-(* ===================================================================== *)
-(* 6. Binary Coproduct ~ General Coproduct Isomorphism                   *)
-(*                                                                        *)
-(* The binary coproduct X + Y is isomorphic to the general coproduct     *)
-(* over bool, where true |-> X and false |-> Y.                          *)
-(* ===================================================================== *)
+(** Binary coproduct ~ general coproduct isomorphism.
+    The binary coproduct X + Y is isomorphic to the general coproduct
+    over bool, where true |-> X and false |-> Y. *)
 
 Lemma qbs_morphism_coprod_to_gen (X Y : qbsType R)
   (inhX : X) (inhY : Y) :
@@ -541,18 +524,14 @@ exists P, (Fi true), (Fi false); split; [|split; [|split]].
 - move=> r; rewrite /= hdef /=; by case: (P r).
 Qed.
 
-(* ===================================================================== *)
-(* 7. List Type as Coproduct of Products                                 *)
-(*                                                                        *)
-(* Following Isabelle's Product_QuasiBorel.thy, the list type list(X) is  *)
-(* a QBS defined as a countable coproduct of finite products:             *)
-(*   list(X) = coprod_{n : nat} X^n                                       *)
-(*                                                                        *)
-(* The carrier is seq X. A function alpha : mR -> seq X is a              *)
-(* random element iff there exist a measurable length function             *)
-(* len : mR -> nat and for each position i a random element Fi i in Mx(X) *)
-(* such that alpha(r) = mkseq (fun i => Fi i r) (len r).                 *)
-(* ===================================================================== *)
+(** List type as coproduct of products.
+    Following Isabelle's Product_QuasiBorel.thy, the list type list(X) is
+    a QBS defined as a countable coproduct of finite products:
+    list(X) = coprod_{n : nat} X^n.
+    The carrier is seq X. A function alpha : mR -> seq X is a
+    random element iff there exist a measurable length function
+    len : mR -> nat and for each position i a random element Fi i in Mx(X)
+    such that alpha(r) = mkseq (fun i => Fi i r) (len r). *)
 
 Definition listQ_random (X : qbsType R) :
   set (mR -> seq X) :=
@@ -673,4 +652,4 @@ move=> n; rewrite /Gi.
 by case: (n == 0); [exact: hFi | exact: qbs_Mx_const].
 Qed.
 
-End CoProductQBS.
+End coproduct_qbs.

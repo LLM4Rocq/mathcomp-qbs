@@ -1,11 +1,10 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
-From mathcomp Require Import reals ereal topology borel_hierarchy measure
-  lebesgue_stieltjes_measure probability measurable_realfun.
+From mathcomp Require Import reals ereal topology classical_sets
+  borel_hierarchy measure lebesgue_stieltjes_measure probability
+  measurable_realfun.
 From QBS Require Import quasi_borel probability_qbs.
-
-Import Num.Def Num.Theory reals classical_sets.
 
 (**md**************************************************************************)
 (* # Embedding Classical Probability into QBS Probability                     *)
@@ -22,26 +21,25 @@ Import Num.Def Num.Theory reals classical_sets.
 (* ```                                                                        *)
 (******************************************************************************)
 
+Import GRing.Theory Num.Def Num.Theory.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Local Open Scope classical_set_scope.
 
-Section MeasureAsQBS.
-Variable (R : realType).
+Section measure_as_qbs.
+Variable R : realType.
 
 Local Notation mR := (measurableTypeR R).
 
-(* ===================================================================== *)
-(* 1. Embedding classical probability into QBS probability               *)
-(*    For a standard Borel space M with measurable isomorphism to R,     *)
-(*    given a probability measure P on M, we construct a QBS triple.     *)
-(*                                                                       *)
-(*    The key idea: if g : R -> M is a measurable section (with          *)
-(*    f : M -> R measurable and g o f = id), then (g, pushforward_f P)  *)
-(*    is a valid QBS probability triple on R_qbs(M).                    *)
-(* ===================================================================== *)
+(** Embedding classical probability into QBS probability.
+    For a standard Borel space M with measurable isomorphism to R,
+    given a probability measure P on M, we construct a QBS triple.
+    The key idea: if g : R -> M is a measurable section (with
+    f : M -> R measurable and g o f = id), then (g, pushforward_f P)
+    is a valid QBS probability triple on R_qbs(M). *)
 
 (* General embedding: given a measurable encoding/decoding pair and
    a probability measure, produce a QBS probability triple on realQ. *)
@@ -72,9 +70,7 @@ Defined.
 
 Arguments as_qbs_prob : clear implicits.
 
-(* ===================================================================== *)
-(* 2. Standard distributions as QBS probabilities                        *)
-(* ===================================================================== *)
+(** Standard distributions as QBS probabilities. *)
 
 (* Normal distribution on realQ.
    Uses the math-comp analysis normal_prob as the underlying measure
@@ -112,11 +108,9 @@ Definition qbs_uniform : qbs_prob (realQ R) :=
     (uniform_prob ltr01 : probability mR R)
     (@measurable_id _ mR setT).
 
-(* ===================================================================== *)
-(* 3. Recovery theorem                                                    *)
-(*    The pushforward of the QBS measure along the alpha recovers the    *)
-(*    original probability measure (up to the encoding).                 *)
-(* ===================================================================== *)
+(** Recovery theorem.
+    The pushforward of the QBS measure along the alpha recovers the
+    original probability measure (up to the encoding). *)
 
 Lemma as_qbs_prob_recover (d : measure_display) (M : measurableType d)
   (f : M -> mR) (g : mR -> M)
@@ -150,15 +144,12 @@ rewrite eqEsubset; split => [r hUgr | r [x hUx hfx]].
 - rewrite /preimage /= -hfx h_section; exact: hUx.
 Qed.
 
-(* ===================================================================== *)
-(* 4. Parameterized distribution morphisms                               *)
-(*    Parameterized families of distributions are QBS morphisms from     *)
-(*    the parameter space to the probability monad.                      *)
-(*                                                                       *)
-(*    Key insight: since qbs_normal_distribution mu sigma has alpha =    *)
-(*    idfun for all mu, the monadP_random_pw condition reduces to showing *)
-(*    qbs_Mx (realQ R) idfun, which is just measurable_id.              *)
-(* ===================================================================== *)
+(** Parameterized distribution morphisms.
+    Parameterized families of distributions are QBS morphisms from
+    the parameter space to the probability monad.
+    Key insight: since qbs_normal_distribution mu sigma has alpha =
+    idfun for all mu, the monadP_random_pw condition reduces to showing
+    qbs_Mx (realQ R) idfun, which is just measurable_id. *)
 
 (* The normal distribution, viewed as a function of its mean parameter,
    is a QBS morphism from realQ to monadP(realQ). *)
@@ -180,4 +171,4 @@ rewrite /qbs_Mx /= => r.
 exact: @measurable_id _ mR setT.
 Qed.
 
-End MeasureAsQBS.
+End measure_as_qbs.

@@ -1,17 +1,15 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
-From mathcomp.reals Require Import reals.
-From mathcomp.classical Require Import classical_sets boolp.
+From mathcomp Require Import reals.
+From mathcomp Require Import classical_sets boolp.
 From mathcomp Require Import ereal.
-From mathcomp.analysis Require Import measure_theory.measurable_structure.
-From mathcomp.analysis Require Import measure_theory.measurable_function.
-From mathcomp.analysis Require Import measure_theory.probability_measure.
-From mathcomp.analysis Require Import lebesgue_stieltjes_measure.
-From mathcomp.analysis Require Import lebesgue_integral.
+From mathcomp Require Import measurable_structure.
+From mathcomp Require Import measurable_function.
+From mathcomp Require Import probability_measure.
+From mathcomp Require Import lebesgue_stieltjes_measure.
+From mathcomp Require Import lebesgue_integral.
 From QBS Require Import quasi_borel probability_qbs.
-
-Import Num.Def Num.Theory reals classical_sets.
 
 (**md**************************************************************************)
 (* # Quotient Type for QBS Probability Spaces                                 *)
@@ -31,22 +29,22 @@ Import Num.Def Num.Theory reals classical_sets.
 (* ```                                                                        *)
 (******************************************************************************)
 
+Import GRing.Theory Num.Def Num.Theory.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Local Open Scope classical_set_scope.
 
-Section QBSProbQuot.
-Variable (R : realType).
+Section qbs_prob_quot.
+Variable R : realType.
 Local Notation mR := (measurableTypeR R).
 
-(* ===================================================================== *)
-(* 1. The Quotient Type (setoid-style)                                    *)
-(*    A qbs_prob_space X wraps a qbs_prob X representative.              *)
-(*    Equality is qbs_prob_equiv: two wrapped triples are equal iff      *)
-(*    they induce the same pushforward measure.                          *)
-(* ===================================================================== *)
+(** The quotient type (setoid-style).
+    A qbs_prob_space X wraps a qbs_prob X representative.
+    Equality is qbs_prob_equiv: two wrapped triples are equal iff
+    they induce the same pushforward measure. *)
 
 Record qbs_prob_space (X : qbsType R) := QPS {
   qps_repr : qbs_prob X ;
@@ -79,10 +77,8 @@ Definition qps_of (X : qbsType R) (p : qbs_prob X) : qbs_prob_space X :=
 
 Arguments qps_of {X}.
 
-(* ===================================================================== *)
-(* 2. Lifted Operations                                                   *)
-(*    Return, bind, and integral lifted to qbs_prob_space.               *)
-(* ===================================================================== *)
+(** Lifted operations.
+    Return, bind, and integral lifted to qbs_prob_space. *)
 
 (* Return: X -> qbs_prob_space X *)
 Definition qps_return (X : qbsType R) (x : X) (mu : probability mR R) :
@@ -125,9 +121,7 @@ Definition qps_map (X Y : qbsType R) (f : X -> Y)
 
 Arguments qps_map {X Y}.
 
-(* ===================================================================== *)
-(* 3. Well-definedness: operations respect qps_eq                         *)
-(* ===================================================================== *)
+(** Well-definedness: operations respect qps_eq. *)
 
 (* Return is well-defined: all returns at the same point are equivalent *)
 Lemma qps_return_equiv (X : qbsType R) (x : X)
@@ -164,9 +158,7 @@ have hpreimg : forall (p : qbs_prob X),
 by rewrite !hpreimg; apply: heq; move=> alpha halpha; apply: hU; apply: hf.
 Qed.
 
-(* ===================================================================== *)
-(* 4. Monad Laws on the quotient (as qps_eq equalities)                  *)
-(* ===================================================================== *)
+(** Monad laws on the quotient (as qps_eq equalities). *)
 
 (* Left unit: bind (return x) f ~ f x *)
 Lemma qps_bind_returnl (X Y : qbsType R) (x : X)
@@ -206,9 +198,7 @@ Lemma qps_bindA (X Y Z : qbsType R) (m : qbs_prob_space X)
       hfg_diag)).
 Proof. exact: qbs_bindA. Qed.
 
-(* ===================================================================== *)
-(* 5. Expectation and probability of events on the quotient              *)
-(* ===================================================================== *)
+(** Expectation and probability of events on the quotient. *)
 
 Definition qps_expect (X : qbsType R) (p : qbs_prob_space X)
   (h : X -> R) : \bar R :=
@@ -234,12 +224,10 @@ rewrite /qps_prob_event /qbs_prob_event.
 exact: heq.
 Qed.
 
-(* ===================================================================== *)
-(* 6. The quotient forms a QBS via monadP                                *)
-(*    Since qbs_prob_space X is isomorphic to qbs_prob X as a type,     *)
-(*    and monadP X already equips qbs_prob X with a QBS structure,      *)
-(*    we transfer the QBS structure to qbs_prob_space X.                *)
-(* ===================================================================== *)
+(** The quotient forms a QBS via monadP.
+    Since qbs_prob_space X is isomorphic to qbs_prob X as a type,
+    and monadP X already equips qbs_prob X with a QBS structure,
+    we transfer the QBS structure to qbs_prob_space X. *)
 
 Definition qps_Mx (X : qbsType R) : set (mR -> qbs_prob_space X) :=
   [set beta | @monadP_random_pw R X (fun r => qps_repr (beta r))].
@@ -282,9 +270,7 @@ Definition qbs_prob_space_qbs (X : qbsType R) : qbsType R :=
       (@qps_Mx_const X)
       (@qps_Mx_glue X)).
 
-(* ===================================================================== *)
-(* 7. Integration on the quotient: linearity properties                  *)
-(* ===================================================================== *)
+(** Integration on the quotient: linearity properties. *)
 
 Lemma qps_integral_const (X : qbsType R) (p : qbs_prob_space X) (c : \bar R) :
   qps_integral p (fun _ => c) = (\int[qbs_prob_mu (qps_repr p)]_x c)%E.
@@ -305,14 +291,12 @@ Lemma qps_integral_bind (X Y : qbsType R) (p : qbs_prob_space X)
     h (qbs_prob_alpha (f (qbs_prob_alpha (qps_repr p) r)) r))%E.
 Proof. by []. Qed.
 
-(* ===================================================================== *)
-(* 8. Canonical representative via classical choice                       *)
-(*    Given a qbs_prob, we can pick a canonical representative from its  *)
-(*    equivalence class using constructive_indefinite_description.        *)
-(*    This does NOT give a well-defined function (different inputs in     *)
-(*    the same class may get different representatives), but it provides  *)
-(*    a representative that IS equivalent to the original.               *)
-(* ===================================================================== *)
+(** Canonical representative via classical choice.
+    Given a qbs_prob, we can pick a canonical representative from its
+    equivalence class using constructive_indefinite_description.
+    This does NOT give a well-defined function (different inputs in
+    the same class may get different representatives), but it provides
+    a representative that IS equivalent to the original. *)
 
 Definition qps_pick_repr (X : qbsType R) (p : qbs_prob_space X) :
   qbs_prob_space X :=
@@ -327,7 +311,7 @@ rewrite /qps_pick_repr /qps_eq /=.
 exact: (proj2_sig (boolp.constructive_indefinite_description _ )).
 Qed.
 
-End QBSProbQuot.
+End qbs_prob_quot.
 
 Arguments qbs_prob_space {R}.
 Arguments QPS {R X}.

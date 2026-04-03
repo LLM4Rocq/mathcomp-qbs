@@ -1,15 +1,13 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
-From mathcomp Require Import reals ereal topology normedtype numfun measure
-  lebesgue_integral lebesgue_integral_fubini lebesgue_stieltjes_measure
-  lebesgue_measure probability charge.
-From mathcomp.classical Require Import boolp.
-From mathcomp.algebra_tactics Require Import ring.
+From mathcomp Require Import reals ereal topology classical_sets normedtype
+  numfun measure lebesgue_integral lebesgue_integral_fubini
+  lebesgue_stieltjes_measure lebesgue_measure probability charge.
+From mathcomp Require Import boolp.
+From mathcomp Require Import ring.
 From QBS Require Import quasi_borel probability_qbs pair_qbs_measure
   measure_as_qbs_measure normal_algebra.
-
-Import Num.Def Num.Theory reals classical_sets GRing.Theory.
 
 (**md**************************************************************************)
 (* # Bayesian Linear Regression                                               *)
@@ -38,18 +36,18 @@ Import Num.Def Num.Theory reals classical_sets GRing.Theory.
 (* ```                                                                        *)
 (******************************************************************************)
 
+Import GRing.Theory Num.Def Num.Theory.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Local Open Scope classical_set_scope.
 
-(* ===================================================================== *)
-(* Integration against normal_prob via Radon-Nikodym                     *)
-(* ===================================================================== *)
+(** Integration against normal_prob via Radon-Nikodym. *)
 
-Section IntegralNormalProb.
-Variable (R : realType).
+Section integral_normal_prob.
+Variable R : realType.
 Local Notation mu := (@lebesgue_measure R).
 Local Open Scope ring_scope.
 Local Open Scope ereal_scope.
@@ -81,24 +79,22 @@ apply: ae_eq_integral => //.
   + by move=> E E01 mE; rewrite -h3.
 Qed.
 
-End IntegralNormalProb.
+End integral_normal_prob.
 
-(* ===================================================================== *)
-(* Part II: Bayesian regression example                                  *)
-(* ===================================================================== *)
+(** Part II: Bayesian regression example. *)
 
-Section BayesianRegression.
-Variable (R : realType).
+Section bayesian_regression.
+Variable R : realType.
 Local Notation mR := (measurableTypeR R).
 Local Open Scope ring_scope.
 Local Open Scope ereal_scope.
 
-(* ----- Model parameters (matching Isabelle AFP) ---------------------- *)
+(* Model parameters (matching Isabelle AFP) *)
 
 Let prior_sigma : R := 3%:R.     (* N(0,3) prior *)
 Let noise_sigma : R := 2%:R^-1.  (* sigma = 1/2 noise *)
 
-(* ----- 1. Prior distributions ---------------------------------------- *)
+(* 1. Prior distributions *)
 
 Lemma prior_sigma_gt0 : (0 < prior_sigma)%R.
 Proof. by rewrite /prior_sigma ltr0n. Qed.
@@ -111,7 +107,7 @@ Definition slope_prior : qbs_prob (realQ R) :=
 Definition intercept_prior : qbs_prob (realQ R) :=
   @qbs_normal_distribution R (0 : R) prior_sigma prior_sigma_gt0.
 
-(* ----- 2. Likelihood function (matching Isabelle's d and obs) -------- *)
+(* 2. Likelihood function (matching Isabelle's d and obs) *)
 
 (* d mu x = normal_pdf mu (1/2) x *)
 Definition d (mu x : R) : R := normal_pdf mu noise_sigma x.
@@ -138,7 +134,7 @@ do 4! (apply: mulr_ge0; last exact: d_ge0).
 exact: d_ge0.
 Qed.
 
-(* ----- 3. Evidence (normalizing constant) ---------------------------- *)
+(* 3. Evidence (normalizing constant) *)
 (* Z = integral of obs over the prior.
    In the Isabelle development, this is computed explicitly as
    C = (4*sqrt(2)/(pi^2*sqrt(66961*pi))) * exp(-1674761/1674025)
@@ -166,7 +162,7 @@ Lemma evidence_eq
       (obs (s, b))%:E)).
 Proof. rewrite /evidence; exact: qbs_pair_integralE. Qed.
 
-(* ----- 4. Posterior distribution via Bayes' rule --------------------- *)
+(* 4. Posterior distribution via Bayes' rule *)
 (* E_post[g] = E_prior[g * obs] / E_prior[obs]
    This corresponds to Isabelle's program_result_measure:
      posterior = density(prior)(obs / C) *)
@@ -208,7 +204,7 @@ rewrite /posterior_density; congr (_ / _).
 exact: qbs_pair_integralE.
 Qed.
 
-(* ----- 5. Single-observation likelihood as QBS morphism -------------- *)
+(* 5. Single-observation likelihood as QBS morphism *)
 
 Definition likelihood_single (obs_x : R) :
   prodQ (realQ R) (realQ R) -> qbs_prob (realQ R) :=
@@ -238,7 +234,7 @@ split; first exact: (@measurable_id _ mR setT).
 by split.
 Qed.
 
-(* ----- 6. Predictive distribution via pair integration (Fubini) ------ *)
+(* 6. Predictive distribution via pair integration (Fubini) *)
 
 Definition predictive_integral (obs_x : R) (h : realQ R -> \bar R) : \bar R :=
   qbs_pair_integral slope_prior intercept_prior
@@ -254,7 +250,7 @@ Lemma predictive_marginal (obs_x : R) (h : realQ R -> \bar R)
       qbs_integral _ (likelihood_single obs_x (s, b)) h)).
 Proof. rewrite /predictive_integral; exact: qbs_pair_integralE. Qed.
 
-(* ----- 7. Monadic prior on the parameter space ----------------------- *)
+(* 7. Monadic prior on the parameter space *)
 (* Isabelle's prior: do { s <- nu; b <- nu; return (fun r => s*r+b) }
 
    In Isabelle, the prior is a probability on the function space
@@ -326,7 +322,7 @@ Definition prior_bind : qbs_prob (prodQ (realQ R) (realQ R)) :=
   @qbs_bind R (realQ R) (prodQ (realQ R) (realQ R))
     slope_prior prior_inner prior_bind_diag.
 
-(* ----- 8. Normalizer (norm_qbs) -------------------------------------- *)
+(* 8. Normalizer (norm_qbs) *)
 (* Isabelle's norm_qbs_measure: given a weighted QBS probability, either
    return the normalized probability (when evidence is positive and finite)
    or signal an error. We model the error case with option.
@@ -377,7 +373,7 @@ case: ifPn => // /andP[h1 h2].
 by exfalso; apply: hev.
 Qed.
 
-(* ----- 9. The Bayesian program --------------------------------------- *)
+(* 9. The Bayesian program *)
 (* Isabelle's program:
      program = norm_qbs_measure (pushforward prior (fun f => (f, obs f)))
    In our pair formulation, the pushforward through (fun f => (f, obs f))
@@ -398,9 +394,7 @@ case: ifPn => // /negP.
 move/negP; rewrite negb_and => /orP[/negP|/negP]; contradiction.
 Qed.
 
-(* ===================================================================== *)
-(* 11. Phase 1 integration: integrate out the intercept b                *)
-(* ===================================================================== *)
+(** Phase 1 integration: integrate out the intercept b. *)
 (* The evidence integral decomposes via Fubini as:
      evidence = ∫[N(0,3)]_s ∫[N(0,3)]_b obs(s,b)
 
@@ -505,9 +499,7 @@ rewrite ge0_integralZl_EFin //.
 - exact: scalar_of_s_ge0.
 Qed.
 
-(* ===================================================================== *)
-(* 12. Phase 2 integration: integrate out the slope s                     *)
-(* ===================================================================== *)
+(** Phase 2 integration: integrate out the slope s. *)
 
 (* scalar_of_s is the product of 5 gaussian_prod_scalar terms *)
 Lemma scalar_of_s_eq (s : R) :
@@ -560,9 +552,7 @@ rewrite ge0_integralZl_EFin //.
 - have := phase2_const_gt0 R; rewrite lt0r => /andP[_]; done.
 Qed.
 
-(* ===================================================================== *)
-(* 13. Evidence value and unconditional program result                    *)
-(* ===================================================================== *)
+(** Evidence value and unconditional program result. *)
 
 (* The evidence equals phase2_const, given the necessary measure-theoretic
    hypotheses for Fubini decomposition and both integration phases. *)
@@ -639,4 +629,4 @@ exists (fun p => 1 * (obs p)%:E / evidence); split.
 - exact: posterior_density_total.
 Qed.
 
-End BayesianRegression.
+End bayesian_regression.

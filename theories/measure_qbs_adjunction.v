@@ -1,14 +1,12 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
-From mathcomp.reals Require Import reals.
-From mathcomp.classical Require Import classical_sets.
-From mathcomp.analysis Require Import measure_theory.measurable_structure.
-From mathcomp.analysis Require Import measure_theory.measurable_function.
-From mathcomp.analysis Require Import borel_hierarchy lebesgue_stieltjes_measure.
+From mathcomp Require Import reals.
+From mathcomp Require Import classical_sets.
+From mathcomp Require Import measurable_structure.
+From mathcomp Require Import measurable_function.
+From mathcomp Require Import borel_hierarchy lebesgue_stieltjes_measure.
 From QBS Require Import quasi_borel.
-
-Import Num.Def Num.Theory reals classical_sets.
 
 (**md**************************************************************************)
 (* # Adjunction between Measurable Spaces and Quasi-Borel Spaces              *)
@@ -19,21 +17,21 @@ Import Num.Def Num.Theory reals classical_sets.
 (* elements are measurable. These form an adjunction L -| R.                  *)
 (******************************************************************************)
 
+Import GRing.Theory Num.Def Num.Theory.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Local Open Scope classical_set_scope.
 
-Section MQA.
-Variable (R : realType).
+Section mqa.
+Variable R : realType.
 
 Local Notation mR := (measurableTypeR R).
 
-(* ===================================================================== *)
-(* Section 1: R functor properties                                       *)
-(* R_qbs is defined in quasi_borel.v. Here we show it is functorial.     *)
-(* ===================================================================== *)
+(** R functor properties.
+    R_qbs is defined in quasi_borel.v. Here we show it is functorial. *)
 
 (* If f is measurable, then f is a QBS morphism between R_qbs spaces *)
 Lemma R_qbs_morph (d1 d2 : measure_display)
@@ -66,10 +64,8 @@ apply: (@qbs_morphism_comp R (@R_qbs R _ M1) (@R_qbs R _ M2) (@R_qbs R _ M3)).
 - exact: R_qbs_morph.
 Qed.
 
-(* ===================================================================== *)
-(* Section 2: L functor (sigma-algebra level)                            *)
-(* L sends a QBS to its induced sigma-algebra sigma_Mx.                  *)
-(* ===================================================================== *)
+(** L functor (sigma-algebra level).
+    L sends a QBS to its induced sigma-algebra sigma_Mx. *)
 
 (* sigma_Mx is already defined in quasi_borel.v as:
    sigma_Mx X = { U | forall alpha in Mx, alpha^{-1}(U) is measurable } *)
@@ -123,11 +119,9 @@ have hgfa : @qbs_Mx R Z (g \o (f \o alpha)) by exact: hg.
 exact: hU.
 Qed.
 
-(* ===================================================================== *)
-(* Section 3: Adjunction L -| R                                          *)
-(* For a QBS X and measurable space Y:                                   *)
-(*   Hom_QBS(X, R(Y)) ~ Hom_Meas(L(X), Y)                             *)
-(* ===================================================================== *)
+(** Adjunction L -| R.
+    For a QBS X and measurable space Y:
+    Hom_QBS(X, R(Y)) ~ Hom_Meas(L(X), Y). *)
 
 (* Left-to-right: a QBS morphism X -> R(Y) gives a "measurable" map
    w.r.t. L_sigma(X) and sigma(Y) *)
@@ -163,10 +157,8 @@ split.
 - exact: lr_adj_r2l.
 Qed.
 
-(* ===================================================================== *)
-(* Section 4: R preserves products                                       *)
-(* R(M1 x M2) has the same random elements as prodQ(R(M1), R(M2))       *)
-(* ===================================================================== *)
+(** R preserves products.
+    R(M1 x M2) has the same random elements as prodQ(R(M1), R(M2)). *)
 
 (* The random elements of R_qbs applied to a product measurable type
    coincide with those of the QBS product of R_qbs spaces *)
@@ -183,11 +175,9 @@ split.
 - rewrite /qbs_Mx /=; move=> [h1 h2]; apply/measurable_fun_pairP; split; exact.
 Qed.
 
-(* ===================================================================== *)
-(* Section 5: Standard Borel spaces                                      *)
-(* A measurable space is standard Borel if it is measurably isomorphic   *)
-(* to a measurable subset of R.                                          *)
-(* ===================================================================== *)
+(** Standard Borel spaces.
+    A measurable space is standard Borel if it is measurably isomorphic
+    to a measurable subset of R. *)
 
 (* Definition of standard Borel: there exist measurable maps
    witnessing an isomorphism with a measurable subset of R *)
@@ -245,4 +235,4 @@ move=> hU alpha; rewrite /qbs_Mx /= => halpha.
 have := halpha measurableT U hU; rewrite setTI; exact.
 Qed.
 
-End MQA.
+End mqa.

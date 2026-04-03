@@ -1,27 +1,18 @@
 (* mathcomp analysis (c) 2025 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
-From mathcomp.reals Require Import reals.
-From mathcomp.classical Require Import classical_sets.
-From mathcomp.analysis Require Import topology_theory.num_topology.
-From mathcomp.analysis Require Import measure_theory.measurable_structure.
-From mathcomp.analysis Require Import measure_theory.measurable_function.
-From mathcomp.analysis Require Import lebesgue_stieltjes_measure.
-From mathcomp.analysis Require Import measurable_realfun.
-
-Import Num.Def Num.Theory.
-Import numFieldTopology.Exports.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
-
-Local Open Scope classical_set_scope.
+From mathcomp Require Import reals.
+From mathcomp Require Import classical_sets.
+From mathcomp Require Import num_topology.
+From mathcomp Require Import measurable_structure.
+From mathcomp Require Import measurable_function.
+From mathcomp Require Import lebesgue_stieltjes_measure.
+From mathcomp Require Import measurable_realfun.
 
 (**md**************************************************************************)
 (* # Quasi-Borel Spaces                                                       *)
 (*                                                                            *)
-(* Formalization following:                                                    *)
+(* Formalization following:                                                   *)
 (* - "A Convenient Category for Higher-Order Probability Theory"              *)
 (*   Heunen, Kammar, Staton, Yang (LICS 2017)                                *)
 (* - Isabelle AFP: Quasi_Borel_Spaces by Hirata, Minamide, Sato              *)
@@ -37,18 +28,27 @@ Local Open Scope classical_set_scope.
 (*   realQ, natQ, boolQ == QBS on R, nat, bool via R_qbs                      *)
 (*   prodQ X Y == binary product QBS on (X * Y)                               *)
 (*   expQ X Y == exponential (function space) QBS on qbsHomType R X Y         *)
-(*   unitQ == terminal QBS on unit                                             *)
+(*   unitQ == terminal QBS on unit                                            *)
 (*   sub_qbs X P == subspace QBS on {x : X | P x}                             *)
-(*   generating_qbs G == smallest QBS containing generators G                  *)
-(*   generating_Mx G == inductive closure of G under the QBS axioms            *)
+(*   generating_qbs G == smallest QBS containing generators G                 *)
+(*   generating_Mx G == inductive closure of G under the QBS axioms           *)
 (*   map_qbs f hf == image QBS on Y via morphism f : X -> Y                   *)
 (*   sigma_Mx X == the sigma-algebra induced by the random elements of X      *)
 (*   qbs_leT MxX MxY == order on QBS: set inclusion on random elements        *)
 (*   qbs_supT MxX MxY == join (sup) of two QBS on the same carrier            *)
 (*   qbs_morphism_eval == evaluation morphism (expQ X Y) x X -> Y             *)
-(*   qbs_morphism_curry == currying morphism X -> expQ Y Z                     *)
+(*   qbs_morphism_curry == currying morphism X -> expQ Y Z                    *)
 (* ```                                                                        *)
 (******************************************************************************)
+
+Import Num.Def Num.Theory.
+Import numFieldTopology.Exports.
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
+Local Open Scope classical_set_scope.
 
 HB.mixin Record isQBS (R : realType) (T : Type) := {
   qbs_Mx : set (measurableTypeR R -> T) ;
@@ -59,8 +59,7 @@ HB.mixin Record isQBS (R : realType) (T : Type) := {
     (Fi : nat -> measurableTypeR R -> T),
     measurable_fun setT P ->
     (forall i, qbs_Mx (Fi i)) ->
-    qbs_Mx (fun r => Fi (P r) r) ;
-}.
+    qbs_Mx (fun r => Fi (P r) r) }.
 
 #[short(type="qbsType")]
 HB.structure Definition QBSpace (R : realType) := { T of isQBS R T }.
@@ -75,12 +74,12 @@ HB.mixin Record isQBSMorphism (R : realType) (X Y : qbsType R)
 HB.structure Definition QBSHom (R : realType) (X Y : qbsType R) :=
   {f of @isQBSMorphism R X Y f}.
 
-Section QBS.
-Variable (R : realType).
+Section qbs.
+Variable R : realType.
 
 Local Notation mR := (measurableTypeR R).
 
-(* ----- 1. Morphisms ----- *)
+(* 1. Morphisms *)
 
 Definition qbs_morphism (X Y : qbsType R) (f : X -> Y) : Prop :=
   forall alpha, @qbs_Mx R X alpha -> @qbs_Mx R Y (f \o alpha).
@@ -96,7 +95,7 @@ Lemma qbs_morphism_const (X Y : qbsType R) (y : Y) :
   @qbs_morphism X Y (fun _ => y).
 Proof. by move=> alpha _; apply: qbs_Mx_const. Qed.
 
-(* ----- 2. The R functor: measurableType -> qbsType ----- *)
+(* 2. The R functor: measurableType -> qbsType *)
 
 Lemma measurable_glue (d : measure_display) (M : measurableType d)
   (P : mR -> nat) (Fi : nat -> mR -> M) :
@@ -130,7 +129,7 @@ Definition realQ : qbsType R := R_qbs mR.
 Definition natQ : qbsType R := R_qbs nat.
 Definition boolQ : qbsType R := R_qbs bool.
 
-(* ----- 3. Binary Product ----- *)
+(* 3. Binary Product *)
 
 Lemma prodQ_Mx_comp (X Y : qbsType R) :
   forall alpha f,
@@ -198,7 +197,7 @@ Proof.
 by move=> hf hg alpha halpha; split; [apply: hf | apply: hg].
 Qed.
 
-(* ----- 4. Exponential (Function Space) ----- *)
+(* 4. Exponential (Function Space) *)
 
 (* The carrier of expQ X Y is qbsHomType R X Y (bundled morphisms).
    The random elements are those g : mR -> qbsHomType R X Y such that
@@ -268,7 +267,7 @@ Definition expQ (X Y : qbsType R) : qbsType R :=
 
 Arguments expQ : clear implicits.
 
-(* ----- 5. Key Theorems: Cartesian Closure ----- *)
+(* 5. Key Theorems: Cartesian Closure *)
 
 (* Evaluation morphism: (expQ X Y) x X -> Y *)
 Lemma qbs_morphism_eval (X Y : qbsType R) :
@@ -319,7 +318,7 @@ apply: (@qbs_hom_proof R (prodQ X Y) Z f); split => /=.
 - exact: hg2.
 Qed.
 
-(* ----- 6. Unit QBS ----- *)
+(* 6. Unit QBS *)
 
 (* NB: manual HB.pack because this is a non-canonical QBS on unit *)
 Definition unitQ : qbsType R :=
@@ -335,7 +334,7 @@ Lemma qbs_morphism_unit (X : qbsType R) :
   @qbs_morphism X unitQ (fun _ => tt).
 Proof. by move=> alpha _. Qed.
 
-(* ----- 7. sigma_Mx: the induced sigma-algebra ----- *)
+(* 7. sigma_Mx: the induced sigma-algebra *)
 
 Definition sigma_Mx (X : qbsType R) : set (set X) :=
   [set U | forall alpha, @qbs_Mx R X alpha ->
@@ -361,9 +360,9 @@ rewrite preimage_bigcup.
 exact: bigcup_measurable (fun i _ => hF i _ halpha).
 Qed.
 
-(* ----- 8. Comparison Morphisms ----- *)
-(* Standard operations on R, nat, bool that are measurable are automatically
-   QBS morphisms, since R_qbs sends measurable functions to morphisms. *)
+(* 8. Comparison Morphisms *)
+(* Standard operations on R, nat, bool that are measurable
+   are automatically QBS morphisms via R_qbs. *)
 
 (* Addition is a QBS morphism prodQ realQ realQ -> realQ *)
 Lemma qbs_morphism_add :
@@ -393,11 +392,7 @@ Proof.
 move=> alpha ha /=; exact: measurable_neg ha.
 Qed.
 
-(* ===================================================================== *)
-(* Extensions: Subspaces, Generating sets, Structural morphisms          *)
-(* ===================================================================== *)
-
-(* ----- 9. Subspace QBS ----- *)
+(* 9. Subspace QBS *)
 (* Given a QBS X and a predicate P on X, the subspace sub_qbs X P has
    carrier {x : X | P x} and random elements alpha such that
    proj1_sig \o alpha is random in X. *)
@@ -447,7 +442,7 @@ Definition sub_qbs : qbsType R :=
 
 End sub_qbs_def.
 
-(* ----- 10. Generating QBS ----- *)
+(* 10. Generating QBS *)
 (* Given a set G of functions R -> X, generate the smallest QBS
    containing G by closing under the three QBS axioms. *)
 
@@ -476,7 +471,7 @@ Lemma generating_qbs_incl (T : Type) (G : set (mR -> T)) :
   G `<=` @qbs_Mx R (generating_qbs G).
 Proof. by move=> alpha halpha; exact: gen_base. Qed.
 
-(* ----- 11. Product swap and associators ----- *)
+(* 11. Product swap and associators *)
 
 Lemma qbs_morphism_swap (X Y : qbsType R) :
   @qbs_morphism (prodQ X Y) (prodQ Y X) (fun p => (p.2, p.1)).
@@ -500,7 +495,7 @@ have [h2 h3] := h23.
 by split => /=; [split |].
 Qed.
 
-(* ----- 12. Exponential morphisms ----- *)
+(* 12. Exponential morphisms *)
 
 (* Helper: random element paired with constant is random in product *)
 Lemma prodQ_random_const (X Y : qbsType R) (alpha : mR -> X) (y : Y) :
@@ -581,7 +576,7 @@ have -> : (fun p : realQ * X =>
 by [].
 Qed.
 
-(* ----- 13. Image QBS (map_qbs) ----- *)
+(* 13. Image QBS (map_qbs) *)
 (* Given a QBS morphism f : X -> Y, the image QBS map_qbs f X has
    carrier Y and random elements generated by {f \o alpha | alpha in Mx(X)}.
    This uses generating_qbs to close under the three QBS axioms,
@@ -630,7 +625,7 @@ Proof.
 move=> alpha halpha; exact: map_qbs_random halpha.
 Qed.
 
-(* ----- 14. Order Structure on QBS ----- *)
+(* 14. Order Structure on QBS *)
 (* Following Isabelle's order on QBS spaces:
    X <= Y iff Mx(X) <= Mx(Y) (for QBS with the same carrier type).
    More random elements = less restrictive structure = higher in the order.
@@ -669,7 +664,8 @@ Lemma generating_qbs_least (T : Type) (G : set (mR -> T)) (Mx : set (mR -> T))
   (c1 : forall alpha f, Mx alpha -> measurable_fun setT f -> Mx (alpha \o f))
   (c2 : forall x : T, Mx (fun _ => x))
   (c3 : forall (P : mR -> nat) (Fi : nat -> mR -> T),
-    measurable_fun setT P -> (forall i, Mx (Fi i)) -> Mx (fun r => Fi (P r) r)) :
+    measurable_fun setT P ->
+    (forall i, Mx (Fi i)) -> Mx (fun r => Fi (P r) r)) :
   G `<=` Mx -> generating_Mx G `<=` Mx.
 Proof.
 move=> hG beta hbeta; elim: hbeta.
@@ -703,7 +699,9 @@ Lemma qbs_supT_least (T : Type) (MxX MxY MxZ : set (mR -> T))
   (c1 : forall alpha f, MxZ alpha -> measurable_fun setT f -> MxZ (alpha \o f))
   (c2 : forall x : T, MxZ (fun _ => x))
   (c3 : forall (P : mR -> nat) (Fi : nat -> mR -> T),
-    measurable_fun setT P -> (forall i, MxZ (Fi i)) -> MxZ (fun r => Fi (P r) r)) :
+    measurable_fun setT P ->
+    (forall i, MxZ (Fi i)) ->
+    MxZ (fun r => Fi (P r) r)) :
   qbs_leT MxX MxZ ->
   qbs_leT MxY MxZ ->
   qbs_leT (@qbs_Mx R (qbs_supT MxX MxY)) MxZ.
@@ -713,4 +711,4 @@ apply: generating_qbs_least c1 c2 c3 _.
 by move=> alpha /= -[/hX | /hY].
 Qed.
 
-End QBS.
+End qbs.
