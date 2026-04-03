@@ -1,0 +1,275 @@
+\chapter{Core QBS Theory}
+
+\section{QBS Definition}
+
+\begin{definition}[Quasi-Borel Space]
+  \label{def:qbs}
+  \rocq{QBS.quasi\_borel.isQBS}
+  \rocqok
+  A \emph{quasi-Borel space} over a real type $R$ is a type $T$
+  equipped with a set $M_X \subseteq (\mathbb{R} \to T)$ of
+  \emph{random elements} satisfying:
+  \begin{enumerate}
+    \item (Composition) If $\alpha \in M_X$ and
+      $f : \mathbb{R} \to \mathbb{R}$ is measurable, then
+      $\alpha \circ f \in M_X$.
+    \item (Constants) For every $x : T$, the constant function
+      $\lambda r. x$ is in $M_X$.
+    \item (Gluing) If $P : \mathbb{R} \to \mathbb{N}$ is measurable
+      and $F_i \in M_X$ for all $i$, then
+      $\lambda r. F_{P(r)}(r) \in M_X$.
+  \end{enumerate}
+\end{definition}
+
+\begin{definition}[QBS Morphism]
+  \label{def:qbs_morphism}
+  \rocq{QBS.quasi\_borel.qbs\_morphism}
+  \rocqok
+  \uses{def:qbs}
+  A function $f : X \to Y$ between QBS is a \emph{QBS morphism}
+  if for every $\alpha \in M_X$, we have $f \circ \alpha \in M_Y$.
+\end{definition}
+
+\section{Categorical Structure}
+
+\begin{definition}[Binary Product]
+  \label{def:prodQ}
+  \rocq{QBS.quasi\_borel.prodQ}
+  \rocqok
+  \uses{def:qbs}
+  The product $X \times Y$ of two QBS has random elements
+  $M_{X \times Y} = \{\alpha \mid \pi_1 \circ \alpha \in M_X
+  \text{ and } \pi_2 \circ \alpha \in M_Y\}$.
+\end{definition}
+
+\begin{definition}[Exponential]
+  \label{def:expQ}
+  \rocq{QBS.quasi\_borel.expQ}
+  \rocqok
+  \uses{def:qbs, def:qbs_morphism}
+  The exponential $X \Rightarrow Y$ has carrier the set of QBS
+  morphisms $X \to Y$, with random elements
+  $g : \mathbb{R} \to (X \to Y)$ such that
+  $(r, x) \mapsto g(r)(x)$ is a QBS morphism
+  $\mathbb{R} \times X \to Y$.
+\end{definition}
+
+\begin{theorem}[Cartesian Closure]
+  \label{thm:cartesian_closure}
+  \rocq{QBS.quasi\_borel.qbs\_morphism\_eval}
+  \rocq{QBS.quasi\_borel.qbs\_morphism\_curry}
+  \rocqok
+  \uses{def:prodQ, def:expQ, def:qbs_morphism}
+  QBS forms a cartesian closed category: evaluation
+  $(X \Rightarrow Y) \times X \to Y$ and currying
+  $f : X \times Y \to Z \mapsto \hat{f} : X \to (Y \Rightarrow Z)$
+  are QBS morphisms.
+\end{theorem}
+
+\section{Adjunction}
+
+\begin{definition}[R Functor]
+  \label{def:R_qbs}
+  \rocq{QBS.quasi\_borel.R\_qbs}
+  \rocqok
+  \uses{def:qbs}
+  The functor $R : \mathbf{Meas} \to \mathbf{QBS}$ sends a
+  measurable space $M$ to the QBS with
+  $M_{R(M)} = \{f : \mathbb{R} \to M \mid f \text{ measurable}\}$.
+\end{definition}
+
+\begin{definition}[L Functor]
+  \label{def:L_sigma}
+  \rocq{QBS.measure\_qbs\_adjunction.L\_sigma}
+  \rocqok
+  \uses{def:qbs}
+  The functor $L : \mathbf{QBS} \to \sigma\text{-}\mathbf{Alg}$
+  sends a QBS $X$ to the sigma-algebra
+  $\sigma_{M_X} = \{U \subseteq X \mid \forall \alpha \in M_X,\;
+  \alpha^{-1}(U) \text{ measurable}\}$.
+\end{definition}
+
+\begin{theorem}[L $\dashv$ R Adjunction]
+  \label{thm:adjunction}
+  \rocq{QBS.measure\_qbs\_adjunction.lr\_adj\_natural}
+  \rocqok
+  \uses{def:R_qbs, def:L_sigma, def:qbs_morphism}
+  $\mathrm{Hom}_{\mathbf{QBS}}(X, R(Y)) \cong
+  \mathrm{Hom}_{\sigma\text{-}\mathbf{Alg}}(L(X), Y)$.
+\end{theorem}
+
+\chapter{Probability Monad}
+
+\section{QBS Probability Triple}
+
+\begin{definition}[QBS Probability]
+  \label{def:qbs_prob}
+  \rocq{QBS.probability\_qbs.qbs\_prob}
+  \rocqok
+  \uses{def:qbs}
+  A \emph{QBS probability} on $X$ is a pair $(\alpha, \mu)$ where
+  $\alpha \in M_X$ is a random element and $\mu$ is a probability
+  measure on $\mathbb{R}$.
+\end{definition}
+
+\begin{definition}[Equivalence of Triples]
+  \label{def:qbs_prob_equiv}
+  \rocq{QBS.probability\_qbs.qbs\_prob\_equiv}
+  \rocqok
+  \uses{def:qbs_prob, def:L_sigma}
+  Two triples $(\alpha_1, \mu_1) \sim (\alpha_2, \mu_2)$ iff they
+  induce the same pushforward on $\sigma_{M_X}$:
+  $\mu_1(\alpha_1^{-1}(U)) = \mu_2(\alpha_2^{-1}(U))$ for all
+  $U \in \sigma_{M_X}$.
+\end{definition}
+
+\section{Monadic Operations}
+
+\begin{definition}[Return]
+  \label{def:qbs_return}
+  \rocq{QBS.probability\_qbs.qbs\_return}
+  \rocqok
+  \uses{def:qbs_prob}
+  $\eta(x) = (\lambda r. x, \mu)$ for any probability measure $\mu$.
+\end{definition}
+
+\begin{definition}[Bind]
+  \label{def:qbs_bind}
+  \rocq{QBS.probability\_qbs.qbs\_bind}
+  \rocqok
+  \uses{def:qbs_prob, def:qbs_morphism}
+  Given $p = (\alpha, \mu)$ on $X$ and $f : X \to P(Y)$, the bind
+  $p \gg\!= f$ is $(\lambda r. \alpha_{f(\alpha(r))}(r), \mu)$
+  when the diagonal $r \mapsto \alpha_{f(\alpha(r))}(r)$ is in $M_Y$.
+\end{definition}
+
+\begin{theorem}[Monad Laws]
+  \label{thm:monad_laws}
+  \rocq{QBS.probability\_qbs.qbs\_bind\_returnl}
+  \rocq{QBS.probability\_qbs.qbs\_bind\_returnr}
+  \rocq{QBS.probability\_qbs.qbs\_bindA}
+  \rocqok
+  \uses{def:qbs_return, def:qbs_bind, def:qbs_prob_equiv}
+  The operations satisfy (up to $\sim$):
+  left unit $\eta(x) \gg\!= f \sim f(x)$,
+  right unit $p \gg\!= \eta \sim p$,
+  associativity $(p \gg\!= f) \gg\!= g \sim p \gg\!= (\lambda x. f(x) \gg\!= g)$.
+\end{theorem}
+
+\section{Integration and Fubini}
+
+\begin{definition}[QBS Integration]
+  \label{def:qbs_integral}
+  \rocq{QBS.probability\_qbs.qbs\_integral}
+  \rocqok
+  \uses{def:qbs_prob}
+  $\int_p f = \int_\mu f(\alpha(r))\, d\mu(r)$.
+\end{definition}
+
+\begin{theorem}[Fubini on QBS]
+  \label{thm:fubini}
+  \rocq{QBS.pair\_qbs\_measure.qbs\_pair\_integralE}
+  \rocqok
+  \uses{def:qbs_integral, def:prodQ}
+  For independent $p, q$ on $X, Y$:
+  $\int_{p \otimes q} h = \int_p \int_q h(x, y)$.
+\end{theorem}
+
+\section{QBS--Giry Connection}
+
+\begin{definition}[QBS to Giry]
+  \label{def:qbs_to_giry}
+  \rocq{QBS.qbs\_giry.qbs\_to\_giry}
+  \rocqok
+  \uses{def:qbs_prob, def:R_qbs}
+  For $p = (\alpha, \mu)$ on $R(M)$, the pushforward
+  $\alpha_*(\mu)$ is a probability on $M$.
+\end{definition}
+
+\begin{theorem}[Integral Correspondence]
+  \label{thm:integral_giry}
+  \rocq{QBS.qbs\_giry.qbs\_integral\_giry}
+  \rocqok
+  \uses{def:qbs_integral, def:qbs_to_giry}
+  $\int_p f = \int_{\alpha_*(\mu)} f$.
+\end{theorem}
+
+\chapter{Standard Borel Spaces}
+
+\begin{definition}[Standard Borel]
+  \label{def:standard_borel}
+  \rocq{QBS.measure\_qbs\_adjunction.is\_standard\_borel}
+  \rocqok
+  A measurable space $M$ is \emph{standard Borel} if there exist
+  measurable $f : M \to \mathbb{R}$ and $g : \mathbb{R} \to M$
+  with $g \circ f = \mathrm{id}$.
+\end{definition}
+
+\begin{theorem}[$\mathbb{R} \cong \mathbb{R} \times \mathbb{R}$]
+  \label{thm:pair_standard_borel}
+  \rocq{QBS.standard\_borel.pair\_standard\_borel}
+  \rocqok
+  \uses{def:standard_borel}
+  The product $\mathbb{R} \times \mathbb{R}$ is standard Borel,
+  via arctan/digit-interleaving encoding.
+\end{theorem}
+
+\begin{theorem}[Full Faithfulness]
+  \label{thm:full_faithful}
+  \rocq{QBS.measure\_qbs\_adjunction.R\_full\_faithful\_standard\_borel}
+  \rocqok
+  \uses{def:standard_borel, def:R_qbs, def:qbs_morphism}
+  On standard Borel spaces, every QBS morphism $R(M_1) \to R(M_2)$
+  arises from a measurable function $M_1 \to M_2$.
+\end{theorem}
+
+\chapter{Bayesian Linear Regression}
+
+\begin{definition}[Observation Likelihood]
+  \label{def:obs}
+  \rocq{QBS.showcase.bayesian\_regression.obs}
+  \rocqok
+  $\mathrm{obs}(s,b) = \prod_{k=1}^{5}
+  \mathcal{N}(s \cdot k + b, \tfrac{1}{2})(y_k)$
+  where $(y_1, \ldots, y_5) = (2.5, 3.8, 4.5, 6.2, 8.0)$.
+\end{definition}
+
+\begin{definition}[Evidence]
+  \label{def:evidence}
+  \rocq{QBS.showcase.bayesian\_regression.evidence}
+  \rocqok
+  \uses{def:obs, def:qbs_integral}
+  $Z = \int\!\!\int \mathrm{obs}(s,b)\, d\pi(s)\, d\pi(b)$
+  where $\pi = \mathcal{N}(0, 3)$.
+\end{definition}
+
+\begin{theorem}[Evidence Value]
+  \label{thm:evidence_value}
+  \rocq{QBS.showcase.bayesian\_regression.evidence\_value}
+  \rocqok
+  \uses{def:evidence, thm:normal_pdf_times}
+  $Z = C$ where $C$ is a product of Gaussian peak and
+  exponential factors computed by iterating
+  the product-of-Gaussians identity through 10 combination steps.
+\end{theorem}
+
+\begin{theorem}[Program Correctness]
+  \label{thm:program_correct}
+  \rocq{QBS.showcase.bayesian\_regression.program\_integrates\_to\_1}
+  \rocqok
+  \uses{thm:evidence_value, def:evidence}
+  The posterior distribution integrates to 1 (unconditionally).
+\end{theorem}
+
+\section{Normal Density Algebra}
+
+\begin{theorem}[Product of Gaussians]
+  \label{thm:normal_pdf_times}
+  \rocq{QBS.normal\_algebra.normal\_pdf\_times}
+  \rocqok
+  $\mathcal{N}(m,s)(x) \cdot \mathcal{N}(m',s')(x) =
+  K \cdot \mathcal{N}(\mu_{\mathrm{new}}, \sigma_{\mathrm{new}})(x)$
+  where $\mu_{\mathrm{new}} = \frac{m s'^2 + m' s^2}{s^2 + s'^2}$,
+  $\sigma_{\mathrm{new}} = \frac{s s'}{\sqrt{s^2 + s'^2}}$, and
+  $K$ is a scalar involving the peak and exponential of $(m-m')$.
+\end{theorem}
