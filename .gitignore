@@ -5,12 +5,24 @@
 *.glob
 *.aux
 .*.aux
+.lia.cache
+.nia.cache
+
+# Generated Makefile
+Makefile
+.Makefile.d
+
+# Blueprint build artifacts
+blueprint/print/
+blueprint/web/
+blueprint/*.pdf
 
 # Claude Code internals
 .claude/
 
 # Temp files from rocq-mcp
 .tmp*
+rocq_mcp_cache_*.v
 
 # Python venv
 .venv/
@@ -18,7 +30,9 @@
 # Editor backups
 *~
 \#*\#
-Makefile*
-.Makefile.d
+
+# Archives
 QBS-export.tar.gz
-rocq_mcp_cache_*.v
+
+# OS
+.DS_Store
