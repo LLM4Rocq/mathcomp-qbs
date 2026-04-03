@@ -2,10 +2,10 @@
 
 **Project:** QBS -- Quasi-Borel Spaces in Rocq/Coq
 **Repository:** `/home/rocq/QBS`
-**Date:** 2026-04-01 (updated)
-**Status:** 332 proofs completed (330 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 6,751 across 11 files
-**Commits:** 122
+**Date:** 2026-04-03
+**Status:** 332 proofs (330 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** 6,820 across 11 files
+**Commits:** 130
 
 **Primary references:**
 - C. Heunen, O. Kammar, S. Staton, H. Yang.
@@ -1517,20 +1517,20 @@ quasi_borel.v
 
 | File | Lines | Proofs |
 |------|------:|-------:|
-| `quasi_borel.v` | 724 | 45 |
-| `measure_qbs_adjunction.v` | 233 | 18 |
-| `coproduct_qbs.v` | 620 | 22 |
-| `probability_qbs.v` | 712 | 35 |
-| `pair_qbs_measure.v` | 514 | 18 |
-| `qbs_prob_quot.v` | 310 | 17 |
-| `measure_as_qbs_measure.v` | 166 | 6 |
-| `normal_algebra.v` | 1337 | 80 |
-| `showcase/bayesian_regression.v` | 606 | 27 |
-| `qbs_giry.v` | 197 | 12 |
-| `standard_borel.v` | 1232 | 52 |
-| **Total** | **6,751** | **332** |
+| `quasi_borel.v` | 714 | 45 |
+| `measure_qbs_adjunction.v` | 238 | 18 |
+| `coproduct_qbs.v` | 681 | 22 |
+| `probability_qbs.v` | 737 | 35 |
+| `pair_qbs_measure.v` | 537 | 16 |
+| `qbs_prob_quot.v` | 331 | 17 |
+| `measure_as_qbs_measure.v` | 176 | 6 |
+| `normal_algebra.v` | 1,298 | 77 |
+| `showcase/bayesian_regression.v` | 644 | 24 |
+| `qbs_giry.v` | 208 | 12 |
+| `standard_borel.v` | 1,256 | 60 |
+| **Total** | **6,820** | **332** |
 
-**0 Admitted**, 0 custom axioms, 127 commits.
+**0 Admitted**, 0 custom axioms, 130 commits.
 
 ### 4.5 Remaining Work
 
