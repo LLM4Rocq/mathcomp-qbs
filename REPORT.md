@@ -4,7 +4,7 @@
 **Repository:** `/home/rocq/QBS`
 **Date:** 2026-04-01 (updated)
 **Status:** 332 proofs completed (330 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 6,891 across 11 files
+**Lines of Rocq:** 6,751 across 11 files
 **Commits:** 122
 
 **Primary references:**
@@ -73,7 +73,7 @@
   - [2.23 QBS-Classical Integral Bridge](#223-qbs-classical-integral-bridge)
   - [2.24 Normal Density Algebra](#224-normal-density-algebra)
   - [2.25 Bayesian Linear Regression](#225-bayesian-linear-regression)
-- [Part III: Standard Borel Spaces and Architecture](#part-iii-standard-borel-spaces-and-architecture)
+- [Part III: Standard Borel Spaces (R ≅ R × R)](#part-iii-standard-borel-spaces-r--r--r)
   - [3.1 Standard Borel: R to (0,1) Bijection](#31-standard-borel-r-to-01-bijection)
   - [3.2 Binary Digit Machinery](#32-binary-digit-machinery)
   - [3.3 Digit Interleaving and Pairing](#33-digit-interleaving-and-pairing)
@@ -81,12 +81,12 @@
   - [3.5 Measurability of the Bijection Components](#35-measurability-of-the-bijection-components)
   - [3.6 Composed Bijection R x R to R](#36-composed-bijection-r-x-r-to-r)
   - [3.7 The Punchline: pair_standard_borel](#37-the-punchline-pair_standard_borel)
-  - [3.8 File Dependency Graph](#38-file-dependency-graph)
-  - [3.9 Design Decisions](#39-design-decisions)
-  - [3.10 Comparison with Isabelle AFP](#310-comparison-with-isabelle-afp)
-  - [3.11 Math-Comp Analysis Dependencies](#311-math-comp-analysis-dependencies)
-  - [3.12 Statistics](#312-statistics)
-  - [3.13 Remaining Work](#313-remaining-work)
+- [Part IV: Architecture and Project Status](#part-iv-architecture-and-project-status)
+  - [4.1 File Dependency Graph](#41-file-dependency-graph)
+  - [4.2 Design Decisions](#42-design-decisions)
+  - [4.3 Comparison with Isabelle AFP](#43-comparison-with-isabelle-afp)
+  - [4.4 Statistics](#44-statistics)
+  - [4.5 Remaining Work](#45-remaining-work)
 
 ---
 
@@ -1224,11 +1224,11 @@ The key result `program_integrates_to_1` derives the positivity and finiteness o
 
 ---
 
-## Part III: Standard Borel Spaces and Architecture
+## Part III: Standard Borel Spaces (R ≅ R × R)
 
-Source file: `theories/standard_borel.v` (1222 lines, 50 Qed).
+Source file: `theories/standard_borel.v` (1,232 lines, 52 Qed).
 
-This file constructs a complete measurable bijection R ~ R x R, proving that the product of standard Borel spaces is standard Borel. The construction composes three layers: (1) a bijection R <-> (0,1) via arctangent, (2) a bijection (0,1)^2 <-> (0,1) via binary digit interleaving, and (3) the composed encode/decode pair.
+This file constructs a complete measurable bijection R ≅ R × R, proving that the product of standard Borel spaces is standard Borel. The construction composes three layers: (1) a bijection R ↔ (0,1) via arctangent, (2) a bijection (0,1)² ↔ (0,1) via binary digit interleaving, and (3) the composed encode/decode pair. The R ≅ R × R isomorphism is used by `pair_qbs_measure.v` to construct proper product probability triples.
 
 ### 3.1 Standard Borel: R to (0,1) Bijection
 
@@ -1456,118 +1456,90 @@ Qed.
 
 This witnesses that `R x R` is standard Borel in the sense of `is_standard_borel` (defined in `measure_qbs_adjunction.v`), which only requires `g(f(x)) = x` (not the reverse). Combined with `R_full_faithful_standard_borel`, this shows the R functor is fully faithful on products of standard Borel spaces.
 
-### 3.8 File Dependency Graph
+---
+
+## Part IV: Architecture and Project Status
+
+### 4.1 File Dependency Graph
 
 ```
 quasi_borel.v
   |
   +--> measure_qbs_adjunction.v
   |       |
-  |       +--> qbs_giry.v (QBS↔Giry bridge)
+  |       +--> qbs_giry.v
   |
   +--> coproduct_qbs.v
   |
   +--> probability_qbs.v
   |       |
-  |       +--> pair_qbs_measure.v (imports standard_borel.v for R≅R×R)
+  |       +--> pair_qbs_measure.v ---> standard_borel.v
   |       |       |
-  |       |       +--> bayesian_regression.v (imports normal_algebra.v)
+  |       |       +--> showcase/bayesian_regression.v ---> normal_algebra.v
   |       |
   |       +--> qbs_prob_quot.v
   |       |
   |       +--> measure_as_qbs_measure.v
   |
-  +--> standard_borel.v (pure analysis, uses ring)
-  |
-  normal_algebra.v (pure analysis, uses ring/field)
+  standard_borel.v (standalone analysis, no QBS imports)
+  normal_algebra.v (standalone analysis, uses ring/field)
 ```
 
-Notes:
-- `standard_borel.v` and `normal_algebra.v` do not import QBS files. They are standalone math-comp analysis contributions.
-- `pair_qbs_measure.v` imports `standard_borel.v` for the R≅R×R isomorphism used in `qbs_pair_mu`.
-- `bayesian_regression.v` imports `normal_algebra.v` for `normal_pdf_times`, `obs_rewrite`, and `phase1_combine5`.
-- The universe inconsistency between `algebra_tactics.ring` and QBS imports was resolved by replacing `\o` with explicit lambdas in set comprehensions (see commit `8f33c6a`).
+### 4.2 Design Decisions
 
-### 3.9 Design Decisions
+**HB.pack for non-canonical instances.** Concrete QBS constructions (`prodQ`, `expQ`, `unitQ`, `coprodQ`, `monadP`, etc.) use `HB.pack` because their carrier types are non-canonical and cannot be equipped with canonical HB instances. This follows the established pattern (70+ uses in math-comp).
 
-**HB.pack for non-canonical instances.** Every concrete QBS construction (`prodQ`, `expQ`, `unitQ`, `coprodQ`, `gen_coprodQ`, `piQ`, `listQ`, `monadP`, `sub_qbs`, `generating_qbs`, `map_qbs`, `qbs_supT`, `qbs_prob_space_qbs`) uses `HB.pack` with an NB comment explaining why. The carrier types are non-canonical (product types, sum types, dependent types, bundled morphisms) and cannot be equipped with canonical HB instances.
+**Strong vs. weak morphism condition.** Bind takes an explicit diagonal randomness proof, with helper lemmas for the strong morphism case. This avoids quotient types while preserving compositionality.
 
-**Granular imports.** All files use specific imports from math-comp analysis sub-modules (e.g., `From mathcomp.analysis Require Import topology_theory.num_topology`, `measure_theory.measurable_structure`, etc.) rather than blanket `all_analysis`/`all_ssreflect` imports. The exception is `all_boot` and `all_algebra` from the core math-comp library.
+**Setoid quotient.** `qbs_prob_space` uses a setoid wrapper with explicit equality `qps_eq` rather than Rocq quotient types.
 
-**Mathcomp naming conventions.** Lemma names follow math-comp style: `qbs_morphism_fst`, `prodQ_Mx_comp`, `bin_partial_sum_le1`, etc.
+**Product measure via R≅R×R.** `qbs_pair_mu` pushes the product measure `mu_p × mu_q` through the R≅R×R isomorphism from `standard_borel.v`. The `qbs_pair_integral` function works directly on `mR × mR` for genuine product integration via Fubini.
 
-**Strong vs. weak morphism condition.** The development factors bind to take an explicit diagonal randomness proof, with helper lemmas for the strong morphism case and the constant-alpha case. This avoids the need for quotient types in the monad construction while preserving compositionality.
+**Universe management.** The `\o` composition operator inside `[set ...]` comprehensions was replaced with explicit lambdas to avoid universe inconsistencies between `algebra_tactics.ring` and QBS type hierarchy.
 
-**Setoid quotient.** Rather than using Rocq's quotient types (which would require showing that all operations respect equivalence), the development uses a setoid-style wrapper `qbs_prob_space` with an explicit equality `qps_eq`. This is lighter-weight and sufficient for the intended applications.
-
-**Product measure approximation.** The `qbs_prob_pair` construction uses `qbs_prob_mu p` as the base measure (a pragmatic approximation). The proper product construction is handled by `qbs_pair_integral`, which uses `mu_p \x mu_q` on `mR * mR` for genuine product integration.
-
-### 3.10 Comparison with Isabelle AFP
+### 4.3 Comparison with Isabelle AFP
 
 | Feature | Isabelle AFP | This development |
 |---------|-------------|------------------|
 | QBS axioms | Locale-based | HB mixin/structure |
-| Non-canonical carriers | Type classes | Manual `HB.pack` |
 | Probability monad | Quotient type | Setoid wrapper + explicit equivalence |
-| Standard Borel R~RxR | Not formalized | Complete: `pair_standard_borel` via atan + digit interleaving |
-| Bayesian example | Bayesian linear regression (abstract) | Bayesian linear regression with concrete data + multi-observation |
-| Monad strength coherence | Not formalized | 4 coherence lemmas (naturality, unit, assoc, return) |
-| Monad commutativity | Not formalized | `qbs_pair_integral_comm` (Proposition 22) |
-| Integration | Via push-forward | Direct + pushforward infrastructure |
-| Fubini | Not formalized | `qbs_pair_integralE` + marginals |
-| Independence | Not formalized | `qbs_indep` + `qbs_integral_indep_mult` |
-| Variance of sums | Not formalized | `qbs_variance_indep_sum` |
-| Lines | ~5000 | 5174 |
+| Standard Borel R≅R×R | Not formalized | `pair_standard_borel` via atan + digit interleaving |
+| Bayesian regression | Function-space prior | Pair-based prior (mathematically equivalent) |
+| Normalizing constant | Explicit closed form C | `evidence_value`: evidence = `phase2_const` |
+| Program correctness | `program_result` (Inl) | `program_integrates_to_1` (unconditional) |
+| Monad strength | Not formalized | 4 coherence lemmas |
+| Fubini on QBS | Not formalized | `qbs_pair_integralE` + marginals |
+| Independence | Not formalized | `qbs_integral_indep_mult` |
+| QBS↔Giry bridge | Not formalized | `qbs_to_giry` + `qbs_integral_giry` |
+| Lines | ~5000 | 6,751 |
 
-### 3.11 Math-Comp Analysis Dependencies
+### 4.4 Statistics
 
-The development uses the following math-comp analysis components:
-
-| Component | Used for |
-|-----------|----------|
-| `measurableTypeR R` | The Borel measurable space on reals |
-| `measurable_fun` | Measurability of functions |
-| `probability` | Probability measures |
-| `lebesgue_integral` | Integration (`\int[mu]_x f(x)`) |
-| `lebesgue_integral_fubini` | Fubini theorem (`integral12_prod_meas1`, `integral21_prod_meas1`) |
-| `variance`, `covariance` | Variance and covariance definitions |
-| `Lfun`, `Lfun_subset12` | L^p space membership |
-| `normal_prob`, `normal_pdf` | Normal distribution |
-| `uniform_prob` | Uniform distribution |
-| `pushforward`, `integral_pushforward` | Pushforward measures and integrals |
-| `hoelder` | Holder's inequality / L^p products |
-| `atan`, `tan`, `sin`, `cos`, `pi` | Trigonometric functions |
-| `cvg_geometric`, `squeeze_cvgr` | Convergence of geometric series |
-
-### 3.12 Statistics
-
-| File | Lines | Qed/Defined |
-|------|------:|----:|
-| `quasi_borel.v` | 758 | 45 |
-| `measure_qbs_adjunction.v` | 248 | 18 |
-| `coproduct_qbs.v` | 676 | 22 |
-| `probability_qbs.v` | 783 | 35 |
-| `pair_qbs_measure.v` | 548 | 18 |
-| `qbs_prob_quot.v` | 345 | 17 |
-| `measure_as_qbs_measure.v` | 183 | 6 |
+| File | Lines | Proofs |
+|------|------:|-------:|
+| `quasi_borel.v` | 724 | 45 |
+| `measure_qbs_adjunction.v` | 233 | 18 |
+| `coproduct_qbs.v` | 620 | 22 |
+| `probability_qbs.v` | 712 | 35 |
+| `pair_qbs_measure.v` | 514 | 18 |
+| `qbs_prob_quot.v` | 310 | 17 |
+| `measure_as_qbs_measure.v` | 166 | 6 |
 | `normal_algebra.v` | 1337 | 80 |
-| `bayesian_regression.v` | 638 | 27 |
-| `qbs_giry.v` | 220 | 12 |
-| `standard_borel.v` | 1253 | 60 |
-| **Total** | **6,891** | **332** |
+| `showcase/bayesian_regression.v` | 606 | 27 |
+| `qbs_giry.v` | 197 | 12 |
+| `standard_borel.v` | 1232 | 52 |
+| **Total** | **6,751** | **332** |
 
-**Summary:** 332 completed proofs (330 Qed + 2 Defined), **0 Admitted**, 0 custom axioms across 11 files and 6,891 lines.
+**0 Admitted**, 0 custom axioms, 127 commits.
 
-### 3.13 Remaining Work
+### 4.5 Remaining Work
 
-1. **Disintegration / Markov kernels.** The general case of `qbs_bind_equiv_l` (bind respects equivalence for arbitrary strong morphisms) requires the disintegration theorem, which is beyond the current development.
+1. **Disintegration / Markov kernels.** Making `qbs_bind` total (without explicit diagonal proof) requires the disintegration theorem.
 
-2. **Standard Borel closure under countable products.** The current `pair_standard_borel` covers binary products; extending to countable products (R ~ R^N) would require a Hilbert-cube-style encoding.
+2. **Standard Borel closure under countable products.** Extending `pair_standard_borel` to R ~ R^N via Hilbert-cube encoding.
 
-3. **s-Finite kernels.** Integration with the s-finite kernel framework from math-comp analysis (Affeldt, Cohen, Saito) would enable a more compositional treatment of conditional distributions.
+3. **s-Finite kernels.** Integration with the s-finite kernel framework from math-comp analysis (Affeldt, Cohen, Saito).
 
-4. **Quotient via actual quotient types.** Replacing the setoid wrapper `qbs_prob_space` with Rocq's quotient types would give definitional equality on the quotient, at the cost of requiring all operations to provably respect equivalence.
+4. **Quotient types.** Replacing the setoid wrapper with Rocq quotient types for definitional equality.
 
-5. **Standard Borel: full round-trip.** The reverse direction `encode_decode_RR` is proved conditionally (on no-trailing-ones of deinterleaved subsequences). Formalizing that the exception set has measure zero would complete the picture.
-
-6. **Granular imports.** Replace `all_boot all_algebra` with specific module imports for faster compilation and clearer dependencies.
+5. **Standard Borel full round-trip.** The reverse `encode_decode_RR` is conditional on `no_trailing_ones`. Formalizing that the exception set has measure zero would complete it.
