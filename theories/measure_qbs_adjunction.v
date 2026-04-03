@@ -6,7 +6,8 @@ From mathcomp Require Import classical_sets.
 From mathcomp Require Import measurable_structure.
 From mathcomp Require Import measurable_function.
 From mathcomp Require Import borel_hierarchy lebesgue_stieltjes_measure.
-From QBS Require Import quasi_borel.
+From mathcomp Require Import measurable_realfun.
+From QBS Require Import quasi_borel standard_borel.
 
 (**md**************************************************************************)
 (* # Adjunction between Measurable Spaces and Quasi-Borel Spaces              *)
@@ -233,6 +234,166 @@ Lemma adjunction_counit (d : measure_display) (M : measurableType d)
 Proof.
 move=> hU alpha; rewrite /qbs_Mx /= => halpha.
 have := halpha measurableT U hU; rewrite setTI; exact.
+Qed.
+
+Local Open Scope ring_scope.
+
+(** Helper: measurability for functions into nat (discrete sigma-algebra).
+    Every set in nat is measurable, so measurability of g reduces to
+    measurability of singleton preimages. *)
+Lemma measurable_fun_nat_discrete (d : measure_display) (T : measurableType d)
+    (g : T -> nat) (D : set T) :
+  (forall n : nat, measurable (D `&` g @^-1` [set n])) ->
+  measurable_fun D g.
+Proof.
+move=> hg _ Y _; rewrite /measurable /=.
+suff -> : D `&` g @^-1` Y = \bigcup_(n in setT)
+  (fun n => if boolp.asbool (Y n) then D `&` g @^-1` [set n] else set0) n.
+  apply: bigcup_measurable => n _.
+  case: boolp.asboolP => _; [exact: hg | exact: measurable0].
+rewrite eqEsubset; split => [r [hDr hYgr] | r [n _ /=]].
+  exists (g r) => //=.
+  case: boolp.asboolP => [_ | hNY].
+    split => //; by rewrite /preimage /=.
+  exfalso; exact: hNY hYgr.
+case: boolp.asboolP => [hYn | _]; last by [].
+move=> [hDr]; rewrite /preimage /= => ->.
+split => //; exact: hYn.
+Qed.
+
+(** truncn : R -> nat is measurable.
+    Preimages of singletons are intervals:
+    - trunc^{-1}({0}) = (-inf, 1)
+    - trunc^{-1}({n+1}) = [n+1, n+2) *)
+Lemma measurable_truncn :
+  measurable_fun [set: mR] (@truncn R : mR -> nat).
+Proof.
+apply: measurable_fun_nat_discrete => n; rewrite setTI.
+case: n => [|n].
+- suff -> : ((@truncn R : mR -> nat) @^-1` [set 0%N] : set mR) =
+            ([set` `]-oo, 1%:R[] : set mR).
+    exact: measurable_itv.
+  rewrite eqEsubset; split => r.
+    rewrite /preimage /= => /eqP htr.
+    rewrite in_itv /=.
+    have hTP := archimedean.Num.Theory.truncnP r.
+    case: ifPn hTP => [h0 /andP [_ hr2] | hlt0 /eqP hn0].
+      by rewrite (eqP htr) in hr2.
+    apply: (preorder.Order.PreorderTheory.lt_trans _ ltr01).
+    rewrite order.Order.TotalTheory.ltNge; exact: hlt0.
+  rewrite /preimage /= in_itv /= => hr1.
+  apply/eqP.
+  have hTP := archimedean.Num.Theory.truncnP r.
+  case: ifPn hTP => [h0 /andP [hr1' hr2'] | hlt0 /eqP //].
+  rewrite truncn_eq //; apply/andP; split => //.
+- suff -> : ((@truncn R : mR -> nat) @^-1` [set n.+1] : set mR) =
+            ([set` `[n.+1%:R, n.+2%:R[] : set mR).
+    exact: measurable_itv.
+  rewrite eqEsubset; split => r.
+    rewrite /preimage /= => /eqP htr.
+    rewrite in_itv /=; apply/andP; split.
+    + have hTP := archimedean.Num.Theory.truncnP r.
+      case: ifPn hTP => [h0 /andP [hr _] | hlt0 /eqP hn].
+        by rewrite (eqP htr) in hr.
+      by rewrite hn in htr.
+    + have hTP := archimedean.Num.Theory.truncnP r.
+      case: ifPn hTP => [h0 /andP [_ hr] | hlt0 /eqP hn].
+        by rewrite (eqP htr) in hr.
+      by rewrite hn in htr.
+  rewrite /preimage /= in_itv /= => /andP [hr1 hr2].
+  apply/eqP; rewrite truncn_eq //.
+    by apply/andP; split.
+  exact: (preorder.Order.PreorderTheory.le_trans (ler0n _ _) hr1).
+Qed.
+
+(* N is standard Borel: embed via n%:R, retract via truncn *)
+Lemma nat_standard_borel : is_standard_borel nat.
+Proof.
+exists (fun n : nat => n%:R : mR), (@truncn R : mR -> nat).
+split; first by move=> _ U _; rewrite setTI.
+split; first exact: measurable_truncn.
+exact: natrK.
+Qed.
+
+(* bool is standard Borel: embed via b%:R (true=1, false=0),
+   decode via (0 < r) *)
+Lemma bool_standard_borel : is_standard_borel bool.
+Proof.
+exists (fun b : bool => b%:R : mR),
+       (fun r : mR => (0 < r)%R : bool).
+split; first by move=> _ U _; rewrite setTI.
+split.
+  apply: (@measurable_fun_bool _ _ _ _ true).
+  rewrite setTI.
+  suff -> : ((fun r : mR => (0 < r)%R) @^-1` [set true] : set mR) =
+            ([set` `]0%:R, +oo[] : set mR).
+    exact: measurable_itv.
+  rewrite eqEsubset; split => r /=.
+    move=> hr; rewrite in_itv /=; apply/andP; split => //.
+  by rewrite in_itv /= => /andP [].
+move=> []; rewrite /=.
+  by rewrite ltr01.
+by rewrite order.Order.POrderTheory.ltxx.
+Qed.
+
+(* Standard Borel product closure: if M1 and M2 are standard Borel,
+   then M1 * M2 is standard Borel. Uses the encode_RR/decode_RR
+   bijection from standard_borel.v. *)
+Lemma prod_standard_borel (d1 d2 : measure_display)
+    (M1 : measurableType d1) (M2 : measurableType d2) :
+  is_standard_borel M1 -> is_standard_borel M2 ->
+  is_standard_borel [the measurableType _ of (M1 * M2)%type].
+Proof.
+move=> [f1 [g1 [hf1 [hg1 hgf1]]]] [f2 [g2 [hf2 [hg2 hgf2]]]].
+exists (fun xy : M1 * M2 =>
+         @standard_borel.encode_RR R (f1 xy.1, f2 xy.2)),
+       (fun r : mR =>
+         let p := @standard_borel.decode_RR R r in
+         (g1 p.1, g2 p.2)).
+split.
+  apply: measurableT_comp.
+    exact: standard_borel.measurable_encode_RR.
+  apply/measurable_fun_pairP; split.
+  - exact: measurableT_comp hf1 measurable_fst.
+  - exact: measurableT_comp hf2 measurable_snd.
+split.
+  apply/measurable_fun_pairP; split.
+  - apply: measurableT_comp hg1 _.
+    apply: measurableT_comp measurable_fst _.
+    exact: standard_borel.measurable_decode_RR.
+  - apply: measurableT_comp hg2 _.
+    apply: measurableT_comp measurable_snd _.
+    exact: standard_borel.measurable_decode_RR.
+move=> [x1 x2] /=.
+change ((let p := @standard_borel.decode_RR R
+  (@standard_borel.encode_RR R (f1 x1, f2 x2))
+  in (g1 p.1, g2 p.2)) = (x1, x2)).
+by rewrite standard_borel.encode_RRK /= hgf1 hgf2.
+Qed.
+
+(* For standard Borel M, L_sigma (R_qbs M) U <-> measurable U.
+   Forward: L(R(M)) refines sigma(M) (adjunction_counit).
+   Backward: every sigma_Mx set is measurable because the standard
+   Borel embedding lets us recover measurable structure. *)
+Lemma standard_borel_lr_sets_ident (d : measure_display)
+    (M : measurableType d) :
+  is_standard_borel M ->
+  forall U : set M, L_sigma (@R_qbs R _ M) U <-> measurable U.
+Proof.
+move=> [f [g [hf [hg hgf]]]] U; split.
+- (* L_sigma -> measurable: use f, g to recover measurability.
+     g is measurable so g is in Mx(R_qbs M), hence g^{-1}(U) is
+     measurable. Then U = f^{-1}(g^{-1}(U)) since g(f(x)) = x,
+     and f is measurable, so U is measurable. *)
+  move=> hU.
+  have hgU : measurable (g @^-1` U) by exact: (hU g hg).
+  suff -> : U = f @^-1` (g @^-1` U).
+    have := hf measurableT _ hgU; rewrite setTI; exact.
+  rewrite eqEsubset; split => x /=.
+    rewrite /preimage /= => hUx; by rewrite hgf.
+  rewrite /preimage /= => hgfU; by rewrite -(hgf x).
+- (* measurable -> L_sigma: this is adjunction_counit *)
+  exact: adjunction_counit.
 Qed.
 
 End mqa.

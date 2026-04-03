@@ -714,6 +714,47 @@ Lemma qbs_strength_return (W X : qbsType R) (w : W) (x : X)
     (qbs_return (prodQ W X) (w, x) mu).
 Proof. by move=> U hU. Qed.
 
+(* Join morphism: join (= bind with id) is a QBS morphism
+   P(P(X)) -> P(X) when id satisfies the strong morphism condition.
+   The strong condition ensures diagonal randomness can be extracted.
+   The general case requires quotient types or a standard Borel
+   isomorphism R ~ nat x R; see Section 10 above. *)
+Lemma qbs_join_morphism (X : qbsType R)
+  (hid : qbs_morphism_strong (monadP X) X id) :
+  @qbs_morphism R (monadP (monadP X)) (monadP X)
+    (fun p => qbs_bind_strong (monadP X) X p id hid).
+Proof. exact: qbs_bind_morph. Qed.
+
+(* Strength morphism: the monad strength W x P(X) -> P(W x X)
+   is a QBS morphism. The proof uses that for each r, the pair
+   (constant w, random element alpha_p) is a random element
+   of the product QBS. *)
+Lemma qbs_strength_morphism (W X : qbsType R) :
+  @qbs_morphism R (prodQ W (monadP X)) (monadP (prodQ W X))
+    (fun wp => qbs_strength W X wp.1 wp.2).
+Proof.
+move=> alpha [h1 h2] /=.
+rewrite /qbs_Mx /= => r.
+split => /=.
+- exact: qbs_Mx_const.
+- exact: (h2 r).
+Qed.
+
+(* Bind decomposition: bind(p, f) = join(map(f, p)).
+   The bind alpha is r |-> alpha_{f(alpha_p(r))}(r),
+   and map(f, p) has alpha = f o alpha_p, so
+   join(map(f, p)) has the same alpha and mu.
+   The equivalence is thus definitional. *)
+Lemma qbs_bind_decomp (X Y : qbsType R) (p : qbs_prob X)
+  (f : X -> qbs_prob Y)
+  (hf : @qbs_morphism R X (monadP Y) f)
+  (hdiag : @qbs_Mx R Y
+    (fun r => qbs_prob_alpha (f (qbs_prob_alpha p r)) r)) :
+  let p' := monadP_map X (monadP Y) f hf p in
+  qbs_prob_equiv Y (qbs_bind X Y p f hdiag)
+    (qbs_join Y p' hdiag).
+Proof. by move=> U hU. Qed.
+
 Local Open Scope ereal_scope.
 
 (* 15. QBS-level integrability predicate *)
