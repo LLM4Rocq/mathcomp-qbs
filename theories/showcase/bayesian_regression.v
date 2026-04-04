@@ -848,4 +848,55 @@ exists (fun p => 1 * (obs p)%:E / evidence); split.
 - exact: posterior_density_total.
 Qed.
 
+(* 11. Posterior measure characterization *)
+(* E_post[g] = E_prior[g * obs/Z], the standard Bayesian update formula
+   expressed as density reweighting. This says that computing the posterior
+   expectation of g is the same as computing the prior expectation of g
+   weighted by the normalized likelihood obs/Z. *)
+
+Lemma posterior_measure_characterization
+    (g : realQ R * realQ R -> \bar R)
+    (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
+      setT (qbs_pair_fun slope_prior intercept_prior
+        (fun params => g params * (obs params)%:E)))
+    (obs_meas : forall s, measurable_fun [set: mR]
+      (fun b : mR => (obs (s, b))%:E :> \bar R))
+    (obs_int : forall s, (\int[normal_prob 0 prior_sigma]_b
+      `|(obs (s, b))%:E| < +oo)%E)
+    (sos_meas : measurable_fun [set: mR]
+      (fun s : mR => (scalar_of_s s)%:E :> \bar R))
+    (sos_int : (\int[normal_prob 0 prior_sigma]_s
+      `|(scalar_of_s s)%:E| < +oo)%E) :
+  posterior_density g =
+  qbs_pair_integral slope_prior intercept_prior
+    (fun params => g params * ((obs params)%:E / evidence)).
+Proof.
+rewrite /posterior_density.
+have hev := evidence_value obs_product_integrable obs_meas obs_int
+              sos_meas sos_int.
+rewrite hev.
+have hc_neq0 : (phase2_const R != 0)%R by exact: lt0r_neq0 (phase2_const_gt0 R).
+(* Goal: (∫ g*obs%:E) / c%:E = ∫ g * (obs%:E / c%:E)
+   Strategy: rewrite the RHS integrand to (g*obs%:E) * (c^{-1})%:E,
+   factor out (c^{-1})%:E via integralZr, and use commutativity. *)
+rewrite /qbs_pair_integral /=.
+(* Rewrite the RHS integrand function *)
+have -> : (fun rr =>
+  g (qbs_prob_alpha slope_prior rr.1, qbs_prob_alpha intercept_prior rr.2) *
+  ((obs (qbs_prob_alpha slope_prior rr.1,
+         qbs_prob_alpha intercept_prior rr.2))%:E /
+   (phase2_const R)%:E)) =
+  (fun rr =>
+  (g (qbs_prob_alpha slope_prior rr.1, qbs_prob_alpha intercept_prior rr.2) *
+   (obs (qbs_prob_alpha slope_prior rr.1,
+         qbs_prob_alpha intercept_prior rr.2))%:E) * ((phase2_const R)^-1)%:E).
+  apply: funext => rr /=.
+  by rewrite inver (negbTE hc_neq0) muleA.
+(* Now the goal is (∫ f) / c%:E = ∫ (f * (c^{-1})%:E) *)
+(* Rewrite the LHS: (∫ f) / c%:E = (∫ f) * c%:E^{-1} = (∫ f) * (c^{-1})%:E *)
+rewrite inver (negbTE hc_neq0).
+(* Now: (∫ f) * (c^{-1})%:E = ∫ (f * (c^{-1})%:E) *)
+by rewrite integralZr.
+Qed.
+
 End bayesian_regression.
