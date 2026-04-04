@@ -528,6 +528,61 @@ rewrite -(@integral12_prod_meas1 _ _ _ _ _
 by apply: eq_integral => r1 _; apply: eq_integral => r2 _.
 Qed.
 
+(** Product measure integral equals iterated QBS integral.
+    The integral of h against qbs_prob_pair p q (the explicit product
+    measure on prodQ X Y) equals the iterated QBS integral
+    ∫_p (fun x => ∫_q (fun y => h(x,y))).
+    This is the sense in which the product measure construction
+    agrees with the monadic bind: integration against the product
+    equals iterated integration (Fubini). *)
+
+Lemma qbs_prob_pair_measure_eq_bind (X Y : qbsType R)
+    (p : qbs_prob X) (q : qbs_prob Y)
+    (h : X * Y -> \bar R)
+    (hint : (qbs_prob_mu p \x qbs_prob_mu q).-integrable
+      setT (qbs_pair_fun p q h))
+    (hint_g : (qbs_pair_mu_build p q).-integrable setT
+      (fun r : mR => h (qbs_pair_alpha p q r))) :
+  qbs_integral (prodQ X Y) (qbs_prob_pair X Y p q) h =
+  qbs_integral X p (fun x =>
+    qbs_integral Y q (fun y => h (x, y))).
+Proof.
+rewrite /qbs_integral /=.
+(* Go through the qbs_pair_integral (integration over the product measure) *)
+transitivity (qbs_pair_integral X Y p q h);
+  last exact: (qbs_pair_integralE hint).
+rewrite /qbs_pair_integral.
+set mu_pq := qbs_prob_mu p \x qbs_prob_mu q.
+have hint' := hint.
+move/integrableP : hint' => [hm_pqf _].
+(* Rewrite RHS integrand using encode_RRK *)
+have fg_eq : forall rr : mR * mR,
+  h (qbs_prob_alpha p rr.1, qbs_prob_alpha q rr.2) =
+  h (qbs_pair_alpha p q (@encode_RR_mR R rr)).
+  by move=> rr; rewrite /qbs_pair_alpha encode_RR_mRK.
+under [RHS]eq_integral do rewrite fg_eq.
+(* Now both sides have integrand h(pair_alpha(_)) *)
+set g := (fun x : mR => h (qbs_pair_alpha p q x)).
+(* Use integral_pushforward to convert the pushforward integral *)
+have hm_enc : measurable_fun
+  [set: Datatypes_prod__canonical__measurable_structure_Measurable mR mR]
+  (@encode_RR_mR R).
+  exact: measurable_RR_to_R.
+rewrite -[RHS](@integral_pushforward _ _ _ mR R
+  (@encode_RR_mR R) hm_enc mu_pq setT g _ _ measurableT).
+- (* Measures are extensionally equal *)
+  by [].
+- (* Measurability of g *)
+  by move/integrableP : hint_g => [].
+- (* Integrability of g o encode_RR *)
+  rewrite preimage_setT.
+  suff -> : g \o @encode_RR_mR R = qbs_pair_fun p q h by exact: hint.
+  apply: boolp.funext => rr.
+  rewrite /g /qbs_pair_alpha /qbs_pair_fun /=.
+  by congr (h (_, _)); [congr (qbs_prob_alpha p) | congr (qbs_prob_alpha q)];
+    exact: (congr1 fst (encode_RR_mRK rr)) || exact: (congr1 snd (encode_RR_mRK rr)).
+Qed.
+
 End pair_qbs_measure.
 
 Arguments qbs_prob_pair {R X Y}.
