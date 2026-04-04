@@ -2,10 +2,9 @@
 
 **Project:** QBS -- Quasi-Borel Spaces in Rocq/Coq
 **Repository:** `/home/rocq/QBS`
-**Date:** 2026-04-03
-**Status:** 332 proofs (330 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 6,820 across 11 files
-**Commits:** 130
+**Date:** 2026-04-04
+**Status:** 384 proofs (382 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** 8,021 across 11 files
 
 **Primary references:**
 - C. Heunen, O. Kammar, S. Staton, H. Yang.
@@ -63,16 +62,18 @@
   - [2.13 Monad Strength](#213-monad-strength)
   - [2.14 Strength Naturality and Coherence](#214-strength-naturality-and-coherence)
   - [2.15 Bind Respects Equivalence](#215-bind-respects-equivalence)
-  - [2.16 Quotient Type for QBS Probability](#216-quotient-type-for-qbs-probability)
-  - [2.17 Product Measures and Fubini](#217-product-measures-and-fubini)
-  - [2.18 Independence](#218-independence)
-  - [2.19 Variance of Independent Sums](#219-variance-of-independent-sums)
-  - [2.20 Commutativity of the Probability Monad](#220-commutativity-of-the-probability-monad)
-  - [2.21 Classical Distributions](#221-classical-distributions)
-  - [2.22 QBS-Giry Monad Connection](#222-qbs-giry-monad-connection)
-  - [2.23 QBS-Classical Integral Bridge](#223-qbs-classical-integral-bridge)
-  - [2.24 Normal Density Algebra](#224-normal-density-algebra)
-  - [2.25 Bayesian Linear Regression](#225-bayesian-linear-regression)
+  - [2.16 Integrability and Probability Inequalities](#216-integrability-and-probability-inequalities)
+  - [2.17 General Normalizer](#217-general-normalizer)
+  - [2.18 Quotient Type for QBS Probability](#218-quotient-type-for-qbs-probability)
+  - [2.19 Product Measures and Fubini](#219-product-measures-and-fubini)
+  - [2.20 Independence](#220-independence)
+  - [2.21 Variance of Independent Sums](#221-variance-of-independent-sums)
+  - [2.22 Commutativity of the Probability Monad](#222-commutativity-of-the-probability-monad)
+  - [2.23 Classical Distributions](#223-classical-distributions)
+  - [2.24 QBS-Giry Monad Connection](#224-qbs-giry-monad-connection)
+  - [2.25 QBS-Classical Integral Bridge](#225-qbs-classical-integral-bridge)
+  - [2.26 Normal Density Algebra](#226-normal-density-algebra)
+  - [2.27 Bayesian Linear Regression](#227-bayesian-linear-regression)
 - [Part III: Standard Borel Spaces (R ≅ R × R)](#part-iii-standard-borel-spaces-r--r--r)
   - [3.1 Standard Borel: R to (0,1) Bijection](#31-standard-borel-r-to-01-bijection)
   - [3.2 Binary Digit Machinery](#32-binary-digit-machinery)
@@ -92,7 +93,7 @@
 
 ## Part I: Core QBS Theory
 
-Source files: `theories/quasi_borel.v` (742 lines, 35 Qed), `theories/measure_qbs_adjunction.v` (248 lines, 12 Qed), `theories/coproduct_qbs.v` (676 lines, 22 Qed).
+Source files: `theories/quasi_borel.v` (721 lines, 45 Qed), `theories/measure_qbs_adjunction.v` (523 lines, 27 Qed), `theories/coproduct_qbs.v` (685 lines, 22 Qed).
 
 ### 1.1 The isQBS Mixin and QBSpace Structure
 
@@ -690,7 +691,7 @@ The `listQ_nth_random` proof uses a gluing argument: when `i < len r`, the resul
 
 ## Part II: Probability Monad and Integration
 
-Source files: `theories/probability_qbs.v` (783 lines, 16 Qed), `theories/pair_qbs_measure.v` (534 lines, 12 Qed), `theories/qbs_prob_quot.v` (345 lines, 7 Qed), `theories/measure_as_qbs_measure.v` (183 lines, 4 Qed + 2 Defined), `theories/bayesian_regression.v` (442 lines, 15 Qed).
+Source files: `theories/probability_qbs.v` (1,200 lines, 63 Qed), `theories/pair_qbs_measure.v` (598 lines, 17 Qed), `theories/qbs_prob_quot.v` (333 lines, 17 Qed), `theories/measure_as_qbs_measure.v` (288 lines, 8 Qed + 2 Defined), `theories/showcase/bayesian_regression.v` (918 lines, 34 Qed).
 
 ### 2.1 QBS Probability Triple
 
@@ -963,9 +964,59 @@ Requires that the diagonal factors through a QBS morphism `g : X -> Y`. Speciali
 | `qbs_bind_strong_equiv_l` | Strong morphism with factoring |
 | `qbs_bind_equiv_l_return` | `f(x) = return(g(x), mu_x)` for morphism `g` |
 
-### 2.16 Quotient Type for QBS Probability
+### 2.16 Integrability and Probability Inequalities
 
-**File:** `theories/qbs_prob_quot.v` (345 lines, 7 Qed)
+**File:** `theories/probability_qbs.v`, lines 760--925
+
+**Integrability predicate and arithmetic:**
+
+| Name | Statement |
+|------|-----------|
+| `qbs_integrable` | `qbs_prob_mu p`-integrability of `f ∘ alpha` |
+| `qbs_integrableD` | Sum of integrable functions is integrable |
+| `qbs_integrableB` | Difference of integrable functions is integrable |
+| `qbs_integrableN` | Negation preserves integrability |
+| `qbs_integrableZl` | Scalar multiple preserves integrability |
+
+**Integral arithmetic:**
+
+| Name | Statement |
+|------|-----------|
+| `qbs_integralD` | `E[f + g] = E[f] + E[g]` |
+| `qbs_integralB` | `E[f - g] = E[f] - E[g]` |
+| `qbs_integralZl` | `E[c * f] = c * E[f]` |
+
+**Variance:**
+
+| Name | Statement |
+|------|-----------|
+| `qbs_varianceE` | `Var(f) = E[f²] - E[f]²` |
+| `qbs_varianceZ` | `Var(af + b) = a² · Var(f)` |
+
+**Probability inequalities:**
+
+| Name | Statement |
+|------|-----------|
+| `qbs_markov` | `P(f ≥ a) ≤ E[|f|] / a` |
+| `qbs_chebyshev` | `P(|f - E[f]| ≥ a) ≤ Var(f) / a²` |
+
+### 2.17 General Normalizer
+
+**File:** `theories/probability_qbs.v`, lines 927--1140
+
+Given `p : qbs_prob (prodQ X (realQ R))` representing a weighted distribution, the normalizer divides by the evidence (total weight) to produce a proper probability.
+
+| Name | Statement |
+|------|-----------|
+| `normalize_mu` | Reweighted probability measure `w(r)/ev · mu` |
+| `normalize_prob` | Normalized `qbs_prob X` (given evidence bounds) |
+| `qbs_normalize` | Option-returning normalizer: `Some` if `0 < ev < +oo`, `None` otherwise |
+| `qbs_normalize_total` | Normalized probability integrates to 1 |
+| `qbs_normalize_integral` | `E_norm[g] = E_p[g · w] / ev` (conditional expectation) |
+
+### 2.18 Quotient Type for QBS Probability
+
+**File:** `theories/qbs_prob_quot.v` (333 lines, 17 Qed)
 
 A setoid-style quotient wrapping `qbs_prob X`:
 
@@ -1018,7 +1069,7 @@ Definition qbs_prob_space_qbs (X : qbsType R) : qbsType R :=
 
 **Canonical representative:** `qps_pick_repr` uses `constructive_indefinite_description` to select a representative, with `qps_pick_repr_equiv` proving it is equivalent to the original.
 
-### 2.17 Product Measures and Fubini
+### 2.19 Product Measures and Fubini
 
 **File:** `theories/pair_qbs_measure.v`, lines 32--199
 
@@ -1050,7 +1101,7 @@ Definition qbs_pair_integral (X Y : qbsType R)
 | `qbs_integral_snd` | Symmetric user-facing version |
 | `qbs_integral_pair` | User-facing Fubini |
 
-### 2.18 Independence
+### 2.20 Independence
 
 **File:** `theories/pair_qbs_measure.v`, lines 200--250
 
@@ -1075,7 +1126,7 @@ Lemma qbs_integral_indep_mult (X Y : qbsType R)
 
 The proof uses Fubini to factor the joint integral into a product of marginal integrals via `integralZl` and `integralZr`.
 
-### 2.19 Variance of Independent Sums
+### 2.21 Variance of Independent Sums
 
 **File:** `theories/pair_qbs_measure.v`, lines 252--489
 
@@ -1108,7 +1159,7 @@ The proof decomposes `Var(F+G) = Var(F) + Var(G) + 2*Cov(F,G)`, then shows `Cov(
 | `variance_prod_snd` | `V_{mu1 x mu2}[h(rr.2)] = V_{mu2}[h]` |
 | `expectation_prod_indep` | `E_{mu1 x mu2}[h1(rr.1)*h2(rr.2)] = E_{mu1}[h1] * E_{mu2}[h2]` |
 
-### 2.20 Commutativity of the Probability Monad
+### 2.22 Commutativity of the Probability Monad
 
 **File:** `theories/pair_qbs_measure.v`, lines 491--527
 
@@ -1124,9 +1175,9 @@ Lemma qbs_pair_integral_comm (X Y : qbsType R)
 
 The proof applies Fubini's theorem: the joint integral against `mu_p x mu_q` equals the iterated integral (first over `mu_p`, then `mu_q`), which by Fubini equals the reversed iteration (first over `mu_q`, then `mu_p`), which is the joint integral against `mu_q x mu_p` with swapped arguments.
 
-### 2.21 Classical Distributions
+### 2.23 Classical Distributions
 
-**File:** `theories/measure_as_qbs_measure.v` (183 lines, 4 Qed + 2 Defined)
+**File:** `theories/measure_as_qbs_measure.v` (288 lines, 8 Qed + 2 Defined)
 
 **General embedding of classical probability into QBS:**
 
@@ -1158,7 +1209,16 @@ Definition as_qbs_prob (d : measure_display) (M : measurableType d)
 | `qbs_normal_morphism` | The normal distribution is a morphism `realQ -> monadP(realQ)` (in the mean parameter) |
 | `qbs_uniform_random` | The uniform distribution is a random element of `monadP(realQ)` |
 
-### 2.22 QBS-Giry Monad Connection
+**Distribution expectations:**
+
+| Name | Statement |
+|------|-----------|
+| `qbs_expect_bernoulli` | E[Bernoulli(p)] = p (unconditional) |
+| `qbs_expect_uniform` | E[Uniform(0,1)] = 1/2 (via FTC) |
+| `qbs_expect_normal` | E[Normal(mu,sigma)] = mu (requires integrability hypotheses) |
+| `integral_normal_prob` | Radon-Nikodym change of variables for normal_prob |
+
+### 2.24 QBS-Giry Monad Connection
 
 **File:** `theories/qbs_giry.v` (220 lines, 12 Qed)
 
@@ -1173,11 +1233,11 @@ Formalizes the connection between the QBS probability monad and the classical Gi
 | `giry_to_qbs_to_giry` | Round-trip up to `qbs_prob_equiv` |
 | `qbs_integral_giry` | `qbs_integral p f = ∫[qbs_to_giry p] f` |
 
-### 2.23 QBS-Classical Integral Bridge
+### 2.25 QBS-Classical Integral Bridge
 
 The `qbs_integral_giry` lemma (in `qbs_giry.v`) establishes that QBS integration corresponds to classical Lebesgue integration against the pushforward measure. The `integral_normal_prob` lemma (in `bayesian_regression.v`) converts integration against `normal_prob` to Lebesgue integration with density via Radon-Nikodym.
 
-### 2.24 Normal Density Algebra
+### 2.26 Normal Density Algebra
 
 **File:** `theories/normal_algebra.v` (1150 lines, 71 Qed)
 
@@ -1194,9 +1254,9 @@ Key algebraic identities for normal density manipulation, proved using `ring`/`f
 
 The normalizing constant computation iterates `normal_pdf_times` through 10 Gaussian combinations (5 for intercept, 5 for slope), yielding the Isabelle AFP's closed-form value `C = (4√2/(π²√(66961π)))·exp(-1674761/1674025)`.
 
-### 2.25 Bayesian Linear Regression
+### 2.27 Bayesian Linear Regression
 
-**File:** `theories/bayesian_regression.v` (638 lines, 27 Qed)
+**File:** `theories/showcase/bayesian_regression.v` (918 lines, 34 Qed)
 
 Following the Isabelle AFP development (Bayesian_Linear_Regression.thy) by Hirata, Minamide, Sato.
 
@@ -1226,7 +1286,7 @@ The key result `program_integrates_to_1` derives the positivity and finiteness o
 
 ## Part III: Standard Borel Spaces (R ≅ R × R)
 
-Source file: `theories/standard_borel.v` (1,232 lines, 52 Qed).
+Source file: `theories/standard_borel.v` (1,256 lines, 60 Qed).
 
 This file constructs a complete measurable bijection R ≅ R × R, proving that the product of standard Borel spaces is standard Borel. The construction composes three layers: (1) a bijection R ↔ (0,1) via arctangent, (2) a bijection (0,1)² ↔ (0,1) via binary digit interleaving, and (3) the composed encode/decode pair. The R ≅ R × R isomorphism is used by `pair_qbs_measure.v` to construct proper product probability triples.
 
@@ -1511,35 +1571,45 @@ quasi_borel.v
 | Fubini on QBS | Not formalized | `qbs_pair_integralE` + marginals |
 | Independence | Not formalized | `qbs_integral_indep_mult` |
 | QBS↔Giry bridge | Not formalized | `qbs_to_giry` + `qbs_integral_giry` |
-| Lines | ~5000 | 6,751 |
+| Normalizer | Not formalized | `qbs_normalize` + `qbs_normalize_integral` |
+| Integral arithmetic | Not formalized | `qbs_integralD/B/Zl` + `qbs_integrable` |
+| Probability ineq. | Not formalized | `qbs_markov` + `qbs_chebyshev` |
+| Variance | Not formalized | `qbs_varianceE` + `qbs_varianceZ` |
+| E[distributions] | Not formalized | `qbs_expect_normal/bernoulli/uniform` |
+| Standard Borel inst. | Not formalized | N, bool, prod, ereal |
+| Lines | ~5000 | 8,021 |
 
 ### 4.4 Statistics
 
 | File | Lines | Proofs |
 |------|------:|-------:|
-| `quasi_borel.v` | 714 | 45 |
-| `measure_qbs_adjunction.v` | 238 | 18 |
-| `coproduct_qbs.v` | 681 | 22 |
-| `probability_qbs.v` | 737 | 35 |
-| `pair_qbs_measure.v` | 537 | 16 |
-| `qbs_prob_quot.v` | 331 | 17 |
-| `measure_as_qbs_measure.v` | 176 | 6 |
+| `quasi_borel.v` | 721 | 45 |
+| `measure_qbs_adjunction.v` | 523 | 27 |
+| `coproduct_qbs.v` | 685 | 22 |
+| `probability_qbs.v` | 1,200 | 63 |
+| `pair_qbs_measure.v` | 598 | 17 |
+| `qbs_prob_quot.v` | 333 | 17 |
+| `measure_as_qbs_measure.v` | 288 | 10 |
 | `normal_algebra.v` | 1,298 | 77 |
-| `showcase/bayesian_regression.v` | 644 | 24 |
-| `qbs_giry.v` | 208 | 12 |
+| `showcase/bayesian_regression.v` | 918 | 34 |
+| `qbs_giry.v` | 201 | 12 |
 | `standard_borel.v` | 1,256 | 60 |
-| **Total** | **6,820** | **332** |
+| **Total** | **8,021** | **384** |
 
-**0 Admitted**, 0 custom axioms, 130 commits.
+**0 Admitted**, 0 custom axioms.
 
 ### 4.5 Remaining Work
 
-1. **Disintegration / Markov kernels.** Making `qbs_bind` total (without explicit diagonal proof) requires the disintegration theorem.
+1. **Normalizer as QBS morphism.** Proving `qbs_normalize` is itself a QBS morphism (requires extracting measure-theoretic conditions from random elements). Estimated ~50-100 lines.
 
-2. **Standard Borel closure under countable products.** Extending `pair_standard_borel` to R ~ R^N via Hilbert-cube encoding.
+2. **Unconditional E[Normal(mu,sigma)] = mu.** The current proof requires 3 analytic hypotheses (identity integrability against normal_prob, odd-function integrability, odd integral = 0). These are standard but not yet in mathcomp-analysis.
 
-3. **s-Finite kernels.** Integration with the s-finite kernel framework from math-comp analysis (Affeldt, Cohen, Saito).
+3. **Disintegration / Markov kernels.** Making `qbs_bind` total (without explicit diagonal proof) requires the disintegration theorem.
 
-4. **Quotient types.** Replacing the setoid wrapper with Rocq quotient types for definitional equality.
+4. **Standard Borel closure under countable products.** Extending `pair_standard_borel` to R ~ R^N via Hilbert-cube encoding.
 
-5. **Standard Borel full round-trip.** The reverse `encode_decode_RR` is conditional on `no_trailing_ones`. Formalizing that the exception set has measure zero would complete it.
+5. **s-Finite kernels.** Integration with the s-finite kernel framework from math-comp analysis (Affeldt, Cohen, Saito).
+
+6. **Quotient types.** Replacing the setoid wrapper with Rocq quotient types for definitional equality.
+
+7. **Standard Borel full round-trip.** The reverse `encode_decode_RR` is conditional on `no_trailing_ones`. Formalizing that the exception set has measure zero would complete it.

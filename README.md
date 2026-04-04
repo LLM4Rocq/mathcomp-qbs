@@ -7,7 +7,7 @@ programming semantics.
 
 ## Overview
 
-**384 proofs, 0 Admitted, 0 custom axioms, 7,957 lines across 11 files.**
+**384 proofs, 0 Admitted, 0 custom axioms, 8,021 lines across 11 files.**
 
 Quasi-Borel spaces solve a fundamental problem: the category of
 measurable spaces is not cartesian closed, which prevents giving
@@ -27,19 +27,19 @@ This formalization follows:
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `quasi_borel.v` | 714 | 45 | HB mixin/structure, morphisms, products, exponentials, cartesian closure |
+| `quasi_borel.v` | 721 | 45 | HB mixin/structure, morphisms, products, exponentials, cartesian closure |
 | `measure_qbs_adjunction.v` | 523 | 27 | L-|R adjunction, standard Borel, full faithfulness |
-| `coproduct_qbs.v` | 681 | 22 | Binary/general coproducts, dependent products, list type |
-| `probability_qbs.v` | 1,164 | 63 | Probability monad: return, bind, 3 monad laws, strength, normalizer |
-| `pair_qbs_measure.v` | 592 | 17 | Product measures via R≅R×R, Fubini, independence |
-| `qbs_prob_quot.v` | 331 | 17 | Setoid quotient for probability triples |
+| `coproduct_qbs.v` | 685 | 22 | Binary/general coproducts, dependent products, list type |
+| `probability_qbs.v` | 1,200 | 63 | Probability monad: return, bind, 3 monad laws, strength, normalizer |
+| `pair_qbs_measure.v` | 598 | 17 | Product measures via R≅R×R, Fubini, independence |
+| `qbs_prob_quot.v` | 333 | 17 | Setoid quotient for probability triples |
 | `measure_as_qbs_measure.v` | 288 | 10 | Normal, Bernoulli, uniform distributions, E[Normal]=μ |
 
 ### Bridges and analysis
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `qbs_giry.v` | 208 | 12 | QBS↔Giry monad connection, integral correspondence |
+| `qbs_giry.v` | 201 | 12 | QBS↔Giry monad connection, integral correspondence |
 | `standard_borel.v` | 1,256 | 60 | R↔(0,1) via atan, digit interleaving, R≅R×R |
 | `normal_algebra.v` | 1,298 | 77 | Product of Gaussians, normalizing constant computation |
 
@@ -47,7 +47,7 @@ This formalization follows:
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `showcase/bayesian_regression.v` | 902 | 34 | Bayesian linear regression (matching Isabelle AFP) |
+| `showcase/bayesian_regression.v` | 918 | 34 | Bayesian linear regression (matching Isabelle AFP) |
 
 ## Key results
 

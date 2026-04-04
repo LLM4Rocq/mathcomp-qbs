@@ -1157,6 +1157,54 @@ and variance results.
 \end{lemma}
 
 
+\section{General Normalizer}\label{sec:general_normalizer}
+
+\begin{definition}[Normalized Measure]\label{def:normalize_mu}
+  \rocq{QBS.probability_qbs.normalize_mu}
+  \rocqok
+  \uses{def:qbs_prob, def:prodQ}
+  Given $p : P(X \times \mathbb{R})$ with weight function
+  $w(r) = \mathrm{snd}(\alpha_p(r)) \geq 0$
+  and evidence $Z = \int w \, d\mu_p \in (0,+\infty)$,
+  the normalized measure is $\nu(A) = \int_A (w/Z) \, d\mu_p$.
+  This is a probability measure ($\nu(\Omega) = 1$).
+\end{definition}
+
+\begin{definition}[Normalized Probability]\label{def:normalize_prob}
+  \rocq{QBS.probability_qbs.normalize_prob}
+  \rocqok
+  \uses{def:normalize_mu, def:qbs_prob}
+  Constructs $q : P(X)$ with
+  $\alpha_q(r) = \mathrm{fst}(\alpha_p(r))$
+  and $\mu_q = \nu$.
+\end{definition}
+
+\begin{definition}[Option Normalizer]\label{def:qbs_normalize}
+  \rocq{QBS.probability_qbs.qbs_normalize}
+  \rocqok
+  \uses{def:normalize_prob}
+  Returns \texttt{Some(normalize\_prob ...)} when $0 < Z < +\infty$,
+  \texttt{None} otherwise.
+  Uses classical decidability (\texttt{boolp.pselect}).
+\end{definition}
+
+\begin{lemma}[Normalizer Totality]\label{lem:qbs_normalize_total}
+  \rocq{QBS.probability_qbs.qbs_normalize_total}
+  \rocqok
+  \uses{def:normalize_prob, def:qbs_integral}
+  The normalized probability integrates to 1:
+  $\int 1 \, dq = 1$.
+\end{lemma}
+
+\begin{lemma}[Normalizer Integral]\label{lem:qbs_normalize_integral}
+  \rocq{QBS.probability_qbs.qbs_normalize_integral}
+  \rocqok
+  \uses{def:normalize_prob, def:qbs_integral}
+  Conditional expectation formula:
+  $\mathbb{E}_{q}[g] = \mathbb{E}_{p}[g \cdot w] / Z$.
+\end{lemma}
+
+
 \section{Quotient Type for QBS Probability}\label{sec:quotient}
 
 \begin{definition}[QBS Probability Space (Quotient)]\label{def:qbs_prob_space}
@@ -1925,7 +1973,7 @@ and data $(1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)$.
 \section{Priors and Likelihood}\label{sec:priors}
 
 \begin{lemma}[Integration Against Normal Probability]\label{lem:integral_normal_prob}
-  \rocq{QBS.showcase.bayesian_regression.integral_normal_prob}
+  \rocq{QBS.measure_as_qbs_measure.integral_normal_prob}
   \rocqok
   \uses{def:qbs_normal_distribution}
   $\int_{\mathcal{N}(m, \sigma)} f
