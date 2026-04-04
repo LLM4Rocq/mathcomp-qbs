@@ -21,7 +21,7 @@ From QBS Require Import quasi_borel probability_qbs standard_borel.
 (* ```                                                                        *)
 (******************************************************************************)
 
-Import GRing.Theory Num.Def Num.Theory.
+Import GRing.Theory Num.Def Num.Theory measurable_realfun.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -279,7 +279,7 @@ Definition qbs_pair_variance (X Y : qbsType R)
   (f : X -> R) (g : Y -> R) : \bar R :=
   variance (qbs_prob_mu px \x qbs_prob_mu py)
     (fun rr : mR * mR =>
-      f (qbs_prob_alpha px rr.1) + g (qbs_prob_alpha py rr.2)).
+      (f (qbs_prob_alpha px rr.1) + g (qbs_prob_alpha py rr.2))%R).
 
 Arguments qbs_pair_variance : clear implicits.
 
@@ -455,7 +455,7 @@ set gp := (fun r => g (qbs_prob_alpha py r)).
 set mu_p := qbs_prob_mu px.
 set mu_q := qbs_prob_mu py.
 have FGeq : (fun rr : mR * mR =>
-  f (qbs_prob_alpha px rr.1) + g (qbs_prob_alpha py rr.2)) = (F \+ G)%R.
+  (f (qbs_prob_alpha px rr.1) + g (qbs_prob_alpha py rr.2))%R) = (F \+ G)%R.
   by apply: boolp.funext => rr.
 rewrite FGeq varianceD //.
 (* Var(F) + Var(G) + 2 * Cov(F,G) = variance mu_p fp + variance mu_q gp *)

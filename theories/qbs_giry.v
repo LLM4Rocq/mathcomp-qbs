@@ -32,7 +32,7 @@ From QBS Require Import quasi_borel measure_qbs_adjunction probability_qbs.
 (* ```                                                                        *)
 (******************************************************************************)
 
-Import GRing.Theory Num.Def Num.Theory.
+Import GRing.Theory Num.Def Num.Theory measurable_realfun.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

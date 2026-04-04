@@ -1263,7 +1263,7 @@ Proof.
 rewrite !(normal_pdfE _ hs); congr (_ * _).
 rewrite /normal_fun; congr (sequences.expR _).
 congr (- _ / _).
-suff -> : (y - ((s * k)%R + b)%E) = - (b - (y - k * s)) by rewrite sqrrN.
+suff -> : (y - (s * k + b)) = - (b - (y - k * s)) by rewrite sqrrN.
 ring.
 Qed.
 

@@ -21,7 +21,7 @@ From QBS Require Import quasi_borel.
 (* ```                                                                        *)
 (******************************************************************************)
 
-Import GRing.Theory Num.Def Num.Theory.
+Import GRing.Theory Num.Def Num.Theory measurable_realfun.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -346,7 +346,7 @@ Arguments qbs_integral : clear implicits.
    measurable. *)
 Definition qbs_measurable (X : qbsType R) (h : X -> \bar R) : Prop :=
   forall alpha, @qbs_Mx R X alpha ->
-    measurable_fun setT (h \o alpha).
+    measurable_fun setT (fun r => h (alpha r)).
 
 Arguments qbs_measurable : clear implicits.
 

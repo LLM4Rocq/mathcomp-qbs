@@ -36,7 +36,7 @@ From QBS Require Import quasi_borel probability_qbs pair_qbs_measure
 (* ```                                                                        *)
 (******************************************************************************)
 
-Import GRing.Theory Num.Def Num.Theory.
+Import GRing.Theory Num.Def Num.Theory measurable_realfun.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -644,11 +644,11 @@ Lemma obs_meas_proof : forall s, measurable_fun [set: mR]
 Proof.
 move=> s; apply/measurable_EFinP; rewrite /obs /d /=.
 suff -> : (fun b : mR =>
-  (normal_pdf ((s * 1)%R + b)%E noise_sigma (5%:R / 2%:R) *
-  normal_pdf ((s * 2%:R)%R + b)%E noise_sigma (19%:R / 5%:R) *
-  normal_pdf ((s * 3%:R)%R + b)%E noise_sigma (9%:R / 2%:R) *
-  normal_pdf ((s * 4%:R)%R + b)%E noise_sigma (31%:R / 5%:R) *
-  normal_pdf ((s * 5%:R)%R + b)%E noise_sigma 8%:R)%R) =
+  (normal_pdf ((s * 1)%R + b)%R noise_sigma (5%:R / 2%:R) *
+  normal_pdf ((s * 2%:R)%R + b)%R noise_sigma (19%:R / 5%:R) *
+  normal_pdf ((s * 3%:R)%R + b)%R noise_sigma (9%:R / 2%:R) *
+  normal_pdf ((s * 4%:R)%R + b)%R noise_sigma (31%:R / 5%:R) *
+  normal_pdf ((s * 5%:R)%R + b)%R noise_sigma 8%:R)%R) =
   (fun b : mR => (normal_pdf (5%:R / 2%:R - 1 * s) noise_sigma b *
   normal_pdf (19%:R / 5%:R - 2%:R * s) noise_sigma b *
   normal_pdf (9%:R / 2%:R - 3%:R * s) noise_sigma b *
@@ -670,9 +670,8 @@ move=> s; have /integrableP[_ //] : (normal_prob 0 prior_sigma).-integrable setT
   (EFin \o (fun b => obs (s, b))).
 apply: measurable_bounded_integrable.
 - exact: measurableT.
-- have -> : probability_normal_prob__canonical__measure_function_Measure
-      0 prior_sigma [set: _] = 1 by exact: probability_setT.
-  exact: ltey.
+- suff: ((normal_prob 0 prior_sigma : probability _ _) setT < +oo)%E by [].
+  by rewrite probability_setT; exact: ltey.
 - by move: (obs_meas_proof s) => /measurable_EFinP.
 - apply/ex_bound; first exact: globally_properfilter.
   exists (normal_peak noise_sigma ^+5)%R => b /= _.
@@ -687,7 +686,7 @@ Qed.
 Let d_pair_meas_tac : forall k yk : R,
   measurable_fun [set: mR * mR]
     (fun rr : mR * mR => normal_peak noise_sigma *
-      normal_fun ((rr.1 * k)%R + rr.2)%E noise_sigma yk)%R.
+      normal_fun ((rr.1 * k)%R + rr.2)%R noise_sigma yk)%R.
 Proof.
 move=> k yk.
 apply: measurable_funM; [exact: measurable_cst|].
@@ -718,26 +717,26 @@ apply: (@measurable_bounded_integrable _ _ _ _ _ setT).
 - rewrite /obs /d /=.
   have hns := noise_sigma_neq0.
   have -> : (fun rr : mR * mR =>
-    (normal_pdf ((rr.1 * 1)%R + rr.2)%E noise_sigma (5%:R / 2%:R) *
-     normal_pdf ((rr.1 * 2%:R)%R + rr.2)%E noise_sigma (19%:R / 5%:R) *
-     normal_pdf ((rr.1 * 3%:R)%R + rr.2)%E noise_sigma (9%:R / 2%:R) *
-     normal_pdf ((rr.1 * 4%:R)%R + rr.2)%E noise_sigma (31%:R / 5%:R) *
-     normal_pdf ((rr.1 * 5%:R)%R + rr.2)%E noise_sigma 8%:R)%R) =
+    (normal_pdf ((rr.1 * 1)%R + rr.2)%R noise_sigma (5%:R / 2%:R) *
+     normal_pdf ((rr.1 * 2%:R)%R + rr.2)%R noise_sigma (19%:R / 5%:R) *
+     normal_pdf ((rr.1 * 3%:R)%R + rr.2)%R noise_sigma (9%:R / 2%:R) *
+     normal_pdf ((rr.1 * 4%:R)%R + rr.2)%R noise_sigma (31%:R / 5%:R) *
+     normal_pdf ((rr.1 * 5%:R)%R + rr.2)%R noise_sigma 8%:R)%R) =
     (fun rr : mR * mR =>
     (normal_peak noise_sigma *
-       normal_fun ((rr.1 * 1)%R + rr.2)%E
+       normal_fun ((rr.1 * 1)%R + rr.2)%R
          noise_sigma (5%:R / 2%:R) *
     (normal_peak noise_sigma *
-       normal_fun ((rr.1 * 2%:R)%R + rr.2)%E
+       normal_fun ((rr.1 * 2%:R)%R + rr.2)%R
          noise_sigma (19%:R / 5%:R)) *
     (normal_peak noise_sigma *
-       normal_fun ((rr.1 * 3%:R)%R + rr.2)%E
+       normal_fun ((rr.1 * 3%:R)%R + rr.2)%R
          noise_sigma (9%:R / 2%:R)) *
     (normal_peak noise_sigma *
-       normal_fun ((rr.1 * 4%:R)%R + rr.2)%E
+       normal_fun ((rr.1 * 4%:R)%R + rr.2)%R
          noise_sigma (31%:R / 5%:R)) *
     (normal_peak noise_sigma *
-       normal_fun ((rr.1 * 5%:R)%R + rr.2)%E
+       normal_fun ((rr.1 * 5%:R)%R + rr.2)%R
          noise_sigma 8%:R))%R).
     by apply: funext => -[s b] /=; rewrite !(normal_pdfE _ hns).
   apply: measurable_funM; last exact: (d_pair_meas_tac 5%:R 8%:R).
@@ -815,9 +814,8 @@ suff sos_ub : forall s : R, (scalar_of_s s <= M)%R.
     (EFin \o scalar_of_s).
   apply: (@measurable_bounded_integrable _ _ _ _ _ setT).
   - exact: measurableT.
-  - have -> : probability_normal_prob__canonical__measure_function_Measure
-        0 prior_sigma [set: _] = 1 by exact: probability_setT.
-    exact: ltey.
+  - suff: ((normal_prob 0 prior_sigma : probability _ _) setT < +oo)%E by [].
+    by rewrite probability_setT; exact: ltey.
   - by move: sos_meas_proof => /measurable_EFinP.
   - apply/ex_bound; first exact: globally_properfilter.
     exists M => s /= _.
