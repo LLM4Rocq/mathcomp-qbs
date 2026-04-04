@@ -37,7 +37,7 @@ This formalization follows:
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
 | `quasi_borel.v` | 721 | 45 | HB mixin/structure, morphisms, products, exponentials, cartesian closure |
-| `measure_qbs_adjunction.v` | 523 | 27 | L-|R adjunction, standard Borel, full faithfulness |
+| `measure_qbs_adjunction.v` | 523 | 27 | L⊣R adjunction, standard Borel, full faithfulness |
 | `coproduct_qbs.v` | 685 | 22 | Binary/general coproducts, dependent products, list type |
 | `probability_qbs.v` | 1,200 | 63 | Probability monad: return, bind, 3 monad laws, strength, normalizer |
 | `pair_qbs_measure.v` | 598 | 17 | Product measures via R≅R×R, Fubini, independence |
