@@ -1,7 +1,2126 @@
-% In this file you should put the actual content of the blueprint.
-% It will be used both by the web and the print version.
-% It should *not* include the \begin{document}
+% This file contains the blueprint for the QBS formalization project.
+% It maps the Rocq development to a mathematical blueprint with dependency tracking.
 %
-% If you want to split the blueprint content into several files then
-% the current file can be a simple sequence of \input. Otherwise It
-% can start with a \section or \chapter for instance.
+% Conventions:
+%   \rocq{QBS.file.name} -- links to Rocq declaration
+%   \rocqok              -- formalization is complete
+%   \uses{label1, ...}   -- declares dependency on other blueprint items
+%   \label{...}          -- unique label for dependency tracking
+
+\chapter{Core QBS Theory}\label{ch:core}
+
+In this chapter we define quasi-Borel spaces, their morphisms, and
+the fundamental categorical constructions: products, exponentials,
+coproducts, dependent products, and the unit type.
+We establish cartesian closure, the $L \dashv R$ adjunction between
+QBS and measurable spaces, and introduce standard Borel spaces
+with their full faithfulness property.
+
+The development is parametric in a \texttt{realType}~$R$ from math-comp
+analysis. We write $\mathbb{R}$ for the carrier of~$R$ and
+$m\mathbb{R}$ for its Borel measurable space.
+
+\section{QBS Definition}
+
+\begin{definition}[Quasi-Borel Space]\label{def:isQBS}
+  \rocq{QBS.quasi_borel.isQBS}
+  \rocqok
+  A \emph{quasi-Borel space} (QBS) over $R$ is a type~$T$ equipped with
+  a set $M_X \subseteq (\mathbb{R} \to T)$ of \emph{random elements}
+  satisfying three axioms:
+  \begin{enumerate}
+    \item \textbf{Composition} (\texttt{qbs\_Mx\_comp}):
+      If $\alpha \in M_X$ and $f : \mathbb{R} \to \mathbb{R}$ is
+      measurable, then $\alpha \circ f \in M_X$.
+    \item \textbf{Constants} (\texttt{qbs\_Mx\_const}):
+      For every $x : T$, the constant function
+      $\lambda r.\; x$ is in $M_X$.
+    \item \textbf{Gluing} (\texttt{qbs\_Mx\_glue}):
+      If $P : \mathbb{R} \to \mathbb{N}$ is measurable and
+      $F_i \in M_X$ for all~$i$, then
+      $\lambda r.\; F_{P(r)}(r) \in M_X$.
+  \end{enumerate}
+  The HB structure \texttt{QBSpace} packages this mixin with a short
+  type name \texttt{qbsType R}.
+\end{definition}
+
+
+\section{Morphisms}\label{sec:morphisms}
+
+\begin{definition}[QBS Morphism]\label{def:qbs_morphism}
+  \rocq{QBS.quasi_borel.qbs_morphism}
+  \rocqok
+  \uses{def:isQBS}
+  A function $f : X \to Y$ between QBS is a \emph{QBS morphism} if for
+  every $\alpha \in M_X$, we have $f \circ \alpha \in M_Y$.
+\end{definition}
+
+\begin{lemma}[Identity Morphism]\label{lem:qbs_morphism_id}
+  \rocq{QBS.quasi_borel.qbs_morphism_id}
+  \rocqok
+  \uses{def:qbs_morphism}
+  The identity function $\mathrm{id} : X \to X$ is a QBS morphism.
+\end{lemma}
+
+\begin{lemma}[Composition of Morphisms]\label{lem:qbs_morphism_comp}
+  \rocq{QBS.quasi_borel.qbs_morphism_comp}
+  \rocqok
+  \uses{def:qbs_morphism}
+  If $f : X \to Y$ and $g : Y \to Z$ are QBS morphisms, then
+  $g \circ f : X \to Z$ is a QBS morphism.
+\end{lemma}
+
+\begin{lemma}[Constant Morphism]\label{lem:qbs_morphism_const}
+  \rocq{QBS.quasi_borel.qbs_morphism_const}
+  \rocqok
+  \uses{def:qbs_morphism}
+  For any $y : Y$, the constant function $\lambda x.\; y$ is a QBS morphism.
+\end{lemma}
+
+
+\section{The R Functor}\label{sec:R_functor}
+
+\begin{definition}[R Functor]\label{def:R_qbs}
+  \rocq{QBS.quasi_borel.R_qbs}
+  \rocqok
+  \uses{def:isQBS}
+  The functor $R : \mathbf{Meas} \to \mathbf{QBS}$ sends a measurable
+  space~$M$ to the QBS with
+  $M_{R(M)} = \{f : \mathbb{R} \to M \mid f \text{ measurable}\}$.
+\end{definition}
+
+\begin{lemma}[Measurable Gluing]\label{lem:measurable_glue}
+  \rocq{QBS.quasi_borel.measurable_glue}
+  \rocqok
+  If $P : \mathbb{R} \to \mathbb{N}$ and each $F_i : \mathbb{R} \to M$
+  are measurable, then $\lambda r.\; F_{P(r)}(r)$ is measurable.
+  This justifies the gluing axiom for~$R(M)$.
+\end{lemma}
+
+\begin{definition}[Concrete Instances]\label{def:concrete_qbs}
+  \rocq{QBS.quasi_borel.realQ}
+  \rocq{QBS.quasi_borel.natQ}
+  \rocq{QBS.quasi_borel.boolQ}
+  \rocqok
+  \uses{def:R_qbs}
+  $\mathtt{realQ} = R(m\mathbb{R})$, $\mathtt{natQ} = R(\mathbb{N})$,
+  $\mathtt{boolQ} = R(\mathbb{B})$.
+\end{definition}
+
+\begin{lemma}[R Preserves Morphisms]\label{lem:R_qbs_morph}
+  \rocq{QBS.measure_qbs_adjunction.R_qbs_morph}
+  \rocqok
+  \uses{def:R_qbs, def:qbs_morphism}
+  If $f : M_1 \to M_2$ is measurable, then $f$ is a QBS morphism
+  $R(M_1) \to R(M_2)$.
+\end{lemma}
+
+\begin{lemma}[R Preserves Identity]\label{lem:R_qbs_id}
+  \rocq{QBS.measure_qbs_adjunction.R_qbs_id}
+  \rocqok
+  \uses{def:R_qbs, def:qbs_morphism}
+  $\mathrm{id}$ is a QBS morphism $R(M) \to R(M)$.
+\end{lemma}
+
+\begin{lemma}[R Preserves Composition]\label{lem:R_qbs_comp}
+  \rocq{QBS.measure_qbs_adjunction.R_qbs_comp}
+  \rocqok
+  \uses{def:R_qbs, def:qbs_morphism}
+  If $f, g$ are measurable, then $g \circ f$ is a QBS morphism
+  $R(M_1) \to R(M_3)$.
+\end{lemma}
+
+
+\section{Binary Products}\label{sec:products}
+
+\begin{definition}[Binary Product QBS]\label{def:prodQ}
+  \rocq{QBS.quasi_borel.prodQ}
+  \rocqok
+  \uses{def:isQBS}
+  The product $X \times Y$ of two QBS has random elements
+  $M_{X \times Y} = \{\alpha \mid \pi_1 \circ \alpha \in M_X
+  \text{ and } \pi_2 \circ \alpha \in M_Y\}$.
+\end{definition}
+
+\begin{lemma}[First Projection Morphism]\label{lem:qbs_morphism_fst}
+  \rocq{QBS.quasi_borel.qbs_morphism_fst}
+  \rocqok
+  \uses{def:prodQ, def:qbs_morphism}
+  $\mathrm{fst} : X \times Y \to X$ is a QBS morphism.
+\end{lemma}
+
+\begin{lemma}[Second Projection Morphism]\label{lem:qbs_morphism_snd}
+  \rocq{QBS.quasi_borel.qbs_morphism_snd}
+  \rocqok
+  \uses{def:prodQ, def:qbs_morphism}
+  $\mathrm{snd} : X \times Y \to Y$ is a QBS morphism.
+\end{lemma}
+
+\begin{lemma}[Pairing Morphism]\label{lem:qbs_morphism_pair}
+  \rocq{QBS.quasi_borel.qbs_morphism_pair}
+  \rocqok
+  \uses{def:prodQ, def:qbs_morphism}
+  If $f : W \to X$ and $g : W \to Y$ are QBS morphisms, then
+  $\langle f, g \rangle : W \to X \times Y$ is a QBS morphism.
+\end{lemma}
+
+\begin{lemma}[Constant--Random Pairing]\label{lem:prodQ_const_random}
+  \rocq{QBS.quasi_borel.prodQ_const_random}
+  \rocqok
+  \uses{def:prodQ}
+  If $\alpha \in M_Y$, then $\lambda r.\; (x, \alpha(r)) \in M_{X \times Y}$.
+\end{lemma}
+
+\begin{lemma}[Random--Constant Pairing]\label{lem:prodQ_random_const}
+  \rocq{QBS.quasi_borel.prodQ_random_const}
+  \rocqok
+  \uses{def:prodQ}
+  If $\alpha \in M_X$, then $\lambda r.\; (\alpha(r), y) \in M_{X \times Y}$.
+\end{lemma}
+
+\begin{lemma}[Product Swap]\label{lem:qbs_morphism_swap}
+  \rocq{QBS.quasi_borel.qbs_morphism_swap}
+  \rocqok
+  \uses{def:prodQ, def:qbs_morphism}
+  $(x, y) \mapsto (y, x)$ is a QBS morphism $X \times Y \to Y \times X$.
+\end{lemma}
+
+\begin{lemma}[Product Associator (left-to-right)]\label{lem:qbs_morphism_assoc_lr}
+  \rocq{QBS.quasi_borel.qbs_morphism_assoc_lr}
+  \rocqok
+  \uses{def:prodQ, def:qbs_morphism}
+  $((x,y),z) \mapsto (x,(y,z))$ is a QBS morphism.
+\end{lemma}
+
+\begin{lemma}[Product Associator (right-to-left)]\label{lem:qbs_morphism_assoc_rl}
+  \rocq{QBS.quasi_borel.qbs_morphism_assoc_rl}
+  \rocqok
+  \uses{def:prodQ, def:qbs_morphism}
+  $(x,(y,z)) \mapsto ((x,y),z)$ is a QBS morphism.
+\end{lemma}
+
+
+\section{Exponentials (Function Spaces)}\label{sec:exponentials}
+
+\begin{definition}[Exponential QBS]\label{def:expQ}
+  \rocq{QBS.quasi_borel.expQ}
+  \rocqok
+  \uses{def:isQBS, def:qbs_morphism}
+  The exponential $X \Rightarrow Y$ has carrier the set of QBS morphisms
+  $X \to Y$, with a function $g : \mathbb{R} \to (X \to Y)$ random iff the
+  uncurried map $(r, x) \mapsto g(r)(x)$ is a QBS morphism
+  $\mathbb{R} \times X \to Y$.
+\end{definition}
+
+\begin{theorem}[Evaluation Morphism]\label{thm:qbs_morphism_eval}
+  \rocq{QBS.quasi_borel.qbs_morphism_eval}
+  \rocqok
+  \uses{def:expQ, def:prodQ, def:qbs_morphism}
+  Evaluation $(f, x) \mapsto f(x)$ is a QBS morphism
+  $(X \Rightarrow Y) \times X \to Y$.
+\end{theorem}
+
+\begin{theorem}[Currying Morphism]\label{thm:qbs_morphism_curry}
+  \rocq{QBS.quasi_borel.qbs_morphism_curry}
+  \rocqok
+  \uses{def:expQ, def:prodQ, def:qbs_morphism, lem:prodQ_const_random}
+  If $f : X \times Y \to Z$ is a QBS morphism, then
+  $\hat{f} : X \to (Y \Rightarrow Z)$ defined by
+  $\hat{f}(x)(y) = f(x,y)$ is a QBS morphism.
+\end{theorem}
+
+\begin{corollary}[Cartesian Closure]\label{cor:cartesian_closure}
+  \rocqok
+  \uses{thm:qbs_morphism_eval, thm:qbs_morphism_curry}
+  The category of quasi-Borel spaces is cartesian closed.
+\end{corollary}
+
+\begin{lemma}[Exponential Composition]\label{lem:qbs_morphism_exp_comp}
+  \rocq{QBS.quasi_borel.qbs_morphism_exp_comp}
+  \rocqok
+  \uses{def:expQ, def:prodQ, def:qbs_morphism}
+  Given QBS morphisms $f : W \to (X \Rightarrow Y)$ and $g : W \to X$,
+  the pointwise application $w \mapsto f(w)(g(w))$ is a QBS morphism
+  $W \to Y$.
+\end{lemma}
+
+\begin{lemma}[Argument Swap]\label{lem:qbs_morphism_arg_swap}
+  \rocq{QBS.quasi_borel.qbs_morphism_arg_swap}
+  \rocqok
+  \uses{def:expQ, def:qbs_morphism}
+  Given a QBS morphism $f : X \to (Y \Rightarrow Z)$, the transposition
+  $y \mapsto (\lambda x.\; f(x)(y))$ is a QBS morphism $Y \to (X \Rightarrow Z)$.
+\end{lemma}
+
+
+\section{Unit QBS}\label{sec:unit}
+
+\begin{definition}[Unit QBS]\label{def:unitQ}
+  \rocq{QBS.quasi_borel.unitQ}
+  \rocqok
+  \uses{def:isQBS}
+  The unit QBS has carrier $\mathtt{unit}$ with every function random:
+  $M_{\mathtt{unit}} = \{f : \mathbb{R} \to \mathtt{unit}\}$.
+\end{definition}
+
+\begin{lemma}[Terminal Morphism]\label{lem:qbs_morphism_unit}
+  \rocq{QBS.quasi_borel.qbs_morphism_unit}
+  \rocqok
+  \uses{def:unitQ, def:qbs_morphism}
+  The unique map $X \to \mathtt{unit}$ is a QBS morphism (terminality).
+\end{lemma}
+
+
+\section{Induced Sigma-Algebra}\label{sec:sigma_Mx}
+
+\begin{definition}[Induced Sigma-Algebra]\label{def:sigma_Mx}
+  \rocq{QBS.quasi_borel.sigma_Mx}
+  \rocqok
+  \uses{def:isQBS}
+  For a QBS~$X$, the induced sigma-algebra is
+  $\sigma_{M_X} = \{U \subseteq X \mid \forall \alpha \in M_X,\;
+  \alpha^{-1}(U) \text{ is Borel measurable}\}$.
+\end{definition}
+
+\begin{lemma}[Sigma-Algebra Axioms]\label{lem:sigma_Mx_axioms}
+  \rocq{QBS.quasi_borel.sigma_Mx_setT}
+  \rocq{QBS.quasi_borel.sigma_Mx_setC}
+  \rocq{QBS.quasi_borel.sigma_Mx_bigcup}
+  \rocqok
+  \uses{def:sigma_Mx}
+  $\sigma_{M_X}$ is a sigma-algebra: it contains the full set, is closed
+  under complement, and is closed under countable union.
+\end{lemma}
+
+
+\section{Arithmetic Morphisms}\label{sec:arithmetic}
+
+\begin{lemma}[Addition Morphism]\label{lem:qbs_morphism_add}
+  \rocq{QBS.quasi_borel.qbs_morphism_add}
+  \rocqok
+  \uses{def:prodQ, def:concrete_qbs, def:qbs_morphism}
+  $(x, y) \mapsto x + y$ is a QBS morphism
+  $\mathtt{realQ} \times \mathtt{realQ} \to \mathtt{realQ}$.
+\end{lemma}
+
+\begin{lemma}[Multiplication Morphism]\label{lem:qbs_morphism_mul}
+  \rocq{QBS.quasi_borel.qbs_morphism_mul}
+  \rocqok
+  \uses{def:prodQ, def:concrete_qbs, def:qbs_morphism}
+  $(x, y) \mapsto x \cdot y$ is a QBS morphism
+  $\mathtt{realQ} \times \mathtt{realQ} \to \mathtt{realQ}$.
+\end{lemma}
+
+\begin{lemma}[Less-Than Morphism]\label{lem:qbs_morphism_ltr}
+  \rocq{QBS.quasi_borel.qbs_morphism_ltr}
+  \rocqok
+  \uses{def:prodQ, def:concrete_qbs, def:qbs_morphism}
+  $(x, y) \mapsto (x < y)$ is a QBS morphism
+  $\mathtt{realQ} \times \mathtt{realQ} \to \mathtt{boolQ}$.
+\end{lemma}
+
+\begin{lemma}[Boolean Negation Morphism]\label{lem:qbs_morphism_negb}
+  \rocq{QBS.quasi_borel.qbs_morphism_negb}
+  \rocqok
+  \uses{def:concrete_qbs, def:qbs_morphism}
+  $\mathtt{negb}$ is a QBS morphism $\mathtt{boolQ} \to \mathtt{boolQ}$.
+\end{lemma}
+
+
+\section{Subspaces}\label{sec:subspaces}
+
+\begin{definition}[Subspace QBS]\label{def:sub_qbs}
+  \rocq{QBS.quasi_borel.sub_qbs}
+  \rocqok
+  \uses{def:isQBS}
+  Given a QBS~$X$ and a predicate $P \subseteq X$, the subspace QBS
+  has carrier $\{x : X \mid P(x)\}$ with $\alpha$ random iff
+  $\mathrm{proj}_1 \circ \alpha \in M_X$.
+\end{definition}
+
+
+\section{Generating QBS}\label{sec:generating}
+
+\begin{definition}[Generating QBS]\label{def:generating_qbs}
+  \rocq{QBS.quasi_borel.generating_qbs}
+  \rocqok
+  \uses{def:isQBS}
+  Given a set $G$ of functions $\mathbb{R} \to T$, the \emph{generating QBS}
+  is the smallest QBS containing~$G$, constructed by inductive closure under
+  composition, constants, and gluing.
+\end{definition}
+
+\begin{lemma}[Generators Are Random]\label{lem:generating_qbs_incl}
+  \rocq{QBS.quasi_borel.generating_qbs_incl}
+  \rocqok
+  \uses{def:generating_qbs}
+  $G \subseteq M_{\mathrm{gen}(G)}$.
+\end{lemma}
+
+\begin{lemma}[Generating QBS Is Least]\label{lem:generating_qbs_least}
+  \rocq{QBS.quasi_borel.generating_qbs_least}
+  \rocqok
+  \uses{def:generating_qbs}
+  If $M'$ satisfies the QBS axioms and $G \subseteq M'$, then
+  $M_{\mathrm{gen}(G)} \subseteq M'$.
+\end{lemma}
+
+
+\section{Image QBS}\label{sec:image}
+
+\begin{definition}[Image QBS]\label{def:map_qbs}
+  \rocq{QBS.quasi_borel.map_qbs}
+  \rocqok
+  \uses{def:generating_qbs, def:qbs_morphism}
+  Given a QBS morphism $f : X \to Y$, the image QBS
+  $\mathrm{im}(f)$ is $\mathrm{gen}(\{f \circ \alpha \mid \alpha \in M_X\})$.
+\end{definition}
+
+\begin{lemma}[Image Random Elements]\label{lem:map_qbs_random}
+  \rocq{QBS.quasi_borel.map_qbs_random}
+  \rocqok
+  \uses{def:map_qbs}
+  If $\alpha \in M_X$, then $f \circ \alpha \in M_{\mathrm{im}(f)}$.
+\end{lemma}
+
+\begin{lemma}[Image Is Coarser Than Codomain]\label{lem:map_qbs_sub}
+  \rocq{QBS.quasi_borel.map_qbs_sub}
+  \rocqok
+  \uses{def:map_qbs}
+  $M_{\mathrm{im}(f)} \subseteq M_Y$.
+\end{lemma}
+
+\begin{lemma}[Image Morphism Out]\label{lem:map_qbs_morphism_out}
+  \rocq{QBS.quasi_borel.map_qbs_morphism_out}
+  \rocqok
+  \uses{def:map_qbs, def:qbs_morphism}
+  If $g : Y \to Z$ is a QBS morphism, then
+  $g$ is also a morphism from the image QBS.
+\end{lemma}
+
+\begin{lemma}[Image Morphism In]\label{lem:map_qbs_morph_from}
+  \rocq{QBS.quasi_borel.map_qbs_morph_from}
+  \rocqok
+  \uses{def:map_qbs, def:qbs_morphism}
+  $f$ is a QBS morphism $X \to \mathrm{im}(f)$.
+\end{lemma}
+
+
+\section{Order Structure on QBS}\label{sec:order}
+
+\begin{definition}[QBS Ordering]\label{def:qbs_leT}
+  \rocq{QBS.quasi_borel.qbs_leT}
+  \rocqok
+  \uses{def:isQBS}
+  For QBS structures on the same carrier~$T$,
+  $M_X \leq M_Y$ iff $M_X \subseteq M_Y$ (more random elements
+  means coarser structure).
+\end{definition}
+
+\begin{lemma}[Partial Order]\label{lem:qbs_leT_order}
+  \rocq{QBS.quasi_borel.qbs_leT_refl}
+  \rocq{QBS.quasi_borel.qbs_leT_trans}
+  \rocq{QBS.quasi_borel.qbs_leT_antisym}
+  \rocqok
+  \uses{def:qbs_leT}
+  $\leq$ is reflexive, transitive, and antisymmetric.
+\end{lemma}
+
+\begin{definition}[QBS Supremum]\label{def:qbs_supT}
+  \rocq{QBS.quasi_borel.qbs_supT}
+  \rocqok
+  \uses{def:generating_qbs, def:qbs_leT}
+  The supremum of two QBS structures on~$T$ is
+  $\mathrm{gen}(M_X \cup M_Y)$.
+\end{definition}
+
+\begin{lemma}[Supremum Properties]\label{lem:qbs_supT_props}
+  \rocq{QBS.quasi_borel.qbs_supT_ub_l}
+  \rocq{QBS.quasi_borel.qbs_supT_ub_r}
+  \rocq{QBS.quasi_borel.qbs_supT_least}
+  \rocqok
+  \uses{def:qbs_supT, def:qbs_leT}
+  The supremum is an upper bound for both components and is the least
+  such upper bound.
+\end{lemma}
+
+
+\section{The L Functor and L--R Adjunction}\label{sec:adjunction}
+
+\begin{definition}[L Functor]\label{def:L_sigma}
+  \rocq{QBS.measure_qbs_adjunction.L_sigma}
+  \rocqok
+  \uses{def:sigma_Mx}
+  The functor $L : \mathbf{QBS} \to \sigma\text{-}\mathbf{Alg}$ sends a
+  QBS~$X$ to its induced sigma-algebra $\sigma_{M_X}$.
+\end{definition}
+
+\begin{lemma}[L Is a Sigma-Algebra]\label{lem:L_sigma_axioms}
+  \rocq{QBS.measure_qbs_adjunction.L_sigma_set0}
+  \rocq{QBS.measure_qbs_adjunction.L_sigma_measurableT}
+  \rocq{QBS.measure_qbs_adjunction.L_sigma_measurableC}
+  \rocq{QBS.measure_qbs_adjunction.L_sigma_measurable_bigcup}
+  \rocqok
+  \uses{def:L_sigma}
+  $L(X)$ satisfies $\emptyset, T \in L(X)$, closure under complement,
+  and closure under countable union.
+\end{lemma}
+
+\begin{lemma}[L Preserves Morphisms]\label{lem:L_qbs_morph}
+  \rocq{QBS.measure_qbs_adjunction.L_qbs_morph}
+  \rocqok
+  \uses{def:L_sigma, def:qbs_morphism}
+  If $f : X \to Y$ is a QBS morphism and $U \in L(Y)$, then
+  $f^{-1}(U) \in L(X)$.
+\end{lemma}
+
+\begin{lemma}[L Preserves Identity and Composition]\label{lem:L_functorial}
+  \rocq{QBS.measure_qbs_adjunction.L_qbs_id}
+  \rocq{QBS.measure_qbs_adjunction.L_qbs_comp}
+  \rocqok
+  \uses{def:L_sigma, lem:L_qbs_morph}
+  $L$ preserves identity and composition.
+\end{lemma}
+
+\begin{theorem}[$L \dashv R$ Adjunction]\label{thm:lr_adj_natural}
+  \rocq{QBS.measure_qbs_adjunction.lr_adj_natural}
+  \rocqok
+  \uses{def:L_sigma, def:R_qbs, def:qbs_morphism}
+  A function $f : X \to M$ is a QBS morphism $X \to R(M)$ if and only if
+  it pulls back measurable sets to $L(X)$-measurable sets:
+  \[
+    \mathrm{Hom}_{\mathbf{QBS}}(X, R(M)) \cong
+    \mathrm{Hom}_{\sigma\text{-}\mathbf{Alg}}(L(X), \sigma(M)).
+  \]
+\end{theorem}
+\begin{proof}
+  \rocqok
+  \uses{lem:R_qbs_morph, lem:L_qbs_morph}
+  The left-to-right direction (\texttt{lr\_adj\_l2r}) composes
+  $\alpha^{-1}$ with the QBS morphism condition.
+  The right-to-left direction (\texttt{lr\_adj\_r2l}) uses the measurability
+  hypothesis to verify $f \circ \alpha$ is measurable for each random element.
+\end{proof}
+
+\begin{lemma}[R Preserves Products]\label{lem:R_preserves_prod}
+  \rocq{QBS.measure_qbs_adjunction.R_preserves_prod}
+  \rocqok
+  \uses{def:R_qbs, def:prodQ}
+  $R(M_1 \times M_2)$ and $R(M_1) \times R(M_2)$ have the same random
+  elements.
+\end{lemma}
+
+\begin{lemma}[Adjunction Unit]\label{lem:adjunction_unit}
+  \rocq{QBS.measure_qbs_adjunction.adjunction_unit}
+  \rocqok
+  \uses{def:sigma_Mx, def:isQBS}
+  If $\alpha \in M_X$ and $U \in \sigma_{M_X}$, then
+  $\alpha^{-1}(U)$ is Borel measurable.
+\end{lemma}
+
+\begin{lemma}[Adjunction Counit]\label{lem:adjunction_counit}
+  \rocq{QBS.measure_qbs_adjunction.adjunction_counit}
+  \rocqok
+  \uses{def:L_sigma, def:R_qbs}
+  If $U$ is measurable in~$M$, then $U \in L(R(M))$.
+\end{lemma}
+
+
+\section{Standard Borel Spaces (Definition)}\label{sec:standard_borel_def}
+
+\begin{definition}[Standard Borel Space]\label{def:is_standard_borel}
+  \rocq{QBS.measure_qbs_adjunction.is_standard_borel}
+  \rocqok
+  \uses{def:R_qbs}
+  A measurable space~$M$ is \emph{standard Borel} if there exist
+  measurable $f : M \to \mathbb{R}$ and $g : \mathbb{R} \to M$ with
+  $g \circ f = \mathrm{id}$.
+\end{definition}
+
+\begin{lemma}[$\mathbb{R}$ Is Standard Borel]\label{lem:R_standard_borel}
+  \rocq{QBS.measure_qbs_adjunction.R_standard_borel}
+  \rocqok
+  \uses{def:is_standard_borel}
+  $\mathbb{R}$ is standard Borel via the identity functions.
+\end{lemma}
+
+\begin{theorem}[Full Faithfulness on Standard Borel]\label{thm:R_full_faithful}
+  \rocq{QBS.measure_qbs_adjunction.R_full_faithful_standard_borel}
+  \rocqok
+  \uses{def:is_standard_borel, def:R_qbs, def:qbs_morphism}
+  If $M_1$ and $M_2$ are standard Borel and $f : M_1 \to M_2$ is a
+  QBS morphism $R(M_1) \to R(M_2)$, then $f$ is measurable.
+\end{theorem}
+\begin{proof}
+  \rocqok
+  \uses{lem:R_standard_borel}
+  Factor $f = \psi_2 \circ (\phi_2 \circ f \circ \psi_1) \circ \phi_1$
+  through the standard Borel witnesses and use the QBS morphism condition
+  on the measurable $\psi_1$ to obtain measurability.
+\end{proof}
+
+\begin{lemma}[$\mathbb{N}$ Is Standard Borel]\label{lem:nat_standard_borel}
+  \rocq{QBS.measure_qbs_adjunction.nat_standard_borel}
+  \rocqok
+  \uses{def:is_standard_borel}
+  $\mathbb{N}$ is standard Borel.
+\end{lemma}
+
+\begin{lemma}[$\mathbb{B}$ Is Standard Borel]\label{lem:bool_standard_borel}
+  \rocq{QBS.measure_qbs_adjunction.bool_standard_borel}
+  \rocqok
+  \uses{def:is_standard_borel}
+  $\mathrm{bool}$ is standard Borel.
+\end{lemma}
+
+\begin{lemma}[Product of Standard Borel Spaces]\label{lem:prod_standard_borel}
+  \rocq{QBS.measure_qbs_adjunction.prod_standard_borel}
+  \rocqok
+  \uses{def:is_standard_borel, thm:pair_standard_borel}
+  If $M_1$ and $M_2$ are standard Borel, then $M_1 \times M_2$ is
+  standard Borel.
+\end{lemma}
+
+\begin{lemma}[$\bar{\mathbb{R}}$ Is Standard Borel]\label{lem:ereal_standard_borel}
+  \rocq{QBS.measure_qbs_adjunction.ereal_standard_borel}
+  \rocqok
+  \uses{def:is_standard_borel}
+  The extended reals $\bar{\mathbb{R}}$ form a standard Borel space.
+\end{lemma}
+
+\begin{lemma}[Standard Borel L--R Sets Identity]\label{lem:standard_borel_lr_sets}
+  \rocq{QBS.measure_qbs_adjunction.standard_borel_lr_sets_ident}
+  \rocqok
+  \uses{def:is_standard_borel, def:L_sigma, def:R_qbs}
+  For a standard Borel space~$M$, the $L(R(M))$-measurable sets coincide
+  with the original measurable sets.
+\end{lemma}
+
+
+\section{Coproducts (Binary)}\label{sec:coproducts}
+
+\begin{definition}[Binary Coproduct QBS]\label{def:coprodQ}
+  \rocq{QBS.coproduct_qbs.coprodQ}
+  \rocqok
+  \uses{def:isQBS}
+  The coproduct $X + Y$ has random elements that factor through
+  $\mathrm{inl}$, through $\mathrm{inr}$, or through a measurable
+  boolean predicate switching between the two.
+\end{definition}
+
+\begin{lemma}[Injection Morphisms]\label{lem:coproduct_injections}
+  \rocq{QBS.coproduct_qbs.qbs_morphism_inl}
+  \rocq{QBS.coproduct_qbs.qbs_morphism_inr}
+  \rocqok
+  \uses{def:coprodQ, def:qbs_morphism}
+  $\mathrm{inl} : X \to X + Y$ and $\mathrm{inr} : Y \to X + Y$ are
+  QBS morphisms.
+\end{lemma}
+
+\begin{lemma}[Case Analysis Morphism]\label{lem:qbs_morphism_case}
+  \rocq{QBS.coproduct_qbs.qbs_morphism_case}
+  \rocqok
+  \uses{def:coprodQ, def:qbs_morphism}
+  If $f : X \to Z$ and $g : Y \to Z$ are QBS morphisms, then the
+  case-analysis function $[f, g] : X + Y \to Z$ is a QBS morphism.
+\end{lemma}
+
+
+\section{Coproducts (General / Sigma Type)}\label{sec:gen_coproducts}
+
+\begin{definition}[General Coproduct QBS]\label{def:gen_coprodQ}
+  \rocq{QBS.coproduct_qbs.gen_coprodQ}
+  \rocqok
+  \uses{def:isQBS}
+  For a measurable index type~$I$ and a family $X : I \to \mathbf{QBS}$,
+  the general coproduct $\coprod_{i:I} X_i$ has carrier
+  $\{i : I ~\&~ X_i\}$ (dependent sum).
+  A random element $\alpha$ factors as $\alpha(r) = (P(r), F_{P(r)}(r))$
+  for measurable $P : \mathbb{R} \to I$ and family $F_i \in M_{X_i}$.
+\end{definition}
+
+\begin{lemma}[General Injection]\label{lem:qbs_morphism_gen_inj}
+  \rocq{QBS.coproduct_qbs.qbs_morphism_gen_inj}
+  \rocqok
+  \uses{def:gen_coprodQ, def:qbs_morphism}
+  For each $i : I$, the injection $x \mapsto (i, x)$ is a QBS morphism
+  $X_i \to \coprod_j X_j$.
+\end{lemma}
+
+\begin{lemma}[Binary--General Isomorphism]\label{lem:coprod_gen_iso}
+  \rocq{QBS.coproduct_qbs.qbs_morphism_coprod_to_gen}
+  \rocq{QBS.coproduct_qbs.qbs_morphism_gen_to_coprod}
+  \rocqok
+  \uses{def:coprodQ, def:gen_coprodQ, def:qbs_morphism}
+  The binary coproduct $X + Y$ embeds into (and out of) the general
+  coproduct over~$\mathbb{B}$.
+\end{lemma}
+
+
+\section{Dependent Products (Pi Type)}\label{sec:pi}
+
+\begin{definition}[Dependent Product QBS]\label{def:piQ}
+  \rocq{QBS.coproduct_qbs.piQ}
+  \rocqok
+  \uses{def:isQBS}
+  For a family $X : I \to \mathbf{QBS}$, the dependent product
+  $\prod_{i:I} X_i$ has $\alpha$ random iff for every $i : I$,
+  $\lambda r.\; \alpha(r)(i) \in M_{X_i}$.
+\end{definition}
+
+\begin{lemma}[Projection Morphism]\label{lem:qbs_morphism_proj}
+  \rocq{QBS.coproduct_qbs.qbs_morphism_proj}
+  \rocqok
+  \uses{def:piQ, def:qbs_morphism}
+  For each $i : I$, the projection $f \mapsto f(i)$ is a QBS morphism
+  $\prod_j X_j \to X_i$.
+\end{lemma}
+
+\begin{lemma}[Tupling Morphism]\label{lem:qbs_morphism_tuple}
+  \rocq{QBS.coproduct_qbs.qbs_morphism_tuple}
+  \rocqok
+  \uses{def:piQ, def:qbs_morphism}
+  If $f_i : W \to X_i$ are QBS morphisms for all~$i$, then
+  $w \mapsto (\lambda i.\; f_i(w))$ is a QBS morphism
+  $W \to \prod_i X_i$.
+\end{lemma}
+
+
+\section{List Type}\label{sec:list}
+
+\begin{definition}[List QBS]\label{def:listQ}
+  \rocq{QBS.coproduct_qbs.listQ}
+  \rocqok
+  \uses{def:isQBS}
+  For a QBS~$X$ with inhabitant $x_0 : X$, the list QBS $\mathrm{list}(X)$
+  has $\alpha$ random iff there exist measurable
+  $\mathrm{len} : \mathbb{R} \to \mathbb{N}$ and random
+  $F_i \in M_X$ such that
+  $\alpha(r) = \mathrm{mkseq}(\lambda i.\; F_i(r), \mathrm{len}(r))$.
+\end{definition}
+
+\begin{lemma}[Length Morphism]\label{lem:qbs_morphism_length}
+  \rocq{QBS.coproduct_qbs.qbs_morphism_length}
+  \rocqok
+  \uses{def:listQ, def:qbs_morphism, def:concrete_qbs}
+  $\mathrm{size} : \mathrm{list}(X) \to \mathtt{natQ}$ is a QBS morphism.
+\end{lemma}
+
+\begin{lemma}[List Element Random]\label{lem:listQ_nth_random}
+  \rocq{QBS.coproduct_qbs.listQ_nth_random}
+  \rocqok
+  \uses{def:listQ}
+  If $\alpha \in M_{\mathrm{list}(X)}$, then
+  $\lambda r.\; \mathrm{nth}\; x_0\; (\alpha(r))\; i \in M_X$.
+\end{lemma}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Probability Monad}\label{ch:probability}
+
+This chapter develops the QBS probability monad $P(X)$: the type of
+probability distributions on a QBS~$X$.
+We define the monad operations (return, bind), prove the monad laws,
+develop integration theory with Fubini, and establish independence
+and variance results.
+
+\section{QBS Probability Triple}\label{sec:prob_triple}
+
+\begin{definition}[QBS Probability]\label{def:qbs_prob}
+  \rocq{QBS.probability_qbs.qbs_prob}
+  \rocqok
+  \uses{def:isQBS}
+  A \emph{QBS probability} on~$X$ is a triple $(\alpha, \mu, \mathrm{proof})$
+  where $\alpha \in M_X$ is a random element and $\mu$ is a probability
+  measure on $\mathbb{R}$.
+  The pushforward $\alpha_*(\mu)$ is the induced distribution on~$X$.
+\end{definition}
+
+\begin{definition}[Equivalence of Triples]\label{def:qbs_prob_equiv}
+  \rocq{QBS.probability_qbs.qbs_prob_equiv}
+  \rocqok
+  \uses{def:qbs_prob, def:sigma_Mx}
+  Two triples $(\alpha_1, \mu_1) \sim (\alpha_2, \mu_2)$ iff they
+  induce the same pushforward on $\sigma_{M_X}$:
+  $\mu_1(\alpha_1^{-1}(U)) = \mu_2(\alpha_2^{-1}(U))$ for all
+  $U \in \sigma_{M_X}$.
+\end{definition}
+
+\begin{lemma}[Equivalence Is an Equivalence Relation]\label{lem:qbs_prob_equiv_rel}
+  \rocq{QBS.probability_qbs.qbs_prob_equivxx}
+  \rocq{QBS.probability_qbs.qbs_prob_equivC}
+  \rocq{QBS.probability_qbs.qbs_prob_equiv_trans}
+  \rocqok
+  \uses{def:qbs_prob_equiv}
+  $\sim$ is reflexive, symmetric, and transitive.
+\end{lemma}
+
+
+\section{The Probability Monad $P(X)$}\label{sec:monadP}
+
+\begin{definition}[Probability Monad QBS]\label{def:monadP}
+  \rocq{QBS.probability_qbs.monadP}
+  \rocqok
+  \uses{def:isQBS, def:qbs_prob}
+  The probability monad $P(X)$ is a QBS on \texttt{qbs\_prob X},
+  with $\beta : \mathbb{R} \to P(X)$ random iff for all~$r$,
+  $\alpha_{\beta(r)} \in M_X$.
+\end{definition}
+
+
+\section{Return}\label{sec:return}
+
+\begin{definition}[QBS Return]\label{def:qbs_return}
+  \rocq{QBS.probability_qbs.qbs_return}
+  \rocqok
+  \uses{def:qbs_prob}
+  $\eta(x) = (\lambda r.\; x,\; \mu)$ for any probability measure~$\mu$.
+\end{definition}
+
+\begin{lemma}[Return Equivalence]\label{lem:qbs_return_equiv}
+  \rocq{QBS.probability_qbs.qbs_return_equiv}
+  \rocqok
+  \uses{def:qbs_return, def:qbs_prob_equiv}
+  All returns with the same point are equivalent regardless of~$\mu$:
+  $\eta_{\mu_1}(x) \sim \eta_{\mu_2}(x)$.
+\end{lemma}
+
+\begin{lemma}[Return Is a Morphism]\label{lem:qbs_return_random}
+  \rocq{QBS.probability_qbs.qbs_return_random}
+  \rocqok
+  \uses{def:qbs_return, def:monadP, def:qbs_morphism}
+  $\eta^{\mu} : X \to P(X)$ is a QBS morphism.
+\end{lemma}
+
+
+\section{Bind}\label{sec:bind}
+
+\begin{definition}[Strong Morphism]\label{def:qbs_morphism_strong}
+  \rocq{QBS.probability_qbs.qbs_morphism_strong}
+  \rocqok
+  \uses{def:qbs_morphism, def:monadP}
+  A function $f : X \to P(Y)$ is a \emph{strong morphism} if for
+  every random $\alpha \in M_X$, the composition $f \circ \alpha$
+  is random in $P(Y)$ (in the strong sense: sharing a single
+  underlying~$\alpha_Y$).
+\end{definition}
+
+\begin{definition}[QBS Bind]\label{def:qbs_bind}
+  \rocq{QBS.probability_qbs.qbs_bind}
+  \rocqok
+  \uses{def:qbs_prob, def:qbs_morphism}
+  Given $p = (\alpha, \mu)$ on~$X$ and $f : X \to P(Y)$, the bind
+  $p \mathbin{>\!\!>\!\!=} f$ is
+  $(\lambda r.\; \alpha_{f(\alpha(r))}(r),\; \mu)$.
+  The key obligation is that the diagonal
+  $r \mapsto \alpha_{f(\alpha(r))}(r)$ is random in~$Y$.
+\end{definition}
+
+\begin{definition}[QBS Bind (Strong)]\label{def:qbs_bind_strong}
+  \rocq{QBS.probability_qbs.qbs_bind_strong}
+  \rocqok
+  \uses{def:qbs_bind, def:qbs_morphism_strong}
+  Specialized bind that uses the strong morphism proof to discharge
+  the diagonal obligation.
+\end{definition}
+
+
+\section{Monad Laws}\label{sec:monad_laws}
+
+\begin{theorem}[Left Unit]\label{thm:qbs_bind_returnl}
+  \rocq{QBS.probability_qbs.qbs_bind_returnl}
+  \rocqok
+  \uses{def:qbs_return, def:qbs_bind, def:qbs_prob_equiv}
+  $\eta(x) \mathbin{>\!\!>\!\!=} f \sim f(x)$.
+\end{theorem}
+
+\begin{theorem}[Right Unit]\label{thm:qbs_bind_returnr}
+  \rocq{QBS.probability_qbs.qbs_bind_returnr}
+  \rocqok
+  \uses{def:qbs_return, def:qbs_bind, def:qbs_prob_equiv}
+  $m \mathbin{>\!\!>\!\!=} \eta \sim m$.
+\end{theorem}
+
+\begin{theorem}[Associativity]\label{thm:qbs_bindA}
+  \rocq{QBS.probability_qbs.qbs_bindA}
+  \rocqok
+  \uses{def:qbs_bind, def:qbs_prob_equiv}
+  $(m \mathbin{>\!\!>\!\!=} f) \mathbin{>\!\!>\!\!=} g \sim
+  m \mathbin{>\!\!>\!\!=} (\lambda x.\; f(x) \mathbin{>\!\!>\!\!=} g)$.
+\end{theorem}
+
+
+\section{Integration}\label{sec:integration}
+
+\begin{definition}[QBS Integration]\label{def:qbs_integral}
+  \rocq{QBS.probability_qbs.qbs_integral}
+  \rocqok
+  \uses{def:qbs_prob}
+  For $p = (\alpha, \mu)$ on~$X$ and $h : X \to \bar{\mathbb{R}}$,
+  \[
+    \int_p h \;=\; \int_\mu h(\alpha(r))\, d\mu(r).
+  \]
+\end{definition}
+
+\begin{definition}[QBS Measurability]\label{def:qbs_measurable}
+  \rocq{QBS.probability_qbs.qbs_measurable}
+  \rocqok
+  \uses{def:isQBS}
+  A function $h : X \to \bar{\mathbb{R}}$ is \emph{QBS measurable} if
+  for every $\alpha \in M_X$, $h \circ \alpha$ is Borel measurable.
+\end{definition}
+
+\begin{lemma}[Measurability and Sigma-Algebra]\label{lem:qbs_measurable_sigma_Mx}
+  \rocq{QBS.probability_qbs.qbs_measurable_sigma_Mx}
+  \rocqok
+  \uses{def:qbs_measurable, def:sigma_Mx}
+  If $h$ is QBS measurable and $V$ is Borel measurable, then
+  $h^{-1}(V) \in \sigma_{M_X}$.
+\end{lemma}
+
+\begin{lemma}[Integration Respects Equivalence]\label{lem:qbs_integral_equiv}
+  \rocq{QBS.probability_qbs.qbs_integral_equiv}
+  \rocqok
+  \uses{def:qbs_integral, def:qbs_prob_equiv, def:qbs_measurable}
+  If $p_1 \sim p_2$ and $h$ is QBS measurable, then
+  $\int_{p_1} h = \int_{p_2} h$.
+\end{lemma}
+
+\begin{lemma}[Integration of Constants]\label{lem:qbs_integral_const}
+  \rocq{QBS.probability_qbs.qbs_integral_const}
+  \rocqok
+  \uses{def:qbs_integral}
+  $\int_p c = c$ for any constant~$c$.
+\end{lemma}
+
+\begin{lemma}[Integration Against Return]\label{lem:qbs_integral_return}
+  \rocq{QBS.probability_qbs.qbs_integral_return}
+  \rocqok
+  \uses{def:qbs_integral, def:qbs_return}
+  $\int_{\eta(x)} h = h(x)$.
+\end{lemma}
+
+\begin{lemma}[Integration Against Bind]\label{lem:qbs_integral_bind}
+  \rocq{QBS.probability_qbs.qbs_integral_bind}
+  \rocqok
+  \uses{def:qbs_integral, def:qbs_bind}
+  $\int_{m \mathbin{>\!\!>\!\!=} f} h
+  = \int_m (\lambda x.\; h(\alpha_{f(\alpha(r))}(r)))$.
+\end{lemma}
+
+
+\section{Pushforward Infrastructure}\label{sec:pushforward}
+
+\begin{lemma}[Integral as Pushforward]\label{lem:qbs_integral_as_pushforward}
+  \rocq{QBS.probability_qbs.qbs_integral_as_pushforward}
+  \rocqok
+  \uses{def:qbs_integral}
+  $\int_p h = \int_{\mathrm{pushforward}(\mu, h \circ \alpha)} \mathrm{id}$.
+\end{lemma}
+
+\begin{lemma}[Pushforward Integrability]\label{lem:qbs_pushforward_integrable}
+  \rocq{QBS.probability_qbs.qbs_pushforward_integrable}
+  \rocqok
+  \uses{def:qbs_integral}
+  Integrability transfers through the pushforward.
+\end{lemma}
+
+\begin{lemma}[Pushforward Agreement]\label{lem:qbs_pushforward_agree}
+  \rocq{QBS.probability_qbs.qbs_pushforward_agree}
+  \rocqok
+  \uses{def:qbs_prob_equiv, def:qbs_measurable}
+  Equivalent triples yield the same pushforward through a QBS
+  measurable function.
+\end{lemma}
+
+
+\section{Functorial Map}\label{sec:monadP_map}
+
+\begin{definition}[Monad Map]\label{def:monadP_map}
+  \rocq{QBS.probability_qbs.monadP_map}
+  \rocqok
+  \uses{def:qbs_prob, def:qbs_morphism}
+  For a QBS morphism $f : X \to Y$, the functorial map
+  $P(f) : P(X) \to P(Y)$ sends $(\alpha, \mu)$ to
+  $(f \circ \alpha, \mu)$.
+\end{definition}
+
+\begin{lemma}[Map Is a Morphism]\label{lem:monadP_map_morph}
+  \rocq{QBS.probability_qbs.monadP_map_morph}
+  \rocqok
+  \uses{def:monadP_map, def:monadP, def:qbs_morphism}
+  $P(f)$ is a QBS morphism $P(X) \to P(Y)$.
+\end{lemma}
+
+\begin{lemma}[Map Preserves Identity]\label{lem:monadP_map_id}
+  \rocq{QBS.probability_qbs.monadP_map_id}
+  \rocqok
+  \uses{def:monadP_map, def:qbs_prob_equiv}
+  $P(\mathrm{id})(p) \sim p$.
+\end{lemma}
+
+\begin{lemma}[Map Preserves Composition]\label{lem:monadP_map_comp}
+  \rocq{QBS.probability_qbs.monadP_map_comp}
+  \rocqok
+  \uses{def:monadP_map, def:qbs_prob_equiv}
+  $P(g \circ f)(p) \sim P(g)(P(f)(p))$.
+\end{lemma}
+
+
+\section{Expectation, Events, and Variance}\label{sec:expect_var}
+
+\begin{definition}[QBS Expectation]\label{def:qbs_expect}
+  \rocq{QBS.probability_qbs.qbs_expect}
+  \rocqok
+  \uses{def:qbs_integral}
+  $\mathbb{E}_p[h] = \int_p (h(x))^{e}$ where $(-)^{e}$
+  embeds $\mathbb{R}$ into $\bar{\mathbb{R}}$.
+\end{definition}
+
+\begin{definition}[QBS Event Probability]\label{def:qbs_prob_event}
+  \rocq{QBS.probability_qbs.qbs_prob_event}
+  \rocqok
+  \uses{def:qbs_prob}
+  $\Pr_p[U] = \mu(\alpha^{-1}(U))$.
+\end{definition}
+
+\begin{definition}[QBS Variance]\label{def:qbs_variance}
+  \rocq{QBS.probability_qbs.qbs_variance}
+  \rocqok
+  \uses{def:qbs_prob}
+  $\mathrm{Var}_p[f] = \mathrm{variance}(\mu, f \circ \alpha)$,
+  delegating to math-comp analysis.
+\end{definition}
+
+
+\section{Integrability}\label{sec:integrability}
+
+\begin{definition}[QBS Integrability]\label{def:qbs_integrable}
+  \rocq{QBS.probability_qbs.qbs_integrable}
+  \rocqok
+  \uses{def:qbs_prob}
+  A function $h : X \to \bar{\mathbb{R}}$ is integrable against $p$
+  if $h \circ \alpha$ is integrable against~$\mu$.
+\end{definition}
+
+\begin{lemma}[Integrability Closure]\label{lem:qbs_integrable_closure}
+  \rocq{QBS.probability_qbs.qbs_integrableD}
+  \rocq{QBS.probability_qbs.qbs_integrableB}
+  \rocq{QBS.probability_qbs.qbs_integrableN}
+  \rocq{QBS.probability_qbs.qbs_integrableZl}
+  \rocqok
+  \uses{def:qbs_integrable}
+  QBS integrability is closed under addition, subtraction, negation,
+  and scalar multiplication.
+\end{lemma}
+
+\begin{lemma}[Integral Linearity]\label{lem:qbs_integral_linearity}
+  \rocq{QBS.probability_qbs.qbs_integralD}
+  \rocq{QBS.probability_qbs.qbs_integralB}
+  \rocq{QBS.probability_qbs.qbs_integralZl}
+  \rocqok
+  \uses{def:qbs_integral, def:qbs_integrable}
+  QBS integration is linear: additive, subtractive, and homogeneous.
+\end{lemma}
+
+
+\section{Variance Properties}\label{sec:variance_props}
+
+\begin{lemma}[Variance Decomposition]\label{lem:qbs_varianceE}
+  \rocq{QBS.probability_qbs.qbs_varianceE}
+  \rocqok
+  \uses{def:qbs_variance, def:qbs_expect}
+  $\mathrm{Var}[f] = \mathbb{E}[f^2] - (\mathbb{E}[f])^2$.
+\end{lemma}
+
+\begin{lemma}[Variance Scaling]\label{lem:qbs_varianceZ}
+  \rocq{QBS.probability_qbs.qbs_varianceZ}
+  \rocqok
+  \uses{def:qbs_variance}
+  $\mathrm{Var}[a \cdot f] = a^2 \cdot \mathrm{Var}[f]$.
+\end{lemma}
+
+\begin{lemma}[Markov's Inequality]\label{lem:qbs_markov}
+  \rocq{QBS.probability_qbs.qbs_markov}
+  \rocqok
+  \uses{def:qbs_prob_event, def:qbs_expect, def:qbs_integrable}
+  For non-negative integrable~$f$ and $\varepsilon > 0$:
+  $\Pr[f(x) \geq \varepsilon] \leq \mathbb{E}[f] / \varepsilon$.
+\end{lemma}
+
+\begin{lemma}[Chebyshev's Inequality]\label{lem:qbs_chebyshev}
+  \rocq{QBS.probability_qbs.qbs_chebyshev}
+  \rocqok
+  \uses{def:qbs_variance, def:qbs_prob_event, def:qbs_integrable}
+  $\Pr[|f(x) - \mathbb{E}[f]| \geq \varepsilon]
+  \leq \mathrm{Var}[f] / \varepsilon^2$.
+\end{lemma}
+
+
+\section{Monad Join}\label{sec:join}
+
+\begin{definition}[Monad Join]\label{def:qbs_join}
+  \rocq{QBS.probability_qbs.qbs_join}
+  \rocqok
+  \uses{def:qbs_bind, def:monadP}
+  $\mathrm{join} : P(P(X)) \to P(X)$ is defined as
+  $\mathrm{bind}(p, \mathrm{id})$, flattening nested probability.
+\end{definition}
+
+\begin{lemma}[Join Is a Morphism]\label{lem:qbs_join_morphism}
+  \rocq{QBS.probability_qbs.qbs_join_morphism}
+  \rocqok
+  \uses{def:qbs_join, def:qbs_morphism, def:monadP}
+  Join is a QBS morphism $P(P(X)) \to P(X)$.
+\end{lemma}
+
+
+\section{Monad Strength}\label{sec:strength}
+
+\begin{definition}[Tensorial Strength]\label{def:qbs_strength}
+  \rocq{QBS.probability_qbs.qbs_strength}
+  \rocqok
+  \uses{def:qbs_prob, def:prodQ, lem:prodQ_const_random}
+  $\mathrm{str}(w, p) = (\lambda r.\; (w, \alpha_p(r)),\; \mu_p)$,
+  pairing a constant $w : W$ with a probability~$p$ on~$X$.
+\end{definition}
+
+\begin{lemma}[Strength Is a Morphism]\label{lem:qbs_strength_morphism}
+  \rocq{QBS.probability_qbs.qbs_strength_morphism}
+  \rocqok
+  \uses{def:qbs_strength, def:qbs_morphism}
+  Strength is a QBS morphism $W \times P(X) \to P(W \times X)$.
+\end{lemma}
+
+\begin{lemma}[Strength Naturality]\label{lem:qbs_strength_natural}
+  \rocq{QBS.probability_qbs.qbs_strength_natural}
+  \rocqok
+  \uses{def:qbs_strength, def:monadP_map, def:qbs_prob_equiv}
+  Strength commutes with morphisms:
+  $P(f \times g)(\mathrm{str}(w, p)) \sim \mathrm{str}(f(w), P(g)(p))$.
+\end{lemma}
+
+\begin{lemma}[Strength Unit Law]\label{lem:qbs_strength_unit}
+  \rocq{QBS.probability_qbs.qbs_strength_unit}
+  \rocqok
+  \uses{def:qbs_strength, def:unitQ, def:qbs_prob_equiv}
+  $P(\pi_2)(\mathrm{str}(\mathtt{tt}, p)) \sim p$.
+\end{lemma}
+
+\begin{lemma}[Strength Associativity]\label{lem:qbs_strength_assoc}
+  \rocq{QBS.probability_qbs.qbs_strength_assoc}
+  \rocqok
+  \uses{def:qbs_strength, def:qbs_prob_equiv}
+  $P(\mathrm{assoc})(\mathrm{str}((u,v), p)) \sim
+  \mathrm{str}(u, \mathrm{str}(v, p))$.
+\end{lemma}
+
+\begin{lemma}[Strength--Return Interaction]\label{lem:qbs_strength_return}
+  \rocq{QBS.probability_qbs.qbs_strength_return}
+  \rocqok
+  \uses{def:qbs_strength, def:qbs_return, def:qbs_prob_equiv}
+  $\mathrm{str}(w, \eta(x)) \sim \eta((w, x))$.
+\end{lemma}
+
+\begin{lemma}[Bind Decomposes Through Strength and Join]\label{lem:qbs_bind_decomp}
+  \rocq{QBS.probability_qbs.qbs_bind_decomp}
+  \rocqok
+  \uses{def:qbs_bind, def:qbs_strength, def:qbs_join, def:qbs_prob_equiv}
+  $m \mathbin{>\!\!>\!\!=} f \sim \mathrm{join}(P(f)(m))$
+  (modulo strength).
+\end{lemma}
+
+
+\section{Bind Respects Equivalence}\label{sec:bind_equiv}
+
+\begin{lemma}[Bind Congruence (Left)]\label{lem:qbs_bind_equiv_l}
+  \rocq{QBS.probability_qbs.qbs_bind_equiv_l}
+  \rocqok
+  \uses{def:qbs_bind, def:qbs_prob_equiv, def:qbs_morphism}
+  If $p_1 \sim p_2$ and the diagonal factors through a morphism~$g$,
+  then $p_1 \mathbin{>\!\!>\!\!=} f \sim p_2 \mathbin{>\!\!>\!\!=} f$.
+\end{lemma}
+
+\begin{lemma}[Bind Congruence (Strong)]\label{lem:qbs_bind_strong_equiv_l}
+  \rocq{QBS.probability_qbs.qbs_bind_strong_equiv_l}
+  \rocqok
+  \uses{lem:qbs_bind_equiv_l, def:qbs_morphism_strong}
+  Specialization of bind congruence for strong morphisms.
+\end{lemma}
+
+\begin{lemma}[Bind Congruence (Return)]\label{lem:qbs_bind_equiv_l_return}
+  \rocq{QBS.probability_qbs.qbs_bind_equiv_l_return}
+  \rocqok
+  \uses{lem:qbs_bind_equiv_l, def:qbs_return}
+  Specialization of bind congruence when $f(x) = \eta(g(x))$
+  for a morphism~$g$.
+\end{lemma}
+
+
+\section{Quotient Type for QBS Probability}\label{sec:quotient}
+
+\begin{definition}[QBS Probability Space (Quotient)]\label{def:qbs_prob_space}
+  \rocq{QBS.qbs_prob_quot.qbs_prob_space}
+  \rocqok
+  \uses{def:qbs_prob}
+  A setoid-style quotient wrapping \texttt{qbs\_prob X}, with
+  equality given by \texttt{qbs\_prob\_equiv}.
+\end{definition}
+
+\begin{definition}[Quotient Equality]\label{def:qps_eq}
+  \rocq{QBS.qbs_prob_quot.qps_eq}
+  \rocqok
+  \uses{def:qbs_prob_space, def:qbs_prob_equiv}
+  $p_1 =_Q p_2$ iff $\mathrm{repr}(p_1) \sim \mathrm{repr}(p_2)$.
+\end{definition}
+
+\begin{lemma}[Quotient Equivalence Relation]\label{lem:qps_eq_rel}
+  \rocq{QBS.qbs_prob_quot.qps_eqxx}
+  \rocq{QBS.qbs_prob_quot.qps_eqC}
+  \rocq{QBS.qbs_prob_quot.qps_eq_trans}
+  \rocqok
+  \uses{def:qps_eq}
+  $=_Q$ is reflexive, symmetric, and transitive.
+\end{lemma}
+
+\begin{definition}[Quotient Operations]\label{def:qps_operations}
+  \rocq{QBS.qbs_prob_quot.qps_return}
+  \rocq{QBS.qbs_prob_quot.qps_bind}
+  \rocq{QBS.qbs_prob_quot.qps_bind_strong}
+  \rocq{QBS.qbs_prob_quot.qps_integral}
+  \rocq{QBS.qbs_prob_quot.qps_map}
+  \rocq{QBS.qbs_prob_quot.qps_expect}
+  \rocq{QBS.qbs_prob_quot.qps_prob_event}
+  \rocqok
+  \uses{def:qbs_prob_space, def:qbs_return, def:qbs_bind, def:qbs_integral, def:monadP_map, def:qbs_expect, def:qbs_prob_event}
+  Lifted operations on the quotient: return, bind, integration,
+  functorial map, expectation, and event probability.
+\end{definition}
+
+\begin{lemma}[Quotient Well-Definedness]\label{lem:qps_well_defined}
+  \rocq{QBS.qbs_prob_quot.qps_return_equiv}
+  \rocq{QBS.qbs_prob_quot.qps_integral_equiv}
+  \rocq{QBS.qbs_prob_quot.qps_map_equiv}
+  \rocq{QBS.qbs_prob_quot.qps_prob_event_equiv}
+  \rocqok
+  \uses{def:qps_operations, def:qps_eq}
+  Return, integration, map, and event probability respect quotient equality.
+\end{lemma}
+
+\begin{theorem}[Quotient Monad Laws]\label{thm:qps_monad_laws}
+  \rocq{QBS.qbs_prob_quot.qps_bind_returnl}
+  \rocq{QBS.qbs_prob_quot.qps_bind_returnr}
+  \rocq{QBS.qbs_prob_quot.qps_bindA}
+  \rocqok
+  \uses{def:qps_operations, def:qps_eq, thm:qbs_bind_returnl, thm:qbs_bind_returnr, thm:qbs_bindA}
+  The monad laws hold on the quotient (as $=_Q$ equalities):
+  left unit, right unit, and associativity.
+\end{theorem}
+
+
+\section{Product Measures and Fubini}\label{sec:fubini}
+
+\begin{definition}[Product Probability]\label{def:qbs_prob_pair}
+  \rocq{QBS.pair_qbs_measure.qbs_prob_pair}
+  \rocqok
+  \uses{def:qbs_prob, def:prodQ}
+  For independent probabilities $p$ on~$X$ and $q$ on~$Y$, the product
+  probability on $X \times Y$ uses the product measure
+  $\mu_p \otimes \mu_q$ and the paired random element
+  $r \mapsto (\alpha_p(r_1), \alpha_q(r_2))$.
+\end{definition}
+
+\begin{definition}[Product Integration]\label{def:qbs_pair_integral}
+  \rocq{QBS.pair_qbs_measure.qbs_pair_integral}
+  \rocqok
+  \uses{def:qbs_prob_pair}
+  $\int_{p \otimes q} h = \int_{\mu_p \otimes \mu_q}
+  h(\alpha_p(r_1), \alpha_q(r_2))$.
+\end{definition}
+
+\begin{theorem}[Fubini on QBS]\label{thm:qbs_pair_integralE}
+  \rocq{QBS.pair_qbs_measure.qbs_pair_integralE}
+  \rocqok
+  \uses{def:qbs_pair_integral}
+  The joint integral equals the iterated integral:
+  $\int_{p \otimes q} h = \int_p \int_q h(x, y)$.
+\end{theorem}
+\begin{proof}
+  \rocqok
+  By Fubini's theorem on the product measure $\mu_p \otimes \mu_q$.
+\end{proof}
+
+\begin{lemma}[First Marginal Integration]\label{lem:qbs_pair_integral_fst}
+  \rocq{QBS.pair_qbs_measure.qbs_pair_integral_fst}
+  \rocqok
+  \uses{def:qbs_pair_integral}
+  Integration over the first component marginalizes the second.
+\end{lemma}
+
+\begin{lemma}[Second Marginal Integration]\label{lem:qbs_pair_integral_snd}
+  \rocq{QBS.pair_qbs_measure.qbs_pair_integral_snd}
+  \rocqok
+  \uses{def:qbs_pair_integral}
+  Integration over the second component marginalizes the first.
+\end{lemma}
+
+\begin{lemma}[Commutativity of Product Integration]\label{lem:qbs_pair_integral_comm}
+  \rocq{QBS.pair_qbs_measure.qbs_pair_integral_comm}
+  \rocqok
+  \uses{def:qbs_pair_integral, thm:qbs_pair_integralE}
+  $\int_{p \otimes q} h = \int_{q \otimes p} h \circ \mathrm{swap}$.
+\end{lemma}
+
+
+\section{Independence}\label{sec:independence}
+
+\begin{definition}[QBS Independence]\label{def:qbs_indep}
+  \rocq{QBS.pair_qbs_measure.qbs_indep}
+  \rocqok
+  \uses{def:qbs_prob_equiv, def:monadP_map, def:qbs_prob_pair}
+  Random variables $f : Z \to X$ and $g : Z \to Y$ are \emph{independent}
+  under~$p$ if the joint distribution $(f, g)_*(p)$ equals the product
+  $f_*(p) \otimes g_*(p)$.
+\end{definition}
+
+\begin{lemma}[$E[fg] = E[f] \cdot E[g]$ for Independent Variables]\label{lem:qbs_integral_indep_mult}
+  \rocq{QBS.pair_qbs_measure.qbs_integral_indep_mult}
+  \rocqok
+  \uses{def:qbs_indep, def:qbs_expect, def:qbs_pair_integral}
+  For independent $p_X, p_Y$:
+  $\int_{p_X \otimes p_Y} f(x) \cdot g(y)
+  = \mathbb{E}_{p_X}[f] \cdot \mathbb{E}_{p_Y}[g]$.
+\end{lemma}
+
+
+\section{Variance of Independent Sums}\label{sec:var_indep_sum}
+
+\begin{definition}[Pair Variance]\label{def:qbs_pair_variance}
+  \rocq{QBS.pair_qbs_measure.qbs_pair_variance}
+  \rocqok
+  \uses{def:qbs_prob_pair}
+  $\mathrm{Var}_{p \otimes q}[f + g] =
+  \mathrm{variance}(\mu_p \otimes \mu_q,\;
+  r \mapsto f(\alpha_p(r_1)) + g(\alpha_q(r_2)))$.
+\end{definition}
+
+\begin{lemma}[Product Marginal Expectations]\label{lem:expectation_prod}
+  \rocq{QBS.pair_qbs_measure.expectation_prod_fst}
+  \rocq{QBS.pair_qbs_measure.expectation_prod_snd}
+  \rocq{QBS.pair_qbs_measure.expectation_prod_indep}
+  \rocqok
+  \uses{def:qbs_pair_integral}
+  $\mathbb{E}_{p \otimes q}[h \circ \pi_1] = \mathbb{E}_p[h]$, and
+  symmetrically for~$\pi_2$. For independent variables,
+  $\mathbb{E}_{p \otimes q}[h_1 \circ \pi_1 \cdot h_2 \circ \pi_2]
+  = \mathbb{E}_p[h_1] \cdot \mathbb{E}_q[h_2]$.
+\end{lemma}
+
+\begin{lemma}[Product Marginal Variances]\label{lem:variance_prod}
+  \rocq{QBS.pair_qbs_measure.variance_prod_fst}
+  \rocq{QBS.pair_qbs_measure.variance_prod_snd}
+  \rocqok
+  \uses{def:qbs_pair_variance}
+  $\mathrm{Var}_{p \otimes q}[h \circ \pi_1] = \mathrm{Var}_p[h]$,
+  and symmetrically for~$\pi_2$.
+\end{lemma}
+
+\begin{theorem}[Variance of Independent Sum]\label{thm:qbs_variance_indep_sum}
+  \rocq{QBS.pair_qbs_measure.qbs_variance_indep_sum}
+  \rocqok
+  \uses{def:qbs_pair_variance, lem:expectation_prod, lem:variance_prod, lem:qbs_integral_indep_mult}
+  For independent random variables~$f$ and~$g$:
+  $\mathrm{Var}[f + g] = \mathrm{Var}[f] + \mathrm{Var}[g]$.
+\end{theorem}
+\begin{proof}
+  \rocqok
+  \uses{lem:expectation_prod, lem:variance_prod, lem:qbs_integral_indep_mult}
+  Decompose $\mathrm{Var}(f+g) = \mathrm{Var}(f) + \mathrm{Var}(g) + 2\,\mathrm{Cov}(f,g)$,
+  then show $\mathrm{Cov}(f,g) = 0$ because
+  $\mathbb{E}[fg] = \mathbb{E}[f] \cdot \mathbb{E}[g]$ by Fubini.
+\end{proof}
+
+\begin{lemma}[Product--Bind Equivalence]\label{lem:qbs_prob_pair_measure_eq_bind}
+  \rocq{QBS.pair_qbs_measure.qbs_prob_pair_measure_eq_bind}
+  \rocqok
+  \uses{def:qbs_prob_pair, def:qbs_bind, def:qbs_prob_equiv}
+  The product probability equals bind composed with strength (Prop.~22
+  of HKSY17).
+\end{lemma}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{QBS--Giry Bridge and Classical Distributions}\label{ch:giry}
+
+This chapter connects the QBS probability monad to the classical Giry
+monad and provides concrete distributions (normal, Bernoulli, uniform)
+with their expected values.
+
+\section{Classical Distribution Embedding}\label{sec:distributions}
+
+\begin{definition}[Classical-to-QBS Embedding]\label{def:as_qbs_prob}
+  \rocq{QBS.measure_as_qbs_measure.as_qbs_prob}
+  \rocqok
+  \uses{def:qbs_prob, def:R_qbs, def:is_standard_borel}
+  Given a standard Borel space~$M$ with encoding $f : M \to \mathbb{R}$
+  and decoding $g : \mathbb{R} \to M$, and a probability~$P$
+  on~$\mathbb{R}$, the QBS probability $(\mathrm{id}, P)$ on $R(M)$
+  represents~$P$.
+\end{definition}
+
+\begin{definition}[Normal Distribution]\label{def:qbs_normal_distribution}
+  \rocq{QBS.measure_as_qbs_measure.qbs_normal_distribution}
+  \rocqok
+  \uses{def:as_qbs_prob, def:concrete_qbs}
+  $\mathcal{N}(\mu, \sigma)$ as a QBS probability on $\mathtt{realQ}$,
+  using $(\mathrm{id}, \mathrm{normal\_prob}\; \mu\; \sigma)$.
+\end{definition}
+
+\begin{definition}[Bernoulli Distribution]\label{def:qbs_bernoulli}
+  \rocq{QBS.measure_as_qbs_measure.qbs_bernoulli}
+  \rocqok
+  \uses{def:as_qbs_prob, def:concrete_qbs}
+  $\mathrm{Bernoulli}(p)$ as a QBS probability on $\mathtt{boolQ}$.
+\end{definition}
+
+\begin{definition}[Uniform Distribution]\label{def:qbs_uniform}
+  \rocq{QBS.measure_as_qbs_measure.qbs_uniform}
+  \rocqok
+  \uses{def:as_qbs_prob, def:concrete_qbs}
+  $\mathrm{Uniform}[0,1]$ as a QBS probability on $\mathtt{realQ}$.
+\end{definition}
+
+\begin{lemma}[Recovery Theorems]\label{lem:as_qbs_prob_recover}
+  \rocq{QBS.measure_as_qbs_measure.as_qbs_prob_recover}
+  \rocq{QBS.measure_as_qbs_measure.as_qbs_prob_recover_full}
+  \rocqok
+  \uses{def:as_qbs_prob}
+  The QBS probability recovers the original measure:
+  $\mu_{\mathrm{qbs}}(g^{-1}(U)) = P(g^{-1}(U))$ and
+  $\Pr_{\mathrm{qbs}}[U] = P(f(U))$.
+\end{lemma}
+
+\begin{lemma}[Normal Distribution Is a Morphism]\label{lem:qbs_normal_morphism}
+  \rocq{QBS.measure_as_qbs_measure.qbs_normal_morphism}
+  \rocqok
+  \uses{def:qbs_normal_distribution, def:monadP, def:qbs_morphism}
+  The normal distribution is a QBS morphism in the mean parameter:
+  $\mu \mapsto \mathcal{N}(\mu, \sigma)$ is a morphism
+  $\mathtt{realQ} \to P(\mathtt{realQ})$.
+\end{lemma}
+
+\begin{lemma}[Expected Value of Bernoulli]\label{lem:qbs_expect_bernoulli}
+  \rocq{QBS.measure_as_qbs_measure.qbs_expect_bernoulli}
+  \rocqok
+  \uses{def:qbs_bernoulli, def:qbs_expect}
+  $\mathbb{E}[\mathrm{Bernoulli}(p)] = p$.
+\end{lemma}
+
+\begin{lemma}[Expected Value of Uniform]\label{lem:qbs_expect_uniform}
+  \rocq{QBS.measure_as_qbs_measure.qbs_expect_uniform}
+  \rocqok
+  \uses{def:qbs_uniform, def:qbs_expect}
+  $\mathbb{E}[\mathrm{Uniform}] = 1/2$.
+\end{lemma}
+
+\begin{lemma}[Expected Value of Normal]\label{lem:qbs_expect_normal}
+  \rocq{QBS.measure_as_qbs_measure.qbs_expect_normal}
+  \rocqok
+  \uses{def:qbs_normal_distribution, def:qbs_expect}
+  $\mathbb{E}[\mathcal{N}(\mu, \sigma)] = \mu$.
+\end{lemma}
+
+
+\section{QBS--Giry Monad Connection}\label{sec:giry_connection}
+
+\begin{definition}[QBS to Giry]\label{def:qbs_to_giry}
+  \rocq{QBS.qbs_giry.qbs_to_giry}
+  \rocqok
+  \uses{def:qbs_prob, def:R_qbs}
+  For $p = (\alpha, \mu)$ on $R(M)$, the pushforward
+  $\alpha_*(\mu)$ is a probability measure on~$M$.
+\end{definition}
+
+\begin{definition}[Giry to QBS]\label{def:giry_to_qbs}
+  \rocq{QBS.qbs_giry.giry_to_qbs}
+  \rocqok
+  \uses{def:qbs_prob, def:R_qbs, def:is_standard_borel}
+  For a probability~$P$ on a standard Borel~$M$, the QBS probability
+  uses the standard Borel encoding/decoding.
+\end{definition}
+
+\begin{lemma}[QBS--Giry Round-Trip (Giry direction)]\label{lem:qbs_to_giryK}
+  \rocq{QBS.qbs_giry.qbs_to_giryK}
+  \rocqok
+  \uses{def:qbs_to_giry, def:giry_to_qbs}
+  $\mathrm{qbs\_to\_giry}(\mathrm{giry\_to\_qbs}(P)) = P$.
+\end{lemma}
+
+\begin{lemma}[QBS--Giry Round-Trip (QBS direction)]\label{lem:giry_to_qbsK}
+  \rocq{QBS.qbs_giry.giry_to_qbsK}
+  \rocqok
+  \uses{def:qbs_to_giry, def:giry_to_qbs, def:qbs_prob_equiv}
+  $\mathrm{giry\_to\_qbs}(\mathrm{qbs\_to\_giry}(p)) \sim p$
+  (up to equivalence).
+\end{lemma}
+
+\begin{theorem}[Integral Correspondence]\label{thm:qbs_integral_giry}
+  \rocq{QBS.qbs_giry.qbs_integral_giry}
+  \rocqok
+  \uses{def:qbs_integral, def:qbs_to_giry}
+  QBS integration equals classical Lebesgue integration against the
+  pushforward:
+  $\int_p f = \int_{\alpha_*(\mu)} f$.
+\end{theorem}
+\begin{proof}
+  \rocqok
+  \uses{def:qbs_to_giry, def:qbs_integral}
+  Both sides reduce to $\int_\mu f(\alpha(r))\, d\mu(r)$.
+\end{proof}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Standard Borel Spaces ($\mathbb{R} \cong \mathbb{R} \times \mathbb{R}$)}\label{ch:standard_borel}
+
+This chapter constructs the measurable bijection
+$\mathbb{R} \cong \mathbb{R} \times \mathbb{R}$, proving that
+the product of standard Borel spaces is standard Borel.
+The construction composes three layers: (1) a bijection
+$\mathbb{R} \leftrightarrow (0,1)$ via arctangent, (2) a bijection
+$(0,1)^2 \leftrightarrow (0,1)$ via binary digit interleaving,
+and (3) the composed encode/decode pair.
+
+\section{R to (0,1) Bijection}\label{sec:phi_psi}
+
+\begin{definition}[Phi and Psi]\label{def:phi_psi}
+  \rocq{QBS.standard_borel.phi}
+  \rocq{QBS.standard_borel.psi}
+  \rocqok
+  $\phi(x) = \frac{\arctan x}{\pi} + \frac{1}{2}$ maps
+  $\mathbb{R} \to (0,1)$.
+  $\psi(y) = \tan(\pi(y - 1/2))$ is the inverse.
+\end{definition}
+
+\begin{lemma}[Phi Range]\label{lem:phi_range}
+  \rocq{QBS.standard_borel.phi_gt0}
+  \rocq{QBS.standard_borel.phi_lt1}
+  \rocqok
+  \uses{def:phi_psi}
+  $0 < \phi(x) < 1$ for all $x \in \mathbb{R}$.
+\end{lemma}
+
+\begin{lemma}[Phi--Psi Cancellation]\label{lem:phi_psi_cancel}
+  \rocq{QBS.standard_borel.psiK}
+  \rocq{QBS.standard_borel.phiK}
+  \rocqok
+  \uses{def:phi_psi}
+  $\psi(\phi(x)) = x$ unconditionally.
+  $\phi(\psi(y)) = y$ for $y \in (0,1)$.
+\end{lemma}
+
+\begin{lemma}[Phi and Psi Measurability]\label{lem:phi_psi_measurable}
+  \rocq{QBS.standard_borel.measurable_phi}
+  \rocq{QBS.standard_borel.measurable_psi}
+  \rocq{QBS.standard_borel.measurable_psi_setT}
+  \rocqok
+  \uses{def:phi_psi}
+  $\phi$ is measurable on all of~$\mathbb{R}$. $\psi$ is measurable on
+  $(0,1)$ and (via an approximation argument) on all of~$\mathbb{R}$.
+\end{lemma}
+
+
+\section{Binary Digit Machinery}\label{sec:binary_digits}
+
+\begin{definition}[Binary Digits and Sums]\label{def:bin_digits}
+  \rocq{QBS.standard_borel.bin_digit}
+  \rocq{QBS.standard_borel.bin_partial_sum}
+  \rocq{QBS.standard_borel.bin_sum}
+  \rocq{QBS.standard_borel.bin_digits}
+  \rocqok
+  $\mathrm{bin\_digit}(x, n)$ extracts the $n$-th binary digit of
+  $x \in [0,1)$ via the doubling map.
+  $\mathrm{bin\_partial\_sum}(d, n) = \sum_{i<n} d(i) \cdot 2^{-(i+1)}$
+  and $\mathrm{bin\_sum}(d) = \lim_n \mathrm{bin\_partial\_sum}(d, n)$.
+\end{definition}
+
+\begin{lemma}[Convergence and Bounds]\label{lem:bin_sum_bounds}
+  \rocq{QBS.standard_borel.is_cvg_bin_partial_sum}
+  \rocq{QBS.standard_borel.bin_sum_le1}
+  \rocq{QBS.standard_borel.bin_sum_ge0}
+  \rocq{QBS.standard_borel.bin_partial_sum_nd}
+  \rocqok
+  \uses{def:bin_digits}
+  Partial sums converge, are non-decreasing, and the limit satisfies
+  $0 \leq \mathrm{bin\_sum}(d) \leq 1$.
+\end{lemma}
+
+\begin{lemma}[Geometric Sum Identity]\label{lem:geom_half_sum}
+  \rocq{QBS.standard_borel.geom_half_sum}
+  \rocqok
+  $\sum_{i<n} (1/2)^{i+1} = 1 - (1/2)^n$.
+\end{lemma}
+
+\begin{theorem}[Binary Digit Reconstruction]\label{thm:bin_digits_reconstruction}
+  \rocq{QBS.standard_borel.bin_digits_reconstruction}
+  \rocqok
+  \uses{def:bin_digits, lem:bin_sum_bounds}
+  For $0 \leq x < 1$: $\mathrm{bin\_sum}(\mathrm{bin\_digits}(x)) = x$.
+\end{theorem}
+\begin{proof}
+  \rocqok
+  \uses{lem:bin_sum_bounds, lem:geom_half_sum}
+  Show $x - \mathrm{bin\_partial\_sum}(n) = \mathrm{rem}(n) \cdot (1/2)^n$
+  with $0 \leq \mathrm{rem}(n) < 1$, so the error converges to~$0$.
+\end{proof}
+
+\begin{definition}[No Trailing Ones]\label{def:no_trailing_ones}
+  \rocq{QBS.standard_borel.no_trailing_ones}
+  \rocqok
+  A digit sequence $d$ has \emph{no trailing ones} if for every~$N$,
+  there exists $n \geq N$ with $d(n) = \mathrm{false}$.
+\end{definition}
+
+\begin{lemma}[Binary Digits Have No Trailing Ones]\label{lem:bin_digits_no_trailing_ones}
+  \rocq{QBS.standard_borel.bin_digits_no_trailing_ones}
+  \rocqok
+  \uses{def:bin_digits, def:no_trailing_ones}
+  For $0 \leq x < 1$: $\mathrm{no\_trailing\_ones}(\mathrm{bin\_digits}(x))$.
+\end{lemma}
+
+\begin{lemma}[Uniqueness of Binary Expansion]\label{lem:bin_digits_bin_sum}
+  \rocq{QBS.standard_borel.bin_digits_bin_sum}
+  \rocqok
+  \uses{def:bin_digits, def:no_trailing_ones, thm:bin_digits_reconstruction}
+  If $\mathrm{no\_trailing\_ones}(d)$, then
+  $\mathrm{bin\_digits}(\mathrm{bin\_sum}(d)) =_1 d$.
+\end{lemma}
+
+\begin{lemma}[Binary Sum Shift]\label{lem:bin_sum_shift}
+  \rocq{QBS.standard_borel.bin_sum_shift}
+  \rocqok
+  \uses{def:bin_digits}
+  $\mathrm{bin\_sum}(d) = d(0) \cdot \tfrac{1}{2} + \mathrm{bin\_sum}(d \circ S) \cdot \tfrac{1}{2}$.
+\end{lemma}
+
+
+\section{Digit Interleaving}\label{sec:interleaving}
+
+\begin{definition}[Interleave and Deinterleave]\label{def:interleave}
+  \rocq{QBS.standard_borel.interleave}
+  \rocq{QBS.standard_borel.deinterleave_even}
+  \rocq{QBS.standard_borel.deinterleave_odd}
+  \rocqok
+  $\mathrm{interleave}(d_1, d_2)(n) =
+  \begin{cases} d_1(n/2) & \text{if } n \text{ even} \\
+  d_2(n/2) & \text{if } n \text{ odd} \end{cases}$.
+  Deinterleaving extracts even-indexed and odd-indexed subsequences.
+\end{definition}
+
+\begin{lemma}[Interleave Round-Trips]\label{lem:interleave_roundtrip}
+  \rocq{QBS.standard_borel.interleave_deinterleaveK}
+  \rocq{QBS.standard_borel.deinterleave_interleaveK_even}
+  \rocq{QBS.standard_borel.deinterleave_interleaveK_odd}
+  \rocqok
+  \uses{def:interleave}
+  Interleaving then deinterleaving (and vice versa) recovers the
+  original sequences.
+\end{lemma}
+
+\begin{lemma}[Interleaving Preserves No Trailing Ones]\label{lem:interleave_no_trailing_ones}
+  \rocq{QBS.standard_borel.interleave_no_trailing_ones}
+  \rocqok
+  \uses{def:interleave, def:no_trailing_ones}
+  If both $d_1$ and $d_2$ have no trailing ones, then so does
+  $\mathrm{interleave}(d_1, d_2)$.
+\end{lemma}
+
+
+\section{Pairing Functions}\label{sec:pairing}
+
+\begin{definition}[Unit Interval Pairing]\label{def:pair_to_unit}
+  \rocq{QBS.standard_borel.pair_to_unit}
+  \rocq{QBS.standard_borel.unit_to_pair}
+  \rocqok
+  \uses{def:bin_digits, def:interleave}
+  $\mathrm{pair\_to\_unit}(x, y) =
+  \mathrm{bin\_sum}(\mathrm{interleave}(\mathrm{bin\_digits}(x),
+  \mathrm{bin\_digits}(y)))$.
+  $\mathrm{unit\_to\_pair}$ deinterleaves and reconstructs both components.
+\end{definition}
+
+\begin{lemma}[Pair-to-Unit Round-Trip]\label{lem:pair_to_unitK}
+  \rocq{QBS.standard_borel.pair_to_unitK}
+  \rocqok
+  \uses{def:pair_to_unit, thm:bin_digits_reconstruction, lem:bin_digits_bin_sum, lem:interleave_roundtrip}
+  For $0 \leq x, y < 1$:
+  $\mathrm{unit\_to\_pair}(\mathrm{pair\_to\_unit}(x, y)) = (x, y)$.
+\end{lemma}
+
+\begin{lemma}[Unit-to-Pair Round-Trip (conditional)]\label{lem:unit_to_pairK}
+  \rocq{QBS.standard_borel.unit_to_pairK}
+  \rocqok
+  \uses{def:pair_to_unit, def:no_trailing_ones}
+  For $0 \leq r < 1$ with no-trailing-ones on deinterleaved subsequences:
+  $\mathrm{pair\_to\_unit}(\mathrm{unit\_to\_pair}(r)) = r$.
+\end{lemma}
+
+
+\section{Composed Bijection $\mathbb{R} \times \mathbb{R} \to \mathbb{R}$}\label{sec:encode_decode}
+
+\begin{definition}[Encode and Decode]\label{def:encode_decode_RR}
+  \rocq{QBS.standard_borel.encode_RR}
+  \rocq{QBS.standard_borel.decode_RR}
+  \rocqok
+  \uses{def:phi_psi, def:pair_to_unit}
+  $\mathrm{encode}(x, y) = \psi(\mathrm{pair\_to\_unit}(\phi(x), \phi(y)))$
+  and
+  $\mathrm{decode}(r) = (\psi(u_1), \psi(u_2))$ where
+  $(u_1, u_2) = \mathrm{unit\_to\_pair}(\phi(r))$.
+\end{definition}
+
+\begin{theorem}[Unconditional Round-Trip]\label{thm:encode_RRK}
+  \rocq{QBS.standard_borel.encode_RRK}
+  \rocqok
+  \uses{def:encode_decode_RR, lem:phi_psi_cancel, lem:pair_to_unitK, lem:phi_range}
+  $\mathrm{decode}(\mathrm{encode}(x, y)) = (x, y)$ for all
+  $x, y \in \mathbb{R}$.
+\end{theorem}
+
+\begin{theorem}[Conditional Round-Trip]\label{thm:decode_RRK}
+  \rocq{QBS.standard_borel.decode_RRK}
+  \rocqok
+  \uses{def:encode_decode_RR, lem:phi_psi_cancel, lem:unit_to_pairK}
+  $\mathrm{encode}(\mathrm{decode}(r)) = r$ under additional
+  no-trailing-ones hypotheses (not needed for \texttt{is\_standard\_borel}).
+\end{theorem}
+
+
+\section{Measurability}\label{sec:measurability}
+
+\begin{lemma}[Measurability of Encode/Decode]\label{lem:measurable_encode_decode}
+  \rocq{QBS.standard_borel.measurable_encode_RR}
+  \rocq{QBS.standard_borel.measurable_decode_RR}
+  \rocqok
+  \uses{def:encode_decode_RR, lem:phi_psi_measurable}
+  Both $\mathrm{encode}$ and $\mathrm{decode}$ are measurable functions.
+\end{lemma}
+
+\begin{lemma}[Measurability of Pair-to-Unit]\label{lem:measurable_pair_to_unit}
+  \rocq{QBS.standard_borel.measurable_pair_to_unit}
+  \rocqok
+  \uses{def:pair_to_unit}
+  $\mathrm{pair\_to\_unit}$ is measurable, established by showing each
+  partial sum of interleaved digits is measurable and applying
+  $\mathrm{measurable\_fun\_cvg}$.
+\end{lemma}
+
+\begin{lemma}[Measurability of Unit-to-Pair Components]\label{lem:measurable_unit_to_pair}
+  \rocq{QBS.standard_borel.measurable_unit_to_pair_fst}
+  \rocq{QBS.standard_borel.measurable_unit_to_pair_snd}
+  \rocqok
+  \uses{def:pair_to_unit}
+  Both projections of $\mathrm{unit\_to\_pair}$ are measurable.
+\end{lemma}
+
+
+\section{The Punchline}\label{sec:punchline}
+
+\begin{theorem}[$\mathbb{R} \times \mathbb{R}$ Is Standard Borel]\label{thm:pair_standard_borel}
+  \rocq{QBS.standard_borel.pair_standard_borel}
+  \rocqok
+  \uses{def:encode_decode_RR, thm:encode_RRK, lem:measurable_encode_decode}
+  There exist measurable $f : \mathbb{R}^2 \to \mathbb{R}$
+  and $g : \mathbb{R} \to \mathbb{R}^2$ with $g(f(x,y)) = (x,y)$.
+\end{theorem}
+\begin{proof}
+  \rocqok
+  \uses{thm:encode_RRK, lem:measurable_encode_decode}
+  Take $f = \mathrm{encode\_RR}$, $g = \mathrm{decode\_RR}$.
+  Measurability is by \texttt{measurable\_encode\_RR} and
+  \texttt{measurable\_decode\_RR}; the round-trip is
+  \texttt{encode\_RRK}.
+\end{proof}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Normal Density Algebra}\label{ch:normal_algebra}
+
+This chapter develops the algebraic identities needed for the
+Bayesian regression normalizing constant computation.
+All proofs use \texttt{ring}/\texttt{field} from math-comp algebra-tactics.
+
+\section{Completing the Square}\label{sec:complete_square}
+
+\begin{lemma}[Complete the Square]\label{lem:complete_the_square}
+  \rocq{QBS.normal_algebra.complete_the_square}
+  \rocqok
+  For $a \neq 0$:
+  $ax^2 + bx + c = a\bigl(x + \tfrac{b}{2a}\bigr)^2
+  - \tfrac{b^2 - 4ac}{4a}$.
+\end{lemma}
+
+
+\section{Product of Gaussian Densities}\label{sec:normal_pdf_times}
+
+\begin{theorem}[Product of Gaussians]\label{thm:normal_pdf_times}
+  \rocq{QBS.normal_algebra.normal_pdf_times}
+  \rocqok
+  \uses{lem:complete_the_square}
+  For $s, s' \neq 0$:
+  \[
+    \mathcal{N}(m, s)(x) \cdot \mathcal{N}(m', s')(x)
+    = K \cdot \mathcal{N}(\mu_{\mathrm{new}}, \sigma_{\mathrm{new}})(x)
+  \]
+  where $\mu_{\mathrm{new}} = \frac{m s'^2 + m' s^2}{s^2 + s'^2}$,
+  $\sigma_{\mathrm{new}} = \frac{s s'}{\sqrt{s^2 + s'^2}}$,
+  and $K$ is a scalar involving $|m - m'|$ and $\sqrt{s^2 + s'^2}$.
+\end{theorem}
+
+\begin{definition}[Gaussian Product Parameters]\label{def:gaussian_prod_params}
+  \rocq{QBS.normal_algebra.gaussian_prod_mu}
+  \rocq{QBS.normal_algebra.gaussian_prod_sigma}
+  \rocq{QBS.normal_algebra.gaussian_prod_scalar}
+  \rocqok
+  \uses{thm:normal_pdf_times}
+  Closed-form expressions for the combined mean, standard deviation,
+  and scalar factor from the product of two Gaussians.
+\end{definition}
+
+\begin{lemma}[Product Parameters Properties]\label{lem:gaussian_prod_props}
+  \rocq{QBS.normal_algebra.gaussian_prod_sigma_sqr}
+  \rocq{QBS.normal_algebra.gaussian_prod_sigma_neq0}
+  \rocq{QBS.normal_algebra.gaussian_prod_scalar_gt0}
+  \rocqok
+  \uses{def:gaussian_prod_params}
+  The combined $\sigma$ is nonzero when both inputs are nonzero.
+  The scalar factor is positive.
+\end{lemma}
+
+\begin{lemma}[Chained Gaussian Product]\label{lem:normal_pdf_times_chain}
+  \rocq{QBS.normal_algebra.normal_pdf_times_chain}
+  \rocqok
+  \uses{thm:normal_pdf_times}
+  $K \cdot \mathcal{N}(m, s)(x) \cdot \mathcal{N}(m', s')(x)
+  = K \cdot K' \cdot \mathcal{N}(\mu_{\mathrm{new}}, \sigma_{\mathrm{new}})(x)$,
+  allowing iterative combination.
+\end{lemma}
+
+\begin{lemma}[Variance Recurrence]\label{lem:var_recurrence}
+  \rocq{QBS.normal_algebra.var_recurrence}
+  \rocqok
+  Algebraic identity for the recurrence
+  $\frac{1}{V_{n+1}} = \frac{1}{V_n} + \frac{1}{s^2}$ relating
+  successive combined variances.
+\end{lemma}
+
+
+\section{Phase 1: Intercept Combinations}\label{sec:phase1}
+
+Five steps combining the prior $\mathcal{N}(0, 3)$ with each of the
+5 observation likelihoods for the intercept parameter.
+
+\begin{lemma}[Phase 1 Steps]\label{lem:phase1_steps}
+  \rocq{QBS.normal_algebra.phase1_step01_sigma2}
+  \rocq{QBS.normal_algebra.phase1_step01_mu}
+  \rocq{QBS.normal_algebra.phase1_step12_sigma2}
+  \rocq{QBS.normal_algebra.phase1_step12_mu}
+  \rocq{QBS.normal_algebra.phase1_step23_sigma2}
+  \rocq{QBS.normal_algebra.phase1_step23_mu}
+  \rocq{QBS.normal_algebra.phase1_step34_sigma2}
+  \rocq{QBS.normal_algebra.phase1_step34_mu}
+  \rocq{QBS.normal_algebra.phase1_step45_sigma2}
+  \rocq{QBS.normal_algebra.phase1_step45_mu}
+  \rocqok
+  \uses{thm:normal_pdf_times, def:gaussian_prod_params, lem:var_recurrence}
+  Each step computes the combined variance
+  ($\sigma^2 \in \{9/37, 9/73, 9/109, 9/145, 9/181\}$) and the combined
+  mean (a linear function of the slope parameter~$s$).
+\end{lemma}
+
+\begin{lemma}[Phase 1 Positivity and Nonzero]\label{lem:phase1_positivity}
+  \rocq{QBS.normal_algebra.phase1_var1_gt0}
+  \rocq{QBS.normal_algebra.phase1_var2_gt0}
+  \rocq{QBS.normal_algebra.phase1_var3_gt0}
+  \rocq{QBS.normal_algebra.phase1_var4_gt0}
+  \rocq{QBS.normal_algebra.phase1_var5_gt0}
+  \rocq{QBS.normal_algebra.phase1_sqrtr_var1_neq0}
+  \rocq{QBS.normal_algebra.phase1_sqrtr_var2_neq0}
+  \rocqok
+  \uses{lem:phase1_steps}
+  Each intermediate variance is positive and its square root is nonzero,
+  ensuring the chain of Gaussian products is well-defined.
+\end{lemma}
+
+
+\section{Phase 2: Slope Combinations}\label{sec:phase2}
+
+Five steps combining the prior $\mathcal{N}(0, 3)$ with the
+slope-dependent scalar from Phase~1.
+
+\begin{lemma}[Phase 2 Steps]\label{lem:phase2_steps}
+  \rocq{QBS.normal_algebra.phase2_step1}
+  \rocq{QBS.normal_algebra.phase2_step1_sigma2}
+  \rocq{QBS.normal_algebra.phase2_step2}
+  \rocq{QBS.normal_algebra.phase2_step3}
+  \rocq{QBS.normal_algebra.phase2_step4}
+  \rocqok
+  \uses{thm:normal_pdf_times, lem:phase1_steps}
+  Each step combines the accumulated Gaussian for the slope with the
+  next observation's contribution.
+\end{lemma}
+
+\begin{definition}[Phase 2 Final Parameters]\label{def:phase2_final}
+  \rocq{QBS.normal_algebra.phase2_final_mu}
+  \rocq{QBS.normal_algebra.phase2_final_sigma}
+  \rocq{QBS.normal_algebra.phase2_const}
+  \rocqok
+  \uses{lem:phase2_steps}
+  The final combined mean, standard deviation, and accumulated
+  constant from all 10 Gaussian combination steps.
+\end{definition}
+
+\begin{lemma}[Phase 2 Final Properties]\label{lem:phase2_final_props}
+  \rocq{QBS.normal_algebra.phase2_final_sigma_neq0}
+  \rocq{QBS.normal_algebra.phase2_const_gt0}
+  \rocqok
+  \uses{def:phase2_final}
+  The final $\sigma$ is nonzero and the accumulated constant is positive.
+\end{lemma}
+
+\begin{lemma}[Phase 2 Complete Combination]\label{lem:phase2_combine5}
+  \rocq{QBS.normal_algebra.phase2_combine5}
+  \rocqok
+  \uses{lem:phase2_steps, def:phase2_final}
+  The full 5-step slope combination yields the final Gaussian times the
+  accumulated constant.
+\end{lemma}
+
+\begin{lemma}[Normal PDF Recentering]\label{lem:normal_pdf_recenter}
+  \rocq{QBS.normal_algebra.normal_pdf_recenter}
+  \rocqok
+  $\mathcal{N}(sk + b, \sigma)(y) = \mathcal{N}(y - ks, \sigma)(b)$,
+  used to convert observations from intercept-centered to
+  slope-centered form.
+\end{lemma}
+
+\begin{lemma}[Observation Rewrite]\label{lem:obs_rewrite}
+  \rocq{QBS.normal_algebra.obs_rewrite}
+  \rocqok
+  \uses{lem:normal_pdf_recenter}
+  The 5-observation product rewrites as a product of centered normal
+  densities suitable for Phase~1 integration.
+\end{lemma}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Bayesian Linear Regression}\label{ch:bayesian}
+
+This chapter formalizes a complete Bayesian linear regression example
+following the Isabelle AFP development by Hirata, Minamide, and Sato.
+The model is $y = s \cdot x + b + \varepsilon$ with
+$\varepsilon \sim \mathcal{N}(0, 1/2)$,
+prior $s, b \sim \mathrm{iid}\; \mathcal{N}(0, 3)$,
+and data $(1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)$.
+
+\section{Priors and Likelihood}\label{sec:priors}
+
+\begin{lemma}[Integration Against Normal Probability]\label{lem:integral_normal_prob}
+  \rocq{QBS.showcase.bayesian_regression.integral_normal_prob}
+  \rocqok
+  \uses{def:qbs_normal_distribution}
+  $\int_{\mathcal{N}(m, \sigma)} f
+  = \int_{\mathrm{Lebesgue}} f(x) \cdot \mathrm{normal\_pdf}(m, \sigma, x)\, dx$,
+  converting QBS integration to Lebesgue integration with density.
+\end{lemma}
+
+\begin{definition}[Priors]\label{def:priors}
+  \rocq{QBS.showcase.bayesian_regression.slope_prior}
+  \rocq{QBS.showcase.bayesian_regression.intercept_prior}
+  \rocqok
+  \uses{def:qbs_normal_distribution}
+  $\mathrm{slope\_prior} = \mathcal{N}(0, 3)$ and
+  $\mathrm{intercept\_prior} = \mathcal{N}(0, 3)$.
+\end{definition}
+
+\begin{definition}[Observation Likelihood]\label{def:obs}
+  \rocq{QBS.showcase.bayesian_regression.obs}
+  \rocqok
+  The observation likelihood for parameters $(s, b)$:
+  \[
+    \mathrm{obs}(s, b) = \prod_{k=1}^{5}
+    \mathcal{N}(s \cdot k + b,\; \tfrac{1}{2})(y_k)
+  \]
+  where $(y_1, \ldots, y_5) = (2.5, 3.8, 4.5, 6.2, 8.0)$.
+\end{definition}
+
+\begin{lemma}[Observation Non-Negativity]\label{lem:obs_ge0}
+  \rocq{QBS.showcase.bayesian_regression.obs_ge0}
+  \rocqok
+  \uses{def:obs}
+  $\mathrm{obs}(s, b) \geq 0$ for all $(s, b)$.
+\end{lemma}
+
+
+\section{Evidence (Normalizing Constant)}\label{sec:evidence}
+
+\begin{definition}[Evidence]\label{def:evidence}
+  \rocq{QBS.showcase.bayesian_regression.evidence}
+  \rocqok
+  \uses{def:obs, def:qbs_integral, def:priors}
+  $Z = \int\!\!\int \mathrm{obs}(s, b)\, d\pi(s)\, d\pi(b)$
+  where $\pi = \mathcal{N}(0, 3)$.
+\end{definition}
+
+\begin{lemma}[Evidence Non-Negativity]\label{lem:evidence_ge0}
+  \rocq{QBS.showcase.bayesian_regression.evidence_ge0}
+  \rocqok
+  \uses{def:evidence}
+  $0 \leq Z$.
+\end{lemma}
+
+
+\section{Posterior Density}\label{sec:posterior}
+
+\begin{definition}[Posterior Density]\label{def:posterior_density}
+  \rocq{QBS.showcase.bayesian_regression.posterior_density}
+  \rocqok
+  \uses{def:evidence, def:obs}
+  $\mathbb{E}_{\mathrm{post}}[g] =
+  \frac{\mathbb{E}_{\mathrm{prior}}[g \cdot \mathrm{obs}]}{Z}$.
+\end{definition}
+
+\begin{lemma}[Posterior Integrates to 1]\label{lem:posterior_density_total}
+  \rocq{QBS.showcase.bayesian_regression.posterior_density_total}
+  \rocqok
+  \uses{def:posterior_density, def:evidence}
+  When $Z > 0$ and $Z < +\infty$, the posterior integrates to~$1$.
+\end{lemma}
+
+
+\section{Monadic Prior}\label{sec:monadic_prior}
+
+\begin{definition}[Joint Prior (Bind)]\label{def:prior_bind}
+  \rocq{QBS.showcase.bayesian_regression.prior}
+  \rocq{QBS.showcase.bayesian_regression.prior_bind}
+  \rocqok
+  \uses{def:priors, def:qbs_bind, def:qbs_strength}
+  The joint prior on $(s, b)$ is constructed via nested bind:
+  $\mathrm{prior} = \mathrm{slope\_prior} \mathbin{>\!\!>\!\!=}
+  (\lambda s.\; \mathrm{str}(s, \mathrm{intercept\_prior}))$.
+\end{definition}
+
+\begin{lemma}[Likelihood Single Observation Morphism]\label{lem:likelihood_single_morphism}
+  \rocq{QBS.showcase.bayesian_regression.likelihood_single_morphism}
+  \rocqok
+  \uses{def:obs, def:qbs_morphism}
+  Each single-observation likelihood factor is a QBS morphism.
+\end{lemma}
+
+\begin{lemma}[Likelihood Single Observation Strong]\label{lem:likelihood_single_strong}
+  \rocq{QBS.showcase.bayesian_regression.likelihood_single_strong}
+  \rocqok
+  \uses{def:obs, def:qbs_morphism_strong}
+  Each single-observation likelihood is a strong morphism.
+\end{lemma}
+
+
+\section{Normalizer Program}\label{sec:normalizer}
+
+\begin{definition}[Normalizer]\label{def:norm_qbs}
+  \rocq{QBS.showcase.bayesian_regression.norm_qbs}
+  \rocqok
+  \uses{def:evidence, def:posterior_density}
+  $\mathrm{norm\_qbs}(g, \mathrm{obs})$ returns $\mathrm{Some}(d)$ if
+  the evidence is positive and finite, $\mathrm{None}$ otherwise.
+\end{definition}
+
+\begin{definition}[Bayesian Program]\label{def:program}
+  \rocq{QBS.showcase.bayesian_regression.program}
+  \rocqok
+  \uses{def:norm_qbs, def:obs}
+  $\mathrm{program} = \mathrm{norm\_qbs}(\lambda \_.\; 1, \mathrm{obs})$.
+\end{definition}
+
+
+\section{Evidence Computation}\label{sec:evidence_computation}
+
+\begin{definition}[Scalar-of-s]\label{def:scalar_of_s}
+  \rocq{QBS.showcase.bayesian_regression.scalar_of_s}
+  \rocqok
+  \uses{def:obs, def:gaussian_prod_params}
+  The result of integrating $\mathrm{obs}(s, b)$ over~$b$ against
+  $\mathcal{N}(0, 3)$: a scalar depending only on~$s$.
+\end{definition}
+
+\begin{lemma}[Phase 1 Integration]\label{lem:phase1_integration}
+  \rocq{QBS.showcase.bayesian_regression.phase1_integration}
+  \rocqok
+  \uses{def:scalar_of_s, lem:integral_normal_prob, lem:obs_rewrite, lem:phase1_steps}
+  $\int_{\mathcal{N}(0,3)} \mathrm{obs}(s, b)\, db
+  = \mathrm{scalar\_of\_s}(s)$.
+\end{lemma}
+
+\begin{lemma}[Phase 2 Integration]\label{lem:phase2_integration}
+  \rocq{QBS.showcase.bayesian_regression.phase2_integration}
+  \rocqok
+  \uses{def:scalar_of_s, lem:integral_normal_prob, lem:phase2_combine5}
+  $\int_{\mathcal{N}(0,3)} \mathrm{scalar\_of\_s}(s)\, ds
+  = \mathrm{phase2\_const}$.
+\end{lemma}
+
+\begin{theorem}[Evidence Value]\label{thm:evidence_value}
+  \rocq{QBS.showcase.bayesian_regression.evidence_value}
+  \rocqok
+  \uses{def:evidence, lem:phase1_integration, lem:phase2_integration}
+  $Z = \mathrm{phase2\_const}$,
+  an explicit closed-form constant computed by iterating
+  the product-of-Gaussians identity through 10 combination steps.
+\end{theorem}
+
+\begin{lemma}[Evidence Positivity]\label{lem:evidence_pos}
+  \rocq{QBS.showcase.bayesian_regression.evidence_pos}
+  \rocqok
+  \uses{thm:evidence_value, lem:phase2_final_props}
+  $0 < Z$ and $Z < +\infty$.
+\end{lemma}
+
+
+\section{Main Results}\label{sec:main_results}
+
+\begin{lemma}[Program Succeeds]\label{lem:program_succeeds}
+  \rocq{QBS.showcase.bayesian_regression.program_succeeds}
+  \rocqok
+  \uses{def:program, lem:evidence_pos}
+  The program returns $\mathrm{Some}(d)$ (evidence is positive and finite).
+\end{lemma}
+
+\begin{theorem}[Program Integrates to 1]\label{thm:program_integrates_to_1}
+  \rocq{QBS.showcase.bayesian_regression.program_integrates_to_1}
+  \rocqok
+  \uses{lem:program_succeeds, thm:evidence_value, lem:posterior_density_total}
+  The posterior distribution integrates to~$1$ (unconditionally).
+  This is the main theorem of the Bayesian regression formalization.
+\end{theorem}
+\begin{proof}
+  \rocqok
+  \uses{thm:evidence_value, lem:evidence_pos, lem:posterior_density_total}
+  Derive positivity and finiteness of evidence from
+  \texttt{evidence\_value} and \texttt{phase2\_const\_gt0},
+  then apply \texttt{posterior\_density\_total}.
+\end{proof}
+
+\begin{lemma}[Observation Integrability]\label{lem:obs_product_integrable}
+  \rocq{QBS.showcase.bayesian_regression.obs_product_integrable}
+  \rocqok
+  \uses{def:obs, def:priors}
+  The observation likelihood is integrable against the joint prior,
+  established by bounding $\mathrm{obs}$ by the normal peak raised to
+  the 5th power.
+\end{lemma}
+
+\begin{lemma}[Posterior Measure Characterization]\label{lem:posterior_measure_characterization}
+  \rocq{QBS.showcase.bayesian_regression.posterior_measure_characterization}
+  \rocqok
+  \uses{thm:program_integrates_to_1, def:posterior_density}
+  The posterior measure is characterized by its density against the prior.
+\end{lemma}
