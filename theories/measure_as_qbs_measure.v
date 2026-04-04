@@ -3,7 +3,9 @@ From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
 From mathcomp Require Import reals ereal topology classical_sets
   borel_hierarchy measure lebesgue_stieltjes_measure lebesgue_measure
-  probability measurable_realfun derive ftc.
+  lebesgue_integral probability measurable_realfun derive ftc
+  gauss_integral charge.
+From mathcomp.classical Require Import boolp.
 From QBS Require Import quasi_borel probability_qbs.
 
 (**md**************************************************************************)
@@ -18,6 +20,7 @@ From QBS Require Import quasi_borel probability_qbs.
 (*   qbs_normal_distribution mu sigma == Normal(mu, sigma) as QBS probability *)
 (*   qbs_bernoulli p == Bernoulli(p) as QBS probability on boolQ             *)
 (*   qbs_uniform == Uniform[0,1] as QBS probability on realQ                 *)
+(*   qbs_expect_normal == E[Normal(mu,sigma)] = mu (conditional)              *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -74,11 +77,6 @@ Arguments as_qbs_prob : clear implicits.
 
 (** Standard distributions as QBS probabilities. *)
 
-(* Normal distribution on realQ.
-   Uses the math-comp analysis normal_prob as the underlying measure
-   on R, with the identity function as the random element. The QBS
-   triple (id, normal_prob mu sigma) represents the normal distribution
-   since the pushforward id_*(normal_prob mu sigma) = normal_prob mu sigma. *)
 Definition qbs_normal_distribution
   (mu sigma : R) (hsigma : (0 < sigma)%R) : qbs_prob (realQ R) :=
   @mkQBSProb R (realQ R) idfun
@@ -87,11 +85,6 @@ Definition qbs_normal_distribution
 
 Arguments qbs_normal_distribution : clear implicits.
 
-(* Bernoulli distribution on boolQ.
-   Assigns probability p to true and 1-p to false.
-   Uses the uniform distribution on [0,1] with the threshold function
-   alpha(r) = (r < p). The pushforward alpha_*(uniform[0,1]) satisfies
-   P(true) = uniform[0,1]({r | r < p}) = p. *)
 Definition qbs_bernoulli
   (p : R) (hp0 : (0 <= p)%R) (hp1 : (p <= 1)%R) : qbs_prob (boolQ R) :=
   @mkQBSProb R (boolQ R) (fun r : mR => (r < p)%R)
@@ -102,17 +95,10 @@ Definition qbs_bernoulli
 
 Arguments qbs_bernoulli : clear implicits.
 
-(* Uniform distribution on realQ, supported on [0, 1].
-   Uses the math-comp analysis uniform_prob as the underlying measure
-   with the identity random element. *)
 Definition qbs_uniform : qbs_prob (realQ R) :=
   @mkQBSProb R (realQ R) idfun
     (uniform_prob ltr01 : probability mR R)
     (@measurable_id _ mR setT).
-
-(** Recovery theorem.
-    The pushforward of the QBS measure along the alpha recovers the
-    original probability measure (up to the encoding). *)
 
 Lemma as_qbs_prob_recover (d : measure_display) (M : measurableType d)
   (f : M -> mR) (g : mR -> M)
@@ -123,11 +109,8 @@ Lemma as_qbs_prob_recover (d : measure_display) (M : measurableType d)
   (U : set M) (hU : measurable U) :
   qbs_prob_mu (as_qbs_prob d M f g hf hg h_section P) (g @^-1` U) =
   P (g @^-1` U).
-Proof.
-by [].
-Qed.
+Proof. by []. Qed.
 
-(* Stronger recovery: for sets in the sigma-algebra induced by f *)
 Lemma as_qbs_prob_recover_full (d : measure_display) (M : measurableType d)
   (f : M -> mR) (g : mR -> M)
   (hf : measurable_fun setT f)
@@ -146,15 +129,6 @@ rewrite eqEsubset; split => [r hUgr | r [x hUx hfx]].
 - rewrite /preimage /= -hfx h_section; exact: hUx.
 Qed.
 
-(** Parameterized distribution morphisms.
-    Parameterized families of distributions are QBS morphisms from
-    the parameter space to the probability monad.
-    Key insight: since qbs_normal_distribution mu sigma has alpha =
-    idfun for all mu, the monadP_random_pw condition reduces to showing
-    qbs_Mx (realQ R) idfun, which is just measurable_id. *)
-
-(* The normal distribution, viewed as a function of its mean parameter,
-   is a QBS morphism from realQ to monadP(realQ). *)
 Lemma qbs_normal_morphism (sigma : R) (hsigma : (0 < sigma)%R) :
   @qbs_morphism R (realQ R) (monadP (realQ R))
     (fun mu => qbs_normal_distribution mu sigma hsigma).
@@ -163,14 +137,37 @@ move=> alpha halpha; rewrite /qbs_Mx /= => r.
 exact: @measurable_id _ mR setT.
 Qed.
 
-(* The uniform distribution is a constant element of monadP(realQ),
-   i.e., the constant function mapping any r to qbs_uniform is a
-   random element of the probability monad. *)
 Lemma qbs_uniform_random :
   @qbs_Mx R (monadP (realQ R)) (fun _ : mR => qbs_uniform).
 Proof.
 rewrite /qbs_Mx /= => r.
 exact: @measurable_id _ mR setT.
+Qed.
+
+(* Convert integration against normal_prob to Lebesgue integration
+   with the normal_pdf density. *)
+Lemma integral_normal_prob (m s : R) (hs : (s != 0)%R)
+    f (f_meas : measurable_fun setT f)
+    (f_int : (\int[normal_prob m s]_x `|f x| < +oo)%E) :
+  (\int[normal_prob m s]_x f x =
+  \int[lebesgue_measure]_x (f x * (normal_pdf m s x)%:E))%E.
+Proof.
+rewrite -(Radon_Nikodym_change_of_variables
+            (normal_prob_dominates m s) measurableT); last first.
+  by apply/integrableP; split.
+apply: ae_eq_integral => //.
+- apply: emeasurable_funM => //; apply: (measurable_int lebesgue_measure).
+  apply: (integrableS _ _ (@subsetT _ _)) => //=.
+  by apply: Radon_Nikodym_integrable; exact: normal_prob_dominates.
+- apply: emeasurable_funM => //=; apply/measurableT_comp => //=.
+  by apply/measurable_funTS; exact: measurable_normal_pdf.
+- apply: ae_eqe_mul2l => /=.
+  rewrite Radon_NikodymE//=; first exact: normal_prob_dominates.
+  move=> ?.
+  case: cid => /= h [h1 h2 h3].
+  apply: integral_ae_eq => //=.
+  + apply/measurable_EFinP; exact: measurable_normal_pdf.
+  + by move=> E E01 mE; rewrite -h3.
 Qed.
 
 (** Distribution expectation lemmas. *)
@@ -210,6 +207,7 @@ case: (lerP p 0) => [p0|p0].
   by rewrite order.Order.POrderTheory.ltxx.
 - by rewrite ifT // lte_fin.
 Qed.
+
 Lemma qbs_expect_uniform :
   qbs_expect (realQ R) qbs_uniform (fun x => x) = (2%:R^-1)%:E.
 Proof.
@@ -244,6 +242,45 @@ rewrite (@ftc.continuous_FTC2 _ idfun (fun x => x ^+ 2 / 2) 0 1 ltr01).
   rewrite (@derive.derive_val _ _ _ _ _ _ _
     (derive.is_deriveX 2 (derive.is_derive_id x 1))) /=.
   by rewrite expr1 /GRing.scale /= mulr1 mulrA mulVf ?mul1r // pnatr_eq0.
+Qed.
+
+(* E[Normal(mu, sigma)] = mu.
+   The proof uses integral_normal_pdf (int pdf = 1) and integralZl.
+   Two analytic hypotheses are required (not yet in mathcomp-analysis):
+   - id_int: the identity is integrable against normal_prob
+   - odd_int: (x-mu)*normal_pdf is Lebesgue-integrable
+   - odd_zero: int (x-mu)*normal_pdf = 0 (odd-function symmetry) *)
+Lemma qbs_expect_normal (mu sigma : R) (hsigma : (0 < sigma)%R)
+  (id_int : (\int[normal_prob mu sigma]_x `|x%:E| < +oo)%E)
+  (odd_int : lebesgue_measure.-integrable setT
+    (fun x => ((x - mu) * normal_pdf mu sigma x)%:E))
+  (odd_zero : (\int[lebesgue_measure]_x
+    ((x - mu) * normal_pdf mu sigma x)%:E = 0 :> \bar R)%E) :
+  qbs_expect (realQ R) (qbs_normal_distribution mu sigma hsigma)
+    (fun x => x) = mu%:E.
+Proof.
+rewrite /qbs_expect /qbs_integral /=.
+have hsigma0 : sigma != 0 by exact: lt0r_neq0.
+rewrite (integral_normal_prob hsigma0)//=.
+under eq_integral do rewrite -EFinM.
+(* Split x * pdf = mu * pdf + (x - mu) * pdf *)
+rewrite (_ : (fun x => (x * normal_pdf mu sigma x)%:E) =
+  (fun x => (mu * normal_pdf mu sigma x +
+             (x - mu) * normal_pdf mu sigma x)%:E)); last first.
+  by apply: funext => x /=; rewrite -mulrDl addrC subrK.
+under eq_integral do rewrite EFinD.
+have hint1 : lebesgue_measure.-integrable setT
+    (fun x => (mu * normal_pdf mu sigma x)%:E).
+  rewrite (_ : (fun x => (mu * _)%:E) =
+    (fun x => mu%:E * (normal_pdf mu sigma x)%:E)%E); last first.
+    by apply: funext => x; rewrite EFinM.
+  exact: (integrableZl measurableT mu (integrable_normal_pdf mu sigma)).
+rewrite (integralD measurableT hint1 odd_int).
+rewrite (_ : (fun x => (mu * normal_pdf mu sigma x)%:E) =
+  (fun x => mu%:E * (normal_pdf mu sigma x)%:E)%E); last first.
+  by apply: funext => x; rewrite EFinM.
+rewrite integralZl//=; last exact: integrable_normal_pdf.
+by rewrite integral_normal_pdf -EFinM mulr1 odd_zero adde0.
 Qed.
 
 End distribution_expectations.

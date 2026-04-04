@@ -924,6 +924,220 @@ Lemma qbs_strength_law4 (W X : qbsType R) (w : W)
       (@qbs_strength_law4_diag W X w pp hdiag)).
 Proof. by move=> U hU. Qed.
 
+
+(* 21. General Normalizer: qbs_prob(X * R) -> option(qbs_prob(X))        *)
+(*   normalize_mu p hw hw_m hpos hfin == reweighted probability measure  *)
+(*   normalize_prob X p ...           == normalized qbs_prob on X        *)
+(*   qbs_normalize X p hw hw_m        == option: Some if ev good, None   *)
+(*   qbs_normalize_total              == normalized prob integrates to 1 *)
+(*   qbs_normalize_integral           == E[g|norm] = E[g*w]/ev          *)
+
+Section normalize_mu_build.
+Variable (X : qbsType R).
+Variable (p : qbs_prob (prodQ X (realQ R))).
+Let w : mR -> R := fun r => snd (qbs_prob_alpha p r).
+Hypothesis hw_ge0 : forall r, (0 <= w r)%R.
+Hypothesis hw_meas : measurable_fun setT (fun r => (w r)%:E : \bar R).
+Let ev : \bar R := (\int[qbs_prob_mu p]_r (w r)%:E)%E.
+Hypothesis hev_pos : (0 < ev)%E.
+Hypothesis hev_fin : (ev < +oo)%E.
+Let ev_r : R := fine ev.
+Let ev_r_gt0 : (0 < ev_r)%R.
+Proof. by apply: fine_gt0; rewrite hev_pos hev_fin. Qed.
+Let ev_r_neq0 : (ev_r != 0)%R.
+Proof. exact: lt0r_neq0 ev_r_gt0. Qed.
+Let wdiv (r : mR) : R := (w r / ev_r)%R.
+Let wdiv_ge0 r : (0 <= wdiv r)%R.
+Proof. by rewrite /wdiv divr_ge0 //= le0r ev_r_gt0 orbT. Qed.
+Let wdiv_meas : measurable_fun setT (fun r => (wdiv r)%:E : \bar R).
+Proof.
+apply/measurable_EFinP; rewrite /wdiv; apply: measurable_funM.
+  by move: hw_meas => /measurable_EFinP.
+exact: measurable_cst.
+Qed.
+Let norm_mu (A : set mR) : \bar R :=
+  (\int[qbs_prob_mu p]_(r in A) (wdiv r)%:E)%E.
+Let norm_mu0 : norm_mu set0 = 0.
+Proof. by rewrite /norm_mu integral_set0. Qed.
+Let norm_mu_ge0 (A : set mR) : 0 <= norm_mu A.
+Proof.
+rewrite /norm_mu; apply: integral_ge0 => r _.
+by rewrite lee_fin; exact: wdiv_ge0.
+Qed.
+Let norm_mu_sigma : semi_sigma_additive norm_mu.
+Proof.
+move=> F mF tF mUF; rewrite /norm_mu.
+have hmfD : measurable_fun (\bigcup_n F n) (fun r => (wdiv r)%:E : \bar R).
+  by apply/measurable_funTS; exact: wdiv_meas.
+have hge0 : forall x, (\bigcup_n F n) x -> (0 <= (wdiv x)%:E)%E.
+  by move=> x _; rewrite lee_fin; exact: wdiv_ge0.
+rewrite (@ge0_integral_bigcup _ _ R (qbs_prob_mu p) F
+  (fun r => (wdiv r)%:E) mF hmfD hge0 tF).
+apply: sequences.is_cvg_ereal_nneg_natsum => n _.
+apply: integral_ge0 => r _; rewrite lee_fin; exact: wdiv_ge0.
+Qed.
+HB.instance Definition _ := isMeasure.Build _ _ _
+  norm_mu norm_mu0 norm_mu_ge0 norm_mu_sigma.
+Let norm_mu_setT : norm_mu setT = 1.
+Proof.
+rewrite /norm_mu.
+have -> : (fun r => (wdiv r)%:E) = (fun r => (ev_r^-1 * w r)%:E).
+  by apply: boolp.funext => r; rewrite /wdiv mulrC.
+under eq_integral do rewrite EFinM.
+rewrite ge0_integralZl_EFin //=.
+- have hfn : ev \is a fin_num by rewrite gt0_fin_numE.
+  have -> : \int[qbs_prob_mu p]_x (w x)%:E = ev_r%:E by rewrite fineK.
+  by rewrite -EFinM mulVf.
+- by move=> r _; rewrite lee_fin.
+- by rewrite invr_ge0 le0r ev_r_gt0 orbT.
+Qed.
+HB.instance Definition _ := Measure_isProbability.Build _ _ _
+  norm_mu norm_mu_setT.
+Definition normalize_mu : probability mR R :=
+  [the probability mR R of norm_mu].
+End normalize_mu_build.
+
+Section qbs_normalize_def.
+Variable (X : qbsType R).
+
+Lemma normalize_alpha_random (p : qbs_prob (prodQ X (realQ R))) :
+  @qbs_Mx R X (fun r => fst (qbs_prob_alpha p r)).
+Proof. by have /= [h1 _] := qbs_prob_alpha_random p. Qed.
+
+Definition normalize_prob
+    (p : qbs_prob (prodQ X (realQ R)))
+    (hw_ge0 : forall r, (0 <= snd (qbs_prob_alpha p r))%R)
+    (hw_meas : measurable_fun setT
+      (fun r => (snd (qbs_prob_alpha p r))%:E : \bar R))
+    (hev_pos : (0 < \int[qbs_prob_mu p]_r
+                  (snd (qbs_prob_alpha p r))%:E)%E)
+    (hev_fin : (\int[qbs_prob_mu p]_r
+                  (snd (qbs_prob_alpha p r))%:E < +oo)%E) :
+    qbs_prob X :=
+  @mkQBSProb X
+    (fun r => fst (qbs_prob_alpha p r))
+    (normalize_mu hw_ge0 hw_meas hev_pos hev_fin)
+    (normalize_alpha_random p).
+
+Definition qbs_normalize
+    (p : qbs_prob (prodQ X (realQ R)))
+    (hw_ge0 : forall r, (0 <= snd (qbs_prob_alpha p r))%R)
+    (hw_meas : measurable_fun setT
+      (fun r => (snd (qbs_prob_alpha p r))%:E : \bar R)) :
+    option (qbs_prob X) :=
+  let ev := (\int[qbs_prob_mu p]_r
+               (snd (qbs_prob_alpha p r))%:E)%E in
+  match boolp.pselect (0 < ev)%E, boolp.pselect (ev < +oo)%E with
+  | left hpos, left hfin =>
+      Some (normalize_prob hw_ge0 hw_meas hpos hfin)
+  | _, _ => None
+  end.
+
+Lemma qbs_normalize_alpha
+    (p : qbs_prob (prodQ X (realQ R)))
+    hw_ge0 hw_meas hev_pos hev_fin :
+  qbs_prob_alpha (@normalize_prob p hw_ge0 hw_meas hev_pos hev_fin) =
+  fun r => fst (qbs_prob_alpha p r).
+Proof. by []. Qed.
+
+Lemma qbs_normalize_total
+    (p : qbs_prob (prodQ X (realQ R)))
+    hw_ge0 hw_meas hev_pos hev_fin :
+  qbs_integral X (@normalize_prob p hw_ge0 hw_meas hev_pos hev_fin)
+    (fun _ => 1) = 1.
+Proof.
+rewrite /qbs_integral /=.
+
+rewrite (_ : \int[_]__ 1 = 1 * normalize_mu hw_ge0 hw_meas hev_pos hev_fin setT). by rewrite probability_setT mule1. rewrite -integral_cst //=.
+Qed.
+
+Lemma qbs_normalize_integral
+    (p : qbs_prob (prodQ X (realQ R)))
+    (hw_ge0 : forall r, (0 <= snd (qbs_prob_alpha p r))%R)
+    (hw_meas : measurable_fun setT
+      (fun r => (snd (qbs_prob_alpha p r))%:E : \bar R))
+    (hev_pos : (0 < \int[qbs_prob_mu p]_r
+                  (snd (qbs_prob_alpha p r))%:E)%E)
+    (hev_fin : (\int[qbs_prob_mu p]_r
+                  (snd (qbs_prob_alpha p r))%:E < +oo)%E)
+    (g : X -> \bar R)
+    (hg_ge0 : forall x, 0 <= g x)
+    (hg_meas : qbs_measurable X g) :
+  qbs_integral X (normalize_prob hw_ge0 hw_meas hev_pos hev_fin) g =
+  (qbs_integral (prodQ X (realQ R)) p
+    (fun xy => g (fst xy) * (snd xy)%:E) /
+   \int[qbs_prob_mu p]_r (snd (qbs_prob_alpha p r))%:E)%E.
+Proof.
+rewrite /qbs_integral /=.
+set ev := \int[qbs_prob_mu p]_r ((qbs_prob_alpha p r).2)%:E.
+set mu := qbs_prob_mu p.
+set alpha := qbs_prob_alpha p.
+have hev_fin_num : ev \is a fin_num.
+{ rewrite ge0_fin_numE; [exact: hev_fin |
+    exact: order.Order.POrderTheory.ltW hev_pos]. }
+have hwdiv_meas : measurable_fun setT
+    (fun r : mR => (((alpha r).2 / fine ev)%:E : \bar R)).
+{ apply/measurable_EFinP; apply: measurable_funM.
+  - have h := hw_meas; move: h => /measurable_EFinP //.
+  - exact: measurable_cst. }
+have hac : (normalize_mu hw_ge0 hw_meas hev_pos hev_fin : measure mR R) `<< mu.
+{ apply/null_content_dominatesP => A mA hA.
+  rewrite /normalize_mu /=.
+  apply: null_set_integral => //; apply/measurable_funTS; exact: hwdiv_meas. }
+have hRN_wdiv : ae_eq mu setT
+    (charge.Radon_Nikodym_SigmaFinite.f
+       (normalize_mu hw_ge0 hw_meas hev_pos hev_fin) mu)
+    (fun r => (((alpha r).2 / fine ev)%:E : \bar R)).
+{ apply: integral_ae_eq.
+  - exact: measurableT.
+  - exact: charge.Radon_Nikodym_SigmaFinite.f_integrable hac.
+  - exact: hwdiv_meas.
+  - move=> A _ mA.
+    rewrite -(charge.Radon_Nikodym_SigmaFinite.f_integral hac mA).
+    rewrite /normalize_mu /=. reflexivity. }
+have step1 : \int[normalize_mu hw_ge0 hw_meas hev_pos hev_fin]_r
+    g ((alpha r).1) =
+  \int[mu]_r (g ((alpha r).1) * (((alpha r).2 / fine ev)%:E)).
+{ rewrite -(charge.Radon_Nikodym_SigmaFinite.change_of_variables hac _ measurableT
+    (hg_meas _ (normalize_alpha_random p))); last by move=> x; exact: hg_ge0.
+  apply: ge0_ae_eq_integral.
+  - exact: measurableT.
+  - apply: emeasurable_funM.
+    + exact: hg_meas _ (normalize_alpha_random p).
+    + have := charge.Radon_Nikodym_SigmaFinite.f_integrable hac;
+        move=> /integrableP [? _]; exact.
+  - apply: emeasurable_funM.
+    + exact: hg_meas _ (normalize_alpha_random p).
+    + exact: hwdiv_meas.
+  - move=> r _; apply: mule_ge0; first exact: hg_ge0.
+    exact: charge.Radon_Nikodym_SigmaFinite.f_ge0.
+  - move=> r _; apply: mule_ge0; first exact: hg_ge0.
+    rewrite lee_fin; apply: divr_ge0; first exact: hw_ge0.
+    by apply: fine_ge0; apply: integral_ge0 => x _;
+       rewrite lee_fin; exact: hw_ge0.
+  - apply: filterS hRN_wdiv => r /= ->; by []. }
+rewrite step1.
+have hfine_ev_pos : (0 < fine ev)%R.
+{ apply: fine_gt0; rewrite hev_pos hev_fin //. }
+have hfine_ev_ne0 : fine ev != 0%R := lt0r_neq0 hfine_ev_pos.
+have hev_inv : ev^-1 = ((fine ev)^-1)%:E.
+{ rewrite -{1}(fineK hev_fin_num) inver ifF //.
+  exact: negbTE hfine_ev_ne0. }
+under eq_integral => r _ do rewrite EFinM muleA.
+rewrite ge0_integralZr.
+- by rewrite -hev_inv.
+- exact: measurableT.
+- exact: emeasurable_funM (hg_meas _ (normalize_alpha_random p)) hw_meas.
+- move=> r _; apply: mule_ge0; first exact: hg_ge0.
+  by rewrite lee_fin; exact: hw_ge0.
+- rewrite lee_fin invr_ge0; exact: order.Order.POrderTheory.ltW hfine_ev_pos.
+Qed.
+
+End qbs_normalize_def.
+
+Arguments qbs_normalize : clear implicits.
+Arguments normalize_prob : clear implicits.
+
 End probability_qbs.
 
 Arguments qbs_prob {R}.
@@ -946,3 +1160,5 @@ Arguments qbs_variance {R}.
 Arguments qbs_join {R}.
 Arguments qbs_strength {R}.
 Arguments qbs_integrable {R}.
+Arguments qbs_normalize {R}.
+Arguments normalize_prob {R}.

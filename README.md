@@ -7,7 +7,7 @@ programming semantics.
 
 ## Overview
 
-**332 proofs, 0 Admitted, 0 custom axioms, 6,820 lines across 11 files.**
+**384 proofs, 0 Admitted, 0 custom axioms, 7,957 lines across 11 files.**
 
 Quasi-Borel spaces solve a fundamental problem: the category of
 measurable spaces is not cartesian closed, which prevents giving
@@ -28,12 +28,12 @@ This formalization follows:
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
 | `quasi_borel.v` | 714 | 45 | HB mixin/structure, morphisms, products, exponentials, cartesian closure |
-| `measure_qbs_adjunction.v` | 238 | 18 | L-|R adjunction, standard Borel, full faithfulness |
+| `measure_qbs_adjunction.v` | 523 | 27 | L-|R adjunction, standard Borel, full faithfulness |
 | `coproduct_qbs.v` | 681 | 22 | Binary/general coproducts, dependent products, list type |
-| `probability_qbs.v` | 737 | 35 | Probability monad: return, bind, 3 monad laws, strength |
-| `pair_qbs_measure.v` | 537 | 16 | Product measures via R≅R×R, Fubini, independence |
+| `probability_qbs.v` | 1,164 | 63 | Probability monad: return, bind, 3 monad laws, strength, normalizer |
+| `pair_qbs_measure.v` | 592 | 17 | Product measures via R≅R×R, Fubini, independence |
 | `qbs_prob_quot.v` | 331 | 17 | Setoid quotient for probability triples |
-| `measure_as_qbs_measure.v` | 176 | 6 | Normal, Bernoulli, uniform distributions |
+| `measure_as_qbs_measure.v` | 288 | 10 | Normal, Bernoulli, uniform distributions, E[Normal]=μ |
 
 ### Bridges and analysis
 
@@ -47,7 +47,7 @@ This formalization follows:
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `showcase/bayesian_regression.v` | 644 | 24 | Bayesian linear regression (matching Isabelle AFP) |
+| `showcase/bayesian_regression.v` | 902 | 34 | Bayesian linear regression (matching Isabelle AFP) |
 
 ## Key results
 
@@ -59,6 +59,8 @@ This formalization follows:
 - **Independence**: `qbs_integral_indep_mult` (E[fg] = E[f]E[g])
 - **QBS↔Giry**: `qbs_to_giry`, `qbs_integral_giry`
 - **R≅R×R**: `pair_standard_borel`, `encode_RRK`
+- **Normalizer**: `qbs_normalize`, `qbs_normalize_total`, `qbs_normalize_integral`
+- **Distributions**: `qbs_expect_normal`, `qbs_expect_bernoulli`, `qbs_expect_uniform`
 - **Bayesian regression**: `evidence_value`, `program_integrates_to_1`
 - **Normal density**: `normal_pdf_times` (product of Gaussians)
 
