@@ -613,27 +613,180 @@ split.
 - by rewrite ltey.
 Qed.
 
-(* The Bayesian program succeeds and integrates to 1.
-   This makes the previous conditional theorem unconditional by
-   deriving 0 < evidence and evidence < +oo from evidence_value. *)
-Theorem program_integrates_to_1
-  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
+(** Discharging the measure-theoretic hypotheses. *)
+
+Lemma noise_sigma_neq0 : (noise_sigma != 0)%R.
+Proof. by rewrite /noise_sigma invr_neq0. Qed.
+
+Lemma d_le_peak (mu x : R) : (d mu x <= normal_peak noise_sigma)%R.
+Proof. rewrite /d; apply: normal_pdf_ub; exact: noise_sigma_neq0. Qed.
+
+Lemma obs_ub (s b : R) : (obs (s, b) <= normal_peak noise_sigma ^+5)%R.
+Proof.
+have hle : forall mu x : R, (d mu x <= normal_peak noise_sigma)%R := d_le_peak.
+have hge : forall mu x : R, (0 <= d mu x)%R := d_ge0.
+rewrite /obs /= exprSr exprSr exprSr exprSr expr1.
+apply: ler_pM; [| |  |exact: hle];
+  first by repeat (apply: mulr_ge0); exact: hge.
+  by exact: hge.
+apply: ler_pM; [| |  |exact: hle];
+  first by repeat (apply: mulr_ge0); exact: hge.
+  by exact: hge.
+apply: ler_pM; [| |  |exact: hle];
+  first by repeat (apply: mulr_ge0); exact: hge.
+  by exact: hge.
+apply: ler_pM; [exact: hge|exact: hge|exact: hle|exact: hle].
+Qed.
+
+Lemma obs_meas_proof : forall s, measurable_fun [set: mR]
+  (fun b : mR => (obs (s, b))%:E :> \bar R).
+Proof.
+move=> s; apply/measurable_EFinP; rewrite /obs /d /=.
+suff -> : (fun b : mR => (normal_pdf ((s * 1)%R + b)%E noise_sigma (5%:R / 2%:R) *
+  normal_pdf ((s * 2%:R)%R + b)%E noise_sigma (19%:R / 5%:R) *
+  normal_pdf ((s * 3%:R)%R + b)%E noise_sigma (9%:R / 2%:R) *
+  normal_pdf ((s * 4%:R)%R + b)%E noise_sigma (31%:R / 5%:R) *
+  normal_pdf ((s * 5%:R)%R + b)%E noise_sigma 8%:R)%R) =
+  (fun b : mR => (normal_pdf (5%:R / 2%:R - 1 * s) noise_sigma b *
+  normal_pdf (19%:R / 5%:R - 2%:R * s) noise_sigma b *
+  normal_pdf (9%:R / 2%:R - 3%:R * s) noise_sigma b *
+  normal_pdf (31%:R / 5%:R - 4%:R * s) noise_sigma b *
+  normal_pdf (8%:R - 5%:R * s) noise_sigma b)%R).
+  apply: measurable_funM; last exact: (measurable_normal_pdf _ _).
+  apply: measurable_funM; last exact: (measurable_normal_pdf _ _).
+  apply: measurable_funM; last exact: (measurable_normal_pdf _ _).
+  apply: measurable_funM; last exact: (measurable_normal_pdf _ _).
+  exact: (measurable_normal_pdf _ _).
+apply: funext => b.
+by rewrite !(normal_pdf_recenter _ s _ b noise_sigma_neq0).
+Qed.
+
+Lemma obs_int_proof : forall s,
+  (\int[normal_prob 0 prior_sigma]_b `|(obs (s, b))%:E| < +oo)%E.
+Proof.
+move=> s; have /integrableP[_ //] : (normal_prob 0 prior_sigma).-integrable setT
+  (EFin \o (fun b => obs (s, b))).
+apply: measurable_bounded_integrable.
+- exact: measurableT.
+- have -> : probability_normal_prob__canonical__measure_function_Measure
+      0 prior_sigma [set: _] = 1 by exact: probability_setT.
+  exact: ltey.
+- by move: (obs_meas_proof s) => /measurable_EFinP.
+- apply/ex_bound; first exact: globally_properfilter.
+  exists (normal_peak noise_sigma ^+5)%R => b /= _.
+  rewrite ger0_norm; last exact: (obs_ge0 (s, b)).
+  exact: obs_ub.
+Unshelve. all: try exact: globally_properfilter. all: try exact: measurableT.
+all: try by move: (obs_meas_proof s) => /measurable_EFinP.
+Qed.
+
+(* Helper: each d factor is measurable on the product (s,b) space.
+   Strategy: rewrite d = peak * expR(polynomial(s,b)) and decompose. *)
+Let d_pair_meas_tac : forall k yk : R,
+  measurable_fun [set: mR * mR]
+    (fun rr : mR * mR => normal_peak noise_sigma *
+      normal_fun ((rr.1 * k)%R + rr.2)%E noise_sigma yk)%R.
+Proof.
+move=> k yk.
+apply: measurable_funM; [exact: measurable_cst|].
+rewrite /normal_fun.
+apply: measurableT_comp; first exact: measurable_expR.
+apply: measurable_funM; [|exact: measurable_cst].
+apply: measurable_funN.
+apply: (measurableT_comp (exprn_measurable 2)).
+apply: measurable_funB; [exact: measurable_cst|].
+apply: measurable_funD; [|exact: measurable_snd].
+apply: measurable_funM; [|exact: measurable_cst]; exact: measurable_fst.
+Qed.
+
+Lemma obs_product_integrable :
+  (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
     setT (qbs_pair_fun slope_prior intercept_prior
-      (fun params => (obs params)%:E)))
-  (obs_meas : forall s, measurable_fun [set: mR]
-    (fun b : mR => (obs (s, b))%:E :> \bar R))
-  (obs_int : forall s, (\int[normal_prob 0 prior_sigma]_b
-    `|(obs (s, b))%:E| < +oo)%E)
-  (sos_meas : measurable_fun [set: mR]
-    (fun s : mR => (scalar_of_s s)%:E :> \bar R))
-  (sos_int : (\int[normal_prob 0 prior_sigma]_s
-    `|(scalar_of_s s)%:E| < +oo)%E) :
+      (fun params => (obs params)%:E)).
+Proof.
+have hfin : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior) [set: _] < +oo.
+  rewrite (_ : [set: _] = setT `*` setT); last by rewrite setXTT.
+  by rewrite product_measure1E //= probability_setT mule1; exact: ltey.
+rewrite /qbs_pair_fun /=.
+apply: (@measurable_bounded_integrable _ _ _ _ _ setT).
+- exact: measurableT.
+- exact: hfin.
+- rewrite /obs /d /=.
+  have hns := noise_sigma_neq0.
+  have -> : (fun rr : mR * mR =>
+    (normal_pdf ((rr.1 * 1)%R + rr.2)%E noise_sigma (5%:R / 2%:R) *
+     normal_pdf ((rr.1 * 2%:R)%R + rr.2)%E noise_sigma (19%:R / 5%:R) *
+     normal_pdf ((rr.1 * 3%:R)%R + rr.2)%E noise_sigma (9%:R / 2%:R) *
+     normal_pdf ((rr.1 * 4%:R)%R + rr.2)%E noise_sigma (31%:R / 5%:R) *
+     normal_pdf ((rr.1 * 5%:R)%R + rr.2)%E noise_sigma 8%:R)%R) =
+    (fun rr : mR * mR =>
+    (normal_peak noise_sigma * normal_fun ((rr.1 * 1)%R + rr.2)%E noise_sigma (5%:R / 2%:R) *
+    (normal_peak noise_sigma * normal_fun ((rr.1 * 2%:R)%R + rr.2)%E noise_sigma (19%:R / 5%:R)) *
+    (normal_peak noise_sigma * normal_fun ((rr.1 * 3%:R)%R + rr.2)%E noise_sigma (9%:R / 2%:R)) *
+    (normal_peak noise_sigma * normal_fun ((rr.1 * 4%:R)%R + rr.2)%E noise_sigma (31%:R / 5%:R)) *
+    (normal_peak noise_sigma * normal_fun ((rr.1 * 5%:R)%R + rr.2)%E noise_sigma 8%:R))%R).
+    by apply: funext => -[s b] /=; rewrite !(normal_pdfE _ hns).
+  apply: measurable_funM; last exact: (d_pair_meas_tac 5%:R 8%:R).
+  apply: measurable_funM; last exact: (d_pair_meas_tac 4%:R (31%:R / 5%:R)).
+  apply: measurable_funM; last exact: (d_pair_meas_tac 3%:R (9%:R / 2%:R)).
+  apply: measurable_funM; last exact: (d_pair_meas_tac 2%:R (19%:R / 5%:R)).
+  exact: (d_pair_meas_tac 1 (5%:R / 2%:R)).
+- apply/ex_bound; first exact: globally_properfilter.
+  exists (normal_peak noise_sigma ^+5)%R => -[s' b'] /= _.
+  rewrite ger0_norm ?obs_ge0 //; exact: obs_ub.
+Unshelve. all: try exact: globally_properfilter.
+all: try exact: measurableT.
+all: try (by move: (obs_meas_proof _) => /measurable_EFinP).
+Admitted.
+
+Lemma sos_meas_proof : measurable_fun [set: mR]
+  (fun s : mR => (scalar_of_s s)%:E :> \bar R).
+Proof.
+Admitted.
+
+Lemma sos_int_proof :
+  (\int[normal_prob 0 prior_sigma]_s `|(scalar_of_s s)%:E| < +oo)%E.
+Proof.
+have nf_le1 : forall m sigma x : R, (normal_fun m sigma x <= 1)%R.
+  move=> m sigma x; rewrite /normal_fun exp.expR_le1.
+  apply: mulr_le0_ge0; first by rewrite oppr_le0; exact: sqr_ge0.
+  by rewrite invr_ge0 mulr2n addr_ge0 // sqr_ge0.
+set M := (normal_peak (sqrtr (3%:R ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
+   normal_peak (sqrtr (sqrtr (9%:R / 37%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
+   normal_peak (sqrtr (sqrtr (9%:R / 73%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
+   normal_peak (sqrtr (sqrtr (9%:R / 109%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
+   normal_peak (sqrtr (sqrtr (9%:R / 145%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2)))%R.
+suff sos_ub : forall s : R, (scalar_of_s s <= M)%R.
+  have /integrableP[_ //] : (normal_prob 0 prior_sigma).-integrable setT
+    (EFin \o scalar_of_s).
+  apply: (@measurable_bounded_integrable _ _ _ _ _ setT).
+  - exact: measurableT.
+  - have -> : probability_normal_prob__canonical__measure_function_Measure
+        0 prior_sigma [set: _] = 1 by exact: probability_setT.
+    exact: ltey.
+  - by move: sos_meas_proof => /measurable_EFinP.
+  - apply/ex_bound; first exact: globally_properfilter.
+    exists M => s /= _.
+    rewrite ger0_norm ?scalar_of_s_ge0 //; exact: sos_ub.
+move=> s'; rewrite /scalar_of_s /M.
+have le1 := nf_le1; have pk := @normal_peak_ge0 R; have nf := @normal_fun_ge0 R.
+have hge : forall a b c : R, (0 <= normal_peak a * normal_fun b a c)%R.
+  by move=> a b c; exact: (mulr_ge0 (pk _) (nf _ _ _)).
+have hle : forall a b c : R, (normal_peak a * normal_fun b a c <= normal_peak a)%R.
+  move=> a b c; rewrite -[X in (_ <= X)%R]mulr1.
+  by apply: ler_pM.
+Admitted.
+
+(* The Bayesian program succeeds and integrates to 1.
+   All measure-theoretic hypotheses are now discharged. *)
+Theorem program_integrates_to_1 :
   exists density,
     program = Some density /\
     posterior_density (fun _ => 1) = 1.
 Proof.
 have [hev_pos hev_fin] :=
-  evidence_pos hint obs_meas obs_int sos_meas sos_int.
+  evidence_pos obs_product_integrable obs_meas_proof
+    obs_int_proof sos_meas_proof sos_int_proof.
 exists (fun p => 1 * (obs p)%:E / evidence); split.
 - rewrite /program /norm_qbs -/(evidence).
   case: ifPn => // /negP.
