@@ -887,6 +887,43 @@ have -> : [set x | (eps <= `|h (qbs_prob_alpha p x) -
 exact: chebyshev.
 Qed.
 
+(* Strength law 4 diagonal helper: the diagonal randomness proof
+   needed for the join on the RHS of strength law 4. *)
+Lemma qbs_strength_law4_diag (W X : qbsType R) (w : W)
+  (pp : qbs_prob (monadP X))
+  (hdiag : @qbs_Mx R X
+    (fun r => qbs_prob_alpha (qbs_prob_alpha pp r) r)) :
+  @qbs_Mx R (prodQ W X)
+    (fun r => qbs_prob_alpha
+      (id (qbs_prob_alpha
+        (monadP_map (prodQ W (monadP X)) (monadP (prodQ W X))
+          (fun wp => qbs_strength W X wp.1 wp.2)
+          (@qbs_strength_morphism W X)
+          (qbs_strength W (monadP X) w pp)) r)) r).
+Proof.
+split => /=.
+- exact: qbs_Mx_const.
+- exact: hdiag.
+Qed.
+
+(* Strength law 4: strength commutes with join.
+   LHS: strength(w, join(pp))
+   RHS: join(P(strength)(strength(w, pp)))
+   Both sides have the same alpha and mu at the representation level. *)
+Lemma qbs_strength_law4 (W X : qbsType R) (w : W)
+  (pp : qbs_prob (monadP X))
+  (hdiag : @qbs_Mx R X
+    (fun r => qbs_prob_alpha (qbs_prob_alpha pp r) r)) :
+  qbs_prob_equiv (prodQ W X)
+    (qbs_strength W X w (qbs_join X pp hdiag))
+    (qbs_join (prodQ W X)
+      (monadP_map (prodQ W (monadP X)) (monadP (prodQ W X))
+        (fun wp => qbs_strength W X wp.1 wp.2)
+        (@qbs_strength_morphism W X)
+        (qbs_strength W (monadP X) w pp))
+      (@qbs_strength_law4_diag W X w pp hdiag)).
+Proof. by move=> U hU. Qed.
+
 End probability_qbs.
 
 Arguments qbs_prob {R}.

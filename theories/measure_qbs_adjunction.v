@@ -396,4 +396,128 @@ move=> [f [g [hf [hg hgf]]]] U; split.
   exact: adjunction_counit.
 Qed.
 
+Import constructive_ereal.
+
+Definition erealQ := @R_qbs R _ (\bar R : measurableType _).
+
+Lemma measurable_contract_fin :
+  measurable_fun [set: mR] (fun r : R => r / (1 + `|r|))%R.
+Proof.
+apply: continuous_measurable_fun => r.
+apply: normed_module.cvgM; [exact: filter.cvg_id|].
+apply: normed_module.cvgV.
+  by apply: lt0r_neq0; rewrite ltr_pwDl // normr_ge0.
+apply: pseudometric_normed_Zmodule.cvgD.
+  exact: (@topology_structure.cvg_cst
+    (num_topology.numFieldTopology.Real_sort__canonical__topology_structure_Topological R)).
+exact: pseudometric_normed_Zmodule.cvg_norm.
+Qed.
+
+Lemma measurable_contract :
+  measurable_fun [set: \bar R] (@contract R : \bar R -> R).
+Proof.
+move=> _ U mU; rewrite setTI.
+suff -> : (@contract R) @^-1` U =
+  EFin @` ((fun r : R => r / (1 + `|r|))%R @^-1` U)
+  `|` (if boolp.asbool (U 1%R) then [set +oo%E] else set0)
+  `|` (if boolp.asbool (U (-1)%R) then [set -oo%E] else set0).
+- apply: measurableU; [apply: measurableU|].
+  + apply: measurable_image_EFin.
+    have := @measurable_contract_fin measurableT U mU; rewrite setTI; exact.
+  + by case: boolp.asboolP => _; [exact: emeasurable_set1 | exact: measurable0].
+  + by case: boolp.asboolP => _; [exact: emeasurable_set1 | exact: measurable0].
+- rewrite eqEsubset; split => x.
+  + rewrite /preimage /= => hUx.
+    case: x hUx => [r| | ] /= hU'.
+    * by left; left; exists r.
+    * by left; right; case: boolp.asboolP.
+    * by right; case: boolp.asboolP.
+  + rewrite /preimage /=.
+    move=> [[[r hUr <-]|]|] /=; first done.
+    * by case: boolp.asboolP => [hU1 [->]|_ []].
+    * by case: boolp.asboolP => [hU1 [->]|_ []].
+Qed.
+
+Lemma ereal_standard_borel : is_standard_borel (\bar R : measurableType _).
+Proof.
+exists (@contract R), (@expand R).
+split; first exact: measurable_contract.
+split; last exact: ereal.contractK.
+move=> _ U mU; rewrite setTI.
+rewrite /expand.
+have -> : (fun r : R =>
+  if 1 <= r then +oo%E else if r <= -1 then -oo%E else
+  (r / (1 - `|r|))%:E) @^-1` U =
+  ([set r : R | (1 <= r)%R] `&` (fun=> +oo%E) @^-1` U) `|`
+  ([set r : R | (r <= -1)%R] `&` (fun=> -oo%E) @^-1` U) `|`
+  ([set r : R | (-1 < r)%R /\ (r < 1)%R] `&`
+   (fun r => (r / (1 - `|r|))%:E) @^-1` U).
+  rewrite /preimage eqEsubset; split => r /=.
+    case: ifPn => h1.
+      by move=> hU'; left; left; split.
+    case: ifPn => h2.
+      by move=> hU'; left; right; split.
+    move=> hU'; right; split => //.
+    split; first by rewrite order.Order.TotalTheory.ltNge.
+    by rewrite order.Order.TotalTheory.ltNge.
+  move=> [[[h1 hU']|[h2 hU']]|[[h1 h2] hU']].
+  - by rewrite h1.
+  - case: ifPn => h1; [|by rewrite h2].
+    have h12 := preorder.Order.PreorderTheory.le_trans h1 h2.
+    by have := preorder.Order.PreorderTheory.le_trans h12 (lerN10 R);
+       rewrite ler10.
+  - rewrite ifF; last exact: order.Order.POrderTheory.lt_geF h2.
+    by rewrite ifF // order.Order.POrderTheory.lt_geF //
+       order.Order.TotalTheory.ltNge //
+       order.Order.POrderTheory.ltW.
+apply: measurableU; [apply: measurableU|].
+- apply: measurableI.
+  + suff -> : [set r : R | (1 <= r)%R] = [set r : R | r \in `[1%R, +oo[%R].
+      exact: measurable_itv.
+    by rewrite eqEsubset; split => r /=; rewrite in_itv /= andbT.
+  + rewrite (_ : (fun=> +oo%E) @^-1` U =
+      if boolp.asbool (U +oo%E) then setT else set0).
+    * by case: boolp.asboolP => _;
+        [exact: measurableT | exact: measurable0].
+    * by rewrite /preimage; apply: boolp.funext => r /=;
+         apply: boolp.propext; case: boolp.asboolP.
+- apply: measurableI.
+  + suff -> : [set r : R | (r <= -1)%R] =
+              [set r : R | r \in `]-oo, (-1)%R]%R].
+      exact: measurable_itv.
+    by rewrite eqEsubset; split => r /=; rewrite in_itv /=.
+  + rewrite (_ : (fun=> -oo%E) @^-1` U =
+      if boolp.asbool (U -oo%E) then setT else set0).
+    * by case: boolp.asboolP => _;
+        [exact: measurableT | exact: measurable0].
+    * by rewrite /preimage; apply: boolp.funext => r /=;
+         apply: boolp.propext; case: boolp.asboolP.
+- have h : measurable_fun ([set` `](-1)%R, 1%R[%R] : set mR)
+      (EFin \o (fun r : R => r / (1 - `|r|))).
+    apply/measurable_EFinP.
+    apply: open_continuous_measurable_fun.
+      exact: num_normedtype.interval_open.
+    move=> r; rewrite /= inE => /andP [hr1 hr2].
+    have h1 : (-1 < r)%R.
+      by move: hr1; rewrite /= /preorder.Order.le /=.
+    have h2 : (r < 1)%R.
+      by move: hr2; rewrite /= /preorder.Order.le /=.
+    apply: normed_module.cvgM; [exact: filter.cvg_id|].
+    apply: normed_module.cvgV.
+      apply: lt0r_neq0; rewrite subr_gt0 ltr_norml; apply/andP; split;
+        [exact: h1 | exact: h2].
+    apply: pseudometric_normed_Zmodule.cvgD.
+      exact: (@topology_structure.cvg_cst
+        (num_topology.numFieldTopology.Real_sort__canonical__topology_structure_Topological R)).
+    apply: pseudometric_normed_Zmodule.cvgN.
+    exact: pseudometric_normed_Zmodule.cvg_norm.
+  suff -> : [set r : R | (-1 < r /\ r < 1)%R] `&`
+    (fun r => (r / (1 - `|r|))%:E) @^-1` U =
+    ([set` `](-1)%R, 1%R[%R] : set mR) `&`
+    (EFin \o (fun r : R => r / (1 - `|r|))) @^-1` U.
+    exact: h _ U mU.
+  congr (_ `&` _).
+  by rewrite eqEsubset; split => r /=; rewrite in_itv /= => /andP.
+Qed.
+
 End mqa.
