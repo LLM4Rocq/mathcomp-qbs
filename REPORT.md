@@ -4,7 +4,8 @@
 **Repository:** `/home/rocq/QBS`
 **Date:** 2026-04-04
 **Status:** 384 proofs (382 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 8,021 across 11 files
+**Lines of Rocq:** 8,019 across 11 files
+**Compatibility:** Rocq 9.0.x -- 9.1.x, Math-comp analysis 1.15.x -- 1.16.x
 
 **Primary references:**
 - C. Heunen, O. Kammar, S. Staton, H. Yang.
@@ -17,7 +18,7 @@
   "Semantics of Probabilistic Programs using s-Finite Kernels in Coq."
   [math-comp/analysis#912](https://github.com/math-comp/analysis/pull/912), 2023.
 
-**Dependencies:** Rocq 9.0.x, Math-comp 2.5.x, Math-comp analysis 1.15.x, Hierarchy Builder 1.10.x, Math-comp algebra-tactics 1.2.x (for ring/field)
+**Dependencies:** Rocq 9.0.x--9.1.x, Math-comp 2.5.x, Math-comp analysis 1.15.x--1.16.x, Hierarchy Builder 1.10.x, Math-comp algebra-tactics 1.2.x (for ring/field)
 
 ---
 
@@ -1577,7 +1578,7 @@ quasi_borel.v
 | Variance | Not formalized | `qbs_varianceE` + `qbs_varianceZ` |
 | E[distributions] | Not formalized | `qbs_expect_normal/bernoulli/uniform` |
 | Standard Borel inst. | Not formalized | N, bool, prod, ereal |
-| Lines | ~5000 | 8,021 |
+| Lines | ~5000 | 8,019 |
 
 ### 4.4 Statistics
 
@@ -1591,10 +1592,10 @@ quasi_borel.v
 | `qbs_prob_quot.v` | 333 | 17 |
 | `measure_as_qbs_measure.v` | 288 | 10 |
 | `normal_algebra.v` | 1,298 | 77 |
-| `showcase/bayesian_regression.v` | 918 | 34 |
+| `showcase/bayesian_regression.v` | 916 | 34 |
 | `qbs_giry.v` | 201 | 12 |
 | `standard_borel.v` | 1,256 | 60 |
-| **Total** | **8,021** | **384** |
+| **Total** | **8,019** | **384** |
 
 **0 Admitted**, 0 custom axioms.
 

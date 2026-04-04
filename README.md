@@ -1,5 +1,12 @@
 # Quasi-Borel Spaces in Rocq
 
+This formalization was developed with
+[Claude Opus 4.6](https://claude.ai/claude-code) using
+[Rocq-MCP](https://github.com/LLM4Rocq/rocq-mcp) for interactive
+proof development. Claude wrote all 8,019 lines of Rocq code (384
+proofs, 0 Admitted) with guidance from a human collaborator who
+provided mathematical direction and design decisions.
+
 A formalization of Quasi-Borel Spaces (QBS) in Rocq using
 [math-comp analysis](https://github.com/math-comp/analysis),
 providing a cartesian-closed category for higher-order probabilistic
@@ -7,7 +14,7 @@ programming semantics.
 
 ## Overview
 
-**384 proofs, 0 Admitted, 0 custom axioms, 8,021 lines across 11 files.**
+**384 proofs, 0 Admitted, 0 custom axioms, 8,019 lines across 11 files.**
 
 Quasi-Borel spaces solve a fundamental problem: the category of
 measurable spaces is not cartesian closed, which prevents giving
@@ -47,7 +54,7 @@ This formalization follows:
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `showcase/bayesian_regression.v` | 918 | 34 | Bayesian linear regression (matching Isabelle AFP) |
+| `showcase/bayesian_regression.v` | 916 | 34 | Bayesian linear regression (matching Isabelle AFP) |
 
 ## Key results
 
@@ -66,16 +73,16 @@ This formalization follows:
 
 ## Requirements
 
-- Rocq 9.0.x
+- Rocq 9.0.x -- 9.1.x
 - Math-comp 2.5.x
-- Math-comp analysis 1.15.x
+- Math-comp analysis 1.15.x -- 1.16.x
 - Hierarchy Builder 1.10.x
 - Math-comp algebra-tactics 1.2.x (for `ring`/`field`)
 
 ### Installation
 
 ```bash
-opam install coq-mathcomp-analysis.1.15.0 coq-mathcomp-algebra-tactics
+opam install coq-mathcomp-analysis coq-mathcomp-algebra-tactics
 ```
 
 ## Building
