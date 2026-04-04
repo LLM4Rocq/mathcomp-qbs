@@ -1,0 +1,33 @@
+opam-version: "2.0"
+name: "coq-qbs"
+version: "dev"
+synopsis: "Quasi-Borel Spaces in Rocq"
+description: """
+A formalization of Quasi-Borel Spaces (QBS) providing a
+cartesian-closed category for higher-order probabilistic
+programming semantics, built on math-comp analysis.
+"""
+maintainer: "Guillaume Baudart <guillaume.baudart@inria.fr>"
+authors: ["Guillaume Baudart"]
+license: "CeCILL-C"
+homepage: "https://github.com/gbaudart/QBS"
+bug-reports: "https://github.com/gbaudart/QBS/issues"
+dev-repo: "git+https://github.com/gbaudart/QBS.git"
+
+depends: [
+
+  "coq" {= "9.0.1"}
+  "coq-mathcomp-ssreflect" {>= "2.5.0"}
+  "coq-mathcomp-algebra" {>= "2.5.0"}
+  "coq-mathcomp-analysis" {= "1.15.0"}
+  "coq-hierarchy-builder" {>= "1.10.0"}
+  "coq-mathcomp-algebra-tactics" {>= "1.2.0"}
+]
+
+build: [
+  ["coq_makefile" "-f" "_CoqProject" "-o" "Makefile"]
+  [make "-j%{jobs}%"]
+]
+install: [
+  [make "install"]
+]

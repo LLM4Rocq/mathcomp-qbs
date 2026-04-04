@@ -10,6 +10,7 @@
 
 # Generated Makefile
 Makefile
+Makefile.conf
 .Makefile.d
 
 # Blueprint build artifacts
@@ -30,6 +31,7 @@ rocq_mcp_cache_*.v
 # Editor backups
 *~
 \#*\#
+settings.json
 
 # Archives
 QBS-export.tar.gz

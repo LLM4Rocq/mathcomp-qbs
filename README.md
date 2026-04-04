@@ -79,6 +79,7 @@ opam install coq-mathcomp-analysis.1.15.0 coq-mathcomp-algebra-tactics
 ## Building
 
 ```bash
+coq_makefile -f _CoqProject -o Makefile
 make -j4
 ```
 
