@@ -734,15 +734,55 @@ apply: (@measurable_bounded_integrable _ _ _ _ _ setT).
 - apply/ex_bound; first exact: globally_properfilter.
   exists (normal_peak noise_sigma ^+5)%R => -[s' b'] /= _.
   rewrite ger0_norm ?obs_ge0 //; exact: obs_ub.
-Unshelve. all: try exact: globally_properfilter.
-all: try exact: measurableT.
-all: try (by move: (obs_meas_proof _) => /measurable_EFinP).
-Admitted.
+Unshelve. done.
+Qed.
 
 Lemma sos_meas_proof : measurable_fun [set: mR]
   (fun s : mR => (scalar_of_s s)%:E :> \bar R).
 Proof.
-Admitted.
+apply/measurable_EFinP.
+rewrite /scalar_of_s.
+apply: measurable_funM.
+apply: measurable_funM.
+apply: measurable_funM.
+apply: measurable_funM.
+(* Factor 1: normal_peak * normal_fun 0 _ (5/2 - s) *)
+- apply: measurable_funM; first exact: measurable_cst.
+  rewrite /normal_fun.
+  apply: measurableT_comp; first exact: measurable_expR.
+  apply: measurable_funM; [|exact: measurable_cst].
+  apply: measurable_funN.
+  apply: (measurableT_comp (exprn_measurable 2)).
+  apply: measurable_funD;
+    [apply: measurable_funB; [exact: measurable_cst|exact: measurable_id]|
+     exact: measurable_cst].
+(* Factor 2: normal_peak * normal_fun ((90-36s)/37) _ (19/5-2s) *)
+- apply: measurable_funM; [exact: measurable_cst|].
+  rewrite /normal_fun.
+  apply: measurableT_comp; first exact: measurable_expR.
+  apply: measurable_funM; last exact: measurable_cst.
+  apply: measurable_funN.
+  apply: (measurableT_comp (exprn_measurable 2)).
+  apply: measurable_funB.
+  + apply: measurable_funB; [exact: measurable_cst|].
+    apply: measurable_funM; [exact: measurable_cst|exact: measurable_id].
+  + apply: measurable_funM; last exact: measurable_cst.
+    apply: measurable_funB; [exact: measurable_cst|].
+    apply: measurable_funM; [exact: measurable_cst|exact: measurable_id].
+(* Factors 3-5: same structure *)
+all: apply: measurable_funM; [exact: measurable_cst|].
+all: rewrite /normal_fun.
+all: apply: measurableT_comp; first exact: measurable_expR.
+all: apply: measurable_funM; last exact: measurable_cst.
+all: apply: measurable_funN.
+all: apply: (measurableT_comp (exprn_measurable 2)).
+all: apply: measurable_funB.
+all: try (apply: measurable_funB; [exact: measurable_cst|];
+          apply: measurable_funM; [exact: measurable_cst|exact: measurable_id]).
+all: try (apply: measurable_funM; last exact: measurable_cst;
+          apply: measurable_funB; [exact: measurable_cst|];
+          apply: measurable_funM; [exact: measurable_cst|exact: measurable_id]).
+Qed.
 
 Lemma sos_int_proof :
   (\int[normal_prob 0 prior_sigma]_s `|(scalar_of_s s)%:E| < +oo)%E.
@@ -775,7 +815,21 @@ have hge : forall a b c : R, (0 <= normal_peak a * normal_fun b a c)%R.
 have hle : forall a b c : R, (normal_peak a * normal_fun b a c <= normal_peak a)%R.
   move=> a b c; rewrite -[X in (_ <= X)%R]mulr1.
   by apply: ler_pM.
-Admitted.
+apply: ler_pM; [| |  |exact: hle].
+apply: mulr_ge0; [|exact: hge].
+apply: mulr_ge0; [|exact: hge].
+apply: mulr_ge0; [exact: hge|exact: hge].
+exact: hge.
+apply: ler_pM; [| |  |exact: hle].
+apply: mulr_ge0; [|exact: hge].
+apply: mulr_ge0; [exact: hge|exact: hge].
+exact: hge.
+apply: ler_pM; [| |  |exact: hle].
+apply: mulr_ge0; [exact: hge|exact: hge].
+exact: hge.
+apply: ler_pM; [exact: hge|exact: hge|exact: hle|exact: hle].
+Unshelve. done.
+Qed.
 
 (* The Bayesian program succeeds and integrates to 1.
    All measure-theoretic hypotheses are now discharged. *)
