@@ -46,6 +46,7 @@ Local Notation mR := (measurableTypeR R).
     Equality is qbs_prob_equiv: two wrapped triples are equal iff
     they induce the same pushforward measure. *)
 
+(** Quotient probability space wrapping a representative. *)
 Record qbs_prob_space (X : qbsType R) := QPS {
   qps_repr : qbs_prob X ;
 }.
@@ -53,6 +54,7 @@ Record qbs_prob_space (X : qbsType R) := QPS {
 Arguments QPS {X}.
 Arguments qps_repr {X}.
 
+(** Equivalence: same pushforward measure. *)
 Definition qps_eq (X : qbsType R) (p1 p2 : qbs_prob_space X) : Prop :=
   qbs_prob_equiv X (qps_repr p1) (qps_repr p2).
 
@@ -113,7 +115,7 @@ Definition qps_integral (X : qbsType R) (p : qbs_prob_space X)
 
 Arguments qps_integral {X}.
 
-(* Functorial map *)
+(** Functorial map lifted to the quotient. *)
 Definition qps_map (X Y : qbsType R) (f : X -> Y)
   (hf : @qbs_morphism R X Y f) (p : qbs_prob_space X) :
   qbs_prob_space Y :=

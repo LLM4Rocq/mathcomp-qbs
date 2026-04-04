@@ -147,7 +147,7 @@ move=> hf alpha; rewrite /qbs_Mx /= => halpha _ U hU; rewrite setTI.
 exact: (hf U hU alpha halpha).
 Qed.
 
-(* The two directions are inverse to each other (naturality) *)
+(** The two directions are inverse to each other (naturality). *)
 Lemma lr_adj_natural (X : qbsType R) (d : measure_display)
     (Y : measurableType d) (f : X -> Y) :
   (@qbs_morphism R X (@R_qbs R _ Y) f) <->
@@ -180,8 +180,8 @@ Qed.
     A measurable space is standard Borel if it is measurably isomorphic
     to a measurable subset of R. *)
 
-(* Definition of standard Borel: there exist measurable maps
-   witnessing an isomorphism with a measurable subset of R *)
+(** [is_standard_borel M] holds when [M] admits measurable
+    maps witnessing an isomorphism with a subset of R. *)
 Definition is_standard_borel (d : measure_display) (M : measurableType d) :=
   exists (f : M -> mR) (g : mR -> M),
     measurable_fun setT f /\
@@ -196,8 +196,8 @@ split; first exact: measurable_id.
 by [].
 Qed.
 
-(* On standard Borel spaces, the R functor is fully faithful:
-   every QBS morphism R(M1) -> R(M2) arises from a measurable function *)
+(** On standard Borel spaces the R functor is fully faithful:
+    every QBS morphism R(M1) -> R(M2) is measurable. *)
 Lemma R_full_faithful_standard_borel
     (d1 d2 : measure_display)
     (M1 : measurableType d1) (M2 : measurableType d2) :
@@ -237,6 +237,11 @@ have := halpha measurableT U hU; rewrite setTI; exact.
 Qed.
 
 Local Open Scope ring_scope.
+
+Let numR :=
+  num_topology.numFieldTopology
+    .Real_sort__canonical__topology_structure_Topological
+    R.
 
 (** Helper: measurability for functions into nat (discrete sigma-algebra).
     Every set in nat is measurable, so measurability of g reduces to
@@ -306,7 +311,7 @@ case: n => [|n].
   exact: (preorder.Order.PreorderTheory.le_trans (ler0n _ _) hr1).
 Qed.
 
-(* N is standard Borel: embed via n%:R, retract via truncn *)
+(** nat is standard Borel: embed via [n%:R], retract via [truncn]. *)
 Lemma nat_standard_borel : is_standard_borel nat.
 Proof.
 exists (fun n : nat => n%:R : mR), (@truncn R : mR -> nat).
@@ -315,8 +320,7 @@ split; first exact: measurable_truncn.
 exact: natrK.
 Qed.
 
-(* bool is standard Borel: embed via b%:R (true=1, false=0),
-   decode via (0 < r) *)
+(** bool is standard Borel: embed via [b%:R], decode via [0 < r]. *)
 Lemma bool_standard_borel : is_standard_borel bool.
 Proof.
 exists (fun b : bool => b%:R : mR),
@@ -336,9 +340,7 @@ move=> []; rewrite /=.
 by rewrite order.Order.POrderTheory.ltxx.
 Qed.
 
-(* Standard Borel product closure: if M1 and M2 are standard Borel,
-   then M1 * M2 is standard Borel. Uses the encode_RR/decode_RR
-   bijection from standard_borel.v. *)
+(** Standard Borel product closure via [encode_RR]/[decode_RR]. *)
 Lemma prod_standard_borel (d1 d2 : measure_display)
     (M1 : measurableType d1) (M2 : measurableType d2) :
   is_standard_borel M1 -> is_standard_borel M2 ->
@@ -371,10 +373,8 @@ change ((let p := @standard_borel.decode_RR R
 by rewrite standard_borel.encode_RRK /= hgf1 hgf2.
 Qed.
 
-(* For standard Borel M, L_sigma (R_qbs M) U <-> measurable U.
-   Forward: L(R(M)) refines sigma(M) (adjunction_counit).
-   Backward: every sigma_Mx set is measurable because the standard
-   Borel embedding lets us recover measurable structure. *)
+(** For standard Borel [M], [L_sigma (R_qbs M)] coincides with
+    the original sigma-algebra. *)
 Lemma standard_borel_lr_sets_ident (d : measure_display)
     (M : measurableType d) :
   is_standard_borel M ->
@@ -398,6 +398,7 @@ Qed.
 
 Import constructive_ereal.
 
+(** QBS on the extended reals via [R_qbs]. *)
 Definition erealQ := @R_qbs R _ (\bar R : measurableType _).
 
 Lemma measurable_contract_fin :
@@ -408,8 +409,7 @@ apply: normed_module.cvgM; [exact: filter.cvg_id|].
 apply: normed_module.cvgV.
   by apply: lt0r_neq0; rewrite ltr_pwDl // normr_ge0.
 apply: pseudometric_normed_Zmodule.cvgD.
-  exact: (@topology_structure.cvg_cst
-    (num_topology.numFieldTopology.Real_sort__canonical__topology_structure_Topological R)).
+  exact: (@topology_structure.cvg_cst numR).
 exact: pseudometric_normed_Zmodule.cvg_norm.
 Qed.
 
@@ -438,6 +438,7 @@ suff -> : (@contract R) @^-1` U =
     * by case: boolp.asboolP => [hU1 [->]|_ []].
 Qed.
 
+(** The extended reals are standard Borel via [contract]/[expand]. *)
 Lemma ereal_standard_borel : is_standard_borel (\bar R : measurableType _).
 Proof.
 exists (@contract R), (@expand R).
@@ -507,8 +508,7 @@ apply: measurableU; [apply: measurableU|].
       apply: lt0r_neq0; rewrite subr_gt0 ltr_norml; apply/andP; split;
         [exact: h1 | exact: h2].
     apply: pseudometric_normed_Zmodule.cvgD.
-      exact: (@topology_structure.cvg_cst
-        (num_topology.numFieldTopology.Real_sort__canonical__topology_structure_Topological R)).
+      exact: (@topology_structure.cvg_cst numR).
     apply: pseudometric_normed_Zmodule.cvgN.
     exact: pseudometric_normed_Zmodule.cvg_norm.
   suff -> : [set r : R | (-1 < r /\ r < 1)%R] `&`

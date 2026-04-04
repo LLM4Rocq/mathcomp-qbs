@@ -20,7 +20,8 @@ From QBS Require Import quasi_borel probability_qbs.
 (*   qbs_normal_distribution mu sigma == Normal(mu, sigma) as QBS probability *)
 (*   qbs_bernoulli p == Bernoulli(p) as QBS probability on boolQ             *)
 (*   qbs_uniform == Uniform[0,1] as QBS probability on realQ                 *)
-(*   qbs_expect_normal == E[Normal(mu,sigma)] = mu (conditional)              *)
+(*   qbs_expect_normal == E[Normal(mu,sigma)] = mu                           *)
+(*                        (requires integrability hypotheses)                *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -44,8 +45,7 @@ Local Notation mR := (measurableTypeR R).
     f : M -> R measurable and g o f = id), then (g, pushforward_f P)
     is a valid QBS probability triple on R_qbs(M). *)
 
-(* General embedding: given a measurable encoding/decoding pair and
-   a probability measure, produce a QBS probability triple on realQ. *)
+(** Embed a probability on R into a QBS triple on realQ. *)
 Definition as_qbs_prob_realQ
   (encode : mR -> mR)
   (decode : mR -> mR)
@@ -60,7 +60,7 @@ apply: (@mkQBSProb R (realQ R) decode).
 (* Defined for computational transparency *)
 Defined.
 
-(* More general version: embedding into an arbitrary R_qbs *)
+(** Embed a probability on M into a QBS triple on R_qbs. *)
 Definition as_qbs_prob (d : measure_display) (M : measurableType d)
   (f : M -> mR) (g : mR -> M)
   (hf : measurable_fun setT f)
@@ -77,6 +77,7 @@ Arguments as_qbs_prob : clear implicits.
 
 (** Standard distributions as QBS probabilities. *)
 
+(** Normal distribution as QBS probability. *)
 Definition qbs_normal_distribution
   (mu sigma : R) (hsigma : (0 < sigma)%R) : qbs_prob (realQ R) :=
   @mkQBSProb R (realQ R) idfun
@@ -85,6 +86,7 @@ Definition qbs_normal_distribution
 
 Arguments qbs_normal_distribution : clear implicits.
 
+(** Bernoulli distribution as QBS probability on boolQ. *)
 Definition qbs_bernoulli
   (p : R) (hp0 : (0 <= p)%R) (hp1 : (p <= 1)%R) : qbs_prob (boolQ R) :=
   @mkQBSProb R (boolQ R) (fun r : mR => (r < p)%R)
@@ -95,6 +97,7 @@ Definition qbs_bernoulli
 
 Arguments qbs_bernoulli : clear implicits.
 
+(** Uniform[0,1] distribution as QBS probability. *)
 Definition qbs_uniform : qbs_prob (realQ R) :=
   @mkQBSProb R (realQ R) idfun
     (uniform_prob ltr01 : probability mR R)
@@ -144,8 +147,7 @@ rewrite /qbs_Mx /= => r.
 exact: @measurable_id _ mR setT.
 Qed.
 
-(* Convert integration against normal_prob to Lebesgue integration
-   with the normal_pdf density. *)
+(** Convert normal_prob integral to Lebesgue with density. *)
 Lemma integral_normal_prob (m s : R) (hs : (s != 0)%R)
     f (f_meas : measurable_fun setT f)
     (f_int : (\int[normal_prob m s]_x `|f x| < +oo)%E) :
@@ -175,6 +177,7 @@ Qed.
 Section distribution_expectations.
 Local Open Scope ring_scope.
 
+(** E[Bernoulli(p)] = p. *)
 Lemma qbs_expect_bernoulli (p : R) (hp0 : (0 <= p)%R) (hp1 : (p <= 1)%R) :
   qbs_expect (boolQ R) (qbs_bernoulli p hp0 hp1) (fun b : bool => b%:R) = p%:E.
 Proof.
@@ -208,6 +211,7 @@ case: (lerP p 0) => [p0|p0].
 - by rewrite ifT // lte_fin.
 Qed.
 
+(** E[Uniform(0,1)] = 1/2. *)
 Lemma qbs_expect_uniform :
   qbs_expect (realQ R) qbs_uniform (fun x => x) = (2%:R^-1)%:E.
 Proof.
@@ -244,12 +248,8 @@ rewrite (@ftc.continuous_FTC2 _ idfun (fun x => x ^+ 2 / 2) 0 1 ltr01).
   by rewrite expr1 /GRing.scale /= mulr1 mulrA mulVf ?mul1r // pnatr_eq0.
 Qed.
 
-(* E[Normal(mu, sigma)] = mu.
-   The proof uses integral_normal_pdf (int pdf = 1) and integralZl.
-   Two analytic hypotheses are required (not yet in mathcomp-analysis):
-   - id_int: the identity is integrable against normal_prob
-   - odd_int: (x-mu)*normal_pdf is Lebesgue-integrable
-   - odd_zero: int (x-mu)*normal_pdf = 0 (odd-function symmetry) *)
+(** E[Normal(mu,sigma)] = mu
+    (requires integrability hypotheses). *)
 Lemma qbs_expect_normal (mu sigma : R) (hsigma : (0 < sigma)%R)
   (id_int : (\int[normal_prob mu sigma]_x `|x%:E| < +oo)%E)
   (odd_int : lebesgue_measure.-integrable setT

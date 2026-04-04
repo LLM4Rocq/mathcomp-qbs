@@ -93,6 +93,7 @@ Definition qbs_pair_alpha (X Y : qbsType R)
     let uv := @decode_RR_mR R r in
     (qbs_prob_alpha p uv.1, qbs_prob_alpha q uv.2).
 
+(** Product measure on mR for the QBS product. *)
 Definition qbs_pair_mu (X Y : qbsType R)
   (p : qbs_prob X) (q : qbs_prob Y) : probability mR R :=
   qbs_pair_mu_build p q.
@@ -147,6 +148,7 @@ Definition qbs_pair_fun (X Y : qbsType R)
 (* Fubini: joint integration = iterated integration.
    Requires integrability of the underlying function w.r.t. the product
    measure. Uses integral12_prod_meas1 from mathcomp-analysis. *)
+(** Fubini for QBS: joint integral = iterated integral. *)
 Lemma qbs_pair_integralE (X Y : qbsType R)
   (p : qbs_prob X) (q : qbs_prob Y)
   (h : X * Y -> \bar R)
@@ -229,6 +231,7 @@ Arguments qbs_indep : clear implicits.
    = \int_{mu_p} f(alpha_p(r1)) * \int_{mu_q} g(alpha_q(r2))
    = E_p[f] * E_q[g]
    The integrability hypotheses ensure Fubini and factoring apply. *)
+(** Independence: E[f*g] = E[f]*E[g] for product. *)
 Lemma qbs_integral_indep_mult (X Y : qbsType R)
   (px : qbs_prob X) (py : qbs_prob Y)
   (f : X -> R) (g : Y -> R)
@@ -536,6 +539,7 @@ Qed.
     agrees with the monadic bind: integration against the product
     equals iterated integration (Fubini). *)
 
+(** Product measure = iterated integral (bind). *)
 Lemma qbs_prob_pair_measure_eq_bind (X Y : qbsType R)
     (p : qbs_prob X) (q : qbs_prob Y)
     (h : X * Y -> \bar R)
@@ -579,8 +583,10 @@ rewrite -[RHS](@integral_pushforward _ _ _ mR R
   suff -> : g \o @encode_RR_mR R = qbs_pair_fun p q h by exact: hint.
   apply: boolp.funext => rr.
   rewrite /g /qbs_pair_alpha /qbs_pair_fun /=.
-  by congr (h (_, _)); [congr (qbs_prob_alpha p) | congr (qbs_prob_alpha q)];
-    exact: (congr1 fst (encode_RR_mRK rr)) || exact: (congr1 snd (encode_RR_mRK rr)).
+  by congr (h (_, _));
+    [congr (qbs_prob_alpha p) | congr (qbs_prob_alpha q)];
+    exact: (congr1 fst (encode_RR_mRK rr))
+        || exact: (congr1 snd (encode_RR_mRK rr)).
 Qed.
 
 End pair_qbs_measure.

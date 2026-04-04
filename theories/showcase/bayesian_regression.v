@@ -115,8 +115,9 @@ Definition d (mu x : R) : R := normal_pdf mu noise_sigma x.
 Lemma d_ge0 (mu x : R) : (0 <= d mu x)%R.
 Proof. exact: normal_pdf_ge0. Qed.
 
-(* Isabelle's 5 data points: (1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)
-   obs(s,b) = d(s*1+b, 2.5) * d(s*2+b, 3.8) * d(s*3+b, 4.5) *
+(** Observation likelihood: product of 5 normal densities
+    at the data points (1,2.5),...,(5,8.0). *)
+(* obs(s,b) = d(s*1+b, 2.5) * d(s*2+b, 3.8) * d(s*3+b, 4.5) *
               d(s*4+b, 6.2) * d(s*5+b, 8.0) *)
 Definition obs (params : realQ R * realQ R) : R :=
   let s := fst params in
@@ -134,7 +135,7 @@ do 4! (apply: mulr_ge0; last exact: d_ge0).
 exact: d_ge0.
 Qed.
 
-(* 3. Evidence (normalizing constant) *)
+(** Marginal likelihood (normalizing constant Z). *)
 (* Z = integral of obs over the prior.
    In the Isabelle development, this is computed explicitly as
    C = (4*sqrt(2)/(pi^2*sqrt(66961*pi))) * exp(-1674761/1674025)
@@ -162,9 +163,8 @@ Lemma evidence_eq
       (obs (s, b))%:E)).
 Proof. rewrite /evidence; exact: qbs_pair_integralE. Qed.
 
-(* 4. Posterior distribution via Bayes' rule *)
-(* E_post[g] = E_prior[g * obs] / E_prior[obs]
-   This corresponds to Isabelle's program_result_measure:
+(** Unnormalized posterior: E_post[g] = E_prior[g * obs] / Z. *)
+(* This corresponds to Isabelle's program_result_measure:
      posterior = density(prior)(obs / C) *)
 
 Definition posterior_density (g : realQ R * realQ R -> \bar R) : \bar R :=
@@ -373,11 +373,13 @@ case: ifPn => // /andP[h1 h2].
 by exfalso; apply: hev.
 Qed.
 
-(* 9. The Bayesian program *)
+(** Full Bayesian program: normalize prior by obs. *)
 (* Isabelle's program:
-     program = norm_qbs_measure (pushforward prior (fun f => (f, obs f)))
-   In our pair formulation, the pushforward through (fun f => (f, obs f))
-   is just the observation function obs applied to the prior parameters.
+     program = norm_qbs_measure (pushforward prior
+                 (fun f => (f, obs f)))
+   In our pair formulation, the pushforward through
+   (fun f => (f, obs f)) is just the observation function
+   obs applied to the prior parameters.
    So program = norm_qbs (fun _ => 1) obs. *)
 
 Definition program : option (realQ R * realQ R -> \bar R) :=
@@ -565,8 +567,7 @@ Qed.
 
 (** Evidence value and unconditional program result. *)
 
-(* The evidence equals phase2_const, given the necessary measure-theoretic
-   hypotheses for Fubini decomposition and both integration phases. *)
+(** Evidence equals phase2_const (explicit closed form). *)
 Theorem evidence_value
   (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
     setT (qbs_pair_fun slope_prior intercept_prior
@@ -642,7 +643,8 @@ Lemma obs_meas_proof : forall s, measurable_fun [set: mR]
   (fun b : mR => (obs (s, b))%:E :> \bar R).
 Proof.
 move=> s; apply/measurable_EFinP; rewrite /obs /d /=.
-suff -> : (fun b : mR => (normal_pdf ((s * 1)%R + b)%E noise_sigma (5%:R / 2%:R) *
+suff -> : (fun b : mR =>
+  (normal_pdf ((s * 1)%R + b)%E noise_sigma (5%:R / 2%:R) *
   normal_pdf ((s * 2%:R)%R + b)%E noise_sigma (19%:R / 5%:R) *
   normal_pdf ((s * 3%:R)%R + b)%E noise_sigma (9%:R / 2%:R) *
   normal_pdf ((s * 4%:R)%R + b)%E noise_sigma (31%:R / 5%:R) *
@@ -704,7 +706,9 @@ Lemma obs_product_integrable :
     setT (qbs_pair_fun slope_prior intercept_prior
       (fun params => (obs params)%:E)).
 Proof.
-have hfin : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior) [set: _] < +oo.
+have hfin :
+  (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior)
+    [set: _] < +oo.
   rewrite (_ : [set: _] = setT `*` setT); last by rewrite setXTT.
   by rewrite product_measure1E //= probability_setT mule1; exact: ltey.
 rewrite /qbs_pair_fun /=.
@@ -720,11 +724,21 @@ apply: (@measurable_bounded_integrable _ _ _ _ _ setT).
      normal_pdf ((rr.1 * 4%:R)%R + rr.2)%E noise_sigma (31%:R / 5%:R) *
      normal_pdf ((rr.1 * 5%:R)%R + rr.2)%E noise_sigma 8%:R)%R) =
     (fun rr : mR * mR =>
-    (normal_peak noise_sigma * normal_fun ((rr.1 * 1)%R + rr.2)%E noise_sigma (5%:R / 2%:R) *
-    (normal_peak noise_sigma * normal_fun ((rr.1 * 2%:R)%R + rr.2)%E noise_sigma (19%:R / 5%:R)) *
-    (normal_peak noise_sigma * normal_fun ((rr.1 * 3%:R)%R + rr.2)%E noise_sigma (9%:R / 2%:R)) *
-    (normal_peak noise_sigma * normal_fun ((rr.1 * 4%:R)%R + rr.2)%E noise_sigma (31%:R / 5%:R)) *
-    (normal_peak noise_sigma * normal_fun ((rr.1 * 5%:R)%R + rr.2)%E noise_sigma 8%:R))%R).
+    (normal_peak noise_sigma *
+       normal_fun ((rr.1 * 1)%R + rr.2)%E
+         noise_sigma (5%:R / 2%:R) *
+    (normal_peak noise_sigma *
+       normal_fun ((rr.1 * 2%:R)%R + rr.2)%E
+         noise_sigma (19%:R / 5%:R)) *
+    (normal_peak noise_sigma *
+       normal_fun ((rr.1 * 3%:R)%R + rr.2)%E
+         noise_sigma (9%:R / 2%:R)) *
+    (normal_peak noise_sigma *
+       normal_fun ((rr.1 * 4%:R)%R + rr.2)%E
+         noise_sigma (31%:R / 5%:R)) *
+    (normal_peak noise_sigma *
+       normal_fun ((rr.1 * 5%:R)%R + rr.2)%E
+         noise_sigma 8%:R))%R).
     by apply: funext => -[s b] /=; rewrite !(normal_pdfE _ hns).
   apply: measurable_funM; last exact: (d_pair_meas_tac 5%:R 8%:R).
   apply: measurable_funM; last exact: (d_pair_meas_tac 4%:R (31%:R / 5%:R)).
@@ -812,7 +826,8 @@ move=> s'; rewrite /scalar_of_s /M.
 have le1 := nf_le1; have pk := @normal_peak_ge0 R; have nf := @normal_fun_ge0 R.
 have hge : forall a b c : R, (0 <= normal_peak a * normal_fun b a c)%R.
   by move=> a b c; exact: (mulr_ge0 (pk _) (nf _ _ _)).
-have hle : forall a b c : R, (normal_peak a * normal_fun b a c <= normal_peak a)%R.
+have hle : forall a b c : R,
+  (normal_peak a * normal_fun b a c <= normal_peak a)%R.
   move=> a b c; rewrite -[X in (_ <= X)%R]mulr1.
   by apply: ler_pM.
 apply: ler_pM; [| |  |exact: hle].
@@ -831,8 +846,8 @@ apply: ler_pM; [exact: hge|exact: hge|exact: hle|exact: hle].
 Unshelve. done.
 Qed.
 
-(* The Bayesian program succeeds and integrates to 1.
-   All measure-theoretic hypotheses are now discharged. *)
+(** Program succeeds and integrates to 1
+    (all measure-theoretic side conditions discharged). *)
 Theorem program_integrates_to_1 :
   exists density,
     program = Some density /\
@@ -848,11 +863,11 @@ exists (fun p => 1 * (obs p)%:E / evidence); split.
 - exact: posterior_density_total.
 Qed.
 
-(* 11. Posterior measure characterization *)
-(* E_post[g] = E_prior[g * obs/Z], the standard Bayesian update formula
-   expressed as density reweighting. This says that computing the posterior
-   expectation of g is the same as computing the prior expectation of g
-   weighted by the normalized likelihood obs/Z. *)
+(** Posterior expectation formula:
+    E_post[g] = E_prior[g * obs/Z]. *)
+(* The standard Bayesian update expressed as density reweighting:
+   computing the posterior expectation of g equals the prior
+   expectation of g weighted by the normalized likelihood obs/Z. *)
 
 Lemma posterior_measure_characterization
     (g : realQ R * realQ R -> \bar R)
@@ -893,7 +908,8 @@ have -> : (fun rr =>
   apply: funext => rr /=.
   by rewrite inver (negbTE hc_neq0) muleA.
 (* Now the goal is (∫ f) / c%:E = ∫ (f * (c^{-1})%:E) *)
-(* Rewrite the LHS: (∫ f) / c%:E = (∫ f) * c%:E^{-1} = (∫ f) * (c^{-1})%:E *)
+(* Rewrite the LHS:
+   (∫ f) / c%:E = (∫ f) * c%:E^{-1} = (∫ f) * (c^{-1})%:E *)
 rewrite inver (negbTE hc_neq0).
 (* Now: (∫ f) * (c^{-1})%:E = ∫ (f * (c^{-1})%:E) *)
 by rewrite integralZr.

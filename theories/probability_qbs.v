@@ -39,6 +39,8 @@ Local Notation mR := (measurableTypeR R).
    alpha : R -> X is a random element (in Mx) and
    mu is a probability measure on R. *)
 
+(** Probability triple on a QBS: a random element
+    alpha and a base probability measure mu. *)
 Record qbs_prob (X : qbsType R) := mkQBSProb {
   qbs_prob_alpha : mR -> X ;
   qbs_prob_mu : probability mR R ;
@@ -56,6 +58,8 @@ Arguments qbs_prob_alpha_random {X}.
    U in sigma_Mx(X),
    mu1(alpha1^{-1}(U)) = mu2(alpha2^{-1}(U)). *)
 
+(** Equivalence of probability triples: same
+    pushforward measure on sigma_Mx sets. *)
 Definition qbs_prob_equiv (X : qbsType R) (p1 p2 : qbs_prob X) : Prop :=
   forall (U : set X),
     @sigma_Mx R X U ->
@@ -92,8 +96,8 @@ Proof. by move=> h12 h23 U hU; rewrite (h12 U hU) (h23 U hU). Qed.
    with helper lemmas for the strong morphism and
    constant-alpha cases. See Section 5. *)
 
-(* Strong definition (for reference; used in bind
-   under additional hypotheses) *)
+(** Strong random-element condition: a single
+    shared alpha exists across all r. *)
 Definition monadP_random (X : qbsType R) : set (mR -> qbs_prob X) :=
   [set beta |
     exists (alpha : mR -> X),
@@ -104,7 +108,8 @@ Definition monadP_random (X : qbsType R) : set (mR -> qbs_prob X) :=
 
 Arguments monadP_random : clear implicits.
 
-(* Pointwise definition (used for the QBS structure) *)
+(** Pointwise random-element condition: each
+    beta(r) has its own random element in Mx. *)
 Definition monadP_random_pw (X : qbsType R) : set (mR -> qbs_prob X) :=
   [set beta | forall r, @qbs_Mx R X (qbs_prob_alpha (beta r))].
 
@@ -136,8 +141,8 @@ Lemma monadP_glue (X : qbsType R) :
     monadP_random_pw X (fun r => Fi (P r) r).
 Proof. by move=> P Fi hP hFi r; apply: hFi. Qed.
 
-(* NB: manual HB.pack because monadP creates a
-   non-canonical QBS on qbs_prob X *)
+(** The probability monad P(X) on QBS, equipped
+    with the pointwise random-element structure. *)
 Definition monadP (X : qbsType R) : qbsType R :=
   HB.pack (qbs_prob X)
     (@isQBS.Build R (qbs_prob X)
@@ -157,6 +162,8 @@ Arguments monadP : clear implicits.
    qbs_return X x (qbs_prob_mu (f x)) so that
    bind(return(x), f) has the same mu as f(x). *)
 
+(** Monadic return: embed a point x into the
+    probability monad with base measure mu. *)
 Definition qbs_return (X : qbsType R) (x : X) (mu : probability mR R) :
   qbs_prob X :=
   @mkQBSProb X (fun _ => x) mu (@qbs_Mx_const R X x).
@@ -249,7 +256,8 @@ Lemma qbs_bind_alpha_random_return (X : qbsType R) (p : qbs_prob X)
     (fun r => qbs_prob_alpha (qbs_return X (qbs_prob_alpha p r) mu) r).
 Proof. exact: (qbs_prob_alpha_random p). Qed.
 
-(* General bind: takes an explicit proof of diagonal randomness *)
+(** Monadic bind: given p : P(X), f : X -> P(Y),
+    and a diagonal randomness proof, produce P(Y). *)
 Definition qbs_bind (X Y : qbsType R) (p : qbs_prob X)
   (f : X -> qbs_prob Y)
   (hdiag : @qbs_Mx R Y
@@ -324,6 +332,8 @@ Proof. by move=> U hU. Qed.
 
 (* 7. Integration on QBS Probability Spaces *)
 
+(** Integration of h : X -> \bar R against a QBS
+    probability, via the base measure and alpha. *)
 Definition qbs_integral (X : qbsType R) (p : qbs_prob X)
   (h : X -> \bar R) : \bar R :=
   (\int[qbs_prob_mu p]_x (h (qbs_prob_alpha p x)))%E.
@@ -510,6 +520,9 @@ Proof. by move=> U hU. Qed.
 
 (* 9. Expectation and probability of events *)
 
+(** Expectation of a real-valued function h on a
+    QBS probability, defined as qbs_integral of
+    the extended-real embedding. *)
 Definition qbs_expect (X : qbsType R) (p : qbs_prob X)
   (h : X -> R) : \bar R :=
   qbs_integral X p (fun x => (h x)%:E).
@@ -526,6 +539,8 @@ Arguments qbs_prob_event : clear implicits.
    Defined via the mathcomp-analysis variance applied to
    f o alpha against the base measure mu. *)
 
+(** Variance of f : X -> R under a QBS probability,
+    via the base-measure variance of f o alpha. *)
 Definition qbs_variance (X : qbsType R) (p : qbs_prob X)
   (f : X -> R) : \bar R :=
   variance (qbs_prob_mu p) (f \o qbs_prob_alpha p).
@@ -536,6 +551,8 @@ Arguments qbs_variance : clear implicits.
    Flattens a probability over probabilities into a single
    probability, defined via bind with the identity function. *)
 
+(** Monad join: flatten P(P(X)) to P(X) via bind
+    with the identity function. *)
 Definition qbs_join (X : qbsType R)
   (p : qbs_prob (monadP X))
   (hdiag : @qbs_Mx R X
@@ -549,6 +566,8 @@ Arguments qbs_join : clear implicits.
    Given a constant w : W and a probability p on X, produce a
    probability on W x X where W is held constant. *)
 
+(** Monad strength: pair a constant w : W with a
+    probability p on X to get P(W x X). *)
 Definition qbs_strength (W X : qbsType R)
   (w : W) (p : qbs_prob X) : qbs_prob (prodQ W X) :=
   @mkQBSProb (prodQ W X)
@@ -759,6 +778,8 @@ Local Open Scope ereal_scope.
 
 (* 15. QBS-level integrability predicate *)
 
+(** Integrability of h : X -> \bar R under a QBS
+    probability: h o alpha is mu-integrable. *)
 Definition qbs_integrable (X : qbsType R) (p : qbs_prob X)
     (h : X -> \bar R) :=
   (qbs_prob_mu p).-integrable setT (h \o qbs_prob_alpha p).
@@ -838,6 +859,7 @@ Qed.
 
 (* 19. Markov inequality for QBS *)
 
+(** Markov inequality lifted to QBS probabilities. *)
 Lemma qbs_markov (X : qbsType R) (p : qbs_prob X)
     (h : X -> R) (f : R -> R) (eps : R)
     (hm : measurable_fun setT (h \o qbs_prob_alpha p))
@@ -864,6 +886,8 @@ Qed.
 
 (* 20. Chebyshev inequality for QBS *)
 
+(** Chebyshev inequality lifted to QBS
+    probabilities. *)
 Lemma qbs_chebyshev (X : qbsType R) (p : qbs_prob X)
     (h : X -> R) (eps : R)
     (hm : measurable_fun setT (h \o qbs_prob_alpha p))
@@ -993,6 +1017,8 @@ rewrite ge0_integralZl_EFin //=.
 Qed.
 HB.instance Definition _ := Measure_isProbability.Build _ _ _
   norm_mu norm_mu_setT.
+(** Reweighted probability measure: normalize the
+    weight function w to integrate to 1. *)
 Definition normalize_mu : probability mR R :=
   [the probability mR R of norm_mu].
 End normalize_mu_build.
@@ -1004,6 +1030,8 @@ Lemma normalize_alpha_random (p : qbs_prob (prodQ X (realQ R))) :
   @qbs_Mx R X (fun r => fst (qbs_prob_alpha p r)).
 Proof. by have /= [h1 _] := qbs_prob_alpha_random p. Qed.
 
+(** Normalized QBS probability on X from a
+    weighted triple on X * R. *)
 Definition normalize_prob
     (p : qbs_prob (prodQ X (realQ R)))
     (hw_ge0 : forall r, (0 <= snd (qbs_prob_alpha p r))%R)
@@ -1019,6 +1047,8 @@ Definition normalize_prob
     (normalize_mu hw_ge0 hw_meas hev_pos hev_fin)
     (normalize_alpha_random p).
 
+(** Total normalizer: returns Some if the evidence
+    is positive and finite, None otherwise. *)
 Definition qbs_normalize
     (p : qbs_prob (prodQ X (realQ R)))
     (hw_ge0 : forall r, (0 <= snd (qbs_prob_alpha p r))%R)
@@ -1048,7 +1078,11 @@ Lemma qbs_normalize_total
 Proof.
 rewrite /qbs_integral /=.
 
-rewrite (_ : \int[_]__ 1 = 1 * normalize_mu hw_ge0 hw_meas hev_pos hev_fin setT). by rewrite probability_setT mule1. rewrite -integral_cst //=.
+rewrite (_ : \int[_]__ 1 =
+  1 * normalize_mu hw_ge0 hw_meas hev_pos hev_fin
+    setT).
+  by rewrite probability_setT mule1.
+rewrite -integral_cst //=.
 Qed.
 
 Lemma qbs_normalize_integral
@@ -1098,8 +1132,10 @@ have hRN_wdiv : ae_eq mu setT
 have step1 : \int[normalize_mu hw_ge0 hw_meas hev_pos hev_fin]_r
     g ((alpha r).1) =
   \int[mu]_r (g ((alpha r).1) * (((alpha r).2 / fine ev)%:E)).
-{ rewrite -(charge.Radon_Nikodym_SigmaFinite.change_of_variables hac _ measurableT
-    (hg_meas _ (normalize_alpha_random p))); last by move=> x; exact: hg_ge0.
+{ rewrite -(charge.Radon_Nikodym_SigmaFinite.change_of_variables
+    hac _ measurableT
+    (hg_meas _ (normalize_alpha_random p)));
+    last by move=> x; exact: hg_ge0.
   apply: ge0_ae_eq_integral.
   - exact: measurableT.
   - apply: emeasurable_funM.

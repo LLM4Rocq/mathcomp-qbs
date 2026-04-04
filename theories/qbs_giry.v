@@ -95,6 +95,7 @@ HB.instance Definition _ := Measure_isProbability.Build _ _ _
 
 End qbs_to_giry.
 
+(** Forward: QBS probability to Giry probability. *)
 Definition qbs_to_giry (d : measure_display) (M : measurableType d)
     (p : qbs_prob (@R_qbs R _ M)) : probability M R :=
   [the probability M R of qbs_to_giry_mu p].
@@ -141,14 +142,14 @@ Proof. by rewrite /pf_mu preimage_setT probability_setT. Qed.
 HB.instance Definition _ := Measure_isProbability.Build _ _ _
   pf_mu pf_mu_setT.
 
+(** Backward: Giry probability to QBS probability. *)
 Definition giry_to_qbs : qbs_prob (@R_qbs R _ M) :=
   @mkQBSProb R (@R_qbs R _ M) decode
     [the probability mR R of pf_mu] decode_meas.
 
 End giry_to_qbs.
 
-(** Round-trip: qbs_to_giry (giry_to_qbs P) = P on measurable sets. *)
-
+(** Round-trip: qbs_to_giry o giry_to_qbs = id. *)
 Lemma qbs_to_giryK
     (d : measure_display) (M : measurableType d)
     (encode : M -> mR) (decode : mR -> M)
@@ -164,8 +165,7 @@ congr (P _).
 by apply/seteqP; split => x /=; rewrite decode_encode.
 Qed.
 
-(** Round-trip: giry_to_qbs (qbs_to_giry p) ~ p up to qbs_prob_equiv. *)
-
+(** Round-trip: giry_to_qbs o qbs_to_giry ~ id. *)
 Lemma giry_to_qbsK
     (d : measure_display) (M : measurableType d)
     (encode : M -> mR) (decode : mR -> M)
@@ -183,14 +183,7 @@ congr (qbs_prob_mu p _).
 by apply/seteqP; split => r /=; rewrite decode_encode.
 Qed.
 
-(** Integral correspondence: QBS integration = classical Lebesgue
-    integration against the pushforward measure qbs_to_giry.
-    qbs_integral p f = \int[qbs_to_giry p] f.
-    This follows from the change-of-variables (pushforward integral)
-    formula: \int[pushforward mu alpha] f = \int[mu] (f o alpha),
-    since qbs_to_giry_mu p is definitionally the pushforward of
-    qbs_prob_mu p through qbs_prob_alpha p. *)
-
+(** QBS integral = Lebesgue integral against qbs_to_giry. *)
 Lemma qbs_integral_giry
     (d : measure_display) (M : measurableType d)
     (p : qbs_prob (@R_qbs R _ M))

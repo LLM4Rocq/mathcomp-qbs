@@ -50,6 +50,7 @@ Unset Printing Implicit Defensive.
 
 Local Open Scope classical_set_scope.
 
+(** Mixin: a QBS is a type with a set of random elements. *)
 HB.mixin Record isQBS (R : realType) (T : Type) := {
   qbs_Mx : set (measurableTypeR R -> T) ;
   qbs_Mx_comp : forall alpha f,
@@ -61,6 +62,7 @@ HB.mixin Record isQBS (R : realType) (T : Type) := {
     (forall i, qbs_Mx (Fi i)) ->
     qbs_Mx (fun r => Fi (P r) r) }.
 
+(** Structure: a quasi-Borel space over reals R. *)
 #[short(type="qbsType")]
 HB.structure Definition QBSpace (R : realType) := { T of isQBS R T }.
 
@@ -81,6 +83,7 @@ Local Notation mR := (measurableTypeR R).
 
 (* 1. Morphisms *)
 
+(** QBS morphism: preserves random elements. *)
 Definition qbs_morphism (X Y : qbsType R) (f : X -> Y) : Prop :=
   forall alpha, @qbs_Mx R X alpha -> @qbs_Mx R Y (f \o alpha).
 
@@ -116,6 +119,7 @@ Qed.
 
 (* NB: manual HB.pack because R_qbs builds a non-canonical QBS on an
    existing measurableType *)
+(** R functor: measurableType to qbsType via measurable funs. *)
 Definition R_qbs (d : measure_display) (M : measurableType d) : qbsType R :=
   HB.pack M
     (@isQBS.Build R M
@@ -125,6 +129,7 @@ Definition R_qbs (d : measure_display) (M : measurableType d) : qbsType R :=
       (fun x => @measurable_cst _ _ mR M setT x)
       (fun P Fi hP hFi => @measurable_glue d M P Fi hP hFi)).
 
+(** Concrete QBS instances for R, nat, bool. *)
 Definition realQ : qbsType R := R_qbs mR.
 Definition natQ : qbsType R := R_qbs nat.
 Definition boolQ : qbsType R := R_qbs bool.
@@ -173,6 +178,7 @@ Qed.
 (* NB: manual HB.pack because this is a non-canonical QBS on (X * Y)%type *)
 (* NB: We use (fun r => (f r).1) instead of (fst \o f) to avoid a universe
    constraint on Composition.u2 that would conflict with algebra_tactics.ring *)
+(** Binary product QBS on (X * Y). *)
 Definition prodQ (X Y : qbsType R) : qbsType R :=
   HB.pack (X * Y)%type
     (@isQBS.Build R (X * Y)%type
@@ -255,6 +261,7 @@ Qed.
 
 (* NB: manual HB.pack because this is a non-canonical QBS on
    (qbsHomType R X Y) *)
+(** Exponential (function space) QBS. *)
 Definition expQ (X Y : qbsType R) : qbsType R :=
   HB.pack (@qbsHomType R X Y)
     (@isQBS.Build R (@qbsHomType R X Y)
@@ -269,7 +276,7 @@ Arguments expQ : clear implicits.
 
 (* 5. Key Theorems: Cartesian Closure *)
 
-(* Evaluation morphism: (expQ X Y) x X -> Y *)
+(** Evaluation: cartesian closed structure (eval). *)
 Lemma qbs_morphism_eval (X Y : qbsType R) :
   @qbs_morphism (prodQ (expQ X Y) X) Y
     (fun p => (p.1 : X -> Y) p.2).
@@ -299,8 +306,7 @@ move=> halpha; split => /=.
 - exact: halpha.
 Qed.
 
-(* Curry morphism: if f : prodQ X Y -> Z is morph, then
-   curry(f) : X -> expQ Y Z *)
+(** Currying: cartesian closed structure (curry). *)
 Lemma qbs_morphism_curry (X Y Z : qbsType R)
   (f : @qbsHomType R (prodQ X Y) Z) :
   @qbs_morphism X (expQ Y Z)
@@ -321,6 +327,7 @@ Qed.
 (* 6. Unit QBS *)
 
 (* NB: manual HB.pack because this is a non-canonical QBS on unit *)
+(** Terminal (unit) QBS. *)
 Definition unitQ : qbsType R :=
   HB.pack unit
     (@isQBS.Build R unit

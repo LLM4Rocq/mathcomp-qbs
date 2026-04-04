@@ -204,6 +204,7 @@ have [Xempty | x0] := boolp.pselectT X.
       move=> r; rewrite /P' /a' /b'' hFi_eq //.
 Qed.
 
+(** Binary coproduct QBS on (X + Y). *)
 Definition coprodQ (X Y : qbsType R) : qbsType R :=
   (* NB: manual HB.pack because sum types lack a canonical QBS instance *)
   HB.pack (X + Y)%type
@@ -369,6 +370,7 @@ exists (fun r => Pn (Q r) r),
 - move=> r; rewrite hFi_eq //.
 Qed.
 
+(** General coproduct (sigma type) QBS. *)
 Definition gen_coprodQ (d : measure_display) (I : measurableType d)
   (X : I -> qbsType R)
   (inh : forall i, X i) : qbsType R :=
@@ -448,6 +450,7 @@ move=> Q Fi hQ hFi i.
 exact: (@qbs_Mx_glue R (X i) Q (fun n r => Fi n r i) hQ (fun n => hFi n i)).
 Qed.
 
+(** Dependent product (Pi type) QBS. *)
 Definition piQ (I : Type) (X : I -> qbsType R) : qbsType R :=
   (* NB: manual HB.pack; dependent products lack a QBS instance *)
   HB.pack (forall i : I, X i)
@@ -624,6 +627,7 @@ Qed.
 
 (* The list QBS. Requires an inhabitedness witness x0 for the constant
    axiom (needed to extract nth elements from constant lists). *)
+(** List QBS: countable coproduct of finite products. *)
 Definition listQ (X : qbsType R) (x0 : X) : qbsType R :=
   (* NB: manual HB.pack because list types lack a canonical QBS instance *)
   HB.pack (seq X)
