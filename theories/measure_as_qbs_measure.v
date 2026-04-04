@@ -2,8 +2,8 @@
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
 From mathcomp Require Import reals ereal topology classical_sets
-  borel_hierarchy measure lebesgue_stieltjes_measure probability
-  measurable_realfun.
+  borel_hierarchy measure lebesgue_stieltjes_measure lebesgue_measure
+  probability measurable_realfun derive ftc.
 From QBS Require Import quasi_borel probability_qbs.
 
 (**md**************************************************************************)
@@ -172,5 +172,80 @@ Proof.
 rewrite /qbs_Mx /= => r.
 exact: @measurable_id _ mR setT.
 Qed.
+
+(** Distribution expectation lemmas. *)
+
+Section distribution_expectations.
+Local Open Scope ring_scope.
+
+Lemma qbs_expect_bernoulli (p : R) (hp0 : (0 <= p)%R) (hp1 : (p <= 1)%R) :
+  qbs_expect (boolQ R) (qbs_bernoulli p hp0 hp1) (fun b : bool => b%:R) = p%:E.
+Proof.
+rewrite /qbs_expect /qbs_integral /=.
+rewrite integral_uniform//; last first.
+{ apply: measurableT_comp => //=.
+  apply: measurableT_comp => //=.
+  exact: measurable_fun_ltr (@measurable_id _ mR setT)
+    (@measurable_cst _ _ mR mR setT p). }
+rewrite subr0 invr1 mul1e.
+rewrite (_ : (fun x : mR => _) =
+  (fun x => (numfun.indic [set r : mR | (r < p)%R] x)%:E)); last first.
+{ by apply: boolp.funext => x /=; rewrite numfun.indicE mem_setE. }
+rewrite lebesgue_integral_definition.integral_indic //=; last first.
+{ have -> : [set r : mR | (r < p)%R] = [set` `]-oo, p[%R].
+  { by apply/seteqP; split => x /=; rewrite in_itv /=. }
+  exact: measurable_itv. }
+have -> : [set r : mR | (r < p)%R] `&` `[0, 1] = [set` `[0%R, p[%R].
+{ apply/seteqP; split => x /=.
+  - rewrite in_itv /= => -[xp]; rewrite in_itv /= => /andP[x0 x1].
+    by apply/andP; split.
+  - rewrite in_itv /= => /andP[x0 xp]; split => //.
+    rewrite in_itv /=; apply/andP; split => //.
+    exact: (order.Order.POrderTheory.le_trans
+      (order.Order.POrderTheory.ltW xp) hp1). }
+rewrite -/(lebesgue_measure.lebesgue_measure _).
+rewrite lebesgue_measure.lebesgue_measure_itv /= oppr0 adde0.
+case: (lerP p 0) => [p0|p0].
+- have -> : p = 0 by apply: order.Order.POrderTheory.le_anti; rewrite hp0 p0.
+  by rewrite order.Order.POrderTheory.ltxx.
+- by rewrite ifT // lte_fin.
+Qed.
+
+Lemma qbs_expect_uniform :
+  qbs_expect (realQ R) qbs_uniform (fun x => x) = (2%:R^-1)%:E.
+Proof.
+rewrite /qbs_expect /qbs_integral /=.
+rewrite lebesgue_integral_definition.integralE /=.
+rewrite (@integral_uniform _ 0 1 ltr01 [eta numfun.funepos.body (@EFin R)]);
+  [|exact: measurable_funepos|by move=> x; exact: numfun.funepos_ge0].
+rewrite (@integral_uniform _ 0 1 ltr01 [eta numfun.funeneg.body (@EFin R)]);
+  [|exact: measurable_funeneg|by move=> x; exact: numfun.funeneg_ge0].
+rewrite subr0 invr1 mul1e mul1e -lebesgue_integral_definition.integralE /=.
+rewrite (@ftc.continuous_FTC2 _ idfun (fun x => x ^+ 2 / 2) 0 1 ltr01).
+- by rewrite expr0n /= mul0r oppr0 adde0 expr1n mul1r.
+- by apply: (@continuous_subspaceT _ _ _ idfun) => x /=; exact: cvg_id.
+- split.
+  + move=> x hx.
+    by apply: derive.derivableM;
+      [exact: derive.exprn_derivable|exact: derive.derivable_cst].
+  + have := @derive.continuous_horner R (2^-1 *: 'X^2); move/(_ 0) => /=.
+    rewrite /continuous_at /= hornerZ hornerXn expr0n /= mul0r mulr0 => h.
+    suff -> : (fun x : R => x ^+ 2 / 2) = horner (2^-1 *: 'X^2 : {poly R}).
+      by move: h; exact: cvg_within_filter.
+    by apply: boolp.funext => x; rewrite hornerZ hornerXn mulrC.
+  + have := @derive.continuous_horner R (2^-1 *: 'X^2); move/(_ 1) => /=.
+    rewrite /continuous_at /= hornerZ hornerXn expr1n mulr1 => h.
+    suff -> : (fun x : R => x ^+ 2 / 2) = horner (2^-1 *: 'X^2 : {poly R}).
+      by move: h; exact: cvg_within_filter.
+    by apply: boolp.funext => x; rewrite hornerZ hornerXn mulrC.
+- move=> x hx /=.
+  rewrite derive1E derive.deriveM;
+    [|exact: derive.exprn_derivable|exact: derive.derivable_cst].
+  rewrite derive.derive_cst mulr0 addr0.
+  rewrite derive.deriveX //= derive.derive_id mulr1.
+  by rewrite -mulr_natr mulrAC divff ?mulr1 // pnatr_eq0.
+Qed.
+
+End distribution_expectations.
 
 End measure_as_qbs.
