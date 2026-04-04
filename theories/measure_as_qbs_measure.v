@@ -210,7 +210,6 @@ case: (lerP p 0) => [p0|p0].
   by rewrite order.Order.POrderTheory.ltxx.
 - by rewrite ifT // lte_fin.
 Qed.
-
 Lemma qbs_expect_uniform :
   qbs_expect (realQ R) qbs_uniform (fun x => x) = (2%:R^-1)%:E.
 Proof.
@@ -236,14 +235,15 @@ rewrite (@ftc.continuous_FTC2 _ idfun (fun x => x ^+ 2 / 2) 0 1 ltr01).
   + have := @derive.continuous_horner R (2^-1 *: 'X^2); move/(_ 1) => /=.
     rewrite /continuous_at /= hornerZ hornerXn expr1n mulr1 => h.
     suff -> : (fun x : R => x ^+ 2 / 2) = horner (2^-1 *: 'X^2 : {poly R}).
-      by move: h; exact: cvg_within_filter.
+      by rewrite div1r; move: h; exact: cvg_within_filter.
     by apply: boolp.funext => x; rewrite hornerZ hornerXn mulrC.
 - move=> x hx /=.
   rewrite derive1E derive.deriveM;
     [|exact: derive.exprn_derivable|exact: derive.derivable_cst].
-  rewrite derive.derive_cst mulr0 addr0.
-  rewrite derive.deriveX //= derive.derive_id mulr1.
-  by rewrite -mulr_natr mulrAC divff ?mulr1 // pnatr_eq0.
+  rewrite derive.derive_cst GRing.scaler0 GRing.add0r.
+  rewrite (@derive.derive_val _ _ _ _ _ _ _
+    (derive.is_deriveX 2 (derive.is_derive_id x 1))) /=.
+  by rewrite expr1 /GRing.scale /= mulr1 mulrA mulVf ?mul1r // pnatr_eq0.
 Qed.
 
 End distribution_expectations.
