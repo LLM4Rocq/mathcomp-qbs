@@ -7,6 +7,27 @@
 %   \uses{label1, ...}   -- declares dependency on other blueprint items
 %   \label{...}          -- unique label for dependency tracking
 
+\chapter*{Introduction}
+
+Quasi-Borel spaces solve a fundamental problem: the category of
+measurable spaces is not cartesian closed, which prevents giving
+semantics to higher-order probabilistic programs. QBS replaces
+measurable sets with ``random elements'' (morphisms from~$\mathbb{R}$),
+yielding a cartesian-closed category with a well-behaved probability
+monad.
+
+This formalization follows:
+\begin{itemize}
+\item C.~Heunen, O.~Kammar, S.~Staton, H.~Yang.
+  \emph{A Convenient Category for Higher-Order Probability Theory.}
+  LICS 2017.
+  \url{https://arxiv.org/abs/1701.02547}
+\item M.~Hirata, Y.~Minamide, T.~Sato.
+  \emph{Quasi-Borel Spaces.}
+  Archive of Formal Proofs, 2022.
+  \url{https://www.isa-afp.org/entries/Quasi_Borel_Spaces.html}
+\end{itemize}
+
 \chapter{Core QBS Theory}\label{ch:core}
 
 In this chapter we define quasi-Borel spaces, their morphisms, and

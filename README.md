@@ -1,5 +1,7 @@
 # Quasi-Borel Spaces in Rocq
 
+[Blueprint](https://llm4rocq.github.io/mathcomp-qbs/)
+
 This formalization was developed with
 [Claude Opus 4.6](https://claude.ai/claude-code) using
 [Rocq-MCP](https://github.com/LLM4Rocq/rocq-mcp) for interactive
