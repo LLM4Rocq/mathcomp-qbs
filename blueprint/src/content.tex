@@ -82,6 +82,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:qbs_morphism}
   The identity function $\mathrm{id} : X \to X$ is a QBS morphism.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Composition of Morphisms]\label{lem:qbs_morphism_comp}
   \rocq{QBS.quasi_borel.qbs_morphism_comp}
@@ -90,6 +91,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   If $f : X \to Y$ and $g : Y \to Z$ are QBS morphisms, then
   $g \circ f : X \to Z$ is a QBS morphism.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Constant Morphism]\label{lem:qbs_morphism_const}
   \rocq{QBS.quasi_borel.qbs_morphism_const}
@@ -97,6 +99,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:qbs_morphism}
   For any $y : Y$, the constant function $\lambda x.\; y$ is a QBS morphism.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{The R Functor}\label{sec:R_functor}
@@ -117,6 +120,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   are measurable, then $\lambda r.\; F_{P(r)}(r)$ is measurable.
   This justifies the gluing axiom for~$R(M)$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{definition}[Concrete Instances]\label{def:concrete_qbs}
   \rocq{QBS.quasi_borel.realQ}
@@ -135,6 +139,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   If $f : M_1 \to M_2$ is measurable, then $f$ is a QBS morphism
   $R(M_1) \to R(M_2)$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[R Preserves Identity]\label{lem:R_qbs_id}
   \rocq{QBS.measure_qbs_adjunction.R_qbs_id}
@@ -142,6 +147,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:R_qbs, def:qbs_morphism}
   $\mathrm{id}$ is a QBS morphism $R(M) \to R(M)$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[R Preserves Composition]\label{lem:R_qbs_comp}
   \rocq{QBS.measure_qbs_adjunction.R_qbs_comp}
@@ -150,6 +156,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   If $f, g$ are measurable, then $g \circ f$ is a QBS morphism
   $R(M_1) \to R(M_3)$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Binary Products}\label{sec:products}
@@ -169,6 +176,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:prodQ, def:qbs_morphism}
   $\mathrm{fst} : X \times Y \to X$ is a QBS morphism.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Second Projection Morphism]\label{lem:qbs_morphism_snd}
   \rocq{QBS.quasi_borel.qbs_morphism_snd}
@@ -176,6 +184,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:prodQ, def:qbs_morphism}
   $\mathrm{snd} : X \times Y \to Y$ is a QBS morphism.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Pairing Morphism]\label{lem:qbs_morphism_pair}
   \rocq{QBS.quasi_borel.qbs_morphism_pair}
@@ -184,6 +193,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   If $f : W \to X$ and $g : W \to Y$ are QBS morphisms, then
   $\langle f, g \rangle : W \to X \times Y$ is a QBS morphism.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Constant--Random Pairing]\label{lem:prodQ_const_random}
   \rocq{QBS.quasi_borel.prodQ_const_random}
@@ -191,6 +201,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:prodQ}
   If $\alpha \in M_Y$, then $\lambda r.\; (x, \alpha(r)) \in M_{X \times Y}$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Random--Constant Pairing]\label{lem:prodQ_random_const}
   \rocq{QBS.quasi_borel.prodQ_random_const}
@@ -198,6 +209,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:prodQ}
   If $\alpha \in M_X$, then $\lambda r.\; (\alpha(r), y) \in M_{X \times Y}$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Product Swap]\label{lem:qbs_morphism_swap}
   \rocq{QBS.quasi_borel.qbs_morphism_swap}
@@ -205,6 +217,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:prodQ, def:qbs_morphism}
   $(x, y) \mapsto (y, x)$ is a QBS morphism $X \times Y \to Y \times X$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Product Associator (left-to-right)]\label{lem:qbs_morphism_assoc_lr}
   \rocq{QBS.quasi_borel.qbs_morphism_assoc_lr}
@@ -212,6 +225,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:prodQ, def:qbs_morphism}
   $((x,y),z) \mapsto (x,(y,z))$ is a QBS morphism.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Product Associator (right-to-left)]\label{lem:qbs_morphism_assoc_rl}
   \rocq{QBS.quasi_borel.qbs_morphism_assoc_rl}
@@ -219,6 +233,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:prodQ, def:qbs_morphism}
   $(x,(y,z)) \mapsto ((x,y),z)$ is a QBS morphism.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Exponentials (Function Spaces)}\label{sec:exponentials}
@@ -240,6 +255,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   Evaluation $(f, x) \mapsto f(x)$ is a QBS morphism
   $(X \Rightarrow Y) \times X \to Y$.
 \end{theorem}
+\begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Currying Morphism]\label{thm:qbs_morphism_curry}
   \rocq{QBS.quasi_borel.qbs_morphism_curry}
@@ -249,12 +265,14 @@ $m\mathbb{R}$ for its Borel measurable space.
   $\hat{f} : X \to (Y \Rightarrow Z)$ defined by
   $\hat{f}(x)(y) = f(x,y)$ is a QBS morphism.
 \end{theorem}
+\begin{proof}\rocqok\end{proof}
 
 \begin{corollary}[Cartesian Closure]\label{cor:cartesian_closure}
   \rocqok
   \uses{thm:qbs_morphism_eval, thm:qbs_morphism_curry}
   The category of quasi-Borel spaces is cartesian closed.
 \end{corollary}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Exponential Composition]\label{lem:qbs_morphism_exp_comp}
   \rocq{QBS.quasi_borel.qbs_morphism_exp_comp}
@@ -264,6 +282,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   the pointwise application $w \mapsto f(w)(g(w))$ is a QBS morphism
   $W \to Y$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Argument Swap]\label{lem:qbs_morphism_arg_swap}
   \rocq{QBS.quasi_borel.qbs_morphism_arg_swap}
@@ -272,6 +291,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   Given a QBS morphism $f : X \to (Y \Rightarrow Z)$, the transposition
   $y \mapsto (\lambda x.\; f(x)(y))$ is a QBS morphism $Y \to (X \Rightarrow Z)$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Unit QBS}\label{sec:unit}
@@ -290,6 +310,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:unitQ, def:qbs_morphism}
   The unique map $X \to \mathtt{unit}$ is a QBS morphism (terminality).
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Induced Sigma-Algebra}\label{sec:sigma_Mx}
@@ -312,6 +333,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   $\sigma_{M_X}$ is a sigma-algebra: it contains the full set, is closed
   under complement, and is closed under countable union.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Arithmetic Morphisms}\label{sec:arithmetic}
@@ -323,6 +345,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   $(x, y) \mapsto x + y$ is a QBS morphism
   $\mathtt{realQ} \times \mathtt{realQ} \to \mathtt{realQ}$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Multiplication Morphism]\label{lem:qbs_morphism_mul}
   \rocq{QBS.quasi_borel.qbs_morphism_mul}
@@ -331,6 +354,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   $(x, y) \mapsto x \cdot y$ is a QBS morphism
   $\mathtt{realQ} \times \mathtt{realQ} \to \mathtt{realQ}$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Less-Than Morphism]\label{lem:qbs_morphism_ltr}
   \rocq{QBS.quasi_borel.qbs_morphism_ltr}
@@ -339,6 +363,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   $(x, y) \mapsto (x < y)$ is a QBS morphism
   $\mathtt{realQ} \times \mathtt{realQ} \to \mathtt{boolQ}$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Boolean Negation Morphism]\label{lem:qbs_morphism_negb}
   \rocq{QBS.quasi_borel.qbs_morphism_negb}
@@ -346,6 +371,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:concrete_qbs, def:qbs_morphism}
   $\mathtt{negb}$ is a QBS morphism $\mathtt{boolQ} \to \mathtt{boolQ}$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Subspaces}\label{sec:subspaces}
@@ -377,6 +403,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:generating_qbs}
   $G \subseteq M_{\mathrm{gen}(G)}$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Generating QBS Is Least]\label{lem:generating_qbs_least}
   \rocq{QBS.quasi_borel.generating_qbs_least}
@@ -385,6 +412,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   If $M'$ satisfies the QBS axioms and $G \subseteq M'$, then
   $M_{\mathrm{gen}(G)} \subseteq M'$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Image QBS}\label{sec:image}
@@ -403,6 +431,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:map_qbs}
   If $\alpha \in M_X$, then $f \circ \alpha \in M_{\mathrm{im}(f)}$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Image Is Coarser Than Codomain]\label{lem:map_qbs_sub}
   \rocq{QBS.quasi_borel.map_qbs_sub}
@@ -410,6 +439,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:map_qbs}
   $M_{\mathrm{im}(f)} \subseteq M_Y$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Image Morphism Out]\label{lem:map_qbs_morphism_out}
   \rocq{QBS.quasi_borel.map_qbs_morphism_out}
@@ -418,6 +448,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   If $g : Y \to Z$ is a QBS morphism, then
   $g$ is also a morphism from the image QBS.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Image Morphism In]\label{lem:map_qbs_morph_from}
   \rocq{QBS.quasi_borel.map_qbs_morph_from}
@@ -425,6 +456,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:map_qbs, def:qbs_morphism}
   $f$ is a QBS morphism $X \to \mathrm{im}(f)$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Order Structure on QBS}\label{sec:order}
@@ -446,6 +478,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:qbs_leT}
   $\leq$ is reflexive, transitive, and antisymmetric.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{definition}[QBS Supremum]\label{def:qbs_supT}
   \rocq{QBS.quasi_borel.qbs_supT}
@@ -464,6 +497,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   The supremum is an upper bound for both components and is the least
   such upper bound.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{The L Functor and L--R Adjunction}\label{sec:adjunction}
@@ -486,6 +520,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   $L(X)$ satisfies $\emptyset, T \in L(X)$, closure under complement,
   and closure under countable union.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[L Preserves Morphisms]\label{lem:L_qbs_morph}
   \rocq{QBS.measure_qbs_adjunction.L_qbs_morph}
@@ -494,6 +529,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   If $f : X \to Y$ is a QBS morphism and $U \in L(Y)$, then
   $f^{-1}(U) \in L(X)$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[L Preserves Identity and Composition]\label{lem:L_functorial}
   \rocq{QBS.measure_qbs_adjunction.L_qbs_id}
@@ -502,6 +538,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:L_sigma, lem:L_qbs_morph}
   $L$ preserves identity and composition.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[$L \dashv R$ Adjunction]\label{thm:lr_adj_natural}
   \rocq{QBS.measure_qbs_adjunction.lr_adj_natural}
@@ -530,6 +567,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   $R(M_1 \times M_2)$ and $R(M_1) \times R(M_2)$ have the same random
   elements.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Adjunction Unit]\label{lem:adjunction_unit}
   \rocq{QBS.measure_qbs_adjunction.adjunction_unit}
@@ -538,6 +576,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   If $\alpha \in M_X$ and $U \in \sigma_{M_X}$, then
   $\alpha^{-1}(U)$ is Borel measurable.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Adjunction Counit]\label{lem:adjunction_counit}
   \rocq{QBS.measure_qbs_adjunction.adjunction_counit}
@@ -545,6 +584,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:L_sigma, def:R_qbs}
   If $U$ is measurable in~$M$, then $U \in L(R(M))$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Standard Borel Spaces (Definition)}\label{sec:standard_borel_def}
@@ -564,6 +604,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:is_standard_borel}
   $\mathbb{R}$ is standard Borel via the identity functions.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Full Faithfulness on Standard Borel]\label{thm:R_full_faithful}
   \rocq{QBS.measure_qbs_adjunction.R_full_faithful_standard_borel}
@@ -586,6 +627,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:is_standard_borel}
   $\mathbb{N}$ is standard Borel.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[$\mathbb{B}$ Is Standard Borel]\label{lem:bool_standard_borel}
   \rocq{QBS.measure_qbs_adjunction.bool_standard_borel}
@@ -593,6 +635,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:is_standard_borel}
   $\mathrm{bool}$ is standard Borel.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Product of Standard Borel Spaces]\label{lem:prod_standard_borel}
   \rocq{QBS.measure_qbs_adjunction.prod_standard_borel}
@@ -601,6 +644,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   If $M_1$ and $M_2$ are standard Borel, then $M_1 \times M_2$ is
   standard Borel.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[$\bar{\mathbb{R}}$ Is Standard Borel]\label{lem:ereal_standard_borel}
   \rocq{QBS.measure_qbs_adjunction.ereal_standard_borel}
@@ -608,6 +652,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:is_standard_borel}
   The extended reals $\bar{\mathbb{R}}$ form a standard Borel space.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Standard Borel L--R Sets Identity]\label{lem:standard_borel_lr_sets}
   \rocq{QBS.measure_qbs_adjunction.standard_borel_lr_sets_ident}
@@ -616,6 +661,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   For a standard Borel space~$M$, the $L(R(M))$-measurable sets coincide
   with the original measurable sets.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Coproducts (Binary)}\label{sec:coproducts}
@@ -637,6 +683,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   $\mathrm{inl} : X \to X + Y$ and $\mathrm{inr} : Y \to X + Y$ are
   QBS morphisms.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Case Analysis Morphism]\label{lem:qbs_morphism_case}
   \rocq{QBS.coproduct_qbs.qbs_morphism_case}
@@ -645,6 +692,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   If $f : X \to Z$ and $g : Y \to Z$ are QBS morphisms, then the
   case-analysis function $[f, g] : X + Y \to Z$ is a QBS morphism.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Coproducts (General / Sigma Type)}\label{sec:gen_coproducts}
@@ -667,6 +715,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   For each $i : I$, the injection $x \mapsto (i, x)$ is a QBS morphism
   $X_i \to \coprod_j X_j$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Binary--General Isomorphism]\label{lem:coprod_gen_iso}
   \rocq{QBS.coproduct_qbs.qbs_morphism_coprod_to_gen}
@@ -676,6 +725,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   The binary coproduct $X + Y$ embeds into (and out of) the general
   coproduct over~$\mathbb{B}$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Dependent Products (Pi Type)}\label{sec:pi}
@@ -696,6 +746,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   For each $i : I$, the projection $f \mapsto f(i)$ is a QBS morphism
   $\prod_j X_j \to X_i$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Tupling Morphism]\label{lem:qbs_morphism_tuple}
   \rocq{QBS.coproduct_qbs.qbs_morphism_tuple}
@@ -705,6 +756,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   $w \mapsto (\lambda i.\; f_i(w))$ is a QBS morphism
   $W \to \prod_i X_i$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{List Type}\label{sec:list}
@@ -726,6 +778,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:listQ, def:qbs_morphism, def:concrete_qbs}
   $\mathrm{size} : \mathrm{list}(X) \to \mathtt{natQ}$ is a QBS morphism.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[List Element Random]\label{lem:listQ_nth_random}
   \rocq{QBS.coproduct_qbs.listQ_nth_random}
@@ -734,6 +787,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   If $\alpha \in M_{\mathrm{list}(X)}$, then
   $\lambda r.\; \mathrm{nth}\; x_0\; (\alpha(r))\; i \in M_X$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -775,6 +829,7 @@ and variance results.
   \uses{def:qbs_prob_equiv}
   $\sim$ is reflexive, symmetric, and transitive.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{The Probability Monad $P(X)$}\label{sec:monadP}
@@ -805,6 +860,7 @@ and variance results.
   All returns with the same point are equivalent regardless of~$\mu$:
   $\eta_{\mu_1}(x) \sim \eta_{\mu_2}(x)$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Return Is a Morphism]\label{lem:qbs_return_random}
   \rocq{QBS.probability_qbs.qbs_return_random}
@@ -812,6 +868,7 @@ and variance results.
   \uses{def:qbs_return, def:monadP, def:qbs_morphism}
   $\eta^{\mu} : X \to P(X)$ is a QBS morphism.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Bind}\label{sec:bind}
@@ -854,6 +911,7 @@ and variance results.
   \uses{def:qbs_return, def:qbs_bind, def:qbs_prob_equiv}
   $\eta(x) \mathbin{>\!\!>\!\!=} f \sim f(x)$.
 \end{theorem}
+\begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Right Unit]\label{thm:qbs_bind_returnr}
   \rocq{QBS.probability_qbs.qbs_bind_returnr}
@@ -861,6 +919,7 @@ and variance results.
   \uses{def:qbs_return, def:qbs_bind, def:qbs_prob_equiv}
   $m \mathbin{>\!\!>\!\!=} \eta \sim m$.
 \end{theorem}
+\begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Associativity]\label{thm:qbs_bindA}
   \rocq{QBS.probability_qbs.qbs_bindA}
@@ -869,6 +928,7 @@ and variance results.
   $(m \mathbin{>\!\!>\!\!=} f) \mathbin{>\!\!>\!\!=} g \sim
   m \mathbin{>\!\!>\!\!=} (\lambda x.\; f(x) \mathbin{>\!\!>\!\!=} g)$.
 \end{theorem}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Integration}\label{sec:integration}
@@ -898,6 +958,7 @@ and variance results.
   If $h$ is QBS measurable and $V$ is Borel measurable, then
   $h^{-1}(V) \in \sigma_{M_X}$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Integration Respects Equivalence]\label{lem:qbs_integral_equiv}
   \rocq{QBS.probability_qbs.qbs_integral_equiv}
@@ -906,6 +967,7 @@ and variance results.
   If $p_1 \sim p_2$ and $h$ is QBS measurable, then
   $\int_{p_1} h = \int_{p_2} h$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Integration of Constants]\label{lem:qbs_integral_const}
   \rocq{QBS.probability_qbs.qbs_integral_const}
@@ -913,6 +975,7 @@ and variance results.
   \uses{def:qbs_integral}
   $\int_p c = c$ for any constant~$c$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Integration Against Return]\label{lem:qbs_integral_return}
   \rocq{QBS.probability_qbs.qbs_integral_return}
@@ -920,6 +983,7 @@ and variance results.
   \uses{def:qbs_integral, def:qbs_return}
   $\int_{\eta(x)} h = h(x)$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Integration Against Bind]\label{lem:qbs_integral_bind}
   \rocq{QBS.probability_qbs.qbs_integral_bind}
@@ -928,6 +992,7 @@ and variance results.
   $\int_{m \mathbin{>\!\!>\!\!=} f} h
   = \int_m (\lambda x.\; h(\alpha_{f(\alpha(r))}(r)))$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Pushforward Infrastructure}\label{sec:pushforward}
@@ -938,6 +1003,7 @@ and variance results.
   \uses{def:qbs_integral}
   $\int_p h = \int_{\mathrm{pushforward}(\mu, h \circ \alpha)} \mathrm{id}$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Pushforward Integrability]\label{lem:qbs_pushforward_integrable}
   \rocq{QBS.probability_qbs.qbs_pushforward_integrable}
@@ -945,6 +1011,7 @@ and variance results.
   \uses{def:qbs_integral}
   Integrability transfers through the pushforward.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Pushforward Agreement]\label{lem:qbs_pushforward_agree}
   \rocq{QBS.probability_qbs.qbs_pushforward_agree}
@@ -953,6 +1020,7 @@ and variance results.
   Equivalent triples yield the same pushforward through a QBS
   measurable function.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Functorial Map}\label{sec:monadP_map}
@@ -972,6 +1040,7 @@ and variance results.
   \uses{def:monadP_map, def:monadP, def:qbs_morphism}
   $P(f)$ is a QBS morphism $P(X) \to P(Y)$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Map Preserves Identity]\label{lem:monadP_map_id}
   \rocq{QBS.probability_qbs.monadP_map_id}
@@ -979,6 +1048,7 @@ and variance results.
   \uses{def:monadP_map, def:qbs_prob_equiv}
   $P(\mathrm{id})(p) \sim p$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Map Preserves Composition]\label{lem:monadP_map_comp}
   \rocq{QBS.probability_qbs.monadP_map_comp}
@@ -986,6 +1056,7 @@ and variance results.
   \uses{def:monadP_map, def:qbs_prob_equiv}
   $P(g \circ f)(p) \sim P(g)(P(f)(p))$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Expectation, Events, and Variance}\label{sec:expect_var}
@@ -1034,6 +1105,7 @@ and variance results.
   QBS integrability is closed under addition, subtraction, negation,
   and scalar multiplication.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Integral Linearity]\label{lem:qbs_integral_linearity}
   \rocq{QBS.probability_qbs.qbs_integralD}
@@ -1043,6 +1115,7 @@ and variance results.
   \uses{def:qbs_integral, def:qbs_integrable}
   QBS integration is linear: additive, subtractive, and homogeneous.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Variance Properties}\label{sec:variance_props}
@@ -1053,6 +1126,7 @@ and variance results.
   \uses{def:qbs_variance, def:qbs_expect}
   $\mathrm{Var}[f] = \mathbb{E}[f^2] - (\mathbb{E}[f])^2$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Variance Scaling]\label{lem:qbs_varianceZ}
   \rocq{QBS.probability_qbs.qbs_varianceZ}
@@ -1060,6 +1134,7 @@ and variance results.
   \uses{def:qbs_variance}
   $\mathrm{Var}[a \cdot f] = a^2 \cdot \mathrm{Var}[f]$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Markov's Inequality]\label{lem:qbs_markov}
   \rocq{QBS.probability_qbs.qbs_markov}
@@ -1068,6 +1143,7 @@ and variance results.
   For non-negative integrable~$f$ and $\varepsilon > 0$:
   $\Pr[f(x) \geq \varepsilon] \leq \mathbb{E}[f] / \varepsilon$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Chebyshev's Inequality]\label{lem:qbs_chebyshev}
   \rocq{QBS.probability_qbs.qbs_chebyshev}
@@ -1076,6 +1152,7 @@ and variance results.
   $\Pr[|f(x) - \mathbb{E}[f]| \geq \varepsilon]
   \leq \mathrm{Var}[f] / \varepsilon^2$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Monad Join}\label{sec:join}
@@ -1094,6 +1171,7 @@ and variance results.
   \uses{def:qbs_join, def:qbs_morphism, def:monadP}
   Join is a QBS morphism $P(P(X)) \to P(X)$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Monad Strength}\label{sec:strength}
@@ -1112,6 +1190,7 @@ and variance results.
   \uses{def:qbs_strength, def:qbs_morphism}
   Strength is a QBS morphism $W \times P(X) \to P(W \times X)$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Strength Naturality]\label{lem:qbs_strength_natural}
   \rocq{QBS.probability_qbs.qbs_strength_natural}
@@ -1120,6 +1199,7 @@ and variance results.
   Strength commutes with morphisms:
   $P(f \times g)(\mathrm{str}(w, p)) \sim \mathrm{str}(f(w), P(g)(p))$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Strength Unit Law]\label{lem:qbs_strength_unit}
   \rocq{QBS.probability_qbs.qbs_strength_unit}
@@ -1127,6 +1207,7 @@ and variance results.
   \uses{def:qbs_strength, def:unitQ, def:qbs_prob_equiv}
   $P(\pi_2)(\mathrm{str}(\mathtt{tt}, p)) \sim p$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Strength Associativity]\label{lem:qbs_strength_assoc}
   \rocq{QBS.probability_qbs.qbs_strength_assoc}
@@ -1135,6 +1216,7 @@ and variance results.
   $P(\mathrm{assoc})(\mathrm{str}((u,v), p)) \sim
   \mathrm{str}(u, \mathrm{str}(v, p))$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Strength--Return Interaction]\label{lem:qbs_strength_return}
   \rocq{QBS.probability_qbs.qbs_strength_return}
@@ -1142,6 +1224,7 @@ and variance results.
   \uses{def:qbs_strength, def:qbs_return, def:qbs_prob_equiv}
   $\mathrm{str}(w, \eta(x)) \sim \eta((w, x))$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Bind Decomposes Through Strength and Join]\label{lem:qbs_bind_decomp}
   \rocq{QBS.probability_qbs.qbs_bind_decomp}
@@ -1150,6 +1233,7 @@ and variance results.
   $m \mathbin{>\!\!>\!\!=} f \sim \mathrm{join}(P(f)(m))$
   (modulo strength).
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Bind Respects Equivalence}\label{sec:bind_equiv}
@@ -1161,6 +1245,7 @@ and variance results.
   If $p_1 \sim p_2$ and the diagonal factors through a morphism~$g$,
   then $p_1 \mathbin{>\!\!>\!\!=} f \sim p_2 \mathbin{>\!\!>\!\!=} f$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Bind Congruence (Strong)]\label{lem:qbs_bind_strong_equiv_l}
   \rocq{QBS.probability_qbs.qbs_bind_strong_equiv_l}
@@ -1168,6 +1253,7 @@ and variance results.
   \uses{lem:qbs_bind_equiv_l, def:qbs_morphism_strong}
   Specialization of bind congruence for strong morphisms.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Bind Congruence (Return)]\label{lem:qbs_bind_equiv_l_return}
   \rocq{QBS.probability_qbs.qbs_bind_equiv_l_return}
@@ -1176,6 +1262,7 @@ and variance results.
   Specialization of bind congruence when $f(x) = \eta(g(x))$
   for a morphism~$g$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{General Normalizer}\label{sec:general_normalizer}
@@ -1216,6 +1303,7 @@ and variance results.
   The normalized probability integrates to 1:
   $\int 1 \, dq = 1$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Normalizer Integral]\label{lem:qbs_normalize_integral}
   \rocq{QBS.probability_qbs.qbs_normalize_integral}
@@ -1224,6 +1312,7 @@ and variance results.
   Conditional expectation formula:
   $\mathbb{E}_{q}[g] = \mathbb{E}_{p}[g \cdot w] / Z$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Quotient Type for QBS Probability}\label{sec:quotient}
@@ -1251,6 +1340,7 @@ and variance results.
   \uses{def:qps_eq}
   $=_Q$ is reflexive, symmetric, and transitive.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{definition}[Quotient Operations]\label{def:qps_operations}
   \rocq{QBS.qbs_prob_quot.qps_return}
@@ -1275,6 +1365,7 @@ and variance results.
   \uses{def:qps_operations, def:qps_eq}
   Return, integration, map, and event probability respect quotient equality.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Quotient Monad Laws]\label{thm:qps_monad_laws}
   \rocq{QBS.qbs_prob_quot.qps_bind_returnl}
@@ -1285,6 +1376,7 @@ and variance results.
   The monad laws hold on the quotient (as $=_Q$ equalities):
   left unit, right unit, and associativity.
 \end{theorem}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Product Measures and Fubini}\label{sec:fubini}
@@ -1325,6 +1417,7 @@ and variance results.
   \uses{def:qbs_pair_integral}
   Integration over the first component marginalizes the second.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Second Marginal Integration]\label{lem:qbs_pair_integral_snd}
   \rocq{QBS.pair_qbs_measure.qbs_pair_integral_snd}
@@ -1332,6 +1425,7 @@ and variance results.
   \uses{def:qbs_pair_integral}
   Integration over the second component marginalizes the first.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Commutativity of Product Integration]\label{lem:qbs_pair_integral_comm}
   \rocq{QBS.pair_qbs_measure.qbs_pair_integral_comm}
@@ -1339,6 +1433,7 @@ and variance results.
   \uses{def:qbs_pair_integral, thm:qbs_pair_integralE}
   $\int_{p \otimes q} h = \int_{q \otimes p} h \circ \mathrm{swap}$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Independence}\label{sec:independence}
@@ -1360,6 +1455,7 @@ and variance results.
   $\int_{p_X \otimes p_Y} f(x) \cdot g(y)
   = \mathbb{E}_{p_X}[f] \cdot \mathbb{E}_{p_Y}[g]$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Variance of Independent Sums}\label{sec:var_indep_sum}
@@ -1384,6 +1480,7 @@ and variance results.
   $\mathbb{E}_{p \otimes q}[h_1 \circ \pi_1 \cdot h_2 \circ \pi_2]
   = \mathbb{E}_p[h_1] \cdot \mathbb{E}_q[h_2]$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Product Marginal Variances]\label{lem:variance_prod}
   \rocq{QBS.pair_qbs_measure.variance_prod_fst}
@@ -1393,6 +1490,7 @@ and variance results.
   $\mathrm{Var}_{p \otimes q}[h \circ \pi_1] = \mathrm{Var}_p[h]$,
   and symmetrically for~$\pi_2$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Variance of Independent Sum]\label{thm:qbs_variance_indep_sum}
   \rocq{QBS.pair_qbs_measure.qbs_variance_indep_sum}
@@ -1416,6 +1514,7 @@ and variance results.
   The product probability equals bind composed with strength (Prop.~22
   of HKSY17).
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1468,6 +1567,7 @@ with their expected values.
   $\mu_{\mathrm{qbs}}(g^{-1}(U)) = P(g^{-1}(U))$ and
   $\Pr_{\mathrm{qbs}}[U] = P(f(U))$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Normal Distribution Is a Morphism]\label{lem:qbs_normal_morphism}
   \rocq{QBS.measure_as_qbs_measure.qbs_normal_morphism}
@@ -1477,6 +1577,7 @@ with their expected values.
   $\mu \mapsto \mathcal{N}(\mu, \sigma)$ is a morphism
   $\mathtt{realQ} \to P(\mathtt{realQ})$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Expected Value of Bernoulli]\label{lem:qbs_expect_bernoulli}
   \rocq{QBS.measure_as_qbs_measure.qbs_expect_bernoulli}
@@ -1484,6 +1585,7 @@ with their expected values.
   \uses{def:qbs_bernoulli, def:qbs_expect}
   $\mathbb{E}[\mathrm{Bernoulli}(p)] = p$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Expected Value of Uniform]\label{lem:qbs_expect_uniform}
   \rocq{QBS.measure_as_qbs_measure.qbs_expect_uniform}
@@ -1491,6 +1593,7 @@ with their expected values.
   \uses{def:qbs_uniform, def:qbs_expect}
   $\mathbb{E}[\mathrm{Uniform}] = 1/2$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Expected Value of Normal]\label{lem:qbs_expect_normal}
   \rocq{QBS.measure_as_qbs_measure.qbs_expect_normal}
@@ -1498,6 +1601,7 @@ with their expected values.
   \uses{def:qbs_normal_distribution, def:qbs_expect}
   $\mathbb{E}[\mathcal{N}(\mu, \sigma)] = \mu$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{QBS--Giry Monad Connection}\label{sec:giry_connection}
@@ -1524,6 +1628,7 @@ with their expected values.
   \uses{def:qbs_to_giry, def:giry_to_qbs}
   $\mathrm{qbs\_to\_giry}(\mathrm{giry\_to\_qbs}(P)) = P$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[QBS--Giry Round-Trip (QBS direction)]\label{lem:giry_to_qbsK}
   \rocq{QBS.qbs_giry.giry_to_qbsK}
@@ -1532,6 +1637,7 @@ with their expected values.
   $\mathrm{giry\_to\_qbs}(\mathrm{qbs\_to\_giry}(p)) \sim p$
   (up to equivalence).
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Integral Correspondence]\label{thm:qbs_integral_giry}
   \rocq{QBS.qbs_giry.qbs_integral_giry}
@@ -1577,6 +1683,7 @@ and (3) the composed encode/decode pair.
   \uses{def:phi_psi}
   $0 < \phi(x) < 1$ for all $x \in \mathbb{R}$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Phi--Psi Cancellation]\label{lem:phi_psi_cancel}
   \rocq{QBS.standard_borel.psiK}
@@ -1586,6 +1693,7 @@ and (3) the composed encode/decode pair.
   $\psi(\phi(x)) = x$ unconditionally.
   $\phi(\psi(y)) = y$ for $y \in (0,1)$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Phi and Psi Measurability]\label{lem:phi_psi_measurable}
   \rocq{QBS.standard_borel.measurable_phi}
@@ -1596,6 +1704,7 @@ and (3) the composed encode/decode pair.
   $\phi$ is measurable on all of~$\mathbb{R}$. $\psi$ is measurable on
   $(0,1)$ and (via an approximation argument) on all of~$\mathbb{R}$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Binary Digit Machinery}\label{sec:binary_digits}
@@ -1622,12 +1731,14 @@ and (3) the composed encode/decode pair.
   Partial sums converge, are non-decreasing, and the limit satisfies
   $0 \leq \mathrm{bin\_sum}(d) \leq 1$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Geometric Sum Identity]\label{lem:geom_half_sum}
   \rocq{QBS.standard_borel.geom_half_sum}
   \rocqok
   $\sum_{i<n} (1/2)^{i+1} = 1 - (1/2)^n$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Binary Digit Reconstruction]\label{thm:bin_digits_reconstruction}
   \rocq{QBS.standard_borel.bin_digits_reconstruction}
@@ -1655,6 +1766,7 @@ and (3) the composed encode/decode pair.
   \uses{def:bin_digits, def:no_trailing_ones}
   For $0 \leq x < 1$: $\mathrm{no\_trailing\_ones}(\mathrm{bin\_digits}(x))$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Uniqueness of Binary Expansion]\label{lem:bin_digits_bin_sum}
   \rocq{QBS.standard_borel.bin_digits_bin_sum}
@@ -1663,6 +1775,7 @@ and (3) the composed encode/decode pair.
   If $\mathrm{no\_trailing\_ones}(d)$, then
   $\mathrm{bin\_digits}(\mathrm{bin\_sum}(d)) =_1 d$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Binary Sum Shift]\label{lem:bin_sum_shift}
   \rocq{QBS.standard_borel.bin_sum_shift}
@@ -1670,6 +1783,7 @@ and (3) the composed encode/decode pair.
   \uses{def:bin_digits}
   $\mathrm{bin\_sum}(d) = d(0) \cdot \tfrac{1}{2} + \mathrm{bin\_sum}(d \circ S) \cdot \tfrac{1}{2}$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Digit Interleaving}\label{sec:interleaving}
@@ -1694,6 +1808,7 @@ and (3) the composed encode/decode pair.
   Interleaving then deinterleaving (and vice versa) recovers the
   original sequences.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Interleaving Preserves No Trailing Ones]\label{lem:interleave_no_trailing_ones}
   \rocq{QBS.standard_borel.interleave_no_trailing_ones}
@@ -1702,6 +1817,7 @@ and (3) the composed encode/decode pair.
   If both $d_1$ and $d_2$ have no trailing ones, then so does
   $\mathrm{interleave}(d_1, d_2)$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Pairing Functions}\label{sec:pairing}
@@ -1724,6 +1840,7 @@ and (3) the composed encode/decode pair.
   For $0 \leq x, y < 1$:
   $\mathrm{unit\_to\_pair}(\mathrm{pair\_to\_unit}(x, y)) = (x, y)$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Unit-to-Pair Round-Trip (conditional)]\label{lem:unit_to_pairK}
   \rocq{QBS.standard_borel.unit_to_pairK}
@@ -1732,6 +1849,7 @@ and (3) the composed encode/decode pair.
   For $0 \leq r < 1$ with no-trailing-ones on deinterleaved subsequences:
   $\mathrm{pair\_to\_unit}(\mathrm{unit\_to\_pair}(r)) = r$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Composed Bijection $\mathbb{R} \times \mathbb{R} \to \mathbb{R}$}\label{sec:encode_decode}
@@ -1754,6 +1872,7 @@ and (3) the composed encode/decode pair.
   $\mathrm{decode}(\mathrm{encode}(x, y)) = (x, y)$ for all
   $x, y \in \mathbb{R}$.
 \end{theorem}
+\begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Conditional Round-Trip]\label{thm:decode_RRK}
   \rocq{QBS.standard_borel.decode_RRK}
@@ -1762,6 +1881,7 @@ and (3) the composed encode/decode pair.
   $\mathrm{encode}(\mathrm{decode}(r)) = r$ under additional
   no-trailing-ones hypotheses (not needed for \texttt{is\_standard\_borel}).
 \end{theorem}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Measurability}\label{sec:measurability}
@@ -1773,6 +1893,7 @@ and (3) the composed encode/decode pair.
   \uses{def:encode_decode_RR, lem:phi_psi_measurable}
   Both $\mathrm{encode}$ and $\mathrm{decode}$ are measurable functions.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Measurability of Pair-to-Unit]\label{lem:measurable_pair_to_unit}
   \rocq{QBS.standard_borel.measurable_pair_to_unit}
@@ -1782,6 +1903,7 @@ and (3) the composed encode/decode pair.
   partial sum of interleaved digits is measurable and applying
   $\mathrm{measurable\_fun\_cvg}$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Measurability of Unit-to-Pair Components]\label{lem:measurable_unit_to_pair}
   \rocq{QBS.standard_borel.measurable_unit_to_pair_fst}
@@ -1790,6 +1912,7 @@ and (3) the composed encode/decode pair.
   \uses{def:pair_to_unit}
   Both projections of $\mathrm{unit\_to\_pair}$ are measurable.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{The Punchline}\label{sec:punchline}
@@ -1827,6 +1950,7 @@ All proofs use \texttt{ring}/\texttt{field} from math-comp algebra-tactics.
   $ax^2 + bx + c = a\bigl(x + \tfrac{b}{2a}\bigr)^2
   - \tfrac{b^2 - 4ac}{4a}$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Product of Gaussian Densities}\label{sec:normal_pdf_times}
@@ -1844,6 +1968,7 @@ All proofs use \texttt{ring}/\texttt{field} from math-comp algebra-tactics.
   $\sigma_{\mathrm{new}} = \frac{s s'}{\sqrt{s^2 + s'^2}}$,
   and $K$ is a scalar involving $|m - m'|$ and $\sqrt{s^2 + s'^2}$.
 \end{theorem}
+\begin{proof}\rocqok\end{proof}
 
 \begin{definition}[Gaussian Product Parameters]\label{def:gaussian_prod_params}
   \rocq{QBS.normal_algebra.gaussian_prod_mu}
@@ -1864,6 +1989,7 @@ All proofs use \texttt{ring}/\texttt{field} from math-comp algebra-tactics.
   The combined $\sigma$ is nonzero when both inputs are nonzero.
   The scalar factor is positive.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Chained Gaussian Product]\label{lem:normal_pdf_times_chain}
   \rocq{QBS.normal_algebra.normal_pdf_times_chain}
@@ -1873,6 +1999,7 @@ All proofs use \texttt{ring}/\texttt{field} from math-comp algebra-tactics.
   = K \cdot K' \cdot \mathcal{N}(\mu_{\mathrm{new}}, \sigma_{\mathrm{new}})(x)$,
   allowing iterative combination.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Variance Recurrence]\label{lem:var_recurrence}
   \rocq{QBS.normal_algebra.var_recurrence}
@@ -1881,6 +2008,7 @@ All proofs use \texttt{ring}/\texttt{field} from math-comp algebra-tactics.
   $\frac{1}{V_{n+1}} = \frac{1}{V_n} + \frac{1}{s^2}$ relating
   successive combined variances.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Phase 1: Intercept Combinations}\label{sec:phase1}
@@ -1905,6 +2033,7 @@ Five steps combining the prior $\mathcal{N}(0, 3)$ with each of the
   ($\sigma^2 \in \{9/37, 9/73, 9/109, 9/145, 9/181\}$) and the combined
   mean (a linear function of the slope parameter~$s$).
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Phase 1 Positivity and Nonzero]\label{lem:phase1_positivity}
   \rocq{QBS.normal_algebra.phase1_var1_gt0}
@@ -1919,6 +2048,7 @@ Five steps combining the prior $\mathcal{N}(0, 3)$ with each of the
   Each intermediate variance is positive and its square root is nonzero,
   ensuring the chain of Gaussian products is well-defined.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Phase 2: Slope Combinations}\label{sec:phase2}
@@ -1937,6 +2067,7 @@ slope-dependent scalar from Phase~1.
   Each step combines the accumulated Gaussian for the slope with the
   next observation's contribution.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{definition}[Phase 2 Final Parameters]\label{def:phase2_final}
   \rocq{QBS.normal_algebra.phase2_final_mu}
@@ -1955,6 +2086,7 @@ slope-dependent scalar from Phase~1.
   \uses{def:phase2_final}
   The final $\sigma$ is nonzero and the accumulated constant is positive.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Phase 2 Complete Combination]\label{lem:phase2_combine5}
   \rocq{QBS.normal_algebra.phase2_combine5}
@@ -1963,6 +2095,7 @@ slope-dependent scalar from Phase~1.
   The full 5-step slope combination yields the final Gaussian times the
   accumulated constant.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Normal PDF Recentering]\label{lem:normal_pdf_recenter}
   \rocq{QBS.normal_algebra.normal_pdf_recenter}
@@ -1971,6 +2104,7 @@ slope-dependent scalar from Phase~1.
   used to convert observations from intercept-centered to
   slope-centered form.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Observation Rewrite]\label{lem:obs_rewrite}
   \rocq{QBS.normal_algebra.obs_rewrite}
@@ -1979,6 +2113,7 @@ slope-dependent scalar from Phase~1.
   The 5-observation product rewrites as a product of centered normal
   densities suitable for Phase~1 integration.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2001,6 +2136,7 @@ and data $(1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)$.
   = \int_{\mathrm{Lebesgue}} f(x) \cdot \mathrm{normal\_pdf}(m, \sigma, x)\, dx$,
   converting QBS integration to Lebesgue integration with density.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{definition}[Priors]\label{def:priors}
   \rocq{QBS.showcase.bayesian_regression.slope_prior}
@@ -2028,6 +2164,7 @@ and data $(1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)$.
   \uses{def:obs}
   $\mathrm{obs}(s, b) \geq 0$ for all $(s, b)$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Evidence (Normalizing Constant)}\label{sec:evidence}
@@ -2046,6 +2183,7 @@ and data $(1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)$.
   \uses{def:evidence}
   $0 \leq Z$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Posterior Density}\label{sec:posterior}
@@ -2064,6 +2202,7 @@ and data $(1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)$.
   \uses{def:posterior_density, def:evidence}
   When $Z > 0$ and $Z < +\infty$, the posterior integrates to~$1$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Monadic Prior}\label{sec:monadic_prior}
@@ -2084,6 +2223,7 @@ and data $(1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)$.
   \uses{def:obs, def:qbs_morphism}
   Each single-observation likelihood factor is a QBS morphism.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Likelihood Single Observation Strong]\label{lem:likelihood_single_strong}
   \rocq{QBS.showcase.bayesian_regression.likelihood_single_strong}
@@ -2091,6 +2231,7 @@ and data $(1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)$.
   \uses{def:obs, def:qbs_morphism_strong}
   Each single-observation likelihood is a strong morphism.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Normalizer Program}\label{sec:normalizer}
@@ -2128,6 +2269,7 @@ and data $(1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)$.
   $\int_{\mathcal{N}(0,3)} \mathrm{obs}(s, b)\, db
   = \mathrm{scalar\_of\_s}(s)$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Phase 2 Integration]\label{lem:phase2_integration}
   \rocq{QBS.showcase.bayesian_regression.phase2_integration}
@@ -2136,6 +2278,7 @@ and data $(1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)$.
   $\int_{\mathcal{N}(0,3)} \mathrm{scalar\_of\_s}(s)\, ds
   = \mathrm{phase2\_const}$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Evidence Value]\label{thm:evidence_value}
   \rocq{QBS.showcase.bayesian_regression.evidence_value}
@@ -2145,6 +2288,7 @@ and data $(1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)$.
   an explicit closed-form constant computed by iterating
   the product-of-Gaussians identity through 10 combination steps.
 \end{theorem}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Evidence Positivity]\label{lem:evidence_pos}
   \rocq{QBS.showcase.bayesian_regression.evidence_pos}
@@ -2152,6 +2296,7 @@ and data $(1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)$.
   \uses{thm:evidence_value, lem:phase2_final_props}
   $0 < Z$ and $Z < +\infty$.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 
 \section{Main Results}\label{sec:main_results}
@@ -2162,6 +2307,7 @@ and data $(1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)$.
   \uses{def:program, lem:evidence_pos}
   The program returns $\mathrm{Some}(d)$ (evidence is positive and finite).
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Program Integrates to 1]\label{thm:program_integrates_to_1}
   \rocq{QBS.showcase.bayesian_regression.program_integrates_to_1}
@@ -2186,6 +2332,7 @@ and data $(1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)$.
   established by bounding $\mathrm{obs}$ by the normal peak raised to
   the 5th power.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Posterior Measure Characterization]\label{lem:posterior_measure_characterization}
   \rocq{QBS.showcase.bayesian_regression.posterior_measure_characterization}
@@ -2193,3 +2340,4 @@ and data $(1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)$.
   \uses{thm:program_integrates_to_1, def:posterior_density}
   The posterior measure is characterized by its density against the prior.
 \end{lemma}
+\begin{proof}\rocqok\end{proof}
