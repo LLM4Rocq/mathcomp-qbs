@@ -5,7 +5,7 @@
 This formalization was developed with
 [Claude Opus 4.6](https://claude.ai/claude-code) using
 [Rocq-MCP](https://github.com/LLM4Rocq/rocq-mcp) for interactive
-proof development. Claude wrote all 10,520 lines of Rocq code (482
+proof development. Claude wrote all 8,616 lines of Rocq code (410
 proofs, 0 Admitted) with guidance from a human collaborator who
 provided mathematical direction and design decisions.
 
@@ -16,7 +16,12 @@ programming semantics.
 
 ## Overview
 
-**482 proofs, 0 Admitted, 0 custom axioms, 10,520 lines across 15 files.**
+**410 proofs, 0 Admitted, 0 custom axioms, 8,616 lines across 12 files.**
+
+> **Note**: A higher-order PPL with denotational semantics in QBS
+> (`ppl_qbs.v`, `ppl_kernel.v`, `showcase/ppl_examples.v`) is
+> developed on the [`ppl`](../../tree/ppl) branch as future work.
+> See `PLAN.md` for the roadmap.
 
 Quasi-Borel spaces solve a fundamental problem: the category of
 measurable spaces is not cartesian closed, which prevents giving
@@ -53,19 +58,11 @@ This formalization follows:
 | `standard_borel.v` | 1,256 | 60 | R↔(0,1) via atan, digit interleaving, R≅R×R |
 | `normal_algebra.v` | 1,298 | 77 | Product of Gaussians, normalizing constant computation |
 
-### Higher-order PPL semantics
-
-| File | Lines | Proofs | Description |
-|------|------:|-------:|-------------|
-| `ppl_qbs.v` | 997 | 32 | Intrinsically-typed PPL with function types, sums, sampling (Normal/Uniform/Bernoulli), faithful bind |
-| `ppl_kernel.v` | 312 | 20 | Bridge: first-order PPL programs lift to s-finite kernels |
-
 ### Showcase
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `showcase/bayesian_regression.v` | 916 | 34 | Bayesian linear regression (matching Isabelle AFP) |
-| `showcase/ppl_examples.v` | 494 | 18 | Distributions over function spaces, Bayesian inference over linear functions |
+| `showcase/bayesian_regression.v` | 922 | 34 | Bayesian linear regression with explicit normalizing constant |
 
 ## Key results
 
@@ -88,7 +85,6 @@ This formalization follows:
 - **Bayesian regression**: `evidence_value`, `program_integrates_to_1`
 - **Normal density**: `normal_pdf_times` (product of Gaussians)
 - **S-finite kernel bridge**: `qbs_prob_sfinite`, `qbs_morph_kdirac`, `kernel_integration`
-- **Higher-order PPL**: `expr`, `expr_morphism` (function types via QBS exponentials)
 
 ## Limitations
 
@@ -102,15 +98,6 @@ The formalization is honest about its scope. Key limitations:
   for `qbs_bind` is provided in special cases (`qbs_bind_equiv_l`,
   `qbs_bind_strong_equiv_l`, `qbs_bind_equiv_l_return`); a fully
   unconditional congruence would require disintegration.
-
-- **Higher-order PPL `e_bind` is faithful only for two syntactic
-  shapes**: `e_bind e1 (e_ret e0)` (dispatched to `morph_bind_ret`)
-  and `e_bind e1 e_sample_*` (dispatched to `morph_bind_const`). For
-  other shapes, `expr_sem` falls back to `morph_bind_fallback`, a
-  constant placeholder distribution. `expr_morphism` proves the
-  result is a QBS morphism but does NOT prove semantic faithfulness
-  outside the supported shapes. See the bind-faithfulness section in
-  `theories/ppl_qbs.v`.
 
 - **`lr_adj_iff` is a hom-set bijection**, not a full categorical
   naturality statement. The functorial naturality squares are not

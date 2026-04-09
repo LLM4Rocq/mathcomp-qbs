@@ -3,8 +3,14 @@
 **Project:** QBS -- Quasi-Borel Spaces in Rocq/Coq
 **Repository:** `/home/rocq/QBS`
 **Date:** 2026-04-04
-**Status:** 482 proofs (479 Qed + 3 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 10,520 across 15 files
+**Status:** 410 proofs (408 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** 8,616 across 12 files
+
+> **Note**: The higher-order PPL development (`ppl_qbs.v`,
+> `ppl_kernel.v`, `showcase/ppl_examples.v`) is on the `ppl`
+> branch as future work. This report covers only the QBS
+> foundations and Bayesian regression showcase that are on
+> the `main` branch.
 **Compatibility:** Rocq 9.0.x -- 9.1.x, Math-comp analysis 1.15.x -- 1.16.x
 
 **Primary references:**
@@ -75,6 +81,7 @@
   - [2.25 QBS-Classical Integral Bridge](#225-qbs-classical-integral-bridge)
   - [2.26 Normal Density Algebra](#226-normal-density-algebra)
   - [2.27 Bayesian Linear Regression](#227-bayesian-linear-regression)
+  - [2.28 QBS-Kernel Bridge](#228-qbs-kernel-bridge)
 - [Part III: Standard Borel Spaces (R ≅ R × R)](#part-iii-standard-borel-spaces-r--r--r)
   - [3.1 Standard Borel: R to (0,1) Bijection](#31-standard-borel-r-to-01-bijection)
   - [3.2 Binary Digit Machinery](#32-binary-digit-machinery)
@@ -1305,142 +1312,6 @@ Bridges the QBS probability monad with the s-finite kernel infrastructure from `
 | `kernel_integration` | QBS integral = Lebesgue integral via Giry |
 | `kdirac_round_trip` / `kernel_round_trip` | QBS-Giry round-trip at kernel level |
 
-### 2.29 Higher-Order PPL Semantics
-
-**File:** `theories/ppl_qbs.v` (466 lines, 13 Qed)
-
-A higher-order probabilistic programming language with denotational semantics in QBS. The crucial feature is **function types**: `ppl_fun τ1 τ2` is interpreted as the QBS exponential `expQ ⟦τ1⟧ ⟦τ2⟧`, which is impossible in kernel-based semantics on measurable spaces (the category of measurable spaces is not cartesian closed).
-
-**Types:**
-```
-τ ::= real | bool | unit | τ1 × τ2 | τ1 + τ2 | τ1 → τ2 | P(τ)
-```
-
-**Type interpretation:**
-| PPL type | QBS interpretation |
-|----------|-------------------|
-| `ppl_real` | `realQ R` |
-| `ppl_bool` | `boolQ R` |
-| `ppl_unit` | `unitQ R` |
-| `ppl_prod τ1 τ2` | `prodQ ⟦τ1⟧ ⟦τ2⟧` |
-| `ppl_sum τ1 τ2` | `coprodQ ⟦τ1⟧ ⟦τ2⟧` |
-| `ppl_fun τ1 τ2` | `expQ ⟦τ1⟧ ⟦τ2⟧` (function space) |
-| `ppl_prob τ` | `monadP ⟦τ⟧` |
-
-**Expression constructors** (intrinsically typed via dependent inductive):
-- Variables (de Bruijn), constants, pairs, projections
-- **Lambda** (`e_lam`) and **application** (`e_app`) — higher-order
-- Monadic return (`e_ret`)
-- Sampling primitives (`e_sample_uniform`, `e_sample_normal`)
-
-**Key results:**
-| Name | Statement |
-|------|-----------|
-| `var_lookup_morphism` | de Bruijn lookup is a QBS morphism |
-| `morph_lam` | Lambda combinator via `qbs_morphism_curry` |
-| `morph_app` | Application combinator via `qbs_morphism_eval` |
-| `expr_sem` | Recursive semantics returning morphism bundles |
-| `expr_morphism` | **Soundness: every well-typed expression denotes a QBS morphism** |
-
-**Examples** (each with verified morphism property):
-- `ex_const`: `λx. 42` — constant function
-- `ex_dup`: `λx. (x, x)` — duplication
-- `ex_apply`: `(λx. x) 42` — application
-- `ex_ret`: `return 42` — monadic return
-- `ex_uniform`: `sample uniform` — sampling
-- `ex_ho_prob`: `λf. return (f 0)` — **higher-order probabilistic program** of type `(real → real) → P(real)`
-- `ex_bind`: `do x ~ uniform; return x` — monadic bind
-- `ex_bind_faithful`: same program with faithful denotation via `morph_bind_ret`
-
-The `ex_ho_prob` example is the key demonstration: a function received as input and used to build a probability distribution. This is impossible in kernel-based semantics on measurable spaces.
-
-**Sum type elimination** (Item 3, post-Phase 1 polish):
-- Type `ppl_sum t1 t2` interpreted as `coprodQ`
-- `e_inl`, `e_inr`, `e_case` constructors with `morph_inl`, `morph_inr`, `morph_case` combinators
-- `morph_case` combines case analysis with context handling using `coprodQ_random` three-way split + `qbs_Mx_glue`
-- Examples: `ex_inl_use`, `ex_inr_use`, `ex_case`
-
-**Bernoulli sampling**:
-- `e_sample_bernoulli p hp0 hp1` constructor
-- `morph_sample_bernoulli` combinator using `qbs_bernoulli`
-- Example: `ex_bernoulli`
-
-**Faithful monadic bind on multiple shapes:** The general `e_bind` cannot be discharged from the pointwise `monadP_random_pw` condition. However, the dispatch handles two faithful shapes:
-
-- **`e_ret e0`** (bind/return shape): `morph_bind_ret` discharges the diagonal via `qbs_bind_alpha_random_return`
-- **`e_sample_*`** (constant continuation): `morph_bind_const` discharges the diagonal via `qbs_bind_alpha_random_const`, since `e_sample_uniform`, `e_sample_normal`, and `e_sample_bernoulli` produce probabilities that don't depend on the bound variable
-
-`expr_sem` dispatches in two stages:
-1. `try_morph_of_ret` — detects `e_ret e0` shape, returns `morph_bind_ret`
-2. `try_prob_of_sample` — detects `e_sample_*`, returns `morph_bind_const`
-3. `morph_bind_fallback` — placeholder for the genuinely-dependent case
-
-Equation lemmas (provable by `reflexivity`, so the dispatch is **definitional**):
-- `expr_sem_bind_ret`
-- `expr_sem_bind_sample_uniform`
-- `expr_sem_bind_sample_bernoulli`
-
-The remaining fallback case (continuation that genuinely references the bound variable in a non-return shape) requires the strong morphism condition and is deferred to Phase 2.
-
-### 2.30 First-Order PPL as S-Finite Kernels
-
-**File:** `theories/ppl_kernel.v` (310 lines, 20 Qed)
-
-Bridges the higher-order PPL (Section 2.29) with the kernel infrastructure (Section 2.28). For closed first-order programs, the QBS denotation lifts to an s-finite kernel, connecting our QBS-based semantics to the standard kernel-based PPL semantics (Staton, ESOP 2017; Affeldt et al., CPP 2023).
-
-| Name | Description |
-|------|-------------|
-| `is_first_order` | Predicate excluding `ppl_fun` from PPL types |
-| `is_first_order_ctx` | Lifted predicate over typing contexts |
-| `expr_prob_real_to_giry` | Closed `expr [] (ppl_prob ppl_real)` → `probability mR R` |
-| `expr_prob_real_kernel` | Constant s-finite kernel from a closed program |
-| `expr_prob_real_kernel_setT` | Kernel total mass = 1 |
-| `expr_prob_real_kernel_measurable` | Kernel measurability condition |
-| `expr_prob_real_kernel_sfinite` | Kernel is s-finite (via `prob_sfinite_measure`) |
-| `e_sample_normal_kernel` | Normal sampling lifts to a probability kernel |
-| `e_sample_uniform_kernel` | Uniform sampling lifts to a probability kernel |
-| `e_ret_real_kernel` | Return lifts to a Dirac kernel |
-| `measurable_fun_to_prob_kernel` | Measurable function → Dirac probability kernel via QBS |
-| `expr_prob_real_kernel_integration` | QBS integral = Lebesgue integral against kernel |
-| `ex_normal01_kernel_prob` / `ex_normal01_kernel_sfinite` | Concrete witness `Normal(0,1)` |
-
-This file establishes that QBS subsumes kernel-based first-order semantics: every PPL program that can be expressed without function types lifts to an s-finite kernel, and integration commutes between the QBS and kernel sides.
-
-### 2.31 Higher-Order Showcase
-
-**File:** `theories/showcase/ppl_examples.v` (302 lines, 8 Qed)
-
-Three concrete higher-order probabilistic programs whose denotations require QBS function spaces, impossible to express in kernel-based semantics on measurable spaces.
-
-| Name | Type | Description |
-|------|------|-------------|
-| `random_constant` | `qbs_prob (expQ realQ realQ)` | `λx. c` with `c ~ Normal(0,1)` |
-| `random_linear` | `qbs_prob (expQ realQ realQ)` | `λx. m*x + b` with `m, b ~ Normal(0,1)` |
-| `random_sampler` | `qbs_prob (expQ realQ (monadP realQ))` | `λx. Normal(μ*x, 1)` with `μ ~ Normal(0,1)` (doubly higher-order) |
-
-| Name | Statement |
-|------|-----------|
-| `pack_hom` | Helper to package a `qbs_morphism` proof into `qbsHomType` |
-| `random_constant_well_defined` | The constant random function is a valid `qbs_prob` |
-| `random_linear_well_defined` | The linear random function is a valid `qbs_prob` |
-| `random_sampler_well_defined` | The random sampler is a valid `qbs_prob` |
-| `random_linear_eval_morphism` | Evaluation at fixed `x` is a QBS morphism `expQ realQ realQ → realQ` |
-| `random_linear_eval_at` | The marginal distribution of `m*x + b` via pushforward |
-
-The `random_linear` example is the **headline demonstration**: a distribution over linear functions, sampled from independent Gaussian priors on slope and intercept. The result type `qbs_prob (expQ realQ realQ)` is impossible in kernel-based semantics — the function space `R → R` has no useful sigma-algebra. QBS solves exactly this through the exponential `expQ`.
-
-**Bayesian inference over linear functions:**
-
-| Name | Description |
-|------|-------------|
-| `obs_at_point_morphism` | The likelihood `f → normal_pdf (f x) σ y` is a QBS morphism on `expQ realQ realQ` |
-| `obs_likelihood` | Product likelihood over 3 data points `(1, 2.5), (2, 3.8), (3, 4.5)` |
-| `pair_with_likelihood_morphism` | Pairs each random function with its likelihood weight |
-| `bayesian_random_linear_weighted` | Joint distribution `qbs_prob (prodQ (expQ realQ realQ) realQ)` of (function, weight) |
-| `bayesian_random_linear` | **Posterior `option (qbs_prob (expQ realQ realQ))` via `qbs_normalize`** |
-
-This combines `random_linear` with observation conditioning to obtain a true posterior distribution **over functions**. The full normalization step uses `qbs_normalize` from Section 2.16. This is exactly the higher-order Bayesian inference that classical kernel-based PPL semantics cannot express: the posterior is a distribution on the function space `expQ realQ realQ`, not on a parameter space.
-
 ---
 
 ## Part III: Standard Borel Spaces (R ≅ R × R)
@@ -1753,11 +1624,8 @@ quasi_borel.v
 | `showcase/bayesian_regression.v` | 922 | 34 |
 | `qbs_giry.v` | 201 | 12 |
 | `qbs_kernel.v` | 449 | 21 |
-| `ppl_qbs.v` | 1,032 | 32 |
-| `ppl_kernel.v` | 312 | 20 |
-| `showcase/ppl_examples.v` | 564 | 19 |
-| `standard_borel.v` | 1,256 | 60 |
-| **Total** | **10,520** | **482** |
+| `standard_borel.v` | 1,249 | 60 |
+| **Total** | **8,623** | **410** |
 
 **0 Admitted**, 0 custom axioms.
 
@@ -1778,33 +1646,19 @@ documented in the source files and in this report, not hidden:
    would require disintegration, which is not yet in
    mathcomp-analysis.
 
-2. **`expr_morphism` proves structural soundness, not semantic
-   faithfulness.** Every well-typed expression denotes a QBS
-   morphism, but the denotation is *semantically* faithful for
-   `e_bind` only in two cases:
-   - `e_bind e1 (e_ret e0)` -- dispatched to `morph_bind_ret`
-   - `e_bind e1 e_sample_*` -- dispatched to `morph_bind_const`
-   For other shapes, `expr_sem` falls back to `morph_bind_fallback`,
-   a constant placeholder distribution. The equation lemmas
-   `expr_sem_bind_ret`, `expr_sem_bind_sample_uniform`, and
-   `expr_sem_bind_sample_bernoulli` (provable by reflexivity)
-   characterize when the dispatch is faithful. The fallback
-   limitation is documented in the file header of `ppl_qbs.v` and
-   before `expr_morphism`.
-
-3. **`lr_adj_iff` is a hom-set bijection, not full naturality.**
+2. **`lr_adj_iff` is a hom-set bijection, not full naturality.**
    The lemma in `measure_qbs_adjunction.v` (formerly named
    `lr_adj_natural`) is a single-object biconditional. The
    functorial naturality squares of an L⊣R adjunction are not
    proved; doing so would require a richer category-theoretic
    infrastructure than mathcomp-analysis currently provides.
 
-4. **`qbs_pair_integral_iterated` is iterated integration on a
+3. **`qbs_pair_integral_iterated` is iterated integration on a
    specific product measure**, not full Fubini. It works for the
    QBS product measure constructed via R≅R×R, not for arbitrary
    product measures. (Formerly named `qbs_pair_integralE`.)
 
-5. **`qbs_pair_integral_factorization` is product-measure
+4. **`qbs_pair_integral_factorization` is product-measure
    factorization, not statistical independence.** The lemma
    (formerly `qbs_integral_indep_mult`) states `E[fg] = E[f]E[g]`
    when `f` and `g` depend on disjoint coordinates of a product
@@ -1812,11 +1666,11 @@ documented in the source files and in this report, not hidden:
    predicate exists but is not yet connected to a non-trivial
    independence theorem.
 
-6. **`is_standard_borel` uses encode/decode**, not the classical
+5. **`is_standard_borel` uses encode/decode**, not the classical
    Polish-space characterization. This is convenient for our needs
    but doesn't match the standard literature definition.
 
-7. **`qbs_normalize` returns `option`** and may return `None` when
+6. **`qbs_normalize` returns `option`** and may return `None` when
    the evidence is zero or infinite. Programs using normalization
    must check or prove the success case. Compare to
    `bayesian_regression.v` which explicitly proves `evidence_pos`.

@@ -11,7 +11,4 @@ theories/normal_algebra.v
 theories/standard_borel.v
 theories/qbs_giry.v
 theories/qbs_kernel.v
-theories/ppl_qbs.v
-theories/ppl_kernel.v
 theories/showcase/bayesian_regression.v
-theories/showcase/ppl_examples.v
