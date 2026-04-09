@@ -668,17 +668,19 @@ Lemma obs_int_proof : forall s,
 Proof.
 move=> s; have /integrableP[_ //] : (normal_prob 0 prior_sigma).-integrable setT
   (EFin \o (fun b => obs (s, b))).
+have hbd : [bounded (fun b : mR => obs (s, b)) b | b in [set: mR]].
+  rewrite /bounded_near.
+  exists (normal_peak noise_sigma ^+ 5)%R; split; first by rewrite num_real.
+  move=> M hM b _ /=.
+  rewrite ger0_norm; last exact: (obs_ge0 (s, b)).
+  exact: (order.Order.POrderTheory.le_trans (obs_ub s b)
+                                              (order.Order.POrderTheory.ltW hM)).
 apply: measurable_bounded_integrable.
 - exact: measurableT.
 - suff: ((normal_prob 0 prior_sigma : probability _ _) setT < +oo)%E by [].
   by rewrite probability_setT; exact: ltey.
 - by move: (obs_meas_proof s) => /measurable_EFinP.
-- apply/ex_bound; first exact: globally_properfilter.
-  exists (normal_peak noise_sigma ^+5)%R => b /= _.
-  rewrite ger0_norm; last exact: (obs_ge0 (s, b)).
-  exact: obs_ub.
-Unshelve. all: try exact: globally_properfilter. all: try exact: measurableT.
-all: try by move: (obs_meas_proof s) => /measurable_EFinP.
+- exact: hbd.
 Qed.
 
 (* Helper: each d factor is measurable on the product (s,b) space.
@@ -744,10 +746,12 @@ apply: (@measurable_bounded_integrable _ _ _ _ _ setT).
   apply: measurable_funM; last exact: (d_pair_meas_tac 3%:R (9%:R / 2%:R)).
   apply: measurable_funM; last exact: (d_pair_meas_tac 2%:R (19%:R / 5%:R)).
   exact: (d_pair_meas_tac 1 (5%:R / 2%:R)).
-- apply/ex_bound; first exact: globally_properfilter.
-  exists (normal_peak noise_sigma ^+5)%R => -[s' b'] /= _.
-  rewrite ger0_norm ?obs_ge0 //; exact: obs_ub.
-Unshelve. done.
+- rewrite /bounded_near.
+  exists (normal_peak noise_sigma ^+ 5)%R; split; first by rewrite num_real.
+  move=> M hM -[s' b'] _ /=.
+  rewrite ger0_norm ?obs_ge0 //.
+  exact: (order.Order.POrderTheory.le_trans (obs_ub s' b')
+                                              (order.Order.POrderTheory.ltW hM)).
 Qed.
 
 Lemma sos_meas_proof : measurable_fun [set: mR]
@@ -817,9 +821,12 @@ suff sos_ub : forall s : R, (scalar_of_s s <= M)%R.
   - suff: ((normal_prob 0 prior_sigma : probability _ _) setT < +oo)%E by [].
     by rewrite probability_setT; exact: ltey.
   - by move: sos_meas_proof => /measurable_EFinP.
-  - apply/ex_bound; first exact: globally_properfilter.
-    exists M => s /= _.
-    rewrite ger0_norm ?scalar_of_s_ge0 //; exact: sos_ub.
+  - rewrite /bounded_near.
+    exists M; split; first by rewrite num_real.
+    move=> M' hM' s _ /=.
+    rewrite ger0_norm ?scalar_of_s_ge0 //.
+    exact: (order.Order.POrderTheory.le_trans (sos_ub s)
+                                                (order.Order.POrderTheory.ltW hM')).
 move=> s'; rewrite /scalar_of_s /M.
 have le1 := nf_le1; have pk := @normal_peak_ge0 R; have nf := @normal_fun_ge0 R.
 have hge : forall a b c : R, (0 <= normal_peak a * normal_fun b a c)%R.
@@ -841,7 +848,6 @@ apply: ler_pM; [| |  |exact: hle].
 apply: mulr_ge0; [exact: hge|exact: hge].
 exact: hge.
 apply: ler_pM; [exact: hge|exact: hge|exact: hle|exact: hle].
-Unshelve. done.
 Qed.
 
 (** Program succeeds and integrates to 1
