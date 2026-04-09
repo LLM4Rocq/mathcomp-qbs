@@ -197,6 +197,11 @@ End phi_psi.
 Section binary_digit_interleaving.
 Variable R : realType.
 
+(* Subsection: basic binary digit / partial sum definitions and their
+   arithmetic properties, plus interleave/deinterleave definitions and
+   the geometric sum identity. *)
+Section binary_digit_arithmetic.
+
 (******************************************************************************)
 (* Binary digit extraction and reconstruction                                 *)
 (******************************************************************************)
@@ -347,6 +352,13 @@ apply: (@topology_structure.closed_cvg _ _ eventually _
 - rewrite /bin_sum; exact: is_cvg_bin_partial_sum.
 Qed.
 
+End binary_digit_arithmetic.
+
+(* Subsection: the pairing function pair_to_unit, its inverse unit_to_pair,
+   and the reconstruction lemma bin_digits_reconstruction showing that the
+   binary expansion of x in [0,1) sums back to x. *)
+Section pairing_reconstruction.
+
 (******************************************************************************)
 (* The pairing function (0,1) x (0,1) -> (0,1) and its inverse               *)
 (******************************************************************************)
@@ -432,6 +444,13 @@ have : (fun n : nat => (x : R^o)) n @[n --> \oo] --> x.
   exact: topology_structure.cvg_cst.
 move=> hcstx; have := cvgB hcstx hrem_cvg; rewrite subr0; exact.
 Qed.
+
+End pairing_reconstruction.
+
+(* Subsection: round-trip lemmas for pair_to_unit/unit_to_pair, including
+   the no_trailing_ones canonicalization, uniqueness of binary expansions,
+   and the unconditional unit_to_pairK direction. *)
+Section round_trips.
 
 (******************************************************************************)
 (* Round-trip properties                                                      *)
@@ -753,6 +772,12 @@ apply: injective_projections; rewrite /=.
   by rewrite /d2 bin_digits_reconstruction.
 Qed.
 
+End round_trips.
+
+(* Subsection: measurability of bin_digit, interleave/deinterleave digit
+   extractors, and of pair_to_unit / unit_to_pair. *)
+Section measurability_constructions.
+
 (******************************************************************************)
 (* Measurability helpers                                                      *)
 (******************************************************************************)
@@ -926,6 +951,12 @@ apply: (@measurable_fun_cvg _ _ R [set: R]
 - move=> x _; exact: is_cvg_bin_partial_sum.
 Qed.
 
+End measurability_constructions.
+
+(* Subsection: the composed R x R <-> R bijection encode_RR/decode_RR,
+   its round-trip property, and measurability (including measurable_psi
+   on all of R), culminating in pair_standard_borel. *)
+Section composed_bijection.
 
 (******************************************************************************)
 (* Composed bijection R x R <-> R                                            *)
@@ -1222,6 +1253,8 @@ split; first exact: measurable_encode_RR.
 split; first exact: measurable_decode_RR.
 exact: encode_RRK.
 Qed.
+
+End composed_bijection.
 
 End binary_digit_interleaving.
 
