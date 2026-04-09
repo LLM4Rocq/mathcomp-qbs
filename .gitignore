@@ -33,6 +33,10 @@ rocq_mcp_cache_*.v
 \#*\#
 settings.json
 
+# Working files (not versioned)
+PLAN.md
+REVIEW.md
+
 # Archives
 QBS-export.tar.gz
 
