@@ -31,6 +31,7 @@ From QBS Require Import quasi_borel coproduct_qbs probability_qbs
 (*   e_bind            == monadic bind (see limitations below)      *)
 (*   e_sample_uniform  == sample from Uniform[0,1]                 *)
 (*   e_sample_normal   == sample from Normal(mu,sigma)             *)
+(*   e_sample_bernoulli == sample from Bernoulli(p)                *)
 (* ```                                                              *)
 (********************************************************************)
 
@@ -163,7 +164,11 @@ Inductive expr : ctx -> ppl_type -> Type :=
   (** Sample from Normal(mu,sigma). *)
   | e_sample_normal : forall G
       (mu sigma : R) (hsigma : (0 < sigma)%R),
-      expr G (ppl_prob ppl_real).
+      expr G (ppl_prob ppl_real)
+  (** Sample from Bernoulli(p) with 0 <= p <= 1. *)
+  | e_sample_bernoulli : forall G (p : R)
+      (hp0 : (0 <= p)%R) (hp1 : (p <= 1)%R),
+      expr G (ppl_prob ppl_bool).
 
 (** * Morphism Bundle *)
 
@@ -442,6 +447,20 @@ rewrite /qbs_Mx /= => r.
 exact: @measurable_id _ mR setT.
 Defined.
 
+(** Sample bernoulli morphism: constant
+    Bernoulli(p) distribution on [boolQ R]. *)
+Definition morph_sample_bernoulli G (p : R)
+  (hp0 : (0 <= p)%R) (hp1 : (p <= 1)%R) :
+  morph (ctx_denot G) (monadP (boolQ R)).
+Proof.
+exists (fun _ => @qbs_bernoulli R p hp0 hp1).
+move=> alpha halpha.
+rewrite /qbs_Mx /= => r.
+exact: measurable_fun_ltr
+  (@measurable_id _ mR setT)
+  (@measurable_cst _ _ mR mR setT p).
+Defined.
+
 (** * Denotational Semantics *)
 
 (** Helper: extract, when [e] is syntactically
@@ -517,6 +536,8 @@ Fixpoint expr_sem G t (e : expr G t) :
       morph_sample_uniform G0
   | e_sample_normal G0 mu sigma hs =>
       @morph_sample_normal G0 mu sigma hs
+  | e_sample_bernoulli G0 p hp0 hp1 =>
+      @morph_sample_bernoulli G0 p hp0 hp1
   end.
 
 (** Extract the denotation function. *)
@@ -658,5 +679,19 @@ Lemma expr_sem_bind_ret G t1 t2
   expr_sem (e_bind e1 (e_ret e0)) =
   morph_bind_ret (expr_sem e1) (expr_sem e0).
 Proof. reflexivity. Qed.
+
+(** Example 8: sample from Bernoulli(0). *)
+Lemma ex_bernoulli_p0 : (0 <= 0 :> R)%R.
+Proof. by []. Qed.
+
+Definition ex_bernoulli :
+  expr nil (ppl_prob ppl_bool) :=
+  @e_sample_bernoulli nil 0%R ex_bernoulli_p0 ler01.
+
+Lemma ex_bernoulli_morphism :
+  @qbs_morphism R (ctx_denot nil)
+    (type_denot (ppl_prob ppl_bool))
+    (expr_denot ex_bernoulli).
+Proof. exact: expr_morphism. Qed.
 
 End ppl_denot.
