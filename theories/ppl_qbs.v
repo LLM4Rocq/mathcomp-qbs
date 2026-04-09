@@ -1,4 +1,4 @@
-(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
+(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C. *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
 From mathcomp Require Import reals ereal topology classical_sets
@@ -163,9 +163,11 @@ Inductive expr : ctx -> ppl_type -> Type :=
 Definition morph (X Y : qbsType R) :=
   { f : X -> Y | @qbs_morphism R X Y f }.
 
+(** Extract the underlying function from a morphism bundle. *)
 Definition morph_fun (X Y : qbsType R)
   (m : morph X Y) : X -> Y := proj1_sig m.
 
+(** Extract the morphism proof from a bundle. *)
 Definition morph_pf (X Y : qbsType R)
   (m : morph X Y) :
   @qbs_morphism R X Y (morph_fun m) :=
