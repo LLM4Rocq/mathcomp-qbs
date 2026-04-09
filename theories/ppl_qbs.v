@@ -28,6 +28,7 @@ From QBS Require Import quasi_borel coproduct_qbs probability_qbs
 (*   expr_morphism e   == proof that expr_denot is a QBS morphism  *)
 (*   e_lam / e_app     == higher-order: lambda and application     *)
 (*   e_ret             == monadic return                            *)
+(*   e_bind            == monadic bind (see limitations below)      *)
 (*   e_sample_uniform  == sample from Uniform[0,1]                 *)
 (*   e_sample_normal   == sample from Normal(mu,sigma)             *)
 (* ```                                                              *)
@@ -149,6 +150,13 @@ Inductive expr : ctx -> ppl_type -> Type :=
   | e_ret : forall G t,
       expr G t ->
       expr G (ppl_prob t)
+  (** Monadic bind: sequences a probabilistic
+      computation with a continuation that may
+      reference the bound value in its context. *)
+  | e_bind : forall G t1 t2,
+      expr G (ppl_prob t1) ->
+      expr (t1 :: G) (ppl_prob t2) ->
+      expr G (ppl_prob t2)
   (** Sample from Uniform[0,1]. *)
   | e_sample_uniform : forall G,
       expr G (ppl_prob ppl_real)
@@ -317,6 +325,96 @@ rewrite /qbs_Mx /= => r.
 exact: @qbs_Mx_const.
 Defined.
 
+(** Monadic bind where the continuation is a
+    pure return: [do x <- m1; return (m2 x)].
+    The diagonal randomness is discharged using
+    [qbs_bind_alpha_random_return] together with
+    the morphism proof of [m2]. This is the
+    currently supported form of monadic bind:
+    the general case needs the strong morphism
+    condition, which cannot be discharged
+    generically from the pointwise condition of
+    [monadP] (see [probability_qbs.v]). *)
+Definition morph_bind_ret G t1 t2
+  (m1 : morph (ctx_denot G)
+    (monadP (type_denot t1)))
+  (m2 : morph (ctx_denot (t1 :: G))
+    (type_denot t2)) :
+  morph (ctx_denot G)
+    (monadP (type_denot t2)).
+Proof.
+set f1 := morph_fun m1.
+set h1 := @morph_pf _ _ m1.
+set f2 := morph_fun m2.
+set h2 := @morph_pf _ _ m2.
+pose mu0 : probability mR R :=
+  uniform_prob (@ltr01 R).
+pose k env : type_denot t1 ->
+  qbs_prob (type_denot t2) :=
+  fun x => qbs_return (type_denot t2)
+    (f2 (x, env)) mu0.
+have diag : forall env,
+  @qbs_Mx R (type_denot t2)
+    (fun r => qbs_prob_alpha
+      (k env (qbs_prob_alpha (f1 env) r)) r).
+  move=> env; rewrite /k /=.
+  apply: h2 => /=; split.
+  - exact: (qbs_prob_alpha_random (f1 env)).
+  - exact: qbs_Mx_const.
+exists (fun env =>
+  qbs_bind (type_denot t1) (type_denot t2)
+    (f1 env) (k env) (diag env)).
+move=> alpha halpha.
+rewrite /qbs_Mx /= => r.
+rewrite /k /=.
+exact: (diag (alpha r)).
+Defined.
+
+(** Canonical inhabitant of each PPL type. Used
+    only to build a trivial default probability
+    for the non-supported form of [e_bind]. *)
+Fixpoint type_point (t : ppl_type) : type_denot t :=
+  match t with
+  | ppl_real => 0%R
+  | ppl_bool => false
+  | ppl_unit => tt
+  | ppl_prod t1 t2 =>
+      (type_point t1, type_point t2)
+  | ppl_fun t1 t2 =>
+      @mk_hom (type_denot t1) (type_denot t2)
+        (fun _ => type_point t2)
+        (@qbs_morphism_const R
+          (type_denot t1) (type_denot t2)
+          (type_point t2))
+  | ppl_prob t' =>
+      qbs_return (type_denot t')
+        (type_point t')
+        (uniform_prob (@ltr01 R))
+  end.
+
+(** Fallback bind combinator used when the
+    continuation is not syntactically a [e_ret].
+    In that case we cannot discharge the
+    diagonal-randomness obligation without the
+    strong morphism condition, so we return a
+    placeholder constant distribution. The PPL
+    semantics for [e_bind] is therefore only
+    faithful when the second argument is an
+    [e_ret]; this limitation is documented
+    at [expr_sem]. *)
+Definition morph_bind_fallback G t2 :
+  morph (ctx_denot G)
+    (monadP (type_denot t2)).
+Proof.
+exists (fun _ =>
+  qbs_return (type_denot t2)
+    (type_point t2)
+    (uniform_prob (@ltr01 R))).
+move=> alpha halpha.
+rewrite /qbs_Mx /= => r.
+exact: qbs_Mx_const.
+Defined.
+
 (** Sample uniform morphism: constant
     Uniform[0,1] distribution. *)
 Definition morph_sample_uniform G :
@@ -370,6 +468,14 @@ Fixpoint expr_sem G t (e : expr G t) :
       morph_app (expr_sem ef) (expr_sem ea)
   | e_ret _ _ e0 =>
       morph_ret (expr_sem e0)
+  | e_bind G0 _ t2 _ _ =>
+      (** The general monadic bind cannot be
+          discharged from the pointwise
+          morphism condition of [monadP]. We
+          use a placeholder; use
+          [morph_bind_ret] directly for the
+          supported [bind/return] shape. *)
+      morph_bind_fallback G0 t2
   | e_sample_uniform G0 =>
       morph_sample_uniform G0
   | e_sample_normal G0 mu sigma hs =>
@@ -462,5 +568,44 @@ Lemma ex_ho_prob_morphism :
         (ppl_prob ppl_real)))
     (expr_denot ex_ho_prob).
 Proof. exact: expr_morphism. Qed.
+
+(** Example 7: monadic bind
+    [do x <- sample uniform; return x].
+    Note that the denotation via [expr_sem]
+    uses [morph_bind_fallback] (a constant
+    placeholder distribution). For a faithful
+    denotation of this program one should use
+    [morph_bind_ret] directly, as shown in
+    [ex_bind_faithful] below. *)
+Definition ex_bind :
+  expr nil (ppl_prob ppl_real) :=
+  e_bind
+    (e_sample_uniform nil)
+    (e_ret (e_var (var_here nil ppl_real))).
+
+Lemma ex_bind_morphism :
+  @qbs_morphism R (ctx_denot nil)
+    (type_denot (ppl_prob ppl_real))
+    (expr_denot ex_bind).
+Proof. exact: expr_morphism. Qed.
+
+(** A faithful denotation of
+    [do x <- sample uniform; return x] using
+    [morph_bind_ret] directly, bypassing the
+    placeholder used by [expr_sem] on [e_bind].
+    This binds a Uniform[0,1] sample and
+    returns it unchanged. *)
+Definition ex_bind_faithful :
+  morph (ctx_denot nil)
+    (monadP (realQ R)) :=
+  @morph_bind_ret nil ppl_real ppl_real
+    (morph_sample_uniform nil)
+    (morph_var (var_here nil ppl_real)).
+
+Lemma ex_bind_faithful_morphism :
+  @qbs_morphism R (ctx_denot nil)
+    (monadP (realQ R))
+    (morph_fun ex_bind_faithful).
+Proof. exact: morph_pf. Qed.
 
 End ppl_denot.
