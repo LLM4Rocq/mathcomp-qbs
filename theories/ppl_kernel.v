@@ -71,6 +71,8 @@ Fixpoint is_first_order (t : ppl_type) : bool :=
   | ppl_real | ppl_bool | ppl_unit => true
   | ppl_prod t1 t2 =>
       is_first_order t1 && is_first_order t2
+  | ppl_sum t1 t2 =>
+      is_first_order t1 && is_first_order t2
   | ppl_fun _ _ => false
   | ppl_prob t1 => is_first_order t1
   end.
