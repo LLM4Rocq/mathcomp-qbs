@@ -3,8 +3,8 @@
 **Project:** QBS -- Quasi-Borel Spaces in Rocq/Coq
 **Repository:** `/home/rocq/QBS`
 **Date:** 2026-04-04
-**Status:** 475 proofs (473 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 10,271 across 15 files
+**Status:** 482 proofs (479 Qed + 3 Defined), **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** 10,520 across 15 files
 **Compatibility:** Rocq 9.0.x -- 9.1.x, Math-comp analysis 1.15.x -- 1.16.x
 
 **Primary references:**
@@ -1742,26 +1742,86 @@ quasi_borel.v
 
 | File | Lines | Proofs |
 |------|------:|-------:|
-| `quasi_borel.v` | 721 | 45 |
+| `quasi_borel.v` | 750 | 47 |
 | `measure_qbs_adjunction.v` | 523 | 27 |
-| `coproduct_qbs.v` | 685 | 22 |
-| `probability_qbs.v` | 1,200 | 63 |
+| `coproduct_qbs.v` | 720 | 25 |
+| `probability_qbs.v` | 1,275 | 63 |
 | `pair_qbs_measure.v` | 598 | 17 |
 | `qbs_prob_quot.v` | 333 | 17 |
 | `measure_as_qbs_measure.v` | 288 | 10 |
-| `normal_algebra.v` | 1,298 | 77 |
-| `showcase/bayesian_regression.v` | 916 | 34 |
+| `normal_algebra.v` | 1,295 | 77 |
+| `showcase/bayesian_regression.v` | 922 | 34 |
 | `qbs_giry.v` | 201 | 12 |
 | `qbs_kernel.v` | 449 | 21 |
-| `ppl_qbs.v` | 997 | 32 |
+| `ppl_qbs.v` | 1,032 | 32 |
 | `ppl_kernel.v` | 312 | 20 |
-| `showcase/ppl_examples.v` | 494 | 18 |
+| `showcase/ppl_examples.v` | 564 | 19 |
 | `standard_borel.v` | 1,256 | 60 |
-| **Total** | **10,271** | **475** |
+| **Total** | **10,520** | **482** |
 
 **0 Admitted**, 0 custom axioms.
 
-### 4.5 Remaining Work
+### 4.5 Honest Limitations
+
+The formalization is honest about its scope. These limitations are
+documented in the source files and in this report, not hidden:
+
+1. **Probability monad uses pointwise random condition.** The QBS
+   probability monad is built on `monadP_random_pw`, not the strong
+   shared condition `monadP_random`. As a result `qbs_bind` requires
+   an explicit diagonal-randomness proof (`hdiag`). The three monad
+   laws (`qbs_bind_returnl`, `qbs_bind_returnr`, `qbs_bindA`) are
+   stated up to `qbs_prob_equiv` (setoid), not propositional equality.
+   Congruence for `qbs_bind` is provided in three special cases
+   (`qbs_bind_equiv_l`, `qbs_bind_strong_equiv_l`,
+   `qbs_bind_equiv_l_return`); a fully unconditional congruence
+   would require disintegration, which is not yet in
+   mathcomp-analysis.
+
+2. **`expr_morphism` proves structural soundness, not semantic
+   faithfulness.** Every well-typed expression denotes a QBS
+   morphism, but the denotation is *semantically* faithful for
+   `e_bind` only in two cases:
+   - `e_bind e1 (e_ret e0)` -- dispatched to `morph_bind_ret`
+   - `e_bind e1 e_sample_*` -- dispatched to `morph_bind_const`
+   For other shapes, `expr_sem` falls back to `morph_bind_fallback`,
+   a constant placeholder distribution. The equation lemmas
+   `expr_sem_bind_ret`, `expr_sem_bind_sample_uniform`, and
+   `expr_sem_bind_sample_bernoulli` (provable by reflexivity)
+   characterize when the dispatch is faithful. The fallback
+   limitation is documented in the file header of `ppl_qbs.v` and
+   before `expr_morphism`.
+
+3. **`lr_adj_iff` is a hom-set bijection, not full naturality.**
+   The lemma in `measure_qbs_adjunction.v` (formerly named
+   `lr_adj_natural`) is a single-object biconditional. The
+   functorial naturality squares of an L⊣R adjunction are not
+   proved; doing so would require a richer category-theoretic
+   infrastructure than mathcomp-analysis currently provides.
+
+4. **`qbs_pair_integral_iterated` is iterated integration on a
+   specific product measure**, not full Fubini. It works for the
+   QBS product measure constructed via R≅R×R, not for arbitrary
+   product measures. (Formerly named `qbs_pair_integralE`.)
+
+5. **`qbs_pair_integral_factorization` is product-measure
+   factorization, not statistical independence.** The lemma
+   (formerly `qbs_integral_indep_mult`) states `E[fg] = E[f]E[g]`
+   when `f` and `g` depend on disjoint coordinates of a product
+   measure, which is a tautology of products. The actual `qbs_indep`
+   predicate exists but is not yet connected to a non-trivial
+   independence theorem.
+
+6. **`is_standard_borel` uses encode/decode**, not the classical
+   Polish-space characterization. This is convenient for our needs
+   but doesn't match the standard literature definition.
+
+7. **`qbs_normalize` returns `option`** and may return `None` when
+   the evidence is zero or infinite. Programs using normalization
+   must check or prove the success case. Compare to
+   `bayesian_regression.v` which explicitly proves `evidence_pos`.
+
+### 4.6 Remaining Work
 
 1. **Normalizer as QBS morphism.** Proving `qbs_normalize` is itself a QBS morphism (requires extracting measure-theoretic conditions from random elements). Estimated ~50-100 lines.
 

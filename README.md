@@ -5,7 +5,7 @@
 This formalization was developed with
 [Claude Opus 4.6](https://claude.ai/claude-code) using
 [Rocq-MCP](https://github.com/LLM4Rocq/rocq-mcp) for interactive
-proof development. Claude wrote all 10,271 lines of Rocq code (475
+proof development. Claude wrote all 10,520 lines of Rocq code (482
 proofs, 0 Admitted) with guidance from a human collaborator who
 provided mathematical direction and design decisions.
 
@@ -16,7 +16,7 @@ programming semantics.
 
 ## Overview
 
-**475 proofs, 0 Admitted, 0 custom axioms, 10,271 lines across 15 files.**
+**482 proofs, 0 Admitted, 0 custom axioms, 10,520 lines across 15 files.**
 
 Quasi-Borel spaces solve a fundamental problem: the category of
 measurable spaces is not cartesian closed, which prevents giving
@@ -69,12 +69,18 @@ This formalization follows:
 
 ## Key results
 
-- **Cartesian closure**: `qbs_morphism_eval`, `qbs_morphism_curry`
-- **L⊣R adjunction**: `lr_adj_natural`
+- **Cartesian closure**: `qbs_morphism_eval`, `qbs_morphism_curry`,
+  `qbs_morphism_curry_eval` (β), `qbs_morphism_eval_curry` (η)
+- **L⊣R hom-set bijection**: `lr_adj_iff` (a single-object
+  biconditional, not a full categorical naturality theorem)
 - **Full faithfulness**: `R_full_faithful_standard_borel`
 - **Probability monad**: `qbs_bind_returnl`, `qbs_bind_returnr`, `qbs_bindA`
-- **Fubini**: `qbs_pair_integralE`
-- **Independence**: `qbs_integral_indep_mult` (E[fg] = E[f]E[g])
+- **Iterated integration on product measures**: `qbs_pair_integral_iterated`
+  (Fubini for the specific QBS product measure construction)
+- **Product-measure factorization**: `qbs_pair_integral_factorization`
+  (E[fg] = E[f]E[g] when f, g depend on disjoint coordinates of a
+  product measure; this is a tautology of products, not a general
+  independence theorem)
 - **QBS↔Giry**: `qbs_to_giry`, `qbs_integral_giry`
 - **R≅R×R**: `pair_standard_borel`, `encode_RRK`
 - **Normalizer**: `qbs_normalize`, `qbs_normalize_total`, `qbs_normalize_integral`
@@ -83,6 +89,45 @@ This formalization follows:
 - **Normal density**: `normal_pdf_times` (product of Gaussians)
 - **S-finite kernel bridge**: `qbs_prob_sfinite`, `qbs_morph_kdirac`, `kernel_integration`
 - **Higher-order PPL**: `expr`, `expr_morphism` (function types via QBS exponentials)
+
+## Limitations
+
+The formalization is honest about its scope. Key limitations:
+
+- **Probability monad uses the pointwise random-element condition**
+  (`monadP_random_pw`), not the strong shared condition. As a result,
+  `qbs_bind` requires an explicit diagonal-randomness proof and the
+  three monad laws (`qbs_bind_returnl`, `qbs_bind_returnr`, `qbs_bindA`)
+  are stated up to `qbs_prob_equiv` (setoid equivalence). Congruence
+  for `qbs_bind` is provided in special cases (`qbs_bind_equiv_l`,
+  `qbs_bind_strong_equiv_l`, `qbs_bind_equiv_l_return`); a fully
+  unconditional congruence would require disintegration.
+
+- **Higher-order PPL `e_bind` is faithful only for two syntactic
+  shapes**: `e_bind e1 (e_ret e0)` (dispatched to `morph_bind_ret`)
+  and `e_bind e1 e_sample_*` (dispatched to `morph_bind_const`). For
+  other shapes, `expr_sem` falls back to `morph_bind_fallback`, a
+  constant placeholder distribution. `expr_morphism` proves the
+  result is a QBS morphism but does NOT prove semantic faithfulness
+  outside the supported shapes. See the bind-faithfulness section in
+  `theories/ppl_qbs.v`.
+
+- **`lr_adj_iff` is a hom-set bijection**, not a full categorical
+  naturality statement. The functorial naturality squares are not
+  proved.
+
+- **Standard Borel** is defined via the existence of an
+  encode/decode pair, not via the classical Polish-space
+  characterization.
+
+- **`qbs_normalize` returns `option`** and may return `None` when
+  the evidence is zero or infinite. Programs using normalization
+  must check or prove the success case.
+
+- **`qbs_expect_normal`** (E[Normal(μ,σ)] = μ) currently requires
+  three analytic hypotheses (identity integrability against
+  normal_prob, odd-function integrability, odd integral = 0). These
+  are standard analytic facts not yet in mathcomp-analysis.
 
 ## Requirements
 
