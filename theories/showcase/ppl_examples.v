@@ -1,14 +1,9 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C. *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
-From mathcomp Require Import reals.
-From mathcomp Require Import classical_sets.
-From mathcomp Require Import num_topology.
-From mathcomp Require Import measurable_structure.
-From mathcomp Require Import measurable_function.
-From mathcomp Require Import lebesgue_stieltjes_measure.
-From mathcomp Require Import measurable_realfun.
-From mathcomp Require Import probability.
+From mathcomp Require Import reals classical_sets num_topology
+  measurable_structure measurable_function lebesgue_stieltjes_measure
+  measurable_realfun probability.
 From QBS Require Import quasi_borel probability_qbs pair_qbs_measure
   measure_as_qbs_measure.
 
