@@ -81,10 +81,7 @@ congr (_ * _).
           ?addr_ge0 ?sqr_ge0 //.
   congr (_^-1); congr (sqrtr _).
   rewrite exprMn exprVn sqr_sqrtr ?addr_ge0 ?sqr_ge0 //.
-  field. exact: hS.
-  Unshelve.
-  all: try by apply: mulr_ge0 => //; exact: sqr_ge0.
-  all: try by apply: mulrn_wge0.
+  by field; exact: hS.
 - (* funsE *)
   rewrite /normal_fun -exp.expRD -[RHS]exp.expRD.
   congr (sequences.expR _).
