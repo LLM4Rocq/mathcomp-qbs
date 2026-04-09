@@ -50,6 +50,7 @@ Inductive ppl_type : Type :=
   | ppl_bool
   | ppl_unit
   | ppl_prod (t1 t2 : ppl_type)
+  | ppl_sum (t1 t2 : ppl_type)
   | ppl_fun (t1 t2 : ppl_type)
   | ppl_prob (t : ppl_type).
 
@@ -77,6 +78,8 @@ Fixpoint type_denot (t : ppl_type) : qbsType R :=
   | ppl_unit => unitQ R
   | ppl_prod t1 t2 =>
       prodQ (type_denot t1) (type_denot t2)
+  | ppl_sum t1 t2 =>
+      coprodQ (type_denot t1) (type_denot t2)
   | ppl_fun t1 t2 =>
       expQ (type_denot t1) (type_denot t2)
   | ppl_prob t =>
@@ -168,7 +171,19 @@ Inductive expr : ctx -> ppl_type -> Type :=
   (** Sample from Bernoulli(p) with 0 <= p <= 1. *)
   | e_sample_bernoulli : forall G (p : R)
       (hp0 : (0 <= p)%R) (hp1 : (p <= 1)%R),
-      expr G (ppl_prob ppl_bool).
+      expr G (ppl_prob ppl_bool)
+  (** Sum type: left injection. *)
+  | e_inl : forall G t1 t2,
+      expr G t1 -> expr G (ppl_sum t1 t2)
+  (** Sum type: right injection. *)
+  | e_inr : forall G t1 t2,
+      expr G t2 -> expr G (ppl_sum t1 t2)
+  (** Sum type: case analysis. *)
+  | e_case : forall G t1 t2 t,
+      expr G (ppl_sum t1 t2) ->
+      expr (t1 :: G) t ->
+      expr (t2 :: G) t ->
+      expr G t.
 
 (** * Morphism Bundle *)
 
@@ -385,6 +400,8 @@ Fixpoint type_point (t : ppl_type) : type_denot t :=
   | ppl_unit => tt
   | ppl_prod t1 t2 =>
       (type_point t1, type_point t2)
+  | ppl_sum t1 t2 =>
+      inl (type_point t1)
   | ppl_fun t1 t2 =>
       @mk_hom (type_denot t1) (type_denot t2)
         (fun _ => type_point t2)
@@ -459,6 +476,127 @@ rewrite /qbs_Mx /= => r.
 exact: measurable_fun_ltr
   (@measurable_id _ mR setT)
   (@measurable_cst _ _ mR mR setT p).
+Defined.
+
+(** Left injection morphism: lifts a morphism
+    into a sum type via [inl]. *)
+Definition morph_inl G t1 t2
+  (s : morph (ctx_denot G) (type_denot t1)) :
+  morph (ctx_denot G)
+    (coprodQ (type_denot t1) (type_denot t2)).
+Proof.
+exists (fun env => inl (morph_fun s env)).
+move=> alpha halpha.
+have h := @morph_pf _ _ s alpha halpha.
+rewrite /qbs_Mx /=; left.
+exists (fun r => morph_fun s (alpha r)).
+split => //.
+Defined.
+
+(** Right injection morphism: lifts a morphism
+    into a sum type via [inr]. *)
+Definition morph_inr G t1 t2
+  (s : morph (ctx_denot G) (type_denot t2)) :
+  morph (ctx_denot G)
+    (coprodQ (type_denot t1) (type_denot t2)).
+Proof.
+exists (fun env => inr (morph_fun s env)).
+move=> alpha halpha.
+have h := @morph_pf _ _ s alpha halpha.
+rewrite /qbs_Mx /=; right; left.
+exists (fun r => morph_fun s (alpha r)).
+split => //.
+Defined.
+
+(** Case analysis over a sum inside a context.
+    Given a scrutinee morphism [ss] producing
+    [coprodQ X Y] from the context [Γ], a
+    continuation [s1] on [t1::G] and a
+    continuation [s2] on [t2::G], produces a
+    morphism [Γ -> Z] by case analysis on the
+    value of [ss]. *)
+Definition morph_case G t1 t2 t
+  (ss : morph (ctx_denot G)
+    (coprodQ (type_denot t1) (type_denot t2)))
+  (s1 : morph (ctx_denot (t1 :: G))
+    (type_denot t))
+  (s2 : morph (ctx_denot (t2 :: G))
+    (type_denot t)) :
+  morph (ctx_denot G) (type_denot t).
+Proof.
+unshelve eexists.
+  refine (fun env =>
+    match morph_fun ss env with
+    | inl x => morph_fun s1 (x, env)
+    | inr y => morph_fun s2 (y, env)
+    end).
+move=> alpha halpha.
+have hscr :=
+  @morph_pf _ _ ss alpha halpha.
+rewrite /qbs_Mx /= in hscr.
+rewrite /qbs_Mx /=.
+pose target :=
+  fun r : mR =>
+    match morph_fun ss (alpha r) with
+    | inl x => morph_fun s1 (x, alpha r)
+    | inr y => morph_fun s2 (y, alpha r)
+    end.
+change
+  (@qbs_Mx R (type_denot t) target).
+case: hscr =>
+  [[a [ha hdef]]
+  |[[b' [hb hdef]]
+   |[P [a [b' [hP [ha [hb hdef]]]]]]]].
+- (* scrutinee factors through inl *)
+  have -> :
+    target = (fun r => morph_fun s1 (a r, alpha r)).
+    apply: boolp.funext => r.
+    rewrite /target /=.
+    have htmp := hdef r.
+    rewrite /= in htmp.
+    by rewrite htmp.
+  apply: (@morph_pf _ _ s1) => /=; split => //.
+- (* scrutinee factors through inr *)
+  have -> :
+    target = (fun r => morph_fun s2 (b' r, alpha r)).
+    apply: boolp.funext => r.
+    rewrite /target /=.
+    have htmp := hdef r.
+    rewrite /= in htmp.
+    by rewrite htmp.
+  apply: (@morph_pf _ _ s2) => /=; split => //.
+- (* scrutinee is a measurable gluing *)
+  have -> :
+    target = (fun r => if P r
+      then morph_fun s1 (a r, alpha r)
+      else morph_fun s2 (b' r, alpha r)).
+    apply: boolp.funext => r.
+    rewrite /target /=.
+    have htmp := hdef r.
+    rewrite /= in htmp.
+    rewrite htmp; by case: (P r).
+  set Pn : mR -> nat :=
+    fun r => if P r then 0%N else 1%N.
+  set Gi : nat -> mR -> type_denot t :=
+    fun i =>
+      if i == 0%N
+      then fun r => morph_fun s1 (a r, alpha r)
+      else fun r => morph_fun s2 (b' r, alpha r).
+  have -> :
+    (fun r : mR => if P r
+      then morph_fun s1 (a r, alpha r)
+      else morph_fun s2 (b' r, alpha r)) =
+    (fun r => Gi (Pn r) r).
+    apply: boolp.funext => r.
+    rewrite /Gi /Pn; by case: (P r).
+  apply: (@qbs_Mx_glue R (type_denot t) Pn Gi).
+    rewrite /Pn.
+    apply: (measurable_fun_ifT hP);
+      exact: measurable_cst.
+  move=> i; rewrite /Gi.
+  case: (i == 0%N).
+  + apply: (@morph_pf _ _ s1) => /=; split => //.
+  + apply: (@morph_pf _ _ s2) => /=; split => //.
 Defined.
 
 (** * Denotational Semantics *)
@@ -538,6 +676,13 @@ Fixpoint expr_sem G t (e : expr G t) :
       @morph_sample_normal G0 mu sigma hs
   | e_sample_bernoulli G0 p hp0 hp1 =>
       @morph_sample_bernoulli G0 p hp0 hp1
+  | e_inl _ _ t2 e0 =>
+      @morph_inl _ _ t2 (expr_sem e0)
+  | e_inr _ t1 _ e0 =>
+      @morph_inr _ t1 _ (expr_sem e0)
+  | e_case _ _ _ _ es e1 e2 =>
+      morph_case (expr_sem es)
+        (expr_sem e1) (expr_sem e2)
   end.
 
 (** Extract the denotation function. *)
@@ -692,6 +837,46 @@ Lemma ex_bernoulli_morphism :
   @qbs_morphism R (ctx_denot nil)
     (type_denot (ppl_prob ppl_bool))
     (expr_denot ex_bernoulli).
+Proof. exact: expr_morphism. Qed.
+
+(** Example 9: left injection into a sum type.
+    [inl true : bool + real]. *)
+Definition ex_inl_use :
+  expr nil (ppl_sum ppl_bool ppl_real) :=
+  @e_inl nil ppl_bool ppl_real (e_bool _ true).
+
+Lemma ex_inl_use_morphism :
+  @qbs_morphism R (ctx_denot nil)
+    (type_denot (ppl_sum ppl_bool ppl_real))
+    (expr_denot ex_inl_use).
+Proof. exact: expr_morphism. Qed.
+
+(** Example 10: right injection into a sum. *)
+Definition ex_inr_use :
+  expr nil (ppl_sum ppl_bool ppl_real) :=
+  @e_inr nil ppl_bool ppl_real (e_real _ 42%:R).
+
+Lemma ex_inr_use_morphism :
+  @qbs_morphism R (ctx_denot nil)
+    (type_denot (ppl_sum ppl_bool ppl_real))
+    (expr_denot ex_inr_use).
+Proof. exact: expr_morphism. Qed.
+
+(** Example 11: case analysis on a sum type.
+    [case (inl true) of
+       | inl b => b
+       | inr _ => false]. *)
+Definition ex_case :
+  expr nil ppl_bool :=
+  e_case
+    ex_inl_use
+    (e_var (var_here _ ppl_bool))
+    (e_bool _ false).
+
+Lemma ex_case_morphism :
+  @qbs_morphism R (ctx_denot nil)
+    (type_denot ppl_bool)
+    (expr_denot ex_case).
 Proof. exact: expr_morphism. Qed.
 
 End ppl_denot.
