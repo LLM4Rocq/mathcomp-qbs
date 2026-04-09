@@ -182,7 +182,8 @@ Lemma posterior_density_total
 Proof.
 rewrite /posterior_density.
 have -> : (fun params : realQ R * realQ R => 1 * (obs params)%:E) =
-          (fun params => (obs params)%:E) by apply: boolp.funext => p; rewrite mul1e.
+          (fun params => (obs params)%:E).
+  by apply: boolp.funext => p; rewrite mul1e.
 rewrite -/(evidence).
 apply: divee.
 - by rewrite gt0_fin_numE.
@@ -673,8 +674,9 @@ have hbd : [bounded (fun b : mR => obs (s, b)) b | b in [set: mR]].
   exists (normal_peak noise_sigma ^+ 5)%R; split; first by rewrite num_real.
   move=> M hM b _ /=.
   rewrite ger0_norm; last exact: (obs_ge0 (s, b)).
-  exact: (order.Order.POrderTheory.le_trans (obs_ub s b)
-                                              (order.Order.POrderTheory.ltW hM)).
+  exact: (order.Order.POrderTheory.le_trans
+            (obs_ub s b)
+            (order.Order.POrderTheory.ltW hM)).
 apply: measurable_bounded_integrable.
 - exact: measurableT.
 - suff: ((normal_prob 0 prior_sigma : probability _ _) setT < +oo)%E by [].
@@ -750,8 +752,9 @@ apply: (@measurable_bounded_integrable _ _ _ _ _ setT).
   exists (normal_peak noise_sigma ^+ 5)%R; split; first by rewrite num_real.
   move=> M hM -[s' b'] _ /=.
   rewrite ger0_norm ?obs_ge0 //.
-  exact: (order.Order.POrderTheory.le_trans (obs_ub s' b')
-                                              (order.Order.POrderTheory.ltW hM)).
+  exact: (order.Order.POrderTheory.le_trans
+            (obs_ub s' b')
+            (order.Order.POrderTheory.ltW hM)).
 Qed.
 
 Lemma sos_meas_proof : measurable_fun [set: mR]
@@ -825,8 +828,9 @@ suff sos_ub : forall s : R, (scalar_of_s s <= M)%R.
     exists M; split; first by rewrite num_real.
     move=> M' hM' s _ /=.
     rewrite ger0_norm ?scalar_of_s_ge0 //.
-    exact: (order.Order.POrderTheory.le_trans (sos_ub s)
-                                                (order.Order.POrderTheory.ltW hM')).
+    exact: (order.Order.POrderTheory.le_trans
+              (sos_ub s)
+              (order.Order.POrderTheory.ltW hM')).
 move=> s'; rewrite /scalar_of_s /M.
 have le1 := nf_le1; have pk := @normal_peak_ge0 R; have nf := @normal_fun_ge0 R.
 have hge : forall a b c : R, (0 <= normal_peak a * normal_fun b a c)%R.
