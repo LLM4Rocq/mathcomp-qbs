@@ -290,7 +290,34 @@ Qed.
 
 (* 6. Monad Laws (up to qbs_prob_equiv)
    Left unit and right unit are fully proved. Associativity
-   is proved assuming the strong morphism condition. *)
+   is proved assuming the strong morphism condition.
+
+   Usage note. The laws below are stated up to the setoid
+   equivalence [qbs_prob_equiv]. To apply them inside nested
+   bind-expressions (i.e. to rewrite under a [qbs_bind]) we
+   need a congruence lemma stating that [qbs_bind] respects
+   [qbs_prob_equiv] in its first argument. Such congruence
+   lemmas are provided in Section 13 below:
+
+     - [qbs_bind_equiv_l]         -- general case, assumes
+                                     the diagonal extraction
+                                     factors through a
+                                     QBS morphism g : X -> Y;
+     - [qbs_bind_strong_equiv_l]  -- specialisation to
+                                     strong morphisms f,
+                                     still requiring the
+                                     factoring hypothesis;
+     - [qbs_bind_equiv_l_return]  -- specialisation when f
+                                     is a "return-like" map
+                                     f(x) = qbs_return(g x, mu x),
+                                     which covers the maps
+                                     arising from morphisms
+                                     g : X -> Y.
+
+   An unconditional congruence (with no factoring assumption)
+   would require the disintegration theorem for QBS, which is
+   not in the current development; see the comment at the head
+   of Section 13. *)
 
 Lemma qbs_bind_returnl (X Y : qbsType R) (x : X)
   (f : X -> qbs_prob Y)
@@ -577,22 +604,62 @@ Definition qbs_strength (W X : qbsType R)
 
 Arguments qbs_strength : clear implicits.
 
-(* 13. Bind respects equivalence
-   The key result: bind respects equivalence on the first
-   argument. The proof requires the diagonal extraction to
-   factor through a QBS morphism g : X -> Y.
+(* 13. Bind respects equivalence (congruence lemmas)
 
-   The general case requires the disintegration theorem,
-   which is beyond the current development. *)
+   The monad laws [qbs_bind_returnl], [qbs_bind_returnr] and
+   [qbs_bindA] in Section 6 are stated up to [qbs_prob_equiv].
+   For these laws to be usable for rewriting inside nested
+   bind-terms we also need a congruence lemma: if p1 ~ p2 then
+   [qbs_bind p1 f ~ qbs_bind p2 f]. Without this, the setoid-level
+   monad laws cannot be composed.
 
-(* Bind respects equivalence on the first argument when the diagonal
-   factors through a QBS morphism g : X -> Y.
+   The obstacle to a fully unconditional congruence is the
+   definition of [qbs_bind], whose alpha is the "diagonal"
+     r |-> qbs_prob_alpha (f (qbs_prob_alpha p r)) r,
+   i.e. it mixes the alpha of p with the alpha of each f(x).
+   From p1 ~ p2 alone we only know that pushforwards along
+   [qbs_prob_alpha p1] and [qbs_prob_alpha p2] agree on
+   sigma_Mx(X), and this is not sufficient to conclude
+   equality of the pushforwards of the diagonals, which
+   involve f as well. A general argument would require the
+   disintegration theorem for QBS, which is not in the current
+   development.
 
-   Under this condition, the bind's alpha for p is (g o alpha_p).
-   The preimage (g o alpha_p)^{-1}(U) = alpha_p^{-1}(g^{-1}(U)),
-   and g^{-1}(U) is in sigma_Mx(X) since g is a morphism and U is
-   in sigma_Mx(Y). The equivalence p1 ~ p2 then gives the result
-   directly. *)
+   We therefore provide three congruence lemmas covering the
+   cases actually used in the rest of the development:
+
+     1. [qbs_bind_equiv_l]        : the diagonal factors
+        through a QBS morphism g : X -> Y. This is the most
+        common situation (e.g. bind-with-return, bind along
+        a pure map, etc.).
+     2. [qbs_bind_strong_equiv_l] : specialisation to strong
+        morphisms f, still needing the factoring hypothesis.
+     3. [qbs_bind_equiv_l_return] : specialisation when f is
+        "return-like", f(x) = qbs_return (g x) (mu_f x).
+
+   Note on congruence in the function argument. A congruence
+   of the form
+     (forall x, qbs_prob_equiv (f x) (g x))
+     -> qbs_prob_equiv (qbs_bind p f) (qbs_bind p g)
+   is *not* provable from [qbs_prob_equiv] alone, for the same
+   diagonal-extraction reason: equivalence of f(x) and g(x) for
+   each x only constrains their pushforwards on sigma_Mx(Y),
+   whereas the bind's alpha depends on the pointwise value
+   [qbs_prob_alpha (f x) r] for the specific r, not on the
+   pushforward. So no such lemma is provided here. *)
+
+(** Congruence: [qbs_bind] respects [qbs_prob_equiv] in its
+    first argument, under the assumption that the diagonal
+    extraction factors through a QBS morphism g : X -> Y.
+    This is the rewriting law that makes the monad laws
+    ([qbs_bind_returnl], [qbs_bind_returnr], [qbs_bindA])
+    usable inside nested bind-terms.
+
+    Under the factoring hypothesis, the bind's alpha for p is
+    (g o alpha_p). The preimage (g o alpha_p)^{-1}(U) equals
+    alpha_p^{-1}(g^{-1}(U)), and g^{-1}(U) is in sigma_Mx(X)
+    since g is a morphism and U is in sigma_Mx(Y). The
+    equivalence p1 ~ p2 then gives the result directly. *)
 Lemma qbs_bind_equiv_l (X Y : qbsType R)
   (p1 p2 : qbs_prob X)
   (f : X -> qbs_prob Y)
@@ -626,10 +693,14 @@ apply: (hU (g \o alpha)).
 exact: hg _ halpha.
 Qed.
 
-(* Specialization for the strong morphism case when the diagonal
-   factors through a morphism g. This combines the strong morphism
-   condition (for diagonal randomness) with the factoring condition
-   (for the equivalence proof). *)
+(** Congruence: strong-morphism variant of [qbs_bind_equiv_l].
+    Combines the strong morphism condition (which supplies the
+    diagonal randomness proof automatically, via
+    [qbs_bind_alpha_random_strong]) with the same factoring
+    hypothesis through a morphism g : X -> Y (needed for the
+    equivalence proof itself). This is the congruence law used
+    when the client of a bind has the strong form
+    [qbs_bind_strong X Y p f hf] and needs to rewrite p. *)
 Lemma qbs_bind_strong_equiv_l (X Y : qbsType R)
   (p1 p2 : qbs_prob X)
   (f : X -> qbs_prob Y)
@@ -651,10 +722,14 @@ exact: (@qbs_bind_equiv_l X Y p1 p2 f g hg hfact1 hfact2
           hrand1 hrand2 hequiv U hU).
 Qed.
 
-(* Bind respects equivalence for "return-like" f.
-   When f(x) = (fun _ => g(x), mu_x) for a morphism g, the diagonal
-   simplifies to g o alpha_p. This covers important cases like
-   f(x) = qbs_return Y (g x) (mu x). *)
+(** Congruence: specialisation of [qbs_bind_equiv_l] to
+    "return-like" f of the form f(x) = qbs_return Y (g x) (mu_f x)
+    for a QBS morphism g : X -> Y. In this case the diagonal
+    simplifies to (g o alpha_p), so the factoring hypothesis
+    holds definitionally and the caller does not have to supply
+    it. This covers the most common rewriting situation: binds
+    where the continuation is a pure map lifted to a probability
+    via [qbs_return]. *)
 Lemma qbs_bind_equiv_l_return (X Y : qbsType R)
   (p1 p2 : qbs_prob X)
   (g : X -> Y) (hg : @qbs_morphism R X Y g)
