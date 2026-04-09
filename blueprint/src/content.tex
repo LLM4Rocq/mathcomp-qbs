@@ -3094,3 +3094,123 @@ kernel-based semantics on measurable spaces.
   The random sampler construction yields a valid \texttt{qbs\_prob}.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
+
+
+\section{Faithful Monadic Bind on Bind/Return Shape}
+
+\begin{definition}[Try Morph of Ret]\label{def:try_morph_of_ret}
+  \rocq{QBS.ppl_qbs.try_morph_of_ret}
+  \rocqok
+  \uses{def:expr, def:morph}
+  Helper using a dependent return-clause match on the type
+  index of an expression, returning
+  $\mathrm{Some}\,(\mathrm{morph}\;\Gamma\;\tau)$
+  when the expression has the form $\mathrm{e\_ret}\,e_0$ on a
+  $\mathrm{ppl\_prob}\,\tau$ type, and $\mathrm{None}$ otherwise.
+  This avoids equality coercions by branching on the type index
+  itself rather than threading equalities.
+\end{definition}
+
+\begin{lemma}[Bind/Return Equation]\label{lem:expr_sem_bind_ret}
+  \rocq{QBS.ppl_qbs.expr_sem_bind_ret}
+  \rocqok
+  \uses{def:expr_sem, def:morph_bind_ret, def:try_morph_of_ret}
+  When the continuation is a return,
+  $\mathrm{expr\_sem}\,(\mathrm{e\_bind}\,e_1\,(\mathrm{e\_ret}\,e_0))
+   = \mathrm{morph\_bind\_ret}\,(\mathrm{expr\_sem}\,e_1)\,(\mathrm{expr\_sem}\,e_0)$.
+  Provable by \texttt{reflexivity}, so the dispatch is
+  \emph{definitional}.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Faithful Bind Example]\label{lem:expr_sem_ex_bind}
+  \rocq{QBS.ppl_qbs.expr_sem_ex_bind}
+  \rocqok
+  \uses{lem:expr_sem_bind_ret}
+  $\mathrm{expr\_sem}\,\mathrm{ex\_bind} = \mathrm{ex\_bind\_faithful}$,
+  also by \texttt{reflexivity}.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+
+\section{Bayesian Inference over Linear Functions}
+
+\begin{definition}[Observation Sigma]\label{def:obs_sigma}
+  \rocq{QBS.showcase.ppl_examples.obs_sigma}
+  \rocqok
+  Noise standard deviation for the observation likelihood
+  ($\sigma = 1$).
+\end{definition}
+
+\begin{lemma}[Measurable to QBS Morphism]\label{lem:qbs_morphism_of_measurable}
+  \rocq{QBS.showcase.ppl_examples.qbs_morphism_of_measurable}
+  \rocqok
+  Any measurable function $\mathbb{R} \to \mathbb{R}$ is a QBS
+  morphism between the corresponding $\mathrm{real}_Q$ types.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Single-Point Observation Morphism]\label{lem:obs_at_point_morphism}
+  \rocq{QBS.showcase.ppl_examples.obs_at_point_morphism}
+  \rocqok
+  \uses{def:obs_sigma, lem:qbs_morphism_of_measurable}
+  For fixed $(x, y) \in \mathbb{R}^2$, the map
+  $f \mapsto \mathcal{N}(f(x); \sigma, y)$
+  (the normal density at the prediction $f(x)$) is a QBS morphism
+  $\mathrm{exp}_Q\,\mathbb{R}\,\mathbb{R} \to \mathbb{R}$.
+  The measurability of $u \mapsto \mathrm{normal\_pdf}\,u\,\sigma\,y$
+  reduces to \texttt{measurable\_normal\_pdf} via the symmetry
+  $(y - u)^2 = (u - y)^2$.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{definition}[Joint Observation Likelihood]\label{def:obs_likelihood}
+  \rocq{QBS.showcase.ppl_examples.obs_likelihood}
+  \rocqok
+  \uses{lem:obs_at_point_morphism}
+  Product of single-point likelihoods over three data points
+  $(1, 2.5)$, $(2, 3.8)$, $(3, 4.5)$.
+\end{definition}
+
+\begin{definition}[Pair with Likelihood Morphism]\label{def:pair_with_likelihood_morphism}
+  \rocq{QBS.showcase.ppl_examples.pair_with_likelihood_morphism}
+  \rocqok
+  \uses{def:obs_likelihood, def:qbs_morphism_pair}
+  Pairs each random function with its likelihood weight,
+  yielding a morphism
+  $\mathrm{exp}_Q\,\mathbb{R}\,\mathbb{R}
+   \to \mathrm{prod}_Q\,(\mathrm{exp}_Q\,\mathbb{R}\,\mathbb{R})\,\mathbb{R}$.
+\end{definition}
+
+\begin{definition}[Weighted Bayesian Random Linear]\label{def:bayesian_random_linear_weighted}
+  \rocq{QBS.showcase.ppl_examples.bayesian_random_linear_weighted}
+  \rocqok
+  \uses{def:random_linear, def:pair_with_likelihood_morphism, def:monadP_map}
+  Joint distribution
+  $\texttt{qbs\_prob (prodQ (expQ realQ realQ) realQ)}$
+  of (random linear function, observation likelihood weight),
+  built by pushing \texttt{random\_linear} through the pairing
+  morphism with \texttt{monadP\_map}.
+\end{definition}
+
+\begin{lemma}[Weighted Distribution Well Defined]\label{lem:bayesian_random_linear_well_defined}
+  \rocq{QBS.showcase.ppl_examples.bayesian_random_linear_well_defined}
+  \rocqok
+  \uses{def:bayesian_random_linear_weighted}
+  The weighted Bayesian distribution yields a valid
+  \texttt{qbs\_prob}.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{definition}[Posterior over Random Linear Functions]\label{def:bayesian_random_linear}
+  \rocq{QBS.showcase.ppl_examples.bayesian_random_linear}
+  \rocqok
+  \uses{def:bayesian_random_linear_weighted, def:qbs_normalize}
+  The full posterior distribution
+  $\texttt{option (qbs\_prob (expQ realQ realQ))}$
+  obtained by applying \texttt{qbs\_normalize} to the weighted
+  distribution. This is a posterior \emph{over functions} —
+  exactly the higher-order Bayesian inference that classical
+  kernel-based PPL semantics cannot express: the posterior is
+  a distribution on the function space, not on a parameter space.
+\end{definition}

@@ -3,8 +3,8 @@
 **Project:** QBS -- Quasi-Borel Spaces in Rocq/Coq
 **Repository:** `/home/rocq/QBS`
 **Date:** 2026-04-04
-**Status:** 450 proofs (448 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 9,691 across 15 files
+**Status:** 462 proofs (460 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** 9,934 across 15 files
 **Compatibility:** Rocq 9.0.x -- 9.1.x, Math-comp analysis 1.15.x -- 1.16.x
 
 **Primary references:**
@@ -1354,11 +1354,13 @@ A higher-order probabilistic programming language with denotational semantics in
 
 The `ex_ho_prob` example is the key demonstration: a function received as input and used to build a probability distribution. This is impossible in kernel-based semantics on measurable spaces.
 
-**Monadic bind limitation:** The general `e_bind` cannot be discharged from the pointwise `monadP_random_pw` condition. The file provides:
+**Faithful monadic bind on the bind/return shape:** The general `e_bind` cannot be discharged from the pointwise `monadP_random_pw` condition. However, when the second argument is syntactically `e_ret e0`, we can dispatch faithfully:
 - `morph_bind_ret`: faithful bind for the bind/return shape (`do x <- m; return (f x)`), discharged via `qbs_bind_alpha_random_return`
-- `morph_bind_fallback`: placeholder for the general case (used by `expr_sem` on `e_bind` to keep the inductive total)
+- `try_morph_of_ret`: dependent helper that detects the `e_ret` shape with a return-clause match on the type index
+- `expr_sem` dispatches via `try_morph_of_ret`: when the continuation is `e_ret e0`, it uses `morph_bind_ret`; otherwise it falls back to `morph_bind_fallback`
+- `expr_sem_bind_ret`: `expr_sem (e_bind e1 (e_ret e0)) = morph_bind_ret (expr_sem e1) (expr_sem e0)` — provable by `reflexivity`, so the dispatch is **definitional**
 
-For programs whose continuation is a return, use `morph_bind_ret` directly to obtain a semantically faithful denotation. The general case requires the strong morphism condition and is deferred to Phase 2.
+The general case (continuation not of the form `e_ret`) requires the strong morphism condition and is deferred to Phase 2.
 
 ### 2.30 First-Order PPL as S-Finite Kernels
 
@@ -1406,6 +1408,18 @@ Three concrete higher-order probabilistic programs whose denotations require QBS
 | `random_linear_eval_at` | The marginal distribution of `m*x + b` via pushforward |
 
 The `random_linear` example is the **headline demonstration**: a distribution over linear functions, sampled from independent Gaussian priors on slope and intercept. The result type `qbs_prob (expQ realQ realQ)` is impossible in kernel-based semantics — the function space `R → R` has no useful sigma-algebra. QBS solves exactly this through the exponential `expQ`.
+
+**Bayesian inference over linear functions:**
+
+| Name | Description |
+|------|-------------|
+| `obs_at_point_morphism` | The likelihood `f → normal_pdf (f x) σ y` is a QBS morphism on `expQ realQ realQ` |
+| `obs_likelihood` | Product likelihood over 3 data points `(1, 2.5), (2, 3.8), (3, 4.5)` |
+| `pair_with_likelihood_morphism` | Pairs each random function with its likelihood weight |
+| `bayesian_random_linear_weighted` | Joint distribution `qbs_prob (prodQ (expQ realQ realQ) realQ)` of (function, weight) |
+| `bayesian_random_linear` | **Posterior `option (qbs_prob (expQ realQ realQ))` via `qbs_normalize`** |
+
+This combines `random_linear` with observation conditioning to obtain a true posterior distribution **over functions**. The full normalization step uses `qbs_normalize` from Section 2.16. This is exactly the higher-order Bayesian inference that classical kernel-based PPL semantics cannot express: the posterior is a distribution on the function space `expQ realQ realQ`, not on a parameter space.
 
 ---
 
@@ -1719,11 +1733,11 @@ quasi_borel.v
 | `showcase/bayesian_regression.v` | 916 | 34 |
 | `qbs_giry.v` | 201 | 12 |
 | `qbs_kernel.v` | 449 | 21 |
-| `ppl_qbs.v` | 611 | 17 |
+| `ppl_qbs.v` | 662 | 19 |
 | `ppl_kernel.v` | 310 | 20 |
-| `showcase/ppl_examples.v` | 302 | 8 |
+| `showcase/ppl_examples.v` | 494 | 18 |
 | `standard_borel.v` | 1,256 | 60 |
-| **Total** | **9,691** | **450** |
+| **Total** | **9,934** | **462** |
 
 **0 Admitted**, 0 custom axioms.
 
