@@ -540,8 +540,8 @@ $m\mathbb{R}$ for its Borel measurable space.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
-\begin{theorem}[$L \dashv R$ Adjunction]\label{thm:lr_adj_natural}
-  \rocq{QBS.measure_qbs_adjunction.lr_adj_natural}
+\begin{theorem}[$L \dashv R$ Hom-Set Bijection]\label{thm:lr_adj_iff}
+  \rocq{QBS.measure_qbs_adjunction.lr_adj_iff}
   \rocqok
   \uses{def:L_sigma, def:R_qbs, def:qbs_morphism}
   A function $f : X \to M$ is a QBS morphism $X \to R(M)$ if and only if
@@ -550,6 +550,8 @@ $m\mathbb{R}$ for its Borel measurable space.
     \mathrm{Hom}_{\mathbf{QBS}}(X, R(M)) \cong
     \mathrm{Hom}_{\sigma\text{-}\mathbf{Alg}}(L(X), \sigma(M)).
   \]
+  This is a single-object biconditional, not a full categorical
+  naturality statement (the functorial squares are not formalized).
 \end{theorem}
 \begin{proof}
   \rocqok
@@ -1399,12 +1401,15 @@ and variance results.
   h(\alpha_p(r_1), \alpha_q(r_2))$.
 \end{definition}
 
-\begin{theorem}[Fubini on QBS]\label{thm:qbs_pair_integralE}
-  \rocq{QBS.pair_qbs_measure.qbs_pair_integralE}
+\begin{theorem}[Iterated Integration on QBS Product Measure]\label{thm:qbs_pair_integral_iterated}
+  \rocq{QBS.pair_qbs_measure.qbs_pair_integral_iterated}
   \rocqok
   \uses{def:qbs_pair_integral}
   The joint integral equals the iterated integral:
   $\int_{p \otimes q} h = \int_p \int_q h(x, y)$.
+  This is a special case of Fubini for the specific QBS product
+  measure construction, not the full Fubini theorem on arbitrary
+  product measures.
 \end{theorem}
 \begin{proof}
   \rocqok
@@ -1430,7 +1435,7 @@ and variance results.
 \begin{lemma}[Commutativity of Product Integration]\label{lem:qbs_pair_integral_comm}
   \rocq{QBS.pair_qbs_measure.qbs_pair_integral_comm}
   \rocqok
-  \uses{def:qbs_pair_integral, thm:qbs_pair_integralE}
+  \uses{def:qbs_pair_integral, thm:qbs_pair_integral_iterated}
   $\int_{p \otimes q} h = \int_{q \otimes p} h \circ \mathrm{swap}$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
@@ -1447,13 +1452,18 @@ and variance results.
   $f_*(p) \otimes g_*(p)$.
 \end{definition}
 
-\begin{lemma}[$E[fg] = E[f] \cdot E[g]$ for Independent Variables]\label{lem:qbs_integral_indep_mult}
-  \rocq{QBS.pair_qbs_measure.qbs_integral_indep_mult}
+\begin{lemma}[Product-Measure Factorization]\label{lem:qbs_pair_integral_factorization}
+  \rocq{QBS.pair_qbs_measure.qbs_pair_integral_factorization}
   \rocqok
-  \uses{def:qbs_indep, def:qbs_expect, def:qbs_pair_integral}
-  For independent $p_X, p_Y$:
+  \uses{def:qbs_expect, def:qbs_pair_integral}
+  For functions $f, g$ depending on disjoint coordinates of a
+  product measure:
   $\int_{p_X \otimes p_Y} f(x) \cdot g(y)
   = \mathbb{E}_{p_X}[f] \cdot \mathbb{E}_{p_Y}[g]$.
+  This is a tautology of products, not a non-trivial statistical
+  independence theorem -- the lemma has no independence hypothesis.
+  The actual \texttt{qbs\_indep} predicate is defined separately
+  but is not yet connected to a non-trivial independence theorem.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -1495,13 +1505,13 @@ and variance results.
 \begin{theorem}[Variance of Independent Sum]\label{thm:qbs_variance_indep_sum}
   \rocq{QBS.pair_qbs_measure.qbs_variance_indep_sum}
   \rocqok
-  \uses{def:qbs_pair_variance, lem:expectation_prod, lem:variance_prod, lem:qbs_integral_indep_mult}
+  \uses{def:qbs_pair_variance, lem:expectation_prod, lem:variance_prod, lem:qbs_pair_integral_factorization}
   For independent random variables~$f$ and~$g$:
   $\mathrm{Var}[f + g] = \mathrm{Var}[f] + \mathrm{Var}[g]$.
 \end{theorem}
 \begin{proof}
   \rocqok
-  \uses{lem:expectation_prod, lem:variance_prod, lem:qbs_integral_indep_mult}
+  \uses{lem:expectation_prod, lem:variance_prod, lem:qbs_pair_integral_factorization}
   Decompose $\mathrm{Var}(f+g) = \mathrm{Var}(f) + \mathrm{Var}(g) + 2\,\mathrm{Cov}(f,g)$,
   then show $\mathrm{Cov}(f,g) = 0$ because
   $\mathbb{E}[fg] = \mathbb{E}[f] \cdot \mathbb{E}[g]$ by Fubini.

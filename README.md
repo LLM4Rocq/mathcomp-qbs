@@ -41,13 +41,13 @@ This formalization follows:
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `quasi_borel.v` | 721 | 45 | HB mixin/structure, morphisms, products, exponentials, cartesian closure |
-| `measure_qbs_adjunction.v` | 523 | 27 | L⊣R adjunction, standard Borel, full faithfulness |
-| `coproduct_qbs.v` | 685 | 22 | Binary/general coproducts, dependent products, list type |
-| `probability_qbs.v` | 1,200 | 63 | Probability monad: return, bind, 3 monad laws, strength, normalizer |
-| `pair_qbs_measure.v` | 598 | 17 | Product measures via R≅R×R, Fubini, independence |
+| `quasi_borel.v` | 750 | 47 | HB mixin/structure, morphisms, products, exponentials, cartesian closure (β/η rules) |
+| `measure_qbs_adjunction.v` | 525 | 27 | L⊣R hom-set bijection, standard Borel, full faithfulness |
+| `coproduct_qbs.v` | 720 | 25 | Binary/general coproducts, dependent products, list type |
+| `probability_qbs.v` | 1,275 | 63 | Probability monad: return, bind, 3 monad laws (setoid), strength, normalizer |
+| `pair_qbs_measure.v` | 604 | 17 | Product measures via R≅R×R, iterated integration, factorization |
 | `qbs_prob_quot.v` | 333 | 17 | Setoid quotient for probability triples |
-| `measure_as_qbs_measure.v` | 288 | 10 | Normal, Bernoulli, uniform distributions, E[Normal]=μ |
+| `measure_as_qbs_measure.v` | 289 | 10 | Normal, Bernoulli, uniform distributions, E[Normal]=μ |
 
 ### Bridges and analysis
 
@@ -55,14 +55,14 @@ This formalization follows:
 |------|------:|-------:|-------------|
 | `qbs_giry.v` | 201 | 12 | QBS↔Giry monad connection, integral correspondence |
 | `qbs_kernel.v` | 449 | 21 | QBS↔s-finite kernel bridge, Dirac kernels, composition |
-| `standard_borel.v` | 1,256 | 60 | R↔(0,1) via atan, digit interleaving, R≅R×R |
-| `normal_algebra.v` | 1,298 | 77 | Product of Gaussians, normalizing constant computation |
+| `standard_borel.v` | 1,249 | 60 | R↔(0,1) via atan, digit interleaving, R≅R×R |
+| `normal_algebra.v` | 1,295 | 77 | Product of Gaussians, normalizing constant computation |
 
 ### Showcase
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `showcase/bayesian_regression.v` | 922 | 34 | Bayesian linear regression with explicit normalizing constant |
+| `showcase/bayesian_regression.v` | 926 | 34 | Bayesian linear regression with explicit normalizing constant |
 
 ## Key results
 

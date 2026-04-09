@@ -1614,18 +1614,18 @@ quasi_borel.v
 | File | Lines | Proofs |
 |------|------:|-------:|
 | `quasi_borel.v` | 750 | 47 |
-| `measure_qbs_adjunction.v` | 523 | 27 |
+| `measure_qbs_adjunction.v` | 525 | 27 |
 | `coproduct_qbs.v` | 720 | 25 |
 | `probability_qbs.v` | 1,275 | 63 |
-| `pair_qbs_measure.v` | 598 | 17 |
+| `pair_qbs_measure.v` | 604 | 17 |
 | `qbs_prob_quot.v` | 333 | 17 |
-| `measure_as_qbs_measure.v` | 288 | 10 |
+| `measure_as_qbs_measure.v` | 289 | 10 |
 | `normal_algebra.v` | 1,295 | 77 |
-| `showcase/bayesian_regression.v` | 922 | 34 |
+| `showcase/bayesian_regression.v` | 926 | 34 |
 | `qbs_giry.v` | 201 | 12 |
 | `qbs_kernel.v` | 449 | 21 |
 | `standard_borel.v` | 1,249 | 60 |
-| **Total** | **8,623** | **410** |
+| **Total** | **8,616** | **410** |
 
 **0 Admitted**, 0 custom axioms.
 
