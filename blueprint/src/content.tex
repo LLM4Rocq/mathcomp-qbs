@@ -2341,3 +2341,477 @@ and data $(1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)$.
   The posterior measure is characterized by its density against the prior.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
+
+
+\chapter{QBS--Kernel Bridge}\label{ch:qbs_kernel}
+
+This chapter bridges the QBS probability monad with the s-finite
+kernel infrastructure from \texttt{mathcomp-analysis} (the merged
+kernel hierarchy~\texttt{kernel.v}, originally from PR~\#896).
+S-finite kernels provide the standard semantic foundation for
+first-order probabilistic programs (Staton, ESOP~2017): they are
+closed under composition, unlike $\sigma$-finite kernels.
+The bridge developed here shows that QBS probabilities induce
+s-finite measures and that QBS morphisms between standard Borel
+spaces lift to probability kernels, so kernel-based programs
+embed faithfully into the QBS world while gaining higher-order
+function types.
+
+\section{S-Finiteness of Probability Measures}
+
+\begin{lemma}[Probability Measures Are Finite]\label{lem:probability_fin_num_fun}
+  \rocq{QBS.qbs_kernel.probability_fin_num_fun}
+  \rocqok
+  Every probability measure assigns a finite extended-real value
+  to every measurable set.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Probability Measures Are S-Finite]\label{lem:prob_sfinite_measure}
+  \rocq{QBS.qbs_kernel.prob_sfinite_measure}
+  \rocqok
+  \uses{lem:probability_fin_num_fun}
+  Every probability measure is s-finite, since it is finite
+  (and hence $\sigma$-finite).
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[QBS Probabilities Are S-Finite]\label{lem:qbs_prob_sfinite}
+  \rocq{QBS.qbs_kernel.qbs_prob_sfinite}
+  \rocqok
+  \uses{def:qbs_to_giry, lem:prob_sfinite_measure}
+  For any QBS probability $p : P(X)$ with $X$ standard Borel,
+  the induced measure $\texttt{qbs\_to\_giry}(p)$ is s-finite.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Pushforward of Probability]\label{lem:pushforward_probability}
+  \rocq{QBS.qbs_kernel.pushforward_probability}
+  \rocqok
+  Pushforward of a probability measure along a measurable map
+  is a probability measure.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+
+\section{Dirac Kernels and QBS Return}
+
+\begin{lemma}[Dirac Kernel Application]\label{lem:kdiracE}
+  \rocq{QBS.qbs_kernel.kdiracE}
+  \rocqok
+  Pointwise: $\mathrm{kdirac}(f)(x)(U) = \delta_{f(x)}(U)$.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[QBS Return Is Dirac]\label{lem:qbs_return_to_dirac}
+  \rocq{QBS.qbs_kernel.qbs_return_to_dirac}
+  \rocqok
+  \uses{def:qbs_return, def:giry_to_qbs}
+  For standard Borel $M$, transporting a Dirac measure
+  through \texttt{giry\_to\_qbs} and back recovers the
+  original Dirac measure.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{definition}[Measurable Function as Kernel]\label{def:measfun_kernel}
+  \rocq{QBS.qbs_kernel.measfun_kernel}
+  \rocqok
+  Every measurable function $f : M_1 \to M_2$ induces a Dirac
+  probability kernel $x \mapsto \delta_{f(x)}$.
+\end{definition}
+
+\begin{lemma}[Measurable Function Kernel Is Probability]\label{lem:measfun_kernel_prob}
+  \rocq{QBS.qbs_kernel.measfun_kernel_prob}
+  \rocqok
+  \uses{def:measfun_kernel}
+  The Dirac kernel of a measurable function is a probability
+  kernel (not just s-finite).
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+
+\section{QBS Morphisms as Kernels}
+
+\begin{lemma}[QBS Morphisms Are Measurable]\label{lem:qbs_morph_is_measurable}
+  \rocq{QBS.qbs_kernel.qbs_morph_is_measurable}
+  \rocqok
+  \uses{lem:R_full_faithful_standard_borel}
+  Every QBS morphism between standard Borel spaces is measurable
+  (full faithfulness of the $R$ functor).
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{definition}[QBS Morphism to Kernel]\label{def:qbs_morph_kdirac}
+  \rocq{QBS.qbs_kernel.qbs_morph_kdirac}
+  \rocqok
+  \uses{lem:qbs_morph_is_measurable, def:measfun_kernel}
+  A QBS morphism between standard Borel spaces lifts to a
+  Dirac probability kernel.
+\end{definition}
+
+\begin{lemma}[QBS Morphism Kernel Is Probability]\label{lem:qbs_morph_kdirac_prob}
+  \rocq{QBS.qbs_kernel.qbs_morph_kdirac_prob}
+  \rocqok
+  \uses{def:qbs_morph_kdirac}
+  The Dirac kernel of a QBS morphism between standard Borel
+  spaces is a probability kernel.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+
+\section{Constant Kernels and Equivalence}
+
+\begin{definition}[QBS Probability as Constant Kernel]\label{def:const_kernel_of_qbs}
+  \rocq{QBS.qbs_kernel.const_kernel_of_qbs}
+  \rocqok
+  \uses{lem:qbs_prob_sfinite}
+  Every QBS probability $p$ on a standard Borel space induces a
+  constant kernel: $x \mapsto \texttt{qbs\_to\_giry}(p)$.
+\end{definition}
+
+\begin{lemma}[Constant Kernel Is Measurable]\label{lem:const_kernel_of_qbs_measurable}
+  \rocq{QBS.qbs_kernel.const_kernel_of_qbs_measurable}
+  \rocqok
+  \uses{def:const_kernel_of_qbs}
+  The constant-kernel construction is a measurable family.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Equivalence Yields Equal Giry Measures]\label{lem:qbs_prob_equiv_giry}
+  \rocq{QBS.qbs_kernel.qbs_prob_equiv_giry}
+  \rocqok
+  \uses{def:qbs_prob_equiv, def:qbs_to_giry}
+  Equivalent QBS probabilities (via \texttt{qbs\_prob\_equiv})
+  yield equal classical Giry probability measures.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+
+\section{Pushforward and Kernel Composition}
+
+\begin{lemma}[Pushforward Commutes with map]\label{lem:qbs_to_giry_map}
+  \rocq{QBS.qbs_kernel.qbs_to_giry_map}
+  \rocqok
+  \uses{def:qbs_to_giry, def:monadP_map}
+  Applying \texttt{qbs\_to\_giry} to a mapped probability equals
+  the pushforward of the original Giry measure.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Giry Pushforward Identity]\label{lem:qbs_giry_pushforward}
+  \rocq{QBS.qbs_kernel.qbs_giry_pushforward}
+  \rocqok
+  \uses{lem:qbs_to_giry_map}
+  The pushforward through a QBS morphism agrees with the
+  classical Giry pushforward.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Dirac Composition (Pointwise)]\label{lem:kdirac_comp}
+  \rocq{QBS.qbs_kernel.kdirac_comp}
+  \rocqok
+  Pointwise: $\mathrm{kdirac}(g \circ f) = \mathrm{kdirac}(g) \circ_{\mathrm{ker}} f$.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Functoriality of Dirac]\label{lem:kdirac_comp_noparam}
+  \rocq{QBS.qbs_kernel.kdirac_comp_noparam}
+  \rocqok
+  \uses{lem:kdirac_comp}
+  Composition of Dirac kernels equals the Dirac kernel of the
+  function composition (functoriality at the kernel level).
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Encode/Decode Kernel Round-Trip]\label{lem:encode_decode_kcomp_noparam}
+  \rocq{QBS.qbs_kernel.encode_decode_kcomp_noparam}
+  \rocqok
+  \uses{lem:kdirac_comp_noparam, lem:encode_RRK}
+  The standard-Borel encode/decode round-trip lifts to the
+  kernel level via \texttt{kcomp}.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+
+\section{Bind, Return, and Integration at the Kernel Level}
+
+\begin{lemma}[Bind-Return as Map]\label{lem:qbs_bind_return_map}
+  \rocq{QBS.qbs_kernel.qbs_bind_return_map}
+  \rocqok
+  \uses{def:qbs_bind, def:qbs_return}
+  Binding the return of a function with $f$ equals the return
+  of the function (the monad law at the kernel level).
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Kernel Integration Bridge]\label{lem:kernel_integration}
+  \rocq{QBS.qbs_kernel.kernel_integration}
+  \rocqok
+  \uses{def:qbs_integral, def:qbs_to_giry}
+  The QBS integral against a probability $p$ equals the Lebesgue
+  integral against $\texttt{qbs\_to\_giry}(p)$.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Dirac Round-Trip]\label{lem:kdirac_round_trip}
+  \rocq{QBS.qbs_kernel.kdirac_round_trip}
+  \rocqok
+  Sending a Dirac kernel through the QBS-Giry round-trip
+  preserves it.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Kernel Round-Trip]\label{lem:kernel_round_trip}
+  \rocq{QBS.qbs_kernel.kernel_round_trip}
+  \rocqok
+  \uses{lem:kdirac_round_trip}
+  General kernel round-trip property via the QBS-Giry bridge.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+
+\chapter{Higher-Order PPL Semantics}\label{ch:ppl_qbs}
+
+This chapter defines a higher-order probabilistic programming
+language~(PPL) and gives it denotational semantics in the QBS
+category. The crucial feature is \textbf{function types}: the type
+$\tau_1 \to \tau_2$ is interpreted as the QBS exponential
+$\mathrm{exp}_Q\,\llbracket\tau_1\rrbracket\,\llbracket\tau_2\rrbracket$,
+which is impossible in kernel-based semantics on measurable spaces
+(the category of measurable spaces is not cartesian closed).
+Higher-order programs (random functions, random samplers,
+distributions over function spaces) are first-class citizens.
+
+\section{PPL Types and Their Interpretation}
+
+\begin{definition}[PPL Types]\label{def:ppl_type}
+  \rocq{QBS.ppl_qbs.ppl_type}
+  \rocqok
+  Inductive type of PPL types:
+  \[
+    \tau ::= \mathsf{real} \mid \mathsf{bool} \mid \mathsf{unit}
+           \mid \tau_1 \times \tau_2 \mid \tau_1 + \tau_2
+           \mid \tau_1 \to \tau_2 \mid P(\tau).
+  \]
+\end{definition}
+
+\begin{definition}[Type Denotation]\label{def:type_denot}
+  \rocq{QBS.ppl_qbs.type_denot}
+  \rocqok
+  \uses{def:ppl_type, def:realQ, def:boolQ, def:unitQ, def:prodQ, def:expQ, def:monadP}
+  Each PPL type is interpreted as a QBS:
+  $\llbracket\mathsf{real}\rrbracket = \mathrm{real}_Q$,
+  $\llbracket\tau_1 \times \tau_2\rrbracket = \mathrm{prod}_Q\,\llbracket\tau_1\rrbracket\,\llbracket\tau_2\rrbracket$,
+  $\llbracket\tau_1 \to \tau_2\rrbracket = \mathrm{exp}_Q\,\llbracket\tau_1\rrbracket\,\llbracket\tau_2\rrbracket$,
+  $\llbracket P(\tau)\rrbracket = \mathrm{monad}P\,\llbracket\tau\rrbracket$, etc.
+\end{definition}
+
+\begin{definition}[Typing Context]\label{def:ctx_denot}
+  \rocq{QBS.ppl_qbs.ctx_denot}
+  \rocqok
+  \uses{def:type_denot, def:prodQ, def:unitQ}
+  A typing context $\Gamma = [\tau_1; \dots; \tau_n]$ is interpreted
+  as the iterated product
+  $\mathrm{prod}_Q\,\llbracket\tau_1\rrbracket\,(\dots\,\mathrm{unit}_Q)$.
+\end{definition}
+
+\begin{definition}[Variables (de Bruijn)]\label{def:has_var}
+  \rocq{QBS.ppl_qbs.has_var}
+  \rocqok
+  \uses{def:ppl_type}
+  An inductive de~Bruijn membership witness
+  $\Gamma \ni_n \tau$.
+\end{definition}
+
+\begin{definition}[Variable Lookup]\label{def:var_lookup}
+  \rocq{QBS.ppl_qbs.var_lookup}
+  \rocqok
+  \uses{def:has_var, def:ctx_denot, def:type_denot}
+  Extracts the $n$-th component from a context tuple.
+\end{definition}
+
+\begin{lemma}[Variable Lookup Is a Morphism]\label{lem:var_lookup_morphism}
+  \rocq{QBS.ppl_qbs.var_lookup_morphism}
+  \rocqok
+  \uses{def:var_lookup, def:qbs_morphism, def:qbs_morphism_fst, def:qbs_morphism_snd}
+  For every de~Bruijn index $v : \Gamma \ni_n \tau$, the
+  function $\mathrm{var\_lookup}(v) : \mathrm{ctx\_denot}\,\Gamma \to \llbracket\tau\rrbracket$
+  is a QBS morphism.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+
+\section{Expressions}
+
+\begin{definition}[PPL Expressions]\label{def:expr}
+  \rocq{QBS.ppl_qbs.expr}
+  \rocqok
+  \uses{def:ppl_type}
+  Intrinsically-typed expressions:
+  \begin{itemize}
+  \item Variables, real/bool/unit constants, pairs, projections;
+  \item \textbf{Lambda} ($\mathrm{e\_lam}$) and
+    \textbf{application} ($\mathrm{e\_app}$) for higher-order;
+  \item Monadic return ($\mathrm{e\_ret}$);
+  \item Sampling primitives: $\mathrm{e\_sample\_uniform}$,
+    $\mathrm{e\_sample\_normal}$.
+  \end{itemize}
+\end{definition}
+
+
+\section{Morphism Bundle Combinators}
+
+\begin{definition}[Morphism Bundle]\label{def:morph}
+  \rocq{QBS.ppl_qbs.morph}
+  \rocqok
+  \uses{def:qbs_morphism}
+  A bundled morphism: a pair of a function and a proof that
+  it is a QBS morphism.
+\end{definition}
+
+\begin{definition}[Constant Morphism]\label{def:morph_const}
+  \rocq{QBS.ppl_qbs.morph_const}
+  \rocqok
+  \uses{def:morph}
+  The constant morphism $\lambda\_.\,y$.
+\end{definition}
+
+\begin{definition}[Pair of Morphisms]\label{def:morph_pair}
+  \rocq{QBS.ppl_qbs.morph_pair}
+  \rocqok
+  \uses{def:morph, def:qbs_morphism_pair}
+  Pairing two morphisms into a morphism with product codomain.
+\end{definition}
+
+\begin{definition}[First/Second Projection Morphism]\label{def:morph_fst_snd}
+  \rocq{QBS.ppl_qbs.morph_fst}
+  \rocq{QBS.ppl_qbs.morph_snd}
+  \rocqok
+  \uses{def:morph, def:qbs_morphism_fst, def:qbs_morphism_snd}
+  Bundled product projections.
+\end{definition}
+
+\begin{definition}[Variable Morphism]\label{def:morph_var}
+  \rocq{QBS.ppl_qbs.morph_var}
+  \rocqok
+  \uses{def:morph, lem:var_lookup_morphism}
+  Bundled variable lookup as a morphism.
+\end{definition}
+
+\begin{definition}[Lambda Combinator]\label{def:morph_lam}
+  \rocq{QBS.ppl_qbs.morph_lam}
+  \rocqok
+  \uses{def:morph, def:qbs_morphism_curry, def:expQ}
+  Currying via QBS exponential: takes a morphism
+  $\mathrm{prod}_Q\,X\,\Gamma \to Y$ and produces a morphism
+  $\Gamma \to \mathrm{exp}_Q\,X\,Y$.
+\end{definition}
+
+\begin{definition}[Application Combinator]\label{def:morph_app}
+  \rocq{QBS.ppl_qbs.morph_app}
+  \rocqok
+  \uses{def:morph, def:qbs_morphism_eval, def:morph_pair}
+  Applies a function morphism to an argument morphism using
+  $\mathrm{qbs\_morphism\_eval}$.
+\end{definition}
+
+\begin{definition}[Return Combinator]\label{def:morph_ret}
+  \rocq{QBS.ppl_qbs.morph_ret}
+  \rocqok
+  \uses{def:morph, def:qbs_return, def:monadP}
+  Lifts a morphism into the probability monad via QBS return.
+\end{definition}
+
+\begin{definition}[Uniform Sampling Combinator]\label{def:morph_sample_uniform}
+  \rocq{QBS.ppl_qbs.morph_sample_uniform}
+  \rocqok
+  \uses{def:morph, def:qbs_uniform}
+  Constant morphism returning the QBS uniform distribution.
+\end{definition}
+
+\begin{definition}[Normal Sampling Combinator]\label{def:morph_sample_normal}
+  \rocq{QBS.ppl_qbs.morph_sample_normal}
+  \rocqok
+  \uses{def:morph, def:qbs_normal_distribution}
+  Combinator for sampling from a normal distribution with
+  given mean and standard deviation.
+\end{definition}
+
+
+\section{Denotational Semantics}
+
+\begin{definition}[Expression Semantics]\label{def:expr_sem}
+  \rocq{QBS.ppl_qbs.expr_sem}
+  \rocqok
+  \uses{def:expr, def:morph, def:morph_const, def:morph_pair, def:morph_var, def:morph_lam, def:morph_app, def:morph_ret, def:morph_sample_uniform, def:morph_sample_normal}
+  Recursive interpretation of expressions as morphism bundles
+  $\llbracket e \rrbracket : \mathrm{ctx\_denot}\,\Gamma \to \llbracket\tau\rrbracket$.
+\end{definition}
+
+\begin{definition}[Expression Denotation]\label{def:expr_denot}
+  \rocq{QBS.ppl_qbs.expr_denot}
+  \rocqok
+  \uses{def:expr_sem}
+  The underlying function of $\mathrm{expr\_sem}$.
+\end{definition}
+
+\begin{lemma}[Expression Denotation Is a Morphism]\label{lem:expr_morphism}
+  \rocq{QBS.ppl_qbs.expr_morphism}
+  \rocqok
+  \uses{def:expr_denot, def:expr_sem}
+  Every well-typed expression denotes a QBS morphism. This is
+  the main soundness theorem of the higher-order PPL.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+
+\section{Examples}
+
+\begin{definition}[Example: Constant Function]\label{def:ex_const}
+  \rocq{QBS.ppl_qbs.ex_const}
+  \rocqok
+  \uses{def:expr}
+  The closed term $\lambda x.\,42$ of type $\mathsf{real} \to \mathsf{real}$.
+\end{definition}
+
+\begin{lemma}[Constant Example Morphism]\label{lem:ex_const_morphism}
+  \rocq{QBS.ppl_qbs.ex_const_morphism}
+  \rocqok
+  \uses{def:ex_const, lem:expr_morphism}
+  The constant function example denotes a QBS morphism.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{definition}[Example: Application]\label{def:ex_apply}
+  \rocq{QBS.ppl_qbs.ex_apply}
+  \rocqok
+  \uses{def:expr}
+  $(\lambda x.\,x)\,42$ --- application of an identity function.
+\end{definition}
+
+\begin{lemma}[Application Example Morphism]\label{lem:ex_apply_morphism}
+  \rocq{QBS.ppl_qbs.ex_apply_morphism}
+  \rocqok
+  \uses{def:ex_apply, lem:expr_morphism}
+  The application example denotes a QBS morphism.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{definition}[Example: Higher-Order Probabilistic Program]\label{def:ex_ho_prob}
+  \rocq{QBS.ppl_qbs.ex_ho_prob}
+  \rocqok
+  \uses{def:expr}
+  A program $\lambda f.\,\mathrm{return}\,(f\,0)$ of type
+  $(\mathsf{real} \to \mathsf{real}) \to P(\mathsf{real})$.
+  Demonstrates a function received as input and used to build
+  a probability distribution --- a higher-order program impossible
+  in kernel-based semantics on measurable spaces.
+\end{definition}
+
+\begin{lemma}[HO Probabilistic Example Morphism]\label{lem:ex_ho_prob_morphism}
+  \rocq{QBS.ppl_qbs.ex_ho_prob_morphism}
+  \rocqok
+  \uses{def:ex_ho_prob, lem:expr_morphism}
+  The higher-order probabilistic program denotes a QBS morphism.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
