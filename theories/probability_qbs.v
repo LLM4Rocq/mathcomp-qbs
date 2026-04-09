@@ -34,6 +34,8 @@ Variable R : realType.
 
 Local Notation mR := (measurableTypeR R).
 
+Section qbs_prob_basics.
+
 (* 1. QBS Probability Triple
    A probability on a QBS X is a pair (alpha, mu) where
    alpha : R -> X is a random element (in Mx) and
@@ -46,11 +48,11 @@ Record qbs_prob (X : qbsType R) := mkQBSProb {
   qbs_prob_mu : probability mR R ;
   qbs_prob_alpha_random : @qbs_Mx R X qbs_prob_alpha }.
 
-Arguments qbs_prob : clear implicits.
-Arguments mkQBSProb {X}.
-Arguments qbs_prob_alpha {X}.
-Arguments qbs_prob_mu {X}.
-Arguments qbs_prob_alpha_random {X}.
+#[global] Arguments qbs_prob : clear implicits.
+#[global] Arguments mkQBSProb {X}.
+#[global] Arguments qbs_prob_alpha {X}.
+#[global] Arguments qbs_prob_mu {X}.
+#[global] Arguments qbs_prob_alpha_random {X}.
 
 (* 2. Equivalence of Probability Triples
    Two triples (alpha1, mu1) ~ (alpha2, mu2) iff they induce
@@ -66,7 +68,7 @@ Definition qbs_prob_equiv (X : qbsType R) (p1 p2 : qbs_prob X) : Prop :=
     qbs_prob_mu p1 (qbs_prob_alpha p1 @^-1` U) =
     qbs_prob_mu p2 (qbs_prob_alpha p2 @^-1` U).
 
-Arguments qbs_prob_equiv : clear implicits.
+#[global] Arguments qbs_prob_equiv : clear implicits.
 
 Lemma qbs_prob_equivxx (X : qbsType R) (p : qbs_prob X) :
   qbs_prob_equiv X p p.
@@ -80,6 +82,10 @@ Lemma qbs_prob_equiv_trans (X : qbsType R) (p1 p2 p3 : qbs_prob X) :
   qbs_prob_equiv X p1 p2 -> qbs_prob_equiv X p2 p3 ->
   qbs_prob_equiv X p1 p3.
 Proof. by move=> h12 h23 U hU; rewrite (h12 U hU) (h23 U hU). Qed.
+
+End qbs_prob_basics.
+
+Section probability_monad.
 
 (* 3. The Probability Monad P(X)
 
@@ -106,14 +112,14 @@ Definition monadP_random (X : qbsType R) : set (mR -> qbs_prob X) :=
       (forall r, qbs_prob_alpha (beta r) = alpha) /\
       (forall r, qbs_prob_mu (beta r) = g r)].
 
-Arguments monadP_random : clear implicits.
+#[global] Arguments monadP_random : clear implicits.
 
 (** Pointwise random-element condition: each
     beta(r) has its own random element in Mx. *)
 Definition monadP_random_pw (X : qbsType R) : set (mR -> qbs_prob X) :=
   [set beta | forall r, @qbs_Mx R X (qbs_prob_alpha (beta r))].
 
-Arguments monadP_random_pw : clear implicits.
+#[global] Arguments monadP_random_pw : clear implicits.
 
 (* The strong definition implies the weak one *)
 Lemma monadP_random_impl (X : qbsType R) (beta : mR -> qbs_prob X) :
@@ -151,7 +157,7 @@ Definition monadP (X : qbsType R) : qbsType R :=
       (@monadP_const X)
       (@monadP_glue X)).
 
-Arguments monadP : clear implicits.
+#[global] Arguments monadP : clear implicits.
 
 (* 4. Return: X -> P(X)
    The return operation takes a measure parameter mu, so that
@@ -168,7 +174,7 @@ Definition qbs_return (X : qbsType R) (x : X) (mu : probability mR R) :
   qbs_prob X :=
   @mkQBSProb X (fun _ => x) mu (@qbs_Mx_const R X x).
 
-Arguments qbs_return : clear implicits.
+#[global] Arguments qbs_return : clear implicits.
 
 (* All returns with the same point are equivalent, regardless of mu *)
 Lemma qbs_return_equiv (X : qbsType R) (x : X)
@@ -194,7 +200,11 @@ move=> alpha halpha; rewrite /qbs_Mx /= => r.
 exact: (@qbs_Mx_const R X).
 Qed.
 
-Arguments qbs_return_random : clear implicits.
+#[global] Arguments qbs_return_random : clear implicits.
+
+End probability_monad.
+
+Section monad_bind.
 
 (* 5. Bind: P(X) -> (X -> P(Y)) -> P(Y)
 
@@ -223,7 +233,7 @@ Arguments qbs_return_random : clear implicits.
 Definition qbs_morphism_strong (X Y : qbsType R) (f : X -> qbs_prob Y) : Prop :=
   forall alpha, @qbs_Mx R X alpha -> monadP_random Y (f \o alpha).
 
-Arguments qbs_morphism_strong : clear implicits.
+#[global] Arguments qbs_morphism_strong : clear implicits.
 
 (* Diagonal randomness from the strong morphism condition *)
 Lemma qbs_bind_alpha_random_strong (X Y : qbsType R) (p : qbs_prob X)
@@ -267,7 +277,7 @@ Definition qbs_bind (X Y : qbsType R) (p : qbs_prob X)
     (qbs_prob_mu p)
     hdiag.
 
-Arguments qbs_bind : clear implicits.
+#[global] Arguments qbs_bind : clear implicits.
 
 (* Bind specialized for strong morphisms *)
 Definition qbs_bind_strong (X Y : qbsType R) (p : qbs_prob X)
@@ -275,7 +285,7 @@ Definition qbs_bind_strong (X Y : qbsType R) (p : qbs_prob X)
   (hf : qbs_morphism_strong X Y f) : qbs_prob Y :=
   qbs_bind X Y p f (qbs_bind_alpha_random_strong p hf).
 
-Arguments qbs_bind_strong : clear implicits.
+#[global] Arguments qbs_bind_strong : clear implicits.
 
 (* Bind morphism for the monad structure.
    We need the strong condition for f to extract the diagonal. *)
@@ -357,6 +367,10 @@ Lemma qbs_bindA (X Y Z : qbsType R) (m : qbs_prob X)
       hfg_diag).
 Proof. by move=> U hU. Qed.
 
+End monad_bind.
+
+Section qbs_integration.
+
 (* 7. Integration on QBS Probability Spaces *)
 
 (** Integration of h : X -> \bar R against a QBS
@@ -365,7 +379,7 @@ Definition qbs_integral (X : qbsType R) (p : qbs_prob X)
   (h : X -> \bar R) : \bar R :=
   (\int[qbs_prob_mu p]_x (h (qbs_prob_alpha p x)))%E.
 
-Arguments qbs_integral : clear implicits.
+#[global] Arguments qbs_integral : clear implicits.
 
 (* Sigma_Mx-measurability for functions h : X -> \bar R.
    h is sigma_Mx-measurable iff for every random element alpha
@@ -375,7 +389,7 @@ Definition qbs_measurable (X : qbsType R) (h : X -> \bar R) : Prop :=
   forall alpha, @qbs_Mx R X alpha ->
     measurable_fun setT (fun r => h (alpha r)).
 
-Arguments qbs_measurable : clear implicits.
+#[global] Arguments qbs_measurable : clear implicits.
 
 (* If h is sigma_Mx-measurable, then preimages of
    measurable sets are in sigma_Mx. *)
@@ -511,6 +525,10 @@ exact: (integrable_pushforward hma
   (@measurable_id _ (\bar R) setT) hint measurableT).
 Qed.
 
+End qbs_integration.
+
+Section monad_operations.
+
 (* 8. Functorial action of the probability monad *)
 
 Definition monadP_map (X Y : qbsType R) (f : X -> Y)
@@ -520,7 +538,7 @@ Definition monadP_map (X Y : qbsType R) (f : X -> Y)
     (qbs_prob_mu p)
     (hf _ (qbs_prob_alpha_random p)).
 
-Arguments monadP_map : clear implicits.
+#[global] Arguments monadP_map : clear implicits.
 
 Lemma monadP_map_morph (X Y : qbsType R) (f : @qbsHomType R X Y) :
   @qbs_morphism R (monadP X) (monadP Y)
@@ -554,13 +572,13 @@ Definition qbs_expect (X : qbsType R) (p : qbs_prob X)
   (h : X -> R) : \bar R :=
   qbs_integral X p (fun x => (h x)%:E).
 
-Arguments qbs_expect : clear implicits.
+#[global] Arguments qbs_expect : clear implicits.
 
 Definition qbs_prob_event (X : qbsType R) (p : qbs_prob X)
   (U : set X) : \bar R :=
   qbs_prob_mu p (qbs_prob_alpha p @^-1` U).
 
-Arguments qbs_prob_event : clear implicits.
+#[global] Arguments qbs_prob_event : clear implicits.
 
 (* 10. Variance
    Defined via the mathcomp-analysis variance applied to
@@ -572,7 +590,7 @@ Definition qbs_variance (X : qbsType R) (p : qbs_prob X)
   (f : X -> R) : \bar R :=
   variance (qbs_prob_mu p) (f \o qbs_prob_alpha p).
 
-Arguments qbs_variance : clear implicits.
+#[global] Arguments qbs_variance : clear implicits.
 
 (* 11. Monad Join: P(P(X)) -> P(X)
    Flattens a probability over probabilities into a single
@@ -587,7 +605,7 @@ Definition qbs_join (X : qbsType R)
   qbs_prob X :=
   qbs_bind (monadP X) X p id hdiag.
 
-Arguments qbs_join : clear implicits.
+#[global] Arguments qbs_join : clear implicits.
 
 (* 12. Monad Strength: W x P(X) -> P(W x X)
    Given a constant w : W and a probability p on X, produce a
@@ -602,7 +620,11 @@ Definition qbs_strength (W X : qbsType R)
     (qbs_prob_mu p)
     (prodQ_const_random w (qbs_prob_alpha_random p)).
 
-Arguments qbs_strength : clear implicits.
+#[global] Arguments qbs_strength : clear implicits.
+
+End monad_operations.
+
+Section bind_congruence.
 
 (* 13. Bind respects equivalence (congruence lemmas)
 
@@ -751,6 +773,10 @@ apply: (hU (g \o alpha)).
 exact: hg _ halpha.
 Qed.
 
+End bind_congruence.
+
+Section strength_and_monad_structure.
+
 (* 14. Strength Naturality and Coherence Laws
    The monad strength commutes with morphisms and satisfies
    the standard coherence conditions for a strong monad. *)
@@ -849,6 +875,10 @@ Lemma qbs_bind_decomp (X Y : qbsType R) (p : qbs_prob X)
     (qbs_join Y p' hdiag).
 Proof. by move=> U hU. Qed.
 
+End strength_and_monad_structure.
+
+Section probability_inequalities.
+
 Local Open Scope ereal_scope.
 
 (* 15. QBS-level integrability predicate *)
@@ -859,7 +889,7 @@ Definition qbs_integrable (X : qbsType R) (p : qbs_prob X)
     (h : X -> \bar R) :=
   (qbs_prob_mu p).-integrable setT (h \o qbs_prob_alpha p).
 
-Arguments qbs_integrable : clear implicits.
+#[global] Arguments qbs_integrable : clear implicits.
 
 (* 16. Integrability closure under arithmetic *)
 
@@ -1023,6 +1053,9 @@ Lemma qbs_strength_law4 (W X : qbsType R) (w : W)
       (@qbs_strength_law4_diag W X w pp hdiag)).
 Proof. by move=> U hU. Qed.
 
+End probability_inequalities.
+
+Local Open Scope ereal_scope.
 
 (* 21. General Normalizer: qbs_prob(X * R) -> option(qbs_prob(X))        *)
 (*   normalize_mu p hw hw_m hpos hfin == reweighted probability measure  *)
