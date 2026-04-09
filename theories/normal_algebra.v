@@ -30,6 +30,19 @@ Section normal_density_algebra.
 Variable R : realType.
 Local Open Scope ring_scope.
 
+Local Notation ltW := order.Order.POrderTheory.ltW.
+
+(* Helper: 2^-1 != 0 *)
+Let half_neq0 : (2%:R^-1 : R) != 0.
+Proof. by rewrite invr_neq0 // pnatr_eq0. Qed.
+
+(* Helper: 3 != 0 *)
+Let three_neq0 : (3%:R : R) != 0.
+Proof. by rewrite pnatr_eq0. Qed.
+
+(* General identities about normal densities                             *)
+Section normal_pdf_general.
+
 (* Completing the square: ax^2 + bx + c = a(x+b/(2a))^2 - (b^2-4ac)/(4a) *)
 Lemma complete_the_square (a b c x : R) (ha : a != 0) :
   a * x ^+ 2 + b * x + c =
@@ -166,6 +179,11 @@ apply: mulr_gt0; first exact: (normal_peak_gt0 hsqS).
 rewrite /normal_fun; exact: exp.expR_gt0.
 Qed.
 
+End normal_pdf_general.
+
+(* Bayesian Phase 1: Integrate out the intercept b                       *)
+Section bayesian_phase1_intercept.
+
 (* Phase 1: Integrate out the intercept b                                *)
 
 (* The evidence integral is:
@@ -188,8 +206,6 @@ Qed.
    we get a scalar function of s times the remaining s-prior. *)
 
 (* Variance recurrence *)
-
-Local Notation ltW := order.Order.POrderTheory.ltW.
 
 (* When combining N(mu, sqrtr(V), b) with N(m', 1/2, b), the new
    variance is V/(4V+1) because:
@@ -368,14 +384,6 @@ Proof. exact: sqrtr_nine_div_neq0. Qed.
 Lemma phase1_sqrtr_var5_neq0 : sqrtr (9%:R / 181%:R) != (0 : R).
 Proof. exact: sqrtr_nine_div_neq0. Qed.
 
-(* Helper: 2^-1 != 0 *)
-Let half_neq0 : (2%:R^-1 : R) != 0.
-Proof. by rewrite invr_neq0 // pnatr_eq0. Qed.
-
-(* Helper: 3 != 0 *)
-Let three_neq0 : (3%:R : R) != 0.
-Proof. by rewrite pnatr_eq0. Qed.
-
 (* The main Phase 1 result for the first 3 steps:
    Combine N(0,3,b) with 3 data-point factors. *)
 Lemma phase1_combine3 (s b : R) :
@@ -505,6 +513,11 @@ rewrite sigma45.
 rewrite /gaussian_prod_scalar.
 by rewrite !mulrA.
 Qed.
+
+End bayesian_phase1_intercept.
+
+(* Bayesian Phase 2: Integrate out the slope s                           *)
+Section bayesian_phase2_slope.
 
 (* Phase 2: Integrate out the slope s                                    *)
 
@@ -1291,5 +1304,7 @@ rewrite (normal_pdf_recenter (5%:R/2%:R) s 1 (2%:R^-1) b half_neq0)
         (normal_pdf_recenter 8%:R s 5%:R (2%:R^-1) b half_neq0).
 congr (_ * _ * _ * _ * _); rewrite ?mul1r //.
 Qed.
+
+End bayesian_phase2_slope.
 
 End normal_density_algebra.
