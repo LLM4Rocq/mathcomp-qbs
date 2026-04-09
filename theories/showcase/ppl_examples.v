@@ -8,7 +8,7 @@ From mathcomp Require Import measure lebesgue_integral probability.
 From mathcomp Require Import boolp.
 From mathcomp Require Import ring.
 From QBS Require Import quasi_borel probability_qbs pair_qbs_measure
-  measure_as_qbs_measure.
+  measure_as_qbs_measure ppl_qbs.
 
 (**md**************************************************************)
 (* # Higher-Order Probabilistic Programs in QBS                    *)
@@ -490,5 +490,75 @@ Definition bayesian_random_linear :
     bayesian_random_linear_weighted
     bayesian_random_linear_weight_ge0
     bayesian_random_linear_weight_meas.
+
+(** * Example 5: higher-order program via the PPL surface syntax *)
+
+(** The examples above build distributions on function spaces
+    directly from QBS primitives ([monadP_map],
+    [qbs_morphism_curry], ...). This demonstrates the
+    expressiveness of the underlying category, but it bypasses the
+    PPL surface syntax entirely.
+
+    This example takes the opposite route: it constructs a
+    higher-order probabilistic program using the intrinsically
+    typed expression type [expr] of [ppl_qbs.v] and then obtains
+    its denotation via [expr_denot] / [expr_sem]. The program is
+
+    [[
+        do c <- sample Normal(0, 1);
+        return (lambda x. c)
+    ]]
+
+    whose type is [P(R -> R)] -- a distribution over real-valued
+    functions. Inside the lambda, the bound sample [c] lives at de
+    Bruijn index 1 (the lambda introduces [x] at index 0).
+
+    Because the continuation of the [e_bind] is syntactically of
+    the form [e_ret _], the semantic dispatch in [expr_sem] lands
+    in [morph_bind_ret] -- the faithful case -- rather than the
+    placeholder [morph_bind_fallback]. The denotation therefore
+    genuinely represents the program and not a trivial default.
+    The faithfulness equation [ex_random_constant_ppl_faithful]
+    below holds by [reflexivity], which exactly witnesses that the
+    dispatch is definitional. *)
+Definition ex_random_constant_ppl :
+  expr R [::] (ppl_prob (ppl_fun ppl_real ppl_real)) :=
+  @e_bind R [::] ppl_real (ppl_fun ppl_real ppl_real)
+    (@e_sample_normal R [::] 0%R 1%R (@ltr01 R))
+    (@e_ret R (ppl_real :: [::]) (ppl_fun ppl_real ppl_real)
+      (@e_lam R (ppl_real :: [::]) ppl_real ppl_real
+        (@e_var R
+          (ppl_real :: ppl_real :: [::]) ppl_real
+          (@var_there (ppl_real :: [::]) ppl_real ppl_real
+            (@var_here [::] ppl_real))))).
+
+(** The denotation is a QBS morphism, as usual, via
+    [expr_morphism]. Unlike the earlier examples, this morphism
+    was obtained from the surface syntax, not assembled from QBS
+    combinators. *)
+Lemma ex_random_constant_ppl_morphism :
+  @qbs_morphism R
+    (ctx_denot R [::])
+    (type_denot R (ppl_prob (ppl_fun ppl_real ppl_real)))
+    (expr_denot ex_random_constant_ppl).
+Proof. exact: expr_morphism. Qed.
+
+(** The denotation lands in the faithful [bind/return] case: the
+    semantics of this program is exactly [morph_bind_ret] applied
+    to the denotations of the sampled prior and the lambda body.
+    This holds by [reflexivity] because [expr_sem] on
+    [e_bind _ (e_ret _)] reduces definitionally to
+    [morph_bind_ret]. *)
+Lemma ex_random_constant_ppl_faithful :
+  expr_sem ex_random_constant_ppl =
+  @morph_bind_ret R [::] ppl_real (ppl_fun ppl_real ppl_real)
+    (expr_sem (@e_sample_normal R [::] 0%R 1%R (@ltr01 R)))
+    (expr_sem
+      (@e_lam R (ppl_real :: [::]) ppl_real ppl_real
+        (@e_var R
+          (ppl_real :: ppl_real :: [::]) ppl_real
+          (@var_there (ppl_real :: [::]) ppl_real ppl_real
+            (@var_here [::] ppl_real))))).
+Proof. by []. Qed.
 
 End higher_order_examples.
