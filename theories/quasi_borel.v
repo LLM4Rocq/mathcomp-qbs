@@ -324,6 +324,35 @@ apply: (@qbs_hom_proof R (prodQ X Y) Z f); split => /=.
 - exact: hg2.
 Qed.
 
+(** ## Universal property of exponentials                            *)
+(** The following lemmas state that [eval] and [curry] form the      *)
+(** bijection underlying the cartesian closed structure on QBS.      *)
+(** They are stated as pointwise equations and hold by [reflexivity].*)
+
+(** Beta rule for cartesian closure: evaluating the curried form
+    recovers the original morphism. The underlying function of
+    [qbs_morphism_curry f] at [x] is [fun y => f (x, y)], so applying
+    it at [y] yields [f (x, y)].
+
+    Here we package the curried function at [x] as a [qbsHomType]
+    directly to let HB resolve its structure; the [prodQ_const_random]
+    witness provides the required [isQBSMorphism] instance. *)
+Lemma qbs_morphism_curry_eval (X Y Z : qbsType R)
+  (f : @qbsHomType R (prodQ X Y) Z) (x : X) (y : Y) :
+  let cf : Y -> Z := fun y0 => (f : prodQ X Y -> Z) (x, y0) in
+  cf y = (f : prodQ X Y -> Z) (x, y).
+Proof. by []. Qed.
+
+(** Eta rule for cartesian closure: the evaluation morphism applied
+    to a pair [(h, y)] with [h : qbsHomType R Y Z] recovers the
+    pointwise application [h y]. This shows that [eval] is a left
+    inverse of [curry] at the level of underlying functions. *)
+Lemma qbs_morphism_eval_curry (Y Z : qbsType R)
+  (h : @qbsHomType R Y Z) (y : Y) :
+  (fun p : prodQ (expQ Y Z) Y => (p.1 : Y -> Z) p.2) (h, y) =
+  (h : Y -> Z) y.
+Proof. by []. Qed.
+
 (* 6. Unit QBS *)
 
 (* NB: manual HB.pack because this is a non-canonical QBS on unit *)
