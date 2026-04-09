@@ -1,9 +1,12 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C. *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra.
-From mathcomp Require Import reals classical_sets num_topology
+From mathcomp Require Import reals ereal classical_sets num_topology
   measurable_structure measurable_function lebesgue_stieltjes_measure
   measurable_realfun probability.
+From mathcomp Require Import measure lebesgue_integral probability.
+From mathcomp Require Import boolp.
+From mathcomp Require Import ring.
 From QBS Require Import quasi_borel probability_qbs pair_qbs_measure
   measure_as_qbs_measure.
 
@@ -293,5 +296,199 @@ Definition random_sampler :
 
 Definition random_sampler_well_defined :
   qbs_prob (expQ (realQ R) (monadP (realQ R))) := random_sampler.
+
+(** * Example 4: Bayesian inference on random linear functions *)
+
+(** We condition [random_linear] on observed data points to obtain
+    a posterior distribution over functions. This is a higher-order
+    Bayesian inference example: the posterior lives on the function
+    space [expQ realQ realQ], which is impossible in the classical
+    kernel-based semantics.
+
+    Model:
+    - Prior:      [f ~ random_linear] (i.e. [f = fun x => m*x + b]
+                  with [m, b ~ Normal(0,1)]).
+    - Likelihood: for each data point [(x_i, y_i)], the observation
+                  density is [normal_pdf (f x_i) obs_sigma y_i].
+    - Posterior:  [f | data], obtained by reweighting the prior by
+                  the product of the observation densities. *)
+
+(** Observation noise standard deviation. A constant [1] is used
+    so that positivity is immediate. *)
+Definition obs_sigma : R := 1.
+
+Lemma obs_sigma_gt0 : (0 < obs_sigma)%R.
+Proof. by rewrite /obs_sigma; exact: ltr01. Qed.
+
+(** Measurable real functions are QBS morphisms between [realQ R]s.
+    This is a convenient bridge lemma. *)
+Lemma qbs_morphism_of_measurable (f : R -> R)
+    (hf : measurable_fun [set: mR] f) :
+  @qbs_morphism R (realQ R) (realQ R) f.
+Proof.
+move=> alpha halpha.
+rewrite /qbs_Mx /=.
+exact: (measurableT_comp hf halpha).
+Qed.
+
+(** Single-point observation density as a QBS morphism on the
+    function space. Given fixed input [x] and observation [y],
+    the map [f |-> normal_pdf (f x) obs_sigma y] is a QBS morphism
+    [expQ realQ realQ -> realQ]. *)
+Lemma obs_sigma_neq0 : (obs_sigma != 0 :> R)%R.
+Proof. by rewrite /obs_sigma oner_neq0. Qed.
+
+Lemma obs_at_point_morphism (x y : R) :
+  @qbs_morphism R (expQ (realQ R) (realQ R)) (realQ R)
+    (fun f : @qbsHomType R (realQ R) (realQ R) =>
+       normal_pdf ((f : realQ R -> realQ R) x) obs_sigma y).
+Proof.
+have hpdf_meas : measurable_fun [set: mR]
+  (fun u : R => normal_pdf u obs_sigma y).
+  (* Via symmetry (y - u)^2 = (u - y)^2, we have
+     normal_pdf u s y = normal_pdf y s u as a real function of u. *)
+  have hsym : (fun u : R => normal_pdf u obs_sigma y) =
+              (fun u : R => normal_pdf y obs_sigma u).
+    apply: funext => u.
+    rewrite (normal_pdfE u obs_sigma_neq0)
+            (normal_pdfE y obs_sigma_neq0).
+    congr (_ * _)%R.
+    rewrite /normal_fun.
+    suff -> : ((y - u) ^+ 2 = (u - y) ^+ 2)%R by [].
+    by rewrite !expr2; ring.
+  by rewrite hsym; exact: measurable_normal_pdf.
+have hpdf_morph : @qbs_morphism R (realQ R) (realQ R)
+  (fun u : R => normal_pdf u obs_sigma y).
+  exact: qbs_morphism_of_measurable hpdf_meas.
+exact: (qbs_morphism_comp
+  (@random_linear_eval_morphism x) hpdf_morph).
+Qed.
+
+(** Real-valued observation density at a single point. *)
+Definition obs_at_point (x y : R)
+  (f : @qbsHomType R (realQ R) (realQ R)) : R :=
+  normal_pdf ((f : realQ R -> realQ R) x) obs_sigma y.
+
+Lemma obs_at_point_ge0 (x y : R) (f : @qbsHomType R (realQ R) (realQ R)) :
+  (0 <= obs_at_point x y f)%R.
+Proof. rewrite /obs_at_point; exact: normal_pdf_ge0. Qed.
+
+(** The three observed data points: [(1, 2.5), (2, 3.8), (3, 4.5)].
+    We use rationals expressed with [%:R] so the definitions stay
+    independent of any float notation. *)
+Definition data_x1 : R := 1.
+Definition data_y1 : R := 5%:R / 2%:R.    (* 2.5 *)
+Definition data_x2 : R := 2%:R.
+Definition data_y2 : R := 19%:R / 5%:R.   (* 3.8 *)
+Definition data_x3 : R := 3%:R.
+Definition data_y3 : R := 9%:R / 2%:R.    (* 4.5 *)
+
+(** Joint observation likelihood: product of per-point densities. *)
+Definition obs_likelihood
+    (f : @qbsHomType R (realQ R) (realQ R)) : R :=
+  (obs_at_point data_x1 data_y1 f *
+   obs_at_point data_x2 data_y2 f *
+   obs_at_point data_x3 data_y3 f)%R.
+
+Lemma obs_likelihood_ge0 (f : @qbsHomType R (realQ R) (realQ R)) :
+  (0 <= obs_likelihood f)%R.
+Proof.
+rewrite /obs_likelihood.
+apply: mulr_ge0; last exact: obs_at_point_ge0.
+apply: mulr_ge0; exact: obs_at_point_ge0.
+Qed.
+
+(** The joint likelihood as a QBS morphism [expQ realQ realQ -> realQ].
+    Built by pairing the single-point likelihoods and multiplying. *)
+Lemma obs_likelihood_morphism :
+  @qbs_morphism R (expQ (realQ R) (realQ R)) (realQ R)
+    obs_likelihood.
+Proof.
+have h1 := obs_at_point_morphism data_x1 data_y1.
+have h2 := obs_at_point_morphism data_x2 data_y2.
+have h3 := obs_at_point_morphism data_x3 data_y3.
+have h12pair : @qbs_morphism R (expQ (realQ R) (realQ R))
+  (prodQ (realQ R) (realQ R))
+  (fun f => (obs_at_point data_x1 data_y1 f,
+             obs_at_point data_x2 data_y2 f)).
+  exact: (qbs_morphism_pair h1 h2).
+have h12 : @qbs_morphism R (expQ (realQ R) (realQ R)) (realQ R)
+  (fun f => (obs_at_point data_x1 data_y1 f *
+             obs_at_point data_x2 data_y2 f)%R).
+  exact: (qbs_morphism_comp h12pair (@qbs_morphism_mul R)).
+have h123pair : @qbs_morphism R (expQ (realQ R) (realQ R))
+  (prodQ (realQ R) (realQ R))
+  (fun f => ((obs_at_point data_x1 data_y1 f *
+              obs_at_point data_x2 data_y2 f)%R,
+             obs_at_point data_x3 data_y3 f)).
+  exact: (qbs_morphism_pair h12 h3).
+exact: (qbs_morphism_comp h123pair (@qbs_morphism_mul R)).
+Qed.
+
+(** The pairing morphism [f |-> (f, obs_likelihood f)].
+    This packages each sampled function together with its likelihood
+    weight, ready for normalization by [qbs_normalize]. *)
+Lemma pair_with_likelihood_morphism :
+  @qbs_morphism R (expQ (realQ R) (realQ R))
+    (prodQ (expQ (realQ R) (realQ R)) (realQ R))
+    (fun f => (f, obs_likelihood f)).
+Proof.
+apply: qbs_morphism_pair.
+- exact: (@qbs_morphism_id R _).
+- exact: obs_likelihood_morphism.
+Qed.
+
+(** The unnormalized weighted distribution: each sampled function
+    from [random_linear] is paired with its likelihood weight. This
+    is exactly the input expected by [qbs_normalize] on the function
+    space. *)
+Definition bayesian_random_linear_weighted :
+  qbs_prob (prodQ (expQ (realQ R) (realQ R)) (realQ R)) :=
+  monadP_map (expQ (realQ R) (realQ R))
+    (prodQ (expQ (realQ R) (realQ R)) (realQ R))
+    _ pair_with_likelihood_morphism random_linear.
+
+(** Well-formedness: the construction type-checks as a QBS
+    probability on the product of the function space and [R]. *)
+Definition bayesian_random_linear_well_defined :
+  qbs_prob (prodQ (expQ (realQ R) (realQ R)) (realQ R)) :=
+  bayesian_random_linear_weighted.
+
+(** The weight component is everywhere non-negative, as required
+    by [qbs_normalize]. *)
+Lemma bayesian_random_linear_weight_ge0 r :
+  (0 <= snd (qbs_prob_alpha bayesian_random_linear_weighted r))%R.
+Proof.
+rewrite /bayesian_random_linear_weighted /monadP_map /=.
+exact: obs_likelihood_ge0.
+Qed.
+
+(** The weight component is a measurable function of the underlying
+    randomness, as required by [qbs_normalize]. *)
+Local Open Scope ereal_scope.
+
+Lemma bayesian_random_linear_weight_meas :
+  measurable_fun [set: mR]
+    (fun r : mR =>
+      EFin (snd (qbs_prob_alpha
+        bayesian_random_linear_weighted r))).
+Proof.
+have halpha := qbs_prob_alpha_random bayesian_random_linear_weighted.
+have [_ h2] := halpha.
+apply/measurable_EFinP; exact: h2.
+Qed.
+
+Local Close Scope ereal_scope.
+
+(** The full Bayesian posterior via [qbs_normalize]. Returns
+    [Some posterior] when the evidence is strictly positive and
+    finite, and [None] otherwise. The option type reflects the
+    fact that a generic weighted prior might not normalize. *)
+Definition bayesian_random_linear :
+  option (qbs_prob (expQ (realQ R) (realQ R))) :=
+  @qbs_normalize R (expQ (realQ R) (realQ R))
+    bayesian_random_linear_weighted
+    bayesian_random_linear_weight_ge0
+    bayesian_random_linear_weight_meas.
 
 End higher_order_examples.
