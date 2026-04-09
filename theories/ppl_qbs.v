@@ -444,6 +444,34 @@ Defined.
 
 (** * Denotational Semantics *)
 
+(** Helper: extract, when [e] is syntactically
+    of the form [e_ret e0], the morphism
+    denotation of [e0] via the recursive
+    [expr_sem]. The [return] clause of the
+    dependent match exposes the type index so
+    that in the [e_ret] branch the produced
+    morphism has the right codomain. *)
+Definition try_morph_of_ret
+  (rec : forall G' t' (e' : expr G' t'),
+    morph (ctx_denot G') (type_denot t'))
+  G tp (e : expr G tp) :
+  option (match tp with
+          | ppl_prob t' =>
+              morph (ctx_denot G) (type_denot t')
+          | _ => unit
+          end) :=
+  match e in expr G' tp'
+  return option (match tp' with
+                 | ppl_prob t' =>
+                     morph (ctx_denot G')
+                       (type_denot t')
+                 | _ => unit
+                 end)
+  with
+  | e_ret G0 t0 e0 => Some (rec _ _ e0)
+  | _ => None
+  end.
+
 (** Maps each expression to a morphism bundle
     (function + QBS morphism proof). *)
 Fixpoint expr_sem G t (e : expr G t) :
@@ -468,14 +496,23 @@ Fixpoint expr_sem G t (e : expr G t) :
       morph_app (expr_sem ef) (expr_sem ea)
   | e_ret _ _ e0 =>
       morph_ret (expr_sem e0)
-  | e_bind G0 _ t2 _ _ =>
-      (** The general monadic bind cannot be
-          discharged from the pointwise
-          morphism condition of [monadP]. We
-          use a placeholder; use
-          [morph_bind_ret] directly for the
-          supported [bind/return] shape. *)
-      morph_bind_fallback G0 t2
+  | e_bind G0 t1 t2 e1 e2 =>
+      (** When [e2] is syntactically [e_ret e0],
+          dispatch to [morph_bind_ret] for a
+          faithful denotation. Otherwise fall
+          back to a placeholder since the
+          general bind cannot be discharged from
+          the pointwise morphism condition of
+          [monadP]. *)
+      match try_morph_of_ret
+        (@expr_sem) e2
+        : option (morph
+            (ctx_denot (t1 :: G0))
+            (type_denot t2))
+      with
+      | Some m2 => morph_bind_ret (expr_sem e1) m2
+      | None => morph_bind_fallback G0 t2
+      end
   | e_sample_uniform G0 =>
       morph_sample_uniform G0
   | e_sample_normal G0 mu sigma hs =>
@@ -570,13 +607,11 @@ Lemma ex_ho_prob_morphism :
 Proof. exact: expr_morphism. Qed.
 
 (** Example 7: monadic bind
-    [do x <- sample uniform; return x].
-    Note that the denotation via [expr_sem]
-    uses [morph_bind_fallback] (a constant
-    placeholder distribution). For a faithful
-    denotation of this program one should use
-    [morph_bind_ret] directly, as shown in
-    [ex_bind_faithful] below. *)
+    [do x <- sample uniform; return x]. Since
+    the continuation is syntactically [e_ret],
+    [expr_sem] dispatches to [morph_bind_ret]
+    and the denotation is faithful (see
+    [expr_sem_ex_bind] below). *)
 Definition ex_bind :
   expr nil (ppl_prob ppl_real) :=
   e_bind
@@ -591,10 +626,9 @@ Proof. exact: expr_morphism. Qed.
 
 (** A faithful denotation of
     [do x <- sample uniform; return x] using
-    [morph_bind_ret] directly, bypassing the
-    placeholder used by [expr_sem] on [e_bind].
-    This binds a Uniform[0,1] sample and
-    returns it unchanged. *)
+    [morph_bind_ret] directly. Now that
+    [expr_sem] detects the [bind/return] shape,
+    this is equal to [expr_sem ex_bind]. *)
 Definition ex_bind_faithful :
   morph (ctx_denot nil)
     (monadP (realQ R)) :=
@@ -607,5 +641,22 @@ Lemma ex_bind_faithful_morphism :
     (monadP (realQ R))
     (morph_fun ex_bind_faithful).
 Proof. exact: morph_pf. Qed.
+
+(** [expr_sem] on a [bind/return] program is
+    definitionally the faithful denotation via
+    [morph_bind_ret]. *)
+Lemma expr_sem_ex_bind :
+  expr_sem ex_bind = ex_bind_faithful.
+Proof. reflexivity. Qed.
+
+(** General equation: when the continuation of
+    a [e_bind] is syntactically [e_ret e0], the
+    denotation dispatches to [morph_bind_ret]. *)
+Lemma expr_sem_bind_ret G t1 t2
+  (e1 : expr G (ppl_prob t1))
+  (e0 : expr (t1 :: G) t2) :
+  expr_sem (e_bind e1 (e_ret e0)) =
+  morph_bind_ret (expr_sem e1) (expr_sem e0).
+Proof. reflexivity. Qed.
 
 End ppl_denot.
