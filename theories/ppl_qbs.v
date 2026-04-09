@@ -33,6 +33,30 @@ From QBS Require Import quasi_borel coproduct_qbs probability_qbs
 (*   e_sample_normal   == sample from Normal(mu,sigma)             *)
 (*   e_sample_bernoulli == sample from Bernoulli(p)                *)
 (* ```                                                              *)
+(*                                                                  *)
+(* ## Bind faithfulness                                             *)
+(*                                                                  *)
+(* The denotation of [e_bind e1 e2] is faithful in two cases:       *)
+(* - [e2] is syntactically [e_ret e0] -> dispatched to              *)
+(*   morph_bind_ret                                                 *)
+(* - [e2] is syntactically [e_sample_*] -> dispatched to            *)
+(*   morph_bind_const                                               *)
+(*                                                                  *)
+(* For all other shapes, [expr_sem] dispatches to                   *)
+(* morph_bind_fallback, which returns a constant placeholder        *)
+(* distribution at type_point. This means [expr_morphism] proves    *)
+(* the result is a QBS morphism but the underlying function does    *)
+(* NOT compute the program semantics.                               *)
+(*                                                                  *)
+(* The fundamental obstacle is that monadP_random_pw (pointwise)    *)
+(* does not imply monadP_random (strong). Discharging the diagonal  *)
+(* randomness obligation for general bind requires either the      *)
+(* strong morphism condition or quotient types, neither of which   *)
+(* is available without significant rework.                         *)
+(*                                                                  *)
+(* See expr_sem_bind_ret, expr_sem_bind_sample_uniform, and         *)
+(* expr_sem_bind_sample_bernoulli for the equation lemmas that      *)
+(* hold by reflexivity in the faithful cases.                       *)
 (********************************************************************)
 
 Import GRing.Theory Num.Def Num.Theory.
@@ -228,7 +252,7 @@ have h :=
   @morph_pf Z (prodQ X Y) f alpha halpha.
 rewrite /qbs_Mx /= in h.
 exact: h.1.
-Defined.
+Qed.
 
 (** Snd morphism. *)
 Definition morph_snd (X Y Z : qbsType R)
@@ -241,7 +265,7 @@ have h :=
   @morph_pf Z (prodQ X Y) f alpha halpha.
 rewrite /qbs_Mx /= in h.
 exact: h.2.
-Defined.
+Qed.
 
 (** Variable morphism. *)
 Definition morph_var G t (v : has_var G t) :
@@ -304,7 +328,7 @@ apply: h_body; split => /=.
 - have h := hgamma.
   rewrite /qbs_Mx /= in h.
   exact: qbs_Mx_comp halpha h.1.
-Defined.
+Qed.
 
 (** Application morphism: evaluates a function
     morphism at an argument morphism. *)
@@ -328,7 +352,7 @@ apply.
 split => /=.
 - exact: @morph_pf _ _ sf alpha halpha.
 - exact: @morph_pf _ _ sa alpha halpha.
-Defined.
+Qed.
 
 (** Return morphism: wraps a value in the
     probability monad via qbs_return. *)
@@ -343,7 +367,7 @@ exists (fun env =>
 move=> alpha halpha.
 rewrite /qbs_Mx /= => r.
 exact: @qbs_Mx_const.
-Defined.
+Qed.
 
 (** Monadic bind where the continuation is a
     pure return: [do x <- m1; return (m2 x)].
@@ -388,7 +412,7 @@ move=> alpha halpha.
 rewrite /qbs_Mx /= => r.
 rewrite /k /=.
 exact: (diag (alpha r)).
-Defined.
+Qed.
 
 (** Monadic bind where the continuation is a
     constant probability distribution [p] (i.e.
@@ -419,7 +443,7 @@ exists (fun env =>
 move=> alpha halpha.
 rewrite /qbs_Mx /= => r.
 exact: (qbs_prob_alpha_random p).
-Defined.
+Qed.
 
 (** Canonical inhabitant of each PPL type. Used
     only to build a trivial default probability
@@ -445,16 +469,20 @@ Fixpoint type_point (t : ppl_type) : type_denot t :=
         (uniform_prob (@ltr01 R))
   end.
 
-(** Fallback bind combinator used when the
-    continuation is not syntactically a [e_ret].
-    In that case we cannot discharge the
-    diagonal-randomness obligation without the
-    strong morphism condition, so we return a
-    placeholder constant distribution. The PPL
-    semantics for [e_bind] is therefore only
-    faithful when the second argument is an
-    [e_ret]; this limitation is documented
-    at [expr_sem]. *)
+(** [morph_bind_fallback] returns a CONSTANT placeholder distribution
+    at the canonical inhabitant [type_point t2]. It is used as the
+    last-resort case in [expr_sem] for [e_bind] when the continuation
+    cannot be classified by [try_morph_of_ret] or [try_prob_of_sample].
+
+    WARNING: When [expr_sem] dispatches to this fallback, the
+    resulting denotation is NOT the program semantics. It is a valid
+    QBS morphism (so [expr_morphism] proves the morphism property),
+    but the underlying function ignores the actual computation.
+
+    For programs that fall outside the faithful cases, use the
+    explicit combinators [morph_bind_ret] and [morph_bind_const]
+    directly, or restructure the program to use one of the
+    faithful shapes. *)
 Definition morph_bind_fallback G t2 :
   morph (ctx_denot G)
     (monadP (type_denot t2)).
@@ -466,7 +494,7 @@ exists (fun _ =>
 move=> alpha halpha.
 rewrite /qbs_Mx /= => r.
 exact: qbs_Mx_const.
-Defined.
+Qed.
 
 (** Sample uniform morphism: constant
     Uniform[0,1] distribution. *)
@@ -478,7 +506,7 @@ exists (fun _ => @qbs_uniform R).
 move=> alpha halpha.
 rewrite /qbs_Mx /= => r.
 exact: @measurable_id _ mR setT.
-Defined.
+Qed.
 
 (** Sample normal morphism: constant
     Normal(mu,sigma) distribution. *)
@@ -493,7 +521,7 @@ exists (fun _ =>
 move=> alpha halpha.
 rewrite /qbs_Mx /= => r.
 exact: @measurable_id _ mR setT.
-Defined.
+Qed.
 
 (** Sample bernoulli morphism: constant
     Bernoulli(p) distribution on [boolQ R]. *)
@@ -507,7 +535,7 @@ rewrite /qbs_Mx /= => r.
 exact: measurable_fun_ltr
   (@measurable_id _ mR setT)
   (@measurable_cst _ _ mR mR setT p).
-Defined.
+Qed.
 
 (** Left injection morphism: lifts a morphism
     into a sum type via [inl]. *)
@@ -522,7 +550,7 @@ have h := @morph_pf _ _ s alpha halpha.
 rewrite /qbs_Mx /=; left.
 exists (fun r => morph_fun s (alpha r)).
 split => //.
-Defined.
+Qed.
 
 (** Right injection morphism: lifts a morphism
     into a sum type via [inr]. *)
@@ -537,7 +565,7 @@ have h := @morph_pf _ _ s alpha halpha.
 rewrite /qbs_Mx /=; right; left.
 exists (fun r => morph_fun s (alpha r)).
 split => //.
-Defined.
+Qed.
 
 (** Case analysis over a sum inside a context.
     Given a scrutinee morphism [ss] producing
@@ -628,7 +656,7 @@ case: hscr =>
   case: (i == 0%N).
   + apply: (@morph_pf _ _ s1) => /=; split => //.
   + apply: (@morph_pf _ _ s2) => /=; split => //.
-Defined.
+Qed.
 
 (** * Denotational Semantics *)
 
@@ -765,7 +793,14 @@ Definition expr_denot G t (e : expr G t) :
   ctx_denot G -> type_denot t :=
   morph_fun (expr_sem e).
 
-(** The denotation is always a QBS morphism. *)
+(** [expr_morphism] proves that [expr_denot e] is a QBS morphism for
+    every well-typed expression [e]. This is structural soundness:
+    the denotation lives in the right type. It does NOT prove
+    semantic faithfulness for [e_bind] outside the supported shapes
+    (see the bind faithfulness section in the file header).
+
+    A semantic correctness theorem of the form
+    [expr_denot e = intended_meaning e] is not currently provided. *)
 Lemma expr_morphism G t (e : expr G t) :
   @qbs_morphism R (ctx_denot G)
     (type_denot t) (expr_denot e).
