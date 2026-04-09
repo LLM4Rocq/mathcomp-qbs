@@ -3,8 +3,8 @@
 **Project:** QBS -- Quasi-Borel Spaces in Rocq/Coq
 **Repository:** `/home/rocq/QBS`
 **Date:** 2026-04-04
-**Status:** 462 proofs (460 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 9,934 across 15 files
+**Status:** 475 proofs (473 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** 10,271 across 15 files
 **Compatibility:** Rocq 9.0.x -- 9.1.x, Math-comp analysis 1.15.x -- 1.16.x
 
 **Primary references:**
@@ -1354,13 +1354,33 @@ A higher-order probabilistic programming language with denotational semantics in
 
 The `ex_ho_prob` example is the key demonstration: a function received as input and used to build a probability distribution. This is impossible in kernel-based semantics on measurable spaces.
 
-**Faithful monadic bind on the bind/return shape:** The general `e_bind` cannot be discharged from the pointwise `monadP_random_pw` condition. However, when the second argument is syntactically `e_ret e0`, we can dispatch faithfully:
-- `morph_bind_ret`: faithful bind for the bind/return shape (`do x <- m; return (f x)`), discharged via `qbs_bind_alpha_random_return`
-- `try_morph_of_ret`: dependent helper that detects the `e_ret` shape with a return-clause match on the type index
-- `expr_sem` dispatches via `try_morph_of_ret`: when the continuation is `e_ret e0`, it uses `morph_bind_ret`; otherwise it falls back to `morph_bind_fallback`
-- `expr_sem_bind_ret`: `expr_sem (e_bind e1 (e_ret e0)) = morph_bind_ret (expr_sem e1) (expr_sem e0)` — provable by `reflexivity`, so the dispatch is **definitional**
+**Sum type elimination** (Item 3, post-Phase 1 polish):
+- Type `ppl_sum t1 t2` interpreted as `coprodQ`
+- `e_inl`, `e_inr`, `e_case` constructors with `morph_inl`, `morph_inr`, `morph_case` combinators
+- `morph_case` combines case analysis with context handling using `coprodQ_random` three-way split + `qbs_Mx_glue`
+- Examples: `ex_inl_use`, `ex_inr_use`, `ex_case`
 
-The general case (continuation not of the form `e_ret`) requires the strong morphism condition and is deferred to Phase 2.
+**Bernoulli sampling**:
+- `e_sample_bernoulli p hp0 hp1` constructor
+- `morph_sample_bernoulli` combinator using `qbs_bernoulli`
+- Example: `ex_bernoulli`
+
+**Faithful monadic bind on multiple shapes:** The general `e_bind` cannot be discharged from the pointwise `monadP_random_pw` condition. However, the dispatch handles two faithful shapes:
+
+- **`e_ret e0`** (bind/return shape): `morph_bind_ret` discharges the diagonal via `qbs_bind_alpha_random_return`
+- **`e_sample_*`** (constant continuation): `morph_bind_const` discharges the diagonal via `qbs_bind_alpha_random_const`, since `e_sample_uniform`, `e_sample_normal`, and `e_sample_bernoulli` produce probabilities that don't depend on the bound variable
+
+`expr_sem` dispatches in two stages:
+1. `try_morph_of_ret` — detects `e_ret e0` shape, returns `morph_bind_ret`
+2. `try_prob_of_sample` — detects `e_sample_*`, returns `morph_bind_const`
+3. `morph_bind_fallback` — placeholder for the genuinely-dependent case
+
+Equation lemmas (provable by `reflexivity`, so the dispatch is **definitional**):
+- `expr_sem_bind_ret`
+- `expr_sem_bind_sample_uniform`
+- `expr_sem_bind_sample_bernoulli`
+
+The remaining fallback case (continuation that genuinely references the bound variable in a non-return shape) requires the strong morphism condition and is deferred to Phase 2.
 
 ### 2.30 First-Order PPL as S-Finite Kernels
 
@@ -1733,11 +1753,11 @@ quasi_borel.v
 | `showcase/bayesian_regression.v` | 916 | 34 |
 | `qbs_giry.v` | 201 | 12 |
 | `qbs_kernel.v` | 449 | 21 |
-| `ppl_qbs.v` | 662 | 19 |
-| `ppl_kernel.v` | 310 | 20 |
+| `ppl_qbs.v` | 997 | 32 |
+| `ppl_kernel.v` | 312 | 20 |
 | `showcase/ppl_examples.v` | 494 | 18 |
 | `standard_borel.v` | 1,256 | 60 |
-| **Total** | **9,934** | **462** |
+| **Total** | **10,271** | **475** |
 
 **0 Admitted**, 0 custom axioms.
 

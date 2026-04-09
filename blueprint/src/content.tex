@@ -3214,3 +3214,113 @@ kernel-based semantics on measurable spaces.
   kernel-based PPL semantics cannot express: the posterior is
   a distribution on the function space, not on a parameter space.
 \end{definition}
+
+
+\section{Bernoulli Sampling}
+
+\begin{definition}[Bernoulli Sampling Constructor]\label{def:e_sample_bernoulli}
+  \rocq{QBS.ppl_qbs.e_sample_bernoulli}
+  \rocqok
+  \uses{def:expr, def:qbs_bernoulli}
+  Adds a Bernoulli sampling primitive to the PPL syntax with
+  parameter $p$ and proof $0 \le p \le 1$.
+\end{definition}
+
+\begin{definition}[Bernoulli Sampling Combinator]\label{def:morph_sample_bernoulli}
+  \rocq{QBS.ppl_qbs.morph_sample_bernoulli}
+  \rocqok
+  \uses{def:morph, def:qbs_bernoulli}
+  The constant morphism returning the QBS Bernoulli distribution.
+\end{definition}
+
+
+\section{Sum Type Elimination}
+
+\begin{definition}[Sum Type]\label{def:ppl_sum}
+  \rocq{QBS.ppl_qbs.ppl_type}
+  \rocqok
+  Adds the sum type constructor $\tau_1 + \tau_2$ to the PPL,
+  interpreted as the QBS coproduct $\mathrm{coprod}_Q\,\llbracket\tau_1\rrbracket\,\llbracket\tau_2\rrbracket$.
+\end{definition}
+
+\begin{definition}[Sum Constructors]\label{def:e_inl_inr_case}
+  \rocq{QBS.ppl_qbs.e_inl}
+  \rocq{QBS.ppl_qbs.e_inr}
+  \rocq{QBS.ppl_qbs.e_case}
+  \rocqok
+  \uses{def:ppl_sum, def:expr}
+  Three new expression constructors:
+  $\mathrm{e\_inl}\,e$ and $\mathrm{e\_inr}\,e$ for sum injections,
+  and $\mathrm{e\_case}\,e\,e_1\,e_2$ for case analysis where the
+  branches extend the context with the eliminated value.
+\end{definition}
+
+\begin{definition}[Left Injection Combinator]\label{def:morph_inl}
+  \rocq{QBS.ppl_qbs.morph_inl}
+  \rocqok
+  \uses{def:morph, def:qbs_morphism_inl}
+  Bundled morphism for the left coproduct injection.
+\end{definition}
+
+\begin{definition}[Right Injection Combinator]\label{def:morph_inr}
+  \rocq{QBS.ppl_qbs.morph_inr}
+  \rocqok
+  \uses{def:morph, def:qbs_morphism_inr}
+  Bundled morphism for the right coproduct injection.
+\end{definition}
+
+\begin{definition}[Case Analysis Combinator]\label{def:morph_case}
+  \rocq{QBS.ppl_qbs.morph_case}
+  \rocqok
+  \uses{def:morph, def:morph_inl, def:morph_inr}
+  Combines two morphisms with extended contexts ($\tau_1::\Gamma$
+  and $\tau_2::\Gamma$) into a single morphism on
+  $\mathrm{prod}_Q\,(\mathrm{coprod}_Q\,X\,Y)\,\Gamma$.
+  The morphism property is proved via the three-way
+  $\mathrm{coprodQ\_random}$ split combined with
+  $\mathrm{qbs\_Mx\_glue}$.
+\end{definition}
+
+
+\section{Constant-Continuation Bind}
+
+\begin{definition}[Constant Bind Combinator]\label{def:morph_bind_const}
+  \rocq{QBS.ppl_qbs.morph_bind_const}
+  \rocqok
+  \uses{def:morph, def:qbs_bind, def:qbs_return}
+  Bind combinator where the continuation is constant (doesn't
+  depend on the bound variable). The diagonal randomness is
+  discharged via $\mathrm{qbs\_bind\_alpha\_random\_const}$.
+\end{definition}
+
+\begin{definition}[Try Probability of Sample]\label{def:try_prob_of_sample}
+  \rocq{QBS.ppl_qbs.try_prob_of_sample}
+  \rocqok
+  \uses{def:expr, def:qbs_prob}
+  Dependently-typed match returning $\mathrm{Some}\,p$ for
+  $\mathrm{e\_sample\_uniform}$, $\mathrm{e\_sample\_normal}$,
+  $\mathrm{e\_sample\_bernoulli}$ continuations (which are
+  constant in the bound variable), and $\mathrm{None}$ otherwise.
+\end{definition}
+
+\begin{lemma}[Bind/Sample-Uniform Equation]\label{lem:expr_sem_bind_sample_uniform}
+  \rocq{QBS.ppl_qbs.expr_sem_bind_sample_uniform}
+  \rocqok
+  \uses{def:try_prob_of_sample, def:morph_bind_const}
+  When the continuation is $\mathrm{e\_sample\_uniform}$,
+  $\mathrm{expr\_sem}$ produces $\mathrm{morph\_bind\_const}$
+  with the uniform distribution.
+  Provable by \texttt{reflexivity} (definitional dispatch).
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Bind/Sample-Bernoulli Equation]\label{lem:expr_sem_bind_sample_bernoulli}
+  \rocq{QBS.ppl_qbs.expr_sem_bind_sample_bernoulli}
+  \rocqok
+  \uses{def:try_prob_of_sample, def:morph_bind_const}
+  When the continuation is $\mathrm{e\_sample\_bernoulli}$,
+  $\mathrm{expr\_sem}$ produces $\mathrm{morph\_bind\_const}$
+  with the Bernoulli distribution.
+  Provable by \texttt{reflexivity}.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
