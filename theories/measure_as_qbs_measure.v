@@ -57,8 +57,7 @@ Proof.
 apply: (@mkQBSProb R (realQ R) decode).
 - exact: P.
 - exact: h_decode_meas.
-(* Defined for computational transparency *)
-Defined.
+Qed.
 
 (** Embed a probability on M into a QBS triple on R_qbs. *)
 Definition as_qbs_prob (d : measure_display) (M : measurableType d)
@@ -70,7 +69,9 @@ Definition as_qbs_prob (d : measure_display) (M : measurableType d)
 Proof.
 apply: (@mkQBSProb R (R_qbs R M) g P).
 exact: hg.
-(* Defined for computational transparency *)
+(* Must be Defined: as_qbs_prob_recover and as_qbs_prob_recover_full
+   rely on transparency to reduce qbs_prob_mu/qbs_prob_event
+   against the underlying pushforward. *)
 Defined.
 
 Arguments as_qbs_prob : clear implicits.
