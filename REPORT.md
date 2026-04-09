@@ -3,8 +3,8 @@
 **Project:** QBS -- Quasi-Borel Spaces in Rocq/Coq
 **Repository:** `/home/rocq/QBS`
 **Date:** 2026-04-04
-**Status:** 384 proofs (382 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 8,019 across 11 files
+**Status:** 418 proofs (416 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** 8,932 across 13 files
 **Compatibility:** Rocq 9.0.x -- 9.1.x, Math-comp analysis 1.15.x -- 1.16.x
 
 **Primary references:**
@@ -1283,6 +1283,75 @@ Following the Isabelle AFP development (Bayesian_Linear_Regression.thy) by Hirat
 
 The key result `program_integrates_to_1` derives the positivity and finiteness of evidence from `evidence_value` rather than taking them as hypotheses, matching the Isabelle AFP's `program_result`.
 
+### 2.28 QBS-Kernel Bridge
+
+**File:** `theories/qbs_kernel.v` (449 lines, 21 Qed)
+
+Bridges the QBS probability monad with the s-finite kernel infrastructure from `mathcomp-analysis 1.16.0` (the merged kernel hierarchy `kernel.v`). S-finite kernels provide the standard semantic foundation for first-order probabilistic programs (Staton, ESOP 2017): they are closed under composition, unlike σ-finite kernels.
+
+| Name | Description |
+|------|-------------|
+| `prob_sfinite_measure` | Every probability measure is s-finite |
+| `qbs_prob_sfinite` | QBS probabilities are s-finite via `qbs_to_giry` |
+| `kdiracE` | Pointwise: `kdirac f x U = δ_{f(x)}(U)` |
+| `qbs_return_to_dirac` | QBS return corresponds to Dirac kernel |
+| `measfun_kernel` / `measfun_kernel_prob` | Measurable function as Dirac probability kernel |
+| `qbs_morph_is_measurable` | QBS morphisms on standard Borel are measurable |
+| `qbs_morph_kdirac` | QBS morphism as Dirac probability kernel |
+| `kdirac_comp` / `kdirac_comp_noparam` | Functoriality of Dirac at the kernel level |
+| `qbs_to_giry_map` | Pushforward commutes with `monadP_map` |
+| `qbs_giry_pushforward` | QBS pushforward agrees with Giry pushforward |
+| `qbs_bind_return_map` | Monad law at the kernel level |
+| `kernel_integration` | QBS integral = Lebesgue integral via Giry |
+| `kdirac_round_trip` / `kernel_round_trip` | QBS-Giry round-trip at kernel level |
+
+### 2.29 Higher-Order PPL Semantics
+
+**File:** `theories/ppl_qbs.v` (466 lines, 13 Qed)
+
+A higher-order probabilistic programming language with denotational semantics in QBS. The crucial feature is **function types**: `ppl_fun τ1 τ2` is interpreted as the QBS exponential `expQ ⟦τ1⟧ ⟦τ2⟧`, which is impossible in kernel-based semantics on measurable spaces (the category of measurable spaces is not cartesian closed).
+
+**Types:**
+```
+τ ::= real | bool | unit | τ1 × τ2 | τ1 + τ2 | τ1 → τ2 | P(τ)
+```
+
+**Type interpretation:**
+| PPL type | QBS interpretation |
+|----------|-------------------|
+| `ppl_real` | `realQ R` |
+| `ppl_bool` | `boolQ R` |
+| `ppl_unit` | `unitQ R` |
+| `ppl_prod τ1 τ2` | `prodQ ⟦τ1⟧ ⟦τ2⟧` |
+| `ppl_sum τ1 τ2` | `coprodQ ⟦τ1⟧ ⟦τ2⟧` |
+| `ppl_fun τ1 τ2` | `expQ ⟦τ1⟧ ⟦τ2⟧` (function space) |
+| `ppl_prob τ` | `monadP ⟦τ⟧` |
+
+**Expression constructors** (intrinsically typed via dependent inductive):
+- Variables (de Bruijn), constants, pairs, projections
+- **Lambda** (`e_lam`) and **application** (`e_app`) — higher-order
+- Monadic return (`e_ret`)
+- Sampling primitives (`e_sample_uniform`, `e_sample_normal`)
+
+**Key results:**
+| Name | Statement |
+|------|-----------|
+| `var_lookup_morphism` | de Bruijn lookup is a QBS morphism |
+| `morph_lam` | Lambda combinator via `qbs_morphism_curry` |
+| `morph_app` | Application combinator via `qbs_morphism_eval` |
+| `expr_sem` | Recursive semantics returning morphism bundles |
+| `expr_morphism` | **Soundness: every well-typed expression denotes a QBS morphism** |
+
+**Examples** (each with verified morphism property):
+- `ex_const`: `λx. 42` — constant function
+- `ex_dup`: `λx. (x, x)` — duplication
+- `ex_apply`: `(λx. x) 42` — application
+- `ex_ret`: `return 42` — monadic return
+- `ex_uniform`: `sample uniform` — sampling
+- `ex_ho_prob`: `λf. return (f 0)` — **higher-order probabilistic program** of type `(real → real) → P(real)`
+
+The `ex_ho_prob` example is the key demonstration: a function received as input and used to build a probability distribution. This is impossible in kernel-based semantics on measurable spaces.
+
 ---
 
 ## Part III: Standard Borel Spaces (R ≅ R × R)
@@ -1594,8 +1663,10 @@ quasi_borel.v
 | `normal_algebra.v` | 1,298 | 77 |
 | `showcase/bayesian_regression.v` | 916 | 34 |
 | `qbs_giry.v` | 201 | 12 |
+| `qbs_kernel.v` | 449 | 21 |
+| `ppl_qbs.v` | 466 | 13 |
 | `standard_borel.v` | 1,256 | 60 |
-| **Total** | **8,019** | **384** |
+| **Total** | **8,934** | **418** |
 
 **0 Admitted**, 0 custom axioms.
 

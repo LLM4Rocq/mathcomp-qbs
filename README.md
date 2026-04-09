@@ -5,7 +5,7 @@
 This formalization was developed with
 [Claude Opus 4.6](https://claude.ai/claude-code) using
 [Rocq-MCP](https://github.com/LLM4Rocq/rocq-mcp) for interactive
-proof development. Claude wrote all 8,019 lines of Rocq code (384
+proof development. Claude wrote all 8,932 lines of Rocq code (418
 proofs, 0 Admitted) with guidance from a human collaborator who
 provided mathematical direction and design decisions.
 
@@ -16,7 +16,7 @@ programming semantics.
 
 ## Overview
 
-**384 proofs, 0 Admitted, 0 custom axioms, 8,019 lines across 11 files.**
+**418 proofs, 0 Admitted, 0 custom axioms, 8,932 lines across 13 files.**
 
 Quasi-Borel spaces solve a fundamental problem: the category of
 measurable spaces is not cartesian closed, which prevents giving
@@ -49,8 +49,15 @@ This formalization follows:
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
 | `qbs_giry.v` | 201 | 12 | QBS↔Giry monad connection, integral correspondence |
+| `qbs_kernel.v` | 449 | 21 | QBS↔s-finite kernel bridge, Dirac kernels, composition |
 | `standard_borel.v` | 1,256 | 60 | R↔(0,1) via atan, digit interleaving, R≅R×R |
 | `normal_algebra.v` | 1,298 | 77 | Product of Gaussians, normalizing constant computation |
+
+### Higher-order PPL semantics
+
+| File | Lines | Proofs | Description |
+|------|------:|-------:|-------------|
+| `ppl_qbs.v` | 466 | 13 | Intrinsically-typed PPL with function types, denotational semantics in QBS |
 
 ### Showcase
 
@@ -61,7 +68,7 @@ This formalization follows:
 ## Key results
 
 - **Cartesian closure**: `qbs_morphism_eval`, `qbs_morphism_curry`
-- **L-|R adjunction**: `lr_adj_natural`
+- **L⊣R adjunction**: `lr_adj_natural`
 - **Full faithfulness**: `R_full_faithful_standard_borel`
 - **Probability monad**: `qbs_bind_returnl`, `qbs_bind_returnr`, `qbs_bindA`
 - **Fubini**: `qbs_pair_integralE`
@@ -72,6 +79,8 @@ This formalization follows:
 - **Distributions**: `qbs_expect_normal`, `qbs_expect_bernoulli`, `qbs_expect_uniform`
 - **Bayesian regression**: `evidence_value`, `program_integrates_to_1`
 - **Normal density**: `normal_pdf_times` (product of Gaussians)
+- **S-finite kernel bridge**: `qbs_prob_sfinite`, `qbs_morph_kdirac`, `kernel_integration`
+- **Higher-order PPL**: `expr`, `expr_morphism` (function types via QBS exponentials)
 
 ## Requirements
 
