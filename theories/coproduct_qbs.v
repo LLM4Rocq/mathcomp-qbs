@@ -274,6 +274,41 @@ case=> [[a [ha hdef]] | [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
   by case: (i == 0); [exact: hf _ ha | exact: hg _ hb].
 Qed.
 
+(** ## Universal property of coproducts                              *)
+(** The following lemmas express that [coprodQ X Y] is the coproduct *)
+(** of [X] and [Y] in QBS: any morphism out of [coprodQ X Y] is      *)
+(** uniquely determined by its restrictions along [inl] and [inr].   *)
+
+(** Beta rule for coproducts (left injection): case analysis on an
+    [inl]-value reduces to the left branch. *)
+Lemma qbs_morphism_case_inl (X Y Z : qbsType R)
+  (f : X -> Z) (g : Y -> Z) (x : X) :
+  (fun s : X + Y => match s with inl x0 => f x0 | inr y0 => g y0 end) (inl x)
+    = f x.
+Proof. by []. Qed.
+
+(** Beta rule for coproducts (right injection): case analysis on an
+    [inr]-value reduces to the right branch. *)
+Lemma qbs_morphism_case_inr (X Y Z : qbsType R)
+  (f : X -> Z) (g : Y -> Z) (y : Y) :
+  (fun s : X + Y => match s with inl x0 => f x0 | inr y0 => g y0 end) (inr y)
+    = g y.
+Proof. by []. Qed.
+
+(** Eta rule / universal property: any function out of [coprodQ X Y]
+    factors through [inl]/[inr] via case analysis. This is a
+    tautology at the level of underlying functions, but makes
+    explicit the uniqueness part of the coproduct universal property:
+    a morphism [h : coprodQ X Y -> Z] is completely determined by
+    [h \o inl] and [h \o inr]. *)
+Lemma qbs_coprod_eta (X Y Z : qbsType R)
+  (h : coprodQ X Y -> Z) (xy : coprodQ X Y) :
+  h xy = match xy with
+         | inl x => h (inl x)
+         | inr y => h (inr y)
+         end.
+Proof. by case: xy. Qed.
+
 (** General coproduct (Sigma type).
     For a family X : I -> qbsType R, the general coproduct has carrier
     {i : I & X i} (dependent sum / sigma type).
