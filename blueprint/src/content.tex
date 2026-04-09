@@ -2815,3 +2815,282 @@ distributions over function spaces) are first-class citizens.
   The higher-order probabilistic program denotes a QBS morphism.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
+
+
+\section{Monadic Bind in the PPL}
+
+\begin{definition}[Bind Constructor]\label{def:e_bind}
+  \rocq{QBS.ppl_qbs.e_bind}
+  \rocqok
+  \uses{def:expr}
+  Adds the monadic bind constructor to the PPL syntax:
+  $\mathrm{do}\;x \leftarrow e_1;\;e_2$ where $e_1 : P(\tau_1)$
+  and $e_2$ has access to $x : \tau_1$ in its context.
+\end{definition}
+
+\begin{definition}[Faithful Bind/Return Combinator]\label{def:morph_bind_ret}
+  \rocq{QBS.ppl_qbs.morph_bind_ret}
+  \rocqok
+  \uses{def:morph, def:qbs_bind, def:qbs_return}
+  The faithful bind combinator for the bind/return shape
+  $(\mathrm{do}\;x \leftarrow m;\;\mathrm{return}\;(f\,x))$.
+  Discharges the diagonal randomness obligation via
+  \texttt{qbs\_bind\_alpha\_random\_return} together with the
+  morphism proof of the body.
+\end{definition}
+
+\begin{definition}[Bind Fallback]\label{def:morph_bind_fallback}
+  \rocq{QBS.ppl_qbs.morph_bind_fallback}
+  \rocqok
+  \uses{def:morph}
+  Placeholder constant distribution used by \texttt{expr\_sem}
+  on the general \texttt{e\_bind} case.
+  The general bind cannot be discharged from the pointwise
+  morphism condition; \texttt{morph\_bind\_ret} is exported
+  for the supported bind/return shape.
+\end{definition}
+
+
+\chapter{First-Order PPL as S-Finite Kernels}\label{ch:ppl_kernel}
+
+This chapter shows that the first-order fragment of the
+higher-order PPL (Chapter~\ref{ch:ppl_qbs}) lifts to s-finite
+kernels via the QBS-kernel bridge (Chapter~\ref{ch:qbs_kernel}).
+This connects QBS-based semantics to the standard kernel-based
+PPL semantics (Staton, ESOP~2017; Affeldt et~al., CPP~2023).
+
+\section{First-Order Predicate}
+
+\begin{definition}[First-Order Type]\label{def:is_first_order}
+  \rocq{QBS.ppl_kernel.is_first_order}
+  \rocqok
+  \uses{def:ppl_type}
+  A PPL type is first-order if it does not contain any
+  function-type constructor $\mathrm{ppl\_fun}$.
+\end{definition}
+
+\begin{definition}[First-Order Context]\label{def:is_first_order_ctx}
+  \rocq{QBS.ppl_kernel.is_first_order_ctx}
+  \rocqok
+  \uses{def:is_first_order}
+  Lifted predicate stating that all types in a typing context
+  are first-order.
+\end{definition}
+
+
+\section{Closed First-Order Programs as Probability Measures}
+
+\begin{definition}[Closed Real Program to Giry]\label{def:expr_prob_real_to_giry}
+  \rocq{QBS.ppl_kernel.expr_prob_real_to_giry}
+  \rocqok
+  \uses{def:expr_denot, def:qbs_to_giry}
+  For a closed expression $e : \mathrm{expr}\,[]\,(\mathrm{ppl\_prob}\,\mathrm{ppl\_real})$,
+  produces the corresponding classical probability measure on
+  $m\mathbb{R}$ by composing $\mathrm{expr\_denot}\,e\,\mathrm{tt}$
+  with $\mathrm{qbs\_to\_giry}$.
+\end{definition}
+
+
+\section{First-Order Programs as Kernels}
+
+\begin{definition}[Closed Real Program to Kernel]\label{def:expr_prob_real_kernel}
+  \rocq{QBS.ppl_kernel.expr_prob_real_kernel}
+  \rocqok
+  \uses{def:expr_prob_real_to_giry, def:const_kernel_of_qbs}
+  Packages a closed real program as a constant s-finite kernel
+  $m\mathbb{R} \to \mathrm{measure}\,m\mathbb{R}$.
+\end{definition}
+
+\begin{lemma}[Kernel Has Total Mass~1]\label{lem:expr_prob_real_kernel_setT}
+  \rocq{QBS.ppl_kernel.expr_prob_real_kernel_setT}
+  \rocqok
+  \uses{def:expr_prob_real_kernel}
+  The kernel obtained from a closed real program is a probability
+  kernel: its total mass equals~$1$.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Kernel Measurability]\label{lem:expr_prob_real_kernel_measurable}
+  \rocq{QBS.ppl_kernel.expr_prob_real_kernel_measurable}
+  \rocqok
+  \uses{def:expr_prob_real_kernel}
+  The kernel obtained from a closed real program satisfies the
+  kernel measurability condition.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Kernel Is S-Finite]\label{lem:expr_prob_real_kernel_sfinite}
+  \rocq{QBS.ppl_kernel.expr_prob_real_kernel_sfinite}
+  \rocqok
+  \uses{def:expr_prob_real_kernel, lem:prob_sfinite_measure}
+  The kernel obtained from a closed real program is s-finite.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+
+\section{Sampling and Return as Kernels}
+
+\begin{lemma}[Normal Sampling as Kernel]\label{lem:e_sample_normal_kernel}
+  \rocq{QBS.ppl_kernel.e_sample_normal_kernel}
+  \rocqok
+  \uses{lem:expr_prob_real_kernel_sfinite}
+  Normal sampling produces a probability kernel.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Uniform Sampling as Kernel]\label{lem:e_sample_uniform_kernel}
+  \rocq{QBS.ppl_kernel.e_sample_uniform_kernel}
+  \rocqok
+  \uses{lem:expr_prob_real_kernel_sfinite}
+  Uniform sampling produces a probability kernel.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Return as Dirac Kernel]\label{lem:e_ret_real_kernel}
+  \rocq{QBS.ppl_kernel.e_ret_real_kernel}
+  \rocqok
+  \uses{lem:qbs_return_to_dirac, lem:expr_prob_real_kernel_sfinite}
+  Monadic return on a real value produces a Dirac kernel.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Measurable Function as Probability Kernel]\label{lem:measurable_fun_to_prob_kernel}
+  \rocq{QBS.ppl_kernel.measurable_fun_to_prob_kernel}
+  \rocqok
+  \uses{def:qbs_morph_kdirac, lem:R_full_faithful_standard_borel}
+  A measurable function $f : m\mathbb{R} \to m\mathbb{R}$ produces
+  a Dirac probability kernel via the QBS morphism construction.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+
+\section{Integration Correspondence}
+
+\begin{lemma}[PPL Integration Bridge]\label{lem:expr_prob_real_kernel_integration}
+  \rocq{QBS.ppl_kernel.expr_prob_real_kernel_integration}
+  \rocqok
+  \uses{lem:kernel_integration, def:expr_prob_real_kernel}
+  The QBS integral against the denotation of a closed program
+  equals the Lebesgue integral against its kernel output.
+  This is the PPL-level restatement of the kernel integration
+  bridge.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Standard Normal as Kernel]\label{lem:ex_normal01_kernel_prob}
+  \rocq{QBS.ppl_kernel.ex_normal01_kernel_prob}
+  \rocqok
+  \uses{lem:e_sample_normal_kernel}
+  Concrete witness: the program $\mathrm{e\_sample\_normal}\,0\,1$
+  produces a probability kernel.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Standard Normal Kernel S-Finite]\label{lem:ex_normal01_kernel_sfinite}
+  \rocq{QBS.ppl_kernel.ex_normal01_kernel_sfinite}
+  \rocqok
+  \uses{lem:ex_normal01_kernel_prob}
+  Concrete witness: the standard-normal program kernel is s-finite.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+
+\chapter{Higher-Order Showcase}\label{ch:ppl_examples}
+
+This chapter showcases three concrete higher-order probabilistic
+programs whose denotations require QBS function spaces. Each
+program is built directly from the QBS API (without going through
+the PPL syntax) and produces a distribution whose carrier type
+involves the exponential $\mathrm{exp}_Q$ -- impossible in
+kernel-based semantics on measurable spaces.
+
+\section{Random Constant Function}
+
+\begin{definition}[Random Constant Function]\label{def:random_constant}
+  \rocq{QBS.showcase.ppl_examples.random_constant}
+  \rocqok
+  \uses{def:expQ, def:monadP, def:qbs_normal_distribution}
+  Distribution over constant functions: sample $c \sim \mathcal{N}(0,1)$
+  and return the constant function $\lambda x.\,c$.
+  Type: $P(\mathbb{R} \to \mathbb{R})$, formally
+  \texttt{qbs\_prob (expQ realQ realQ)}.
+\end{definition}
+
+\begin{lemma}[Random Constant Well Defined]\label{lem:random_constant_well_defined}
+  \rocq{QBS.showcase.ppl_examples.random_constant_well_defined}
+  \rocqok
+  \uses{def:random_constant}
+  The construction yields a valid \texttt{qbs\_prob}.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+
+\section{Random Linear Function (Headline Example)}
+
+\begin{definition}[Random Linear Function]\label{def:random_linear}
+  \rocq{QBS.showcase.ppl_examples.random_linear}
+  \rocqok
+  \uses{def:expQ, def:monadP, def:qbs_normal_distribution, def:qbs_morphism_curry, def:qbs_morphism_add, def:qbs_morphism_mul}
+  The headline higher-order example: sample $m \sim \mathcal{N}(0,1)$
+  and $b \sim \mathcal{N}(0,1)$, then return the linear function
+  $\lambda x.\,m\,x + b$.
+  Type:
+  $P(\mathbb{R} \to \mathbb{R}) = \texttt{qbs\_prob (expQ realQ realQ)}$.
+  Constructed by currying the morphism
+  $((m,b),x) \mapsto m\,x + b$ via \texttt{qbs\_morphism\_curry}
+  and pushing the joint prior through the curried morphism with
+  \texttt{monadP\_map}.
+  This distribution is impossible to express in kernel-based
+  semantics on measurable spaces, since $\mathbb{R} \to \mathbb{R}$
+  has no useful $\sigma$-algebra.
+\end{definition}
+
+\begin{lemma}[Random Linear Well Defined]\label{lem:random_linear_well_defined}
+  \rocq{QBS.showcase.ppl_examples.random_linear_well_defined}
+  \rocqok
+  \uses{def:random_linear}
+  The random linear construction yields a valid \texttt{qbs\_prob}.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Evaluation Is a Morphism]\label{lem:random_linear_eval_morphism}
+  \rocq{QBS.showcase.ppl_examples.random_linear_eval_morphism}
+  \rocqok
+  \uses{def:expQ, def:qbs_morphism_eval}
+  For any fixed $x_0 \in \mathbb{R}$, the evaluation map
+  $f \mapsto f(x_0)$ is a QBS morphism
+  $\mathrm{exp}_Q\,\mathbb{R}\,\mathbb{R} \to \mathbb{R}$.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{definition}[Marginal at a Point]\label{def:random_linear_eval_at}
+  \rocq{QBS.showcase.ppl_examples.random_linear_eval_at}
+  \rocqok
+  \uses{def:random_linear, lem:random_linear_eval_morphism, def:monadP_map}
+  Pushforward of \texttt{random\_linear} through evaluation
+  at $x_0$ gives the marginal distribution of $m\,x_0 + b$.
+\end{definition}
+
+
+\section{Random Statistical Model}
+
+\begin{definition}[Random Sampler / Statistical Model]\label{def:random_sampler}
+  \rocq{QBS.showcase.ppl_examples.random_sampler}
+  \rocqok
+  \uses{def:expQ, def:monadP, def:qbs_normal_distribution}
+  Doubly higher-order example: sample $\mu \sim \mathcal{N}(0,1)$
+  and return the parametric distribution-valued function
+  $\lambda x.\,\mathcal{N}(\mu\,x, 1)$.
+  Type:
+  $P(\mathbb{R} \to P(\mathbb{R})) = \texttt{qbs\_prob (expQ realQ (monadP realQ))}$.
+  Both the function space and the probability monad are nested,
+  representing meta-learning / hyperparameter sampling.
+\end{definition}
+
+\begin{lemma}[Random Sampler Well Defined]\label{lem:random_sampler_well_defined}
+  \rocq{QBS.showcase.ppl_examples.random_sampler_well_defined}
+  \rocqok
+  \uses{def:random_sampler}
+  The random sampler construction yields a valid \texttt{qbs\_prob}.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}

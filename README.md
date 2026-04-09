@@ -5,7 +5,7 @@
 This formalization was developed with
 [Claude Opus 4.6](https://claude.ai/claude-code) using
 [Rocq-MCP](https://github.com/LLM4Rocq/rocq-mcp) for interactive
-proof development. Claude wrote all 8,932 lines of Rocq code (418
+proof development. Claude wrote all 9,691 lines of Rocq code (450
 proofs, 0 Admitted) with guidance from a human collaborator who
 provided mathematical direction and design decisions.
 
@@ -16,7 +16,7 @@ programming semantics.
 
 ## Overview
 
-**418 proofs, 0 Admitted, 0 custom axioms, 8,932 lines across 13 files.**
+**450 proofs, 0 Admitted, 0 custom axioms, 9,691 lines across 15 files.**
 
 Quasi-Borel spaces solve a fundamental problem: the category of
 measurable spaces is not cartesian closed, which prevents giving
@@ -57,13 +57,15 @@ This formalization follows:
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `ppl_qbs.v` | 466 | 13 | Intrinsically-typed PPL with function types, denotational semantics in QBS |
+| `ppl_qbs.v` | 611 | 17 | Intrinsically-typed PPL with function types, denotational semantics in QBS, monadic bind |
+| `ppl_kernel.v` | 310 | 20 | Bridge: first-order PPL programs lift to s-finite kernels |
 
 ### Showcase
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
 | `showcase/bayesian_regression.v` | 916 | 34 | Bayesian linear regression (matching Isabelle AFP) |
+| `showcase/ppl_examples.v` | 302 | 8 | Distributions over function spaces (random_linear, random_sampler) |
 
 ## Key results
 

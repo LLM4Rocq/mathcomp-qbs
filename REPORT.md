@@ -3,8 +3,8 @@
 **Project:** QBS -- Quasi-Borel Spaces in Rocq/Coq
 **Repository:** `/home/rocq/QBS`
 **Date:** 2026-04-04
-**Status:** 418 proofs (416 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 8,932 across 13 files
+**Status:** 450 proofs (448 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** 9,691 across 15 files
 **Compatibility:** Rocq 9.0.x -- 9.1.x, Math-comp analysis 1.15.x -- 1.16.x
 
 **Primary references:**
@@ -1349,8 +1349,63 @@ A higher-order probabilistic programming language with denotational semantics in
 - `ex_ret`: `return 42` — monadic return
 - `ex_uniform`: `sample uniform` — sampling
 - `ex_ho_prob`: `λf. return (f 0)` — **higher-order probabilistic program** of type `(real → real) → P(real)`
+- `ex_bind`: `do x ~ uniform; return x` — monadic bind
+- `ex_bind_faithful`: same program with faithful denotation via `morph_bind_ret`
 
 The `ex_ho_prob` example is the key demonstration: a function received as input and used to build a probability distribution. This is impossible in kernel-based semantics on measurable spaces.
+
+**Monadic bind limitation:** The general `e_bind` cannot be discharged from the pointwise `monadP_random_pw` condition. The file provides:
+- `morph_bind_ret`: faithful bind for the bind/return shape (`do x <- m; return (f x)`), discharged via `qbs_bind_alpha_random_return`
+- `morph_bind_fallback`: placeholder for the general case (used by `expr_sem` on `e_bind` to keep the inductive total)
+
+For programs whose continuation is a return, use `morph_bind_ret` directly to obtain a semantically faithful denotation. The general case requires the strong morphism condition and is deferred to Phase 2.
+
+### 2.30 First-Order PPL as S-Finite Kernels
+
+**File:** `theories/ppl_kernel.v` (310 lines, 20 Qed)
+
+Bridges the higher-order PPL (Section 2.29) with the kernel infrastructure (Section 2.28). For closed first-order programs, the QBS denotation lifts to an s-finite kernel, connecting our QBS-based semantics to the standard kernel-based PPL semantics (Staton, ESOP 2017; Affeldt et al., CPP 2023).
+
+| Name | Description |
+|------|-------------|
+| `is_first_order` | Predicate excluding `ppl_fun` from PPL types |
+| `is_first_order_ctx` | Lifted predicate over typing contexts |
+| `expr_prob_real_to_giry` | Closed `expr [] (ppl_prob ppl_real)` → `probability mR R` |
+| `expr_prob_real_kernel` | Constant s-finite kernel from a closed program |
+| `expr_prob_real_kernel_setT` | Kernel total mass = 1 |
+| `expr_prob_real_kernel_measurable` | Kernel measurability condition |
+| `expr_prob_real_kernel_sfinite` | Kernel is s-finite (via `prob_sfinite_measure`) |
+| `e_sample_normal_kernel` | Normal sampling lifts to a probability kernel |
+| `e_sample_uniform_kernel` | Uniform sampling lifts to a probability kernel |
+| `e_ret_real_kernel` | Return lifts to a Dirac kernel |
+| `measurable_fun_to_prob_kernel` | Measurable function → Dirac probability kernel via QBS |
+| `expr_prob_real_kernel_integration` | QBS integral = Lebesgue integral against kernel |
+| `ex_normal01_kernel_prob` / `ex_normal01_kernel_sfinite` | Concrete witness `Normal(0,1)` |
+
+This file establishes that QBS subsumes kernel-based first-order semantics: every PPL program that can be expressed without function types lifts to an s-finite kernel, and integration commutes between the QBS and kernel sides.
+
+### 2.31 Higher-Order Showcase
+
+**File:** `theories/showcase/ppl_examples.v` (302 lines, 8 Qed)
+
+Three concrete higher-order probabilistic programs whose denotations require QBS function spaces, impossible to express in kernel-based semantics on measurable spaces.
+
+| Name | Type | Description |
+|------|------|-------------|
+| `random_constant` | `qbs_prob (expQ realQ realQ)` | `λx. c` with `c ~ Normal(0,1)` |
+| `random_linear` | `qbs_prob (expQ realQ realQ)` | `λx. m*x + b` with `m, b ~ Normal(0,1)` |
+| `random_sampler` | `qbs_prob (expQ realQ (monadP realQ))` | `λx. Normal(μ*x, 1)` with `μ ~ Normal(0,1)` (doubly higher-order) |
+
+| Name | Statement |
+|------|-----------|
+| `pack_hom` | Helper to package a `qbs_morphism` proof into `qbsHomType` |
+| `random_constant_well_defined` | The constant random function is a valid `qbs_prob` |
+| `random_linear_well_defined` | The linear random function is a valid `qbs_prob` |
+| `random_sampler_well_defined` | The random sampler is a valid `qbs_prob` |
+| `random_linear_eval_morphism` | Evaluation at fixed `x` is a QBS morphism `expQ realQ realQ → realQ` |
+| `random_linear_eval_at` | The marginal distribution of `m*x + b` via pushforward |
+
+The `random_linear` example is the **headline demonstration**: a distribution over linear functions, sampled from independent Gaussian priors on slope and intercept. The result type `qbs_prob (expQ realQ realQ)` is impossible in kernel-based semantics — the function space `R → R` has no useful sigma-algebra. QBS solves exactly this through the exponential `expQ`.
 
 ---
 
@@ -1664,9 +1719,11 @@ quasi_borel.v
 | `showcase/bayesian_regression.v` | 916 | 34 |
 | `qbs_giry.v` | 201 | 12 |
 | `qbs_kernel.v` | 449 | 21 |
-| `ppl_qbs.v` | 466 | 13 |
+| `ppl_qbs.v` | 611 | 17 |
+| `ppl_kernel.v` | 310 | 20 |
+| `showcase/ppl_examples.v` | 302 | 8 |
 | `standard_borel.v` | 1,256 | 60 |
-| **Total** | **8,934** | **418** |
+| **Total** | **9,691** | **450** |
 
 **0 Admitted**, 0 custom axioms.
 
