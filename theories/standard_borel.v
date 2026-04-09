@@ -471,7 +471,7 @@ Lemma bin_sum_ext (d1 d2 : nat -> bool) :
   d1 =1 d2 -> bin_sum d1 = bin_sum d2.
 Proof.
 move=> heq; rewrite /bin_sum; congr (limn _).
-apply: funext => n.
+apply: boolp.funext => n.
 rewrite /bin_partial_sum; apply: eq_bigr => i _.
 by rewrite (heq i).
 Qed.
@@ -632,7 +632,7 @@ rewrite hlim_shift.
 have -> : (fun n => bin_partial_sum d n.+1 : R^o) =
   (fun n => (d 0%N)%:R * 2%:R^-1 +
     bin_partial_sum (d \o succn) n * 2%:R^-1 : R^o).
-  by apply: funext => n; rewrite hrel.
+  by apply: boolp.funext => n; rewrite hrel.
 apply: separation_axioms.cvg_lim => //.
 have hcst :
   (fun _ : nat => (d 0%N)%:R * 2%:R^-1 : R^o) n
@@ -795,7 +795,7 @@ Lemma measurable_bin_digit (n : nat) :
 Proof.
 rewrite (_ : (fun x : R => _) =
   (fun x => 2%:R^-1 <= iter n step x)); last first.
-  by apply: funext => x; rewrite bin_digit_iter.
+  by apply: boolp.funext => x; rewrite bin_digit_iter.
 apply: measurable_fun_ler.
 - exact: measurable_cst.
 - exact: measurable_iter_step.
@@ -839,7 +839,7 @@ Lemma measurable_bool_scale {d : measure_display} {T : measurableType d}
 Proof.
 move=> hf.
 rewrite (_ : (fun x => _) = (fun x => if f x then c else (0 : R))); last first.
-  by apply: funext => x; case: (f x) => /=; rewrite ?mul1r ?mul0r.
+  by apply: boolp.funext => x; case: (f x) => /=; rewrite ?mul1r ?mul0r.
 by apply: measurable_fun_ifT => //; exact: measurable_cst.
 Qed.
 
@@ -859,7 +859,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R * R]
 - move=> m; rewrite /bin_partial_sum.
   elim: m => [|m IHm].
     rewrite (_ : (fun _ : R * R => _) = (fun _ => (0 : R))); last first.
-      by apply: funext => xy; rewrite big_ord0.
+      by apply: boolp.funext => xy; rewrite big_ord0.
     exact: measurable_cst.
   rewrite (_ : (fun xy : R * R => \sum_(i < m.+1) _) =
     ((fun xy : R * R =>
@@ -868,7 +868,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R * R]
      (fun xy : R * R =>
       (interleave (bin_digits xy.1) (bin_digits xy.2) m)%:R *
         2%:R^-1 ^+ m.+1))%R); last first.
-    by apply: funext => xy; rewrite big_ord_recr.
+    by apply: boolp.funext => xy; rewrite big_ord_recr.
   apply: measurable_funD => //.
   apply: measurable_bool_scale.
   exact: measurable_interleave_digit.
@@ -887,7 +887,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R]
 - move=> m; rewrite /bin_partial_sum.
   elim: m => [|m IHm].
     rewrite (_ : (fun _ : R => _) = (fun _ => (0 : R))); last first.
-      by apply: funext => x; rewrite big_ord0.
+      by apply: boolp.funext => x; rewrite big_ord0.
     exact: measurable_cst.
   rewrite (_ : (fun x : R => \sum_(i < m.+1) _) =
     ((fun x : R =>
@@ -896,7 +896,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R]
      (fun x : R =>
       (deinterleave_even (bin_digits x) m)%:R *
         2%:R^-1 ^+ m.+1))%R); last first.
-    by apply: funext => x; rewrite big_ord_recr.
+    by apply: boolp.funext => x; rewrite big_ord_recr.
   apply: measurable_funD => //.
   apply: measurable_bool_scale.
   exact: measurable_deinterleave_even_digit.
@@ -915,7 +915,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R]
 - move=> m; rewrite /bin_partial_sum.
   elim: m => [|m IHm].
     rewrite (_ : (fun _ : R => _) = (fun _ => (0 : R))); last first.
-      by apply: funext => x; rewrite big_ord0.
+      by apply: boolp.funext => x; rewrite big_ord0.
     exact: measurable_cst.
   rewrite (_ : (fun x : R => \sum_(i < m.+1) _) =
     ((fun x : R =>
@@ -924,7 +924,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R]
      (fun x : R =>
       (deinterleave_odd (bin_digits x) m)%:R *
         2%:R^-1 ^+ m.+1))%R); last first.
-    by apply: funext => x; rewrite big_ord_recr.
+    by apply: boolp.funext => x; rewrite big_ord_recr.
   apply: measurable_funD => //.
   apply: measurable_bool_scale.
   exact: measurable_deinterleave_odd_digit.
@@ -1150,7 +1150,7 @@ case: (eqVneq x 0) => [->|hx0].
   suff -> : (fun n : nat => 0 / (0 * 0 + n.+1%:R^-1))
             = (fun _ : nat => (0 : R)).
     exact: topology_structure.cvg_cst.
-  apply: funext => n; by rewrite mul0r.
+  apply: boolp.funext => n; by rewrite mul0r.
 - have -> : x^-1 = x / (x * x).
     by rewrite invfM ?unitfE // [x * (x^-1 * x^-1)]mulrCA
                mulrV ?unitfE // mulr1.

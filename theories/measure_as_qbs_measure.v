@@ -267,18 +267,18 @@ under eq_integral do rewrite -EFinM.
 rewrite (_ : (fun x => (x * normal_pdf mu sigma x)%:E) =
   (fun x => (mu * normal_pdf mu sigma x +
              (x - mu) * normal_pdf mu sigma x)%:E)); last first.
-  by apply: funext => x /=; rewrite -mulrDl addrC subrK.
+  by apply: boolp.funext => x /=; rewrite -mulrDl addrC subrK.
 under eq_integral do rewrite EFinD.
 have hint1 : lebesgue_measure.-integrable setT
     (fun x => (mu * normal_pdf mu sigma x)%:E).
   rewrite (_ : (fun x => (mu * _)%:E) =
     (fun x => mu%:E * (normal_pdf mu sigma x)%:E)%E); last first.
-    by apply: funext => x; rewrite EFinM.
+    by apply: boolp.funext => x; rewrite EFinM.
   exact: (integrableZl measurableT mu (integrable_normal_pdf mu sigma)).
 rewrite (integralD measurableT hint1 odd_int).
 rewrite (_ : (fun x => (mu * normal_pdf mu sigma x)%:E) =
   (fun x => mu%:E * (normal_pdf mu sigma x)%:E)%E); last first.
-  by apply: funext => x; rewrite EFinM.
+  by apply: boolp.funext => x; rewrite EFinM.
 rewrite integralZl//=; last exact: integrable_normal_pdf.
 by rewrite integral_normal_pdf -EFinM mulr1 odd_zero adde0.
 Qed.

@@ -349,7 +349,7 @@ have hpdf_meas : measurable_fun [set: mR]
      normal_pdf u s y = normal_pdf y s u as a real function of u. *)
   have hsym : (fun u : R => normal_pdf u obs_sigma y) =
               (fun u : R => normal_pdf y obs_sigma u).
-    apply: funext => u.
+    apply: boolp.funext => u.
     rewrite (normal_pdfE u obs_sigma_neq0)
             (normal_pdfE y obs_sigma_neq0).
     congr (_ * _)%R.

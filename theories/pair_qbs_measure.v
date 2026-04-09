@@ -148,8 +148,10 @@ Definition qbs_pair_fun (X Y : qbsType R)
 (* Fubini: joint integration = iterated integration.
    Requires integrability of the underlying function w.r.t. the product
    measure. Uses integral12_prod_meas1 from mathcomp-analysis. *)
-(** Fubini for QBS: joint integral = iterated integral. *)
-Lemma qbs_pair_integralE (X Y : qbsType R)
+(** Iterated integration on a fixed QBS product measure:
+    the joint integral on [mu_p \x mu_q] equals the iterated
+    integral in one fixed order. Not a full Fubini statement. *)
+Lemma qbs_pair_integral_iterated (X Y : qbsType R)
   (p : qbs_prob X) (q : qbs_prob Y)
   (h : X * Y -> \bar R)
   (hint : (qbs_prob_mu p \x qbs_prob_mu q).-integrable
@@ -179,7 +181,7 @@ Lemma qbs_pair_integral_fst (X Y : qbsType R)
   qbs_pair_integral X Y p q (fun xy => h xy.1) =
   @qbs_integral R X p h.
 Proof.
-rewrite qbs_pair_integralE //.
+rewrite qbs_pair_integral_iterated //.
 rewrite /qbs_integral /=.
 apply: eq_integral => x _ /=.
 rewrite -(functions.cstE _ (h (qbs_prob_alpha p x))).
@@ -231,8 +233,12 @@ Arguments qbs_indep : clear implicits.
    = \int_{mu_p} f(alpha_p(r1)) * \int_{mu_q} g(alpha_q(r2))
    = E_p[f] * E_q[g]
    The integrability hypotheses ensure Fubini and factoring apply. *)
-(** Independence: E[f*g] = E[f]*E[g] for product. *)
-Lemma qbs_integral_indep_mult (X Y : qbsType R)
+(** Factorization of integration on a product measure (Fubini for
+    products): the integral of [f xy.1 * g xy.2] on [px \x py] equals
+    [qbs_expect px f * qbs_expect py g]. Note: this is pure product-
+    measure factorization and has no independence hypothesis; the
+    [qbs_indep] predicate is not involved. *)
+Lemma qbs_pair_integral_factorization (X Y : qbsType R)
   (px : qbs_prob X) (py : qbs_prob Y)
   (f : X -> R) (g : Y -> R)
   (hintf : (qbs_prob_mu px).-integrable setT
@@ -246,7 +252,7 @@ Lemma qbs_integral_indep_mult (X Y : qbsType R)
     (fun xy => (f xy.1 * g xy.2)%:E) =
   (@qbs_expect R X px f * @qbs_expect R Y py g).
 Proof.
-rewrite qbs_pair_integralE //.
+rewrite qbs_pair_integral_iterated //.
 rewrite /qbs_integral /qbs_expect /= {1 2}/qbs_integral /=.
 transitivity (\int[qbs_prob_mu px]_r1
   ((f (qbs_prob_alpha px r1))%:E *
@@ -554,7 +560,7 @@ Proof.
 rewrite /qbs_integral /=.
 (* Go through the qbs_pair_integral (integration over the product measure) *)
 transitivity (qbs_pair_integral X Y p q h);
-  last exact: (qbs_pair_integralE hint).
+  last exact: (qbs_pair_integral_iterated hint).
 rewrite /qbs_pair_integral.
 set mu_pq := qbs_prob_mu p \x qbs_prob_mu q.
 have hint' := hint.

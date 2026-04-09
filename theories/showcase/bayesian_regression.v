@@ -161,7 +161,7 @@ Lemma evidence_eq
   qbs_integral _ slope_prior (fun s =>
     qbs_integral _ intercept_prior (fun b =>
       (obs (s, b))%:E)).
-Proof. rewrite /evidence; exact: qbs_pair_integralE. Qed.
+Proof. rewrite /evidence; exact: qbs_pair_integral_iterated. Qed.
 
 (** Unnormalized posterior: E_post[g] = E_prior[g * obs] / Z. *)
 (* This corresponds to Isabelle's program_result_measure:
@@ -182,7 +182,7 @@ Lemma posterior_density_total
 Proof.
 rewrite /posterior_density.
 have -> : (fun params : realQ R * realQ R => 1 * (obs params)%:E) =
-          (fun params => (obs params)%:E) by apply: funext => p; rewrite mul1e.
+          (fun params => (obs params)%:E) by apply: boolp.funext => p; rewrite mul1e.
 rewrite -/(evidence).
 apply: divee.
 - by rewrite gt0_fin_numE.
@@ -201,7 +201,7 @@ Lemma posterior_density_eq (g : realQ R * realQ R -> \bar R)
    / evidence.
 Proof.
 rewrite /posterior_density; congr (_ / _).
-exact: qbs_pair_integralE.
+exact: qbs_pair_integral_iterated.
 Qed.
 
 (* 5. Single-observation likelihood as QBS morphism *)
@@ -248,7 +248,7 @@ Lemma predictive_marginal (obs_x : R) (h : realQ R -> \bar R)
   qbs_integral _ slope_prior (fun s =>
     qbs_integral _ intercept_prior (fun b =>
       qbs_integral _ (likelihood_single obs_x (s, b)) h)).
-Proof. rewrite /predictive_integral; exact: qbs_pair_integralE. Qed.
+Proof. rewrite /predictive_integral; exact: qbs_pair_integral_iterated. Qed.
 
 (* 7. Monadic prior on the parameter space *)
 (* Isabelle's prior: do { s <- nu; b <- nu; return (fun r => s*r+b) }
@@ -659,7 +659,7 @@ suff -> : (fun b : mR =>
   apply: measurable_funM; last exact: (measurable_normal_pdf _ _).
   apply: measurable_funM; last exact: (measurable_normal_pdf _ _).
   exact: (measurable_normal_pdf _ _).
-apply: funext => b.
+apply: boolp.funext => b.
 by rewrite !(normal_pdf_recenter _ s _ b noise_sigma_neq0).
 Qed.
 
@@ -738,7 +738,7 @@ apply: (@measurable_bounded_integrable _ _ _ _ _ setT).
     (normal_peak noise_sigma *
        normal_fun ((rr.1 * 5%:R)%R + rr.2)%R
          noise_sigma 8%:R))%R).
-    by apply: funext => -[s b] /=; rewrite !(normal_pdfE _ hns).
+    by apply: boolp.funext => -[s b] /=; rewrite !(normal_pdfE _ hns).
   apply: measurable_funM; last exact: (d_pair_meas_tac 5%:R 8%:R).
   apply: measurable_funM; last exact: (d_pair_meas_tac 4%:R (31%:R / 5%:R)).
   apply: measurable_funM; last exact: (d_pair_meas_tac 3%:R (9%:R / 2%:R)).
@@ -903,7 +903,7 @@ have -> : (fun rr =>
   (g (qbs_prob_alpha slope_prior rr.1, qbs_prob_alpha intercept_prior rr.2) *
    (obs (qbs_prob_alpha slope_prior rr.1,
          qbs_prob_alpha intercept_prior rr.2))%:E) * ((phase2_const R)^-1)%:E).
-  apply: funext => rr /=.
+  apply: boolp.funext => rr /=.
   by rewrite inver (negbTE hc_neq0) muleA.
 (* Now the goal is (∫ f) / c%:E = ∫ (f * (c^{-1})%:E) *)
 (* Rewrite the LHS:

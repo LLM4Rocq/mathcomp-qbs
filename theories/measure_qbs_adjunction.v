@@ -147,8 +147,10 @@ move=> hf alpha; rewrite /qbs_Mx /= => halpha _ U hU; rewrite setTI.
 exact: (hf U hU alpha halpha).
 Qed.
 
-(** The two directions are inverse to each other (naturality). *)
-Lemma lr_adj_natural (X : qbsType R) (d : measure_display)
+(** Biconditional form of the L-R adjunction at a single object: a function
+    [f : X -> Y] is a QBS morphism into [R_qbs Y] iff measurable preimages
+    land in [L_sigma X]. This is not a categorical naturality statement. *)
+Lemma lr_adj_iff (X : qbsType R) (d : measure_display)
     (Y : measurableType d) (f : X -> Y) :
   (@qbs_morphism R X (@R_qbs R _ Y) f) <->
   (forall U, measurable U -> L_sigma X (f @^-1` U)).
