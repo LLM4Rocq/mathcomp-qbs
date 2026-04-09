@@ -333,9 +333,8 @@ apply: (@topology_structure.closed_cvg _ _ eventually _
   (fun n => bin_partial_sum d n : R^o) (fun x : R => x <= 1)
   _ _ (bin_sum d)).
 - exact: closed_le.
-- by near=> n; exact: bin_partial_sum_le1.
+- by apply: nearW => n; exact: bin_partial_sum_le1.
 - rewrite /bin_sum; exact: is_cvg_bin_partial_sum.
-Unshelve. all: end_near.
 Qed.
 
 Lemma bin_sum_ge0 (d : nat -> bool) : 0 <= bin_sum d.
@@ -344,9 +343,8 @@ apply: (@topology_structure.closed_cvg _ _ eventually _
   (fun n => bin_partial_sum d n : R^o) (fun x : R => 0 <= x)
   _ _ (bin_sum d)).
 - exact: closed_ge.
-- by near=> n; exact: bin_partial_sum_ge0.
+- by apply: nearW => n; exact: bin_partial_sum_ge0.
 - rewrite /bin_sum; exact: is_cvg_bin_partial_sum.
-Unshelve. all: end_near.
 Qed.
 
 (******************************************************************************)
@@ -411,7 +409,7 @@ have hrem_cvg : (fun n => rem n * 2%:R^-1 ^+ n : R^o) n
                   @[n --> \oo] --> (0 : R^o).
   apply: (@squeeze_cvgr _ _ _ _
     (fun _ => 0 : R^o) (fun n => 2%:R^-1 ^+ n : R^o)).
-  - near=> n; apply/andP; split.
+  - apply: nearW => n; apply/andP; split.
     + apply: mulr_ge0; first by have [] := hrem_bound n.
       by apply: Num.Theory.exprn_ge0; rewrite invr_ge0; apply: ler0n.
     + rewrite -[X in _ <= X]mul1r; apply: ler_pM.
@@ -433,7 +431,6 @@ suff : (fun n => x - rem n * 2%:R^-1 ^+ n : R^o) n
 have : (fun n : nat => (x : R^o)) n @[n --> \oo] --> x.
   exact: topology_structure.cvg_cst.
 move=> hcstx; have := cvgB hcstx hrem_cvg; rewrite subr0; exact.
-Unshelve. all: end_near.
 Qed.
 
 (******************************************************************************)
@@ -576,8 +573,7 @@ apply: (@topology_structure.closed_cvg _ _ eventually _
   (fun m => bin_partial_sum d m : R^o) (fun y : R => y <= 1 - 2%:R^-1 ^+ n.+1)
   _ _ (bin_sum d)).
 - exact: closed_le.
-- near=> m.
-  have hmn : (n < m)%N by near: m; exists n.+1.
+- exists n.+1 => // m hmn.
   rewrite /bin_partial_sum.
   apply: (le_trans
     (y := \sum_(i < m) (2%:R^-1 : R) ^+ i.+1 - 2%:R^-1 ^+ n.+1)).
@@ -600,7 +596,6 @@ apply: (@topology_structure.closed_cvg _ _ eventually _
     rewrite lerBlDr -{1}[1]addr0 lerD2l.
     by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n.
 - rewrite /bin_sum; exact: is_cvg_bin_partial_sum.
-Unshelve. all: end_near.
 Qed.
 
 (* The converse of reconstruction: bin_digits (bin_sum d) =1 d
@@ -965,14 +960,12 @@ apply: (@topology_structure.closed_cvg _ _ eventually _
   (fun z : R => (d k)%:R * 2%:R^-1 ^+ k.+1 <= z)
   _ _ (bin_sum d)).
 - exact: closed_ge.
-- near=> m.
-  have hmk : (k < m)%N by near: m; exists k.+1.
+- exists k.+1 => // m hmk.
   rewrite /bin_partial_sum (bigD1 (Ordinal hmk)) //=.
   rewrite lerDl; apply: sumr_ge0 => i _.
   apply: mulr_ge0; first by case: (d i).
   by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n.
 - rewrite /bin_sum; exact: is_cvg_bin_partial_sum.
-Unshelve. all: end_near.
 Qed.
 
 (** phi x has at least one true binary digit (since phi x > 0) *)
