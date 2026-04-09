@@ -10,4 +10,6 @@ theories/measure_as_qbs_measure.v
 theories/normal_algebra.v
 theories/standard_borel.v
 theories/qbs_giry.v
+theories/qbs_kernel.v
+theories/ppl_qbs.v
 theories/showcase/bayesian_regression.v
