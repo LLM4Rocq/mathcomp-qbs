@@ -390,6 +390,37 @@ rewrite /k /=.
 exact: (diag (alpha r)).
 Defined.
 
+(** Monadic bind where the continuation is a
+    constant probability distribution [p] (i.e.
+    does not reference the bound variable). For
+    such continuations the diagonal randomness
+    is discharged by [qbs_bind_alpha_random_const],
+    and the overall map [env ↦ bind (m1 env) _]
+    is a morphism because [p] is independent of
+    [env]. This captures the faithful denotation
+    of [do _ <- m1; sample_*] where the sampler
+    is a constant (no dependence on the bound
+    variable). *)
+Definition morph_bind_const G t1 t2
+  (m1 : morph (ctx_denot G)
+    (monadP (type_denot t1)))
+  (p : qbs_prob (type_denot t2)) :
+  morph (ctx_denot G)
+    (monadP (type_denot t2)).
+Proof.
+exists (fun env =>
+  qbs_bind (type_denot t1) (type_denot t2)
+    (morph_fun m1 env)
+    (fun _ => p)
+    (@qbs_bind_alpha_random_const R
+      (type_denot t1) (type_denot t2)
+      (qbs_prob_alpha (morph_fun m1 env) 0%R)
+      (fun _ => p))).
+move=> alpha halpha.
+rewrite /qbs_Mx /= => r.
+exact: (qbs_prob_alpha_random p).
+Defined.
+
 (** Canonical inhabitant of each PPL type. Used
     only to build a trivial default probability
     for the non-supported form of [e_bind]. *)
@@ -629,6 +660,39 @@ Definition try_morph_of_ret
   | _ => None
   end.
 
+(** Helper: extract, when [e] is syntactically a
+    constant sampler ([e_sample_uniform],
+    [e_sample_normal] or [e_sample_bernoulli]),
+    the underlying [qbs_prob] distribution. The
+    [return] clause exposes the type index so
+    that each branch delivers the correct
+    probability. These samplers are independent
+    of the ambient context, so they give a
+    continuation that does not reference the
+    bound variable and the bind simplifies. *)
+Definition try_prob_of_sample
+  G tp (e : expr G tp) :
+  option (match tp with
+          | ppl_prob t' =>
+              qbs_prob (type_denot t')
+          | _ => unit
+          end) :=
+  match e in expr G' tp'
+  return option (match tp' with
+                 | ppl_prob t' =>
+                     qbs_prob (type_denot t')
+                 | _ => unit
+                 end)
+  with
+  | e_sample_uniform _ =>
+      Some (@qbs_uniform R)
+  | e_sample_normal _ mu sigma hs =>
+      Some (@qbs_normal_distribution R mu sigma hs)
+  | e_sample_bernoulli _ p hp0 hp1 =>
+      Some (@qbs_bernoulli R p hp0 hp1)
+  | _ => None
+  end.
+
 (** Maps each expression to a morphism bundle
     (function + QBS morphism proof). *)
 Fixpoint expr_sem G t (e : expr G t) :
@@ -656,11 +720,14 @@ Fixpoint expr_sem G t (e : expr G t) :
   | e_bind G0 t1 t2 e1 e2 =>
       (** When [e2] is syntactically [e_ret e0],
           dispatch to [morph_bind_ret] for a
-          faithful denotation. Otherwise fall
-          back to a placeholder since the
-          general bind cannot be discharged from
-          the pointwise morphism condition of
-          [monadP]. *)
+          faithful denotation. When [e2] is a
+          constant sampler (uniform, normal,
+          bernoulli), dispatch to
+          [morph_bind_const] using the constant
+          probability. Otherwise fall back to a
+          placeholder since the general bind
+          cannot be discharged from the pointwise
+          morphism condition of [monadP]. *)
       match try_morph_of_ret
         (@expr_sem) e2
         : option (morph
@@ -668,7 +735,15 @@ Fixpoint expr_sem G t (e : expr G t) :
             (type_denot t2))
       with
       | Some m2 => morph_bind_ret (expr_sem e1) m2
-      | None => morph_bind_fallback G0 t2
+      | None =>
+          match try_prob_of_sample e2
+            : option (qbs_prob (type_denot t2))
+          with
+          | Some p =>
+              @morph_bind_const G0 t1 t2
+                (expr_sem e1) p
+          | None => morph_bind_fallback G0 t2
+          end
       end
   | e_sample_uniform G0 =>
       morph_sample_uniform G0
@@ -825,6 +900,30 @@ Lemma expr_sem_bind_ret G t1 t2
   morph_bind_ret (expr_sem e1) (expr_sem e0).
 Proof. reflexivity. Qed.
 
+(** General equation: when the continuation of a
+    [e_bind] is syntactically [e_sample_uniform],
+    dispatch to [morph_bind_const] with the
+    uniform distribution. *)
+Lemma expr_sem_bind_sample_uniform G t1
+  (e1 : expr G (ppl_prob t1)) :
+  expr_sem
+    (e_bind e1 (e_sample_uniform (t1 :: G))) =
+  @morph_bind_const G t1 ppl_real
+    (expr_sem e1) (@qbs_uniform R).
+Proof. reflexivity. Qed.
+
+(** Analogous equation for [e_sample_bernoulli]. *)
+Lemma expr_sem_bind_sample_bernoulli G t1
+  (e1 : expr G (ppl_prob t1))
+  (p : R) (hp0 : (0 <= p)%R) (hp1 : (p <= 1)%R) :
+  expr_sem
+    (e_bind e1
+      (@e_sample_bernoulli (t1 :: G) p hp0 hp1)) =
+  @morph_bind_const G t1 ppl_bool
+    (expr_sem e1)
+    (@qbs_bernoulli R p hp0 hp1).
+Proof. reflexivity. Qed.
+
 (** Example 8: sample from Bernoulli(0). *)
 Lemma ex_bernoulli_p0 : (0 <= 0 :> R)%R.
 Proof. by []. Qed.
@@ -860,6 +959,22 @@ Lemma ex_inr_use_morphism :
   @qbs_morphism R (ctx_denot nil)
     (type_denot (ppl_sum ppl_bool ppl_real))
     (expr_denot ex_inr_use).
+Proof. exact: expr_morphism. Qed.
+
+(** Example: monadic bind with a constant
+    sampler continuation
+    [do _ <- sample uniform; sample uniform].
+    Dispatched to [morph_bind_const]. *)
+Definition ex_bind_sample :
+  expr nil (ppl_prob ppl_real) :=
+  e_bind
+    (e_sample_uniform nil)
+    (e_sample_uniform (ppl_real :: nil)).
+
+Lemma ex_bind_sample_morphism :
+  @qbs_morphism R (ctx_denot nil)
+    (type_denot (ppl_prob ppl_real))
+    (expr_denot ex_bind_sample).
 Proof. exact: expr_morphism. Qed.
 
 (** Example 11: case analysis on a sum type.
