@@ -5,7 +5,7 @@
 This formalization was developed with
 [Claude Opus 4.6](https://claude.ai/claude-code) using
 [Rocq-MCP](https://github.com/LLM4Rocq/rocq-mcp) for interactive
-proof development. Claude wrote all 8,616 lines of Rocq code (410
+proof development. Claude wrote all 8,717 lines of Rocq code (410
 proofs, 0 Admitted) with guidance from a human collaborator who
 provided mathematical direction and design decisions.
 
@@ -16,7 +16,7 @@ programming semantics.
 
 ## Overview
 
-**410 proofs, 0 Admitted, 0 custom axioms, 8,616 lines across 12 files.**
+**410 proofs, 0 Admitted, 0 custom axioms, 8,717 lines across 12 files.**
 
 > **Note**: A higher-order PPL with denotational semantics in QBS
 > (`ppl_qbs.v`, `ppl_kernel.v`, `showcase/ppl_examples.v`) is
@@ -44,7 +44,7 @@ This formalization follows:
 | `quasi_borel.v` | 750 | 47 | HB mixin/structure, morphisms, products, exponentials, cartesian closure (β/η rules) |
 | `measure_qbs_adjunction.v` | 525 | 27 | L⊣R hom-set bijection, standard Borel, full faithfulness |
 | `coproduct_qbs.v` | 720 | 25 | Binary/general coproducts, dependent products, list type |
-| `probability_qbs.v` | 1,275 | 63 | Probability monad: return, bind, 3 monad laws (setoid), strength, normalizer |
+| `probability_qbs.v` | 1,328 | 63 | Probability monad: return, bind, 3 monad laws (setoid), strength, normalizer |
 | `pair_qbs_measure.v` | 604 | 17 | Product measures via R≅R×R, iterated integration, factorization |
 | `qbs_prob_quot.v` | 333 | 17 | Setoid quotient for probability triples |
 | `measure_as_qbs_measure.v` | 289 | 10 | Normal, Bernoulli, uniform distributions, E[Normal]=μ |
@@ -55,8 +55,8 @@ This formalization follows:
 |------|------:|-------:|-------------|
 | `qbs_giry.v` | 201 | 12 | QBS↔Giry monad connection, integral correspondence |
 | `qbs_kernel.v` | 449 | 21 | QBS↔s-finite kernel bridge, Dirac kernels, composition |
-| `standard_borel.v` | 1,249 | 60 | R↔(0,1) via atan, digit interleaving, R≅R×R |
-| `normal_algebra.v` | 1,295 | 77 | Product of Gaussians, normalizing constant computation |
+| `standard_borel.v` | 1,282 | 60 | R↔(0,1) via atan, digit interleaving, R≅R×R |
+| `normal_algebra.v` | 1,310 | 77 | Product of Gaussians, normalizing constant computation |
 
 ### Showcase
 
