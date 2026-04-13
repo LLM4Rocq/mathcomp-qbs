@@ -978,6 +978,15 @@ Qed.
 
 (* 19. Markov inequality for QBS *)
 
+(** Build a random variable from a measurable composition. *)
+Definition qbs_rv (X : qbsType R) (p : qbs_prob X)
+    (h : X -> R)
+    (hm : measurable_fun setT (h \o qbs_prob_alpha p)) :
+    {RV (qbs_prob_mu p) >-> R} :=
+  HB.pack (h \o qbs_prob_alpha p)
+    (@isMeasurableFun.phant_Build _ _ _ _
+       (h \o qbs_prob_alpha p) hm).
+
 (** Markov inequality lifted to QBS probabilities. *)
 Lemma qbs_markov (X : qbsType R) (p : qbs_prob X)
     (h : X -> R) (f : R -> R) (eps : R)
@@ -990,9 +999,7 @@ Lemma qbs_markov (X : qbsType R) (p : qbs_prob X)
   qbs_integral X p (fun x => ((f \o normr \o h) x)%:E).
 Proof.
 rewrite /qbs_prob_event /qbs_integral /=.
-set X0 := @isMeasurableFun.phant_Build _ _ _ _ (h \o qbs_prob_alpha p) hm.
-pose rv : {RV (qbs_prob_mu p) >-> R} :=
-  HB.pack (h \o qbs_prob_alpha p) X0.
+pose rv : {RV (qbs_prob_mu p) >-> R} := qbs_rv hm.
 have -> : qbs_prob_alpha p @^-1` [set x | eps%:E <= `|(h x)%:E|] =
           [set x | eps%:E <= `|(rv x)%:E|] by [].
 have -> : (fun x => ((f \o normr \o h) (qbs_prob_alpha p x))%:E) =
@@ -1017,9 +1024,7 @@ Lemma qbs_chebyshev (X : qbsType R) (p : qbs_prob X)
   (eps ^- 2)%:E * qbs_variance X p h.
 Proof.
 rewrite /qbs_variance /qbs_expect /qbs_integral.
-set X0 := @isMeasurableFun.phant_Build _ _ _ _ (h \o qbs_prob_alpha p) hm.
-pose rv : {RV (qbs_prob_mu p) >-> R} :=
-  HB.pack (h \o qbs_prob_alpha p) X0.
+pose rv : {RV (qbs_prob_mu p) >-> R} := qbs_rv hm.
 have hE : (\int[qbs_prob_mu p]_x (h (qbs_prob_alpha p x))%:E)%E =
           'E_(qbs_prob_mu p)[rv] by rewrite unlock.
 rewrite hE.
