@@ -105,12 +105,12 @@ Proof.
 rewrite /qbs_Mx /=; split.
 - have -> : (fun r => (qbs_pair_alpha p q r).1) =
     qbs_prob_alpha p \o (fst \o @decode_RR_mR R) by [].
-  apply: qbs_Mx_comp; first exact: (qbs_prob_alpha_random p).
+  apply: qbs_Mx_compT; first exact: (qbs_prob_alpha_random p).
   apply: measurableT_comp; first exact: measurable_fst.
   exact: measurable_R_to_RR.
 - have -> : (fun r => (qbs_pair_alpha p q r).2) =
     qbs_prob_alpha q \o (snd \o @decode_RR_mR R) by [].
-  apply: qbs_Mx_comp; first exact: (qbs_prob_alpha_random q).
+  apply: qbs_Mx_compT; first exact: (qbs_prob_alpha_random q).
   apply: measurableT_comp; first exact: measurable_snd.
   exact: measurable_R_to_RR.
 Qed.

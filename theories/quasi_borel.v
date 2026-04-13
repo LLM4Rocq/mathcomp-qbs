@@ -53,12 +53,12 @@ Local Open Scope classical_set_scope.
 (** Mixin: a QBS is a type with a set of random elements. *)
 HB.mixin Record isQBS (R : realType) (T : Type) := {
   qbs_Mx : set (measurableTypeR R -> T) ;
-  qbs_Mx_comp : forall alpha f,
-    qbs_Mx alpha -> measurable_fun setT f -> qbs_Mx (alpha \o f) ;
+  qbs_Mx_comp : forall alpha
+    (f : {mfun measurableTypeR R >-> measurableTypeR R}),
+    qbs_Mx alpha -> qbs_Mx (alpha \o f) ;
   qbs_Mx_const : forall x : T, qbs_Mx (fun _ => x) ;
-  qbs_Mx_glue : forall (P : measurableTypeR R -> nat)
+  qbs_Mx_glue : forall (P : {mfun measurableTypeR R >-> nat})
     (Fi : nat -> measurableTypeR R -> T),
-    measurable_fun setT P ->
     (forall i, qbs_Mx (Fi i)) ->
     qbs_Mx (fun r => Fi (P r) r) }.
 
@@ -98,6 +98,23 @@ Lemma qbs_morphism_const (X Y : qbsType R) (y : Y) :
   @qbs_morphism X Y (fun _ => y).
 Proof. by move=> alpha _; apply: qbs_Mx_const. Qed.
 
+(** Convenience wrappers: accept bare [measurable_fun setT] proofs. *)
+
+Lemma qbs_Mx_compT (X : qbsType R) alpha (f : mR -> mR) :
+  @qbs_Mx R X alpha -> measurable_fun setT f -> @qbs_Mx R X (alpha \o f).
+Proof.
+move=> ha hf; exact: (@qbs_Mx_comp _ X alpha (mfun_Sub (mem_set hf)) ha).
+Qed.
+
+Lemma qbs_Mx_glueT (X : qbsType R)
+    (P : mR -> nat) (Fi : nat -> mR -> X) :
+  measurable_fun setT P ->
+  (forall i, @qbs_Mx R X (Fi i)) ->
+  @qbs_Mx R X (fun r => Fi (P r) r).
+Proof.
+move=> hP hFi; exact: (@qbs_Mx_glue _ X (mfun_Sub (mem_set hP)) Fi hFi).
+Qed.
+
 (* 2. The R functor: measurableType -> qbsType *)
 
 Lemma measurable_glue (d : measure_display) (M : measurableType d)
@@ -124,10 +141,12 @@ Definition R_qbs (d : measure_display) (M : measurableType d) : qbsType R :=
   HB.pack M
     (@isQBS.Build R M
       [set f : mR -> M | measurable_fun setT f]
-      (fun alpha f (ha : measurable_fun setT alpha) hf =>
-         measurableT_comp ha hf)
+      (fun alpha (f : {mfun mR >-> mR})
+         (ha : measurable_fun setT alpha) =>
+         measurableT_comp ha (measurable_funPT f))
       (fun x => @measurable_cst _ _ mR M setT x)
-      (fun P Fi hP hFi => @measurable_glue d M P Fi hP hFi)).
+      (fun (P : {mfun mR >-> nat}) Fi hFi =>
+         @measurable_glue d M P Fi (measurable_funPT P) hFi)).
 
 (** Concrete QBS instances for R, nat, bool. *)
 Definition realQ : qbsType R := R_qbs mR.
@@ -137,18 +156,17 @@ Definition boolQ : qbsType R := R_qbs bool.
 (* 3. Binary Product *)
 
 Lemma prodQ_Mx_comp (X Y : qbsType R) :
-  forall alpha f,
+  forall alpha (f : {mfun mR >-> mR}),
     (@qbs_Mx R X (fun r => (alpha r).1) /\
      @qbs_Mx R Y (fun r => (alpha r).2)) ->
-    measurable_fun setT f ->
     (@qbs_Mx R X (fun r => ((alpha \o f) r).1) /\
      @qbs_Mx R Y (fun r => ((alpha \o f) r).2)).
 Proof.
-move=> alpha f [h1 h2] hf; split.
+move=> alpha f [h1 h2]; split.
 - have -> : (fun r => ((alpha \o f) r).1) = (fun r => (alpha r).1) \o f by [].
-  exact: qbs_Mx_comp h1 hf.
+  exact: qbs_Mx_comp h1.
 - have -> : (fun r => ((alpha \o f) r).2) = (fun r => (alpha r).2) \o f by [].
-  exact: qbs_Mx_comp h2 hf.
+  exact: qbs_Mx_comp h2.
 Qed.
 
 Lemma prodQ_Mx_const (X Y : qbsType R) :
@@ -160,18 +178,17 @@ move=> [x y]; split; exact: qbs_Mx_const.
 Qed.
 
 Lemma prodQ_Mx_glue (X Y : qbsType R) :
-  forall (P : mR -> nat)
+  forall (P : {mfun mR >-> nat})
          (Fi : nat -> mR -> X * Y),
-    measurable_fun setT P ->
     (forall i, @qbs_Mx R X (fun r => (Fi i r).1) /\
                @qbs_Mx R Y (fun r => (Fi i r).2)) ->
     @qbs_Mx R X (fun r => (Fi (P r) r).1) /\
     @qbs_Mx R Y (fun r => (Fi (P r) r).2).
 Proof.
-move=> P Fi hP hFi; split.
-- apply: (@qbs_Mx_glue _ X P (fun i r => (Fi i r).1)) => // i.
+move=> P Fi hFi; split.
+- apply: (@qbs_Mx_glue _ X P (fun i r => (Fi i r).1)) => i.
   by have [] := hFi i.
-- apply: (@qbs_Mx_glue _ Y P (fun i r => (Fi i r).2)) => // i.
+- apply: (@qbs_Mx_glue _ Y P (fun i r => (Fi i r).2)) => i.
   by have [] := hFi i.
 Qed.
 
@@ -210,21 +227,20 @@ Qed.
    the uncurried map (r, x) |-> g(r)(x) is a morphism prodQ realQ X -> Y. *)
 
 Lemma expQ_Mx_comp (X Y : qbsType R) :
-  forall alpha f,
+  forall alpha (f : {mfun mR >-> mR}),
     (@qbs_morphism (prodQ realQ X) Y
        (fun p : realQ * X => (alpha p.1 : X -> Y) p.2)) ->
-    measurable_fun setT f ->
     @qbs_morphism (prodQ realQ X) Y
       (fun p : realQ * X => ((alpha \o f) p.1 : X -> Y) p.2).
 Proof.
-move=> alpha f halpha hf beta [hb1 hb2].
+move=> alpha f halpha beta [hb1 hb2].
 have -> : (fun p : realQ * X => (alpha \o f) p.1 p.2) \o beta =
           (fun p : realQ * X => alpha p.1 p.2) \o
             (fun r => (f (fst (beta r)), snd (beta r))) by [].
 apply: halpha; split => /=.
 - have -> : (fun r : mR => f (beta r).1) =
             f \o (fun r => (beta r).1) by [].
-  exact: measurableT_comp hf hb1.
+  exact: measurableT_comp (measurable_funPT f) hb1.
 - exact: hb2.
 Qed.
 
@@ -240,22 +256,22 @@ exact: (@qbs_hom_proof R X Y g) _ hb2.
 Qed.
 
 Lemma expQ_Mx_glue (X Y : qbsType R) :
-  forall (P : mR -> nat) (Fi : nat -> mR -> @qbsHomType R X Y),
-    measurable_fun setT P ->
+  forall (P : {mfun mR >-> nat})
+    (Fi : nat -> mR -> @qbsHomType R X Y),
     (forall i, @qbs_morphism (prodQ realQ X) Y
        (fun p : realQ * X => (Fi i p.1 : X -> Y) p.2)) ->
     @qbs_morphism (prodQ realQ X) Y
       (fun p : realQ * X => ((fun r => Fi (P r) r) p.1 : X -> Y) p.2).
 Proof.
-move=> P Fi hP hFi beta [hb1 hb2].
-set Q := (fun r => P (fst (beta r))).
-have hQ : measurable_fun setT Q.
-  rewrite /Q; apply: measurableT_comp hP _; exact: hb1.
+move=> P Fi hFi beta [hb1 hb2].
+set Q := mfun_Sub (mem_set
+  (measurableT_comp (measurable_funPT P) hb1) :
+  (fun r => P (fst (beta r))) \in mfun).
 have -> : (fun p : realQ * X => Fi (P p.1) p.1 p.2) \o beta =
           (fun r => (fun i => (fun p : realQ * X => Fi i p.1 p.2) \o beta)
             (Q r) r) by [].
 apply: (@qbs_Mx_glue _ Y Q
-  (fun i => (fun p : realQ * X => Fi i p.1 p.2) \o beta) hQ).
+  (fun i => (fun p : realQ * X => Fi i p.1 p.2) \o beta)).
 move=> i; exact: hFi i _ (conj hb1 hb2).
 Qed.
 
@@ -320,7 +336,7 @@ move=> beta hbeta; rewrite /qbs_Mx /= => gamma [hg1 hg2].
 apply: (@qbs_hom_proof R (prodQ X Y) Z f); split => /=.
 - have -> : (fun r : mR => (beta (gamma r).1)) =
             beta \o (fun r => (gamma r).1) by [].
-  exact: qbs_Mx_comp hbeta hg1.
+  exact: (@qbs_Mx_comp _ X beta (mfun_Sub (mem_set hg1)) hbeta).
 - exact: hg2.
 Qed.
 
@@ -361,9 +377,9 @@ Definition unitQ : qbsType R :=
   HB.pack unit
     (@isQBS.Build R unit
       [set _ : mR -> unit | True]
-      (fun _ _ _ _ => I)
+      (fun _ _ _ => I)
       (fun _ => I)
-      (fun _ _ _ _ => I)).
+      (fun _ _ _ => I)).
 
 (* Unit is terminal: unique morphism to unit *)
 Lemma qbs_morphism_unit (X : qbsType R) :
@@ -445,13 +461,14 @@ Let sub_proj : sub_car -> X := @proj1_sig _ P.
 Let sub_Mx : set (mR -> sub_car) :=
   [set alpha | @qbs_Mx R X (fun r => sub_proj (alpha r))].
 
-Lemma sub_qbs_Mx_comp : forall alpha f,
-  sub_Mx alpha -> measurable_fun setT f -> sub_Mx (alpha \o f).
+Lemma sub_qbs_Mx_comp : forall alpha
+  (f : {mfun mR >-> mR}),
+  sub_Mx alpha -> sub_Mx (alpha \o f).
 Proof.
-move=> alpha f halpha hf; rewrite /sub_Mx /=.
+move=> alpha f halpha; rewrite /sub_Mx /=.
 have -> : (fun r => sub_proj ((alpha \o f) r)) =
           (fun r => sub_proj (alpha r)) \o f by [].
-exact: qbs_Mx_comp halpha hf.
+exact: qbs_Mx_comp halpha.
 Qed.
 
 Lemma sub_qbs_Mx_const : forall x : sub_car,
@@ -461,13 +478,13 @@ move=> x; rewrite /sub_Mx /=.
 exact: qbs_Mx_const.
 Qed.
 
-Lemma sub_qbs_Mx_glue : forall (Q : mR -> nat) (Fi : nat -> mR -> sub_car),
-  measurable_fun setT Q ->
+Lemma sub_qbs_Mx_glue : forall (Q : {mfun mR >-> nat})
+  (Fi : nat -> mR -> sub_car),
   (forall i, sub_Mx (Fi i)) ->
   sub_Mx (fun r => Fi (Q r) r).
 Proof.
-move=> Q Fi hQ hFi; rewrite /sub_Mx /=.
-exact: (@qbs_Mx_glue _ X Q (fun i r => sub_proj (Fi i r)) hQ (fun i => hFi i)).
+move=> Q Fi hFi; rewrite /sub_Mx /=.
+exact: (@qbs_Mx_glue _ X Q (fun i r => sub_proj (Fi i r)) (fun i => hFi i)).
 Qed.
 
 (* NB: manual HB.pack because this is a non-canonical QBS on {x : X | P x} *)
@@ -485,13 +502,12 @@ End sub_qbs_def.
 Inductive generating_Mx (T : Type) (G : set (mR -> T))
   : (mR -> T) -> Prop :=
   | gen_base : forall alpha, G alpha -> generating_Mx G alpha
-  | gen_comp : forall alpha f,
+  | gen_comp : forall alpha (f : {mfun mR >-> mR}),
       generating_Mx G alpha ->
-      measurable_fun setT f ->
       generating_Mx G (alpha \o f)
   | gen_const : forall x : T, generating_Mx G (fun _ => x)
-  | gen_glue : forall (P : mR -> nat) (Fi : nat -> mR -> T),
-      measurable_fun setT P ->
+  | gen_glue : forall (P : {mfun mR >-> nat})
+      (Fi : nat -> mR -> T),
       (forall i, generating_Mx G (Fi i)) ->
       generating_Mx G (fun r => Fi (P r) r).
 
@@ -499,9 +515,9 @@ Inductive generating_Mx (T : Type) (G : set (mR -> T))
 Definition generating_qbs (T : Type) (G : set (mR -> T)) : qbsType R :=
   HB.pack T
     (@isQBS.Build R T (generating_Mx G)
-      (fun alpha f ha hf => gen_comp ha hf)
+      (fun alpha f ha => gen_comp f ha)
       (fun x => gen_const G x)
-      (fun P Fi hP hFi => gen_glue hP hFi)).
+      (fun P Fi hFi => gen_glue P hFi)).
 
 Lemma generating_qbs_incl (T : Type) (G : set (mR -> T)) :
   G `<=` @qbs_Mx R (generating_qbs G).
@@ -591,7 +607,7 @@ have hf_sg : @qbs_Mx R (expQ Y Z)
     ((f : X -> expQ Y Z) \o (snd \o gamma)).
   exact: (@qbs_hom_proof R X (expQ Y Z) f) _ hg2.
 have hbfg : @qbs_Mx R Y (beta \o (fun r => (gamma r).1)).
-  exact: qbs_Mx_comp hbeta hg1.
+  exact: (@qbs_Mx_comp _ Y beta (mfun_Sub (mem_set hg1)) hbeta).
 set delta := (fun r : mR => (r, beta ((gamma r).1))) :
   mR -> realQ * Y.
 have hdelta : @qbs_Mx R (prodQ realQ Y) delta.
@@ -638,9 +654,9 @@ Lemma map_qbs_sub (X Y : qbsType R) (f : X -> Y)
 Proof.
 move=> beta; elim=> {beta}.
 - move=> beta [alpha [halpha ->]]; exact: hf _ halpha.
-- move=> alpha g _ hIH hg; exact: qbs_Mx_comp hIH hg.
+- move=> alpha g _ hIH; exact: qbs_Mx_comp hIH.
 - move=> x; exact: qbs_Mx_const.
-- move=> P Fi hP hFi IH; exact: qbs_Mx_glue hP IH.
+- move=> P Fi hFi IH; exact: qbs_Mx_glue IH.
 Qed.
 
 (* map_qbs is functorial: identity *)
@@ -697,18 +713,18 @@ End qbs_order.
 
 (* Generating QBS is the smallest QBS containing a set of generators *)
 Lemma generating_qbs_least (T : Type) (G : set (mR -> T)) (Mx : set (mR -> T))
-  (c1 : forall alpha f, Mx alpha -> measurable_fun setT f -> Mx (alpha \o f))
+  (c1 : forall alpha (f : {mfun mR >-> mR}),
+    Mx alpha -> Mx (alpha \o f))
   (c2 : forall x : T, Mx (fun _ => x))
-  (c3 : forall (P : mR -> nat) (Fi : nat -> mR -> T),
-    measurable_fun setT P ->
+  (c3 : forall (P : {mfun mR >-> nat}) (Fi : nat -> mR -> T),
     (forall i, Mx (Fi i)) -> Mx (fun r => Fi (P r) r)) :
   G `<=` Mx -> generating_Mx G `<=` Mx.
 Proof.
 move=> hG beta hbeta; elim: hbeta.
 - move=> alpha hGa; exact: hG _ hGa.
-- move=> alpha f _ hIH hf; exact: c1 hIH hf.
+- move=> alpha f _ hIH; exact: c1 hIH.
 - move=> x; exact: c2.
-- move=> P Fi hP hFi IH; exact: c3 hP IH.
+- move=> P Fi hFi IH; exact: c3 IH.
 Qed.
 
 (* Sup (join) of two sets of random elements on the same type:
@@ -732,10 +748,10 @@ Qed.
 
 (* The sup is the least upper bound among QBS-closed sets *)
 Lemma qbs_supT_least (T : Type) (MxX MxY MxZ : set (mR -> T))
-  (c1 : forall alpha f, MxZ alpha -> measurable_fun setT f -> MxZ (alpha \o f))
+  (c1 : forall alpha (f : {mfun mR >-> mR}),
+    MxZ alpha -> MxZ (alpha \o f))
   (c2 : forall x : T, MxZ (fun _ => x))
-  (c3 : forall (P : mR -> nat) (Fi : nat -> mR -> T),
-    measurable_fun setT P ->
+  (c3 : forall (P : {mfun mR >-> nat}) (Fi : nat -> mR -> T),
     (forall i, MxZ (Fi i)) ->
     MxZ (fun r => Fi (P r) r)) :
   qbs_leT MxX MxZ ->

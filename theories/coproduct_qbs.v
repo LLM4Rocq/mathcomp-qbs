@@ -59,24 +59,23 @@ Definition coprodQ_random (X Y : qbsType R) : set (mR -> X + Y) :=
 Arguments coprodQ_random : clear implicits.
 
 Lemma coprodQ_Mx_comp (X Y : qbsType R) :
-  forall (h : mR -> X + Y) (f : mR -> mR),
+  forall (h : mR -> X + Y) (f : {mfun mR >-> mR}),
     coprodQ_random X Y h ->
-    measurable_fun setT f ->
     coprodQ_random X Y (h \o f).
 Proof.
-move=> h f Hh hf.
+move=> h f Hh.
 case: Hh => [[a [ha hdef]] |
   [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
 - left; exists (a \o f); split.
-  + exact: qbs_Mx_comp ha hf.
+  + exact: qbs_Mx_comp ha.
   + by move=> r; rewrite /= hdef.
 - right; left; exists (b' \o f); split.
-  + exact: qbs_Mx_comp hb hf.
+  + exact: qbs_Mx_comp hb.
   + by move=> r; rewrite /= hdef.
 - right; right; exists (P \o f), (a \o f), (b' \o f); split; [|split; [|split]].
-  + exact: measurableT_comp hP hf.
-  + exact: qbs_Mx_comp ha hf.
-  + exact: qbs_Mx_comp hb hf.
+  + exact: measurableT_comp hP (measurable_funPT f).
+  + exact: qbs_Mx_comp ha.
+  + exact: qbs_Mx_comp hb.
   + by move=> r; rewrite /= hdef.
 Qed.
 
@@ -94,12 +93,12 @@ case=> [xl | yr].
 Qed.
 
 Lemma coprodQ_Mx_glue (X Y : qbsType R) :
-  forall (Q : mR -> nat) (Fi : nat -> mR -> X + Y),
-    measurable_fun setT Q ->
+  forall (Q : {mfun mR >-> nat}) (Fi : nat -> mR -> X + Y),
     (forall i, coprodQ_random X Y (Fi i)) ->
     coprodQ_random X Y (fun r => Fi (Q r) r).
 Proof.
-move=> Q Fi hQ hFi.
+move=> Q Fi hFi.
+have hQ : measurable_fun setT Q := measurable_funPT Q.
 (* We handle the cases based on whether X and Y are inhabited *)
 have [Xempty | x0] := boolp.pselectT X.
 - (* X is empty: cases 1 and 3 of coprodQ_random are impossible *)
@@ -114,7 +113,7 @@ have [Xempty | x0] := boolp.pselectT X.
       * exfalso; exact: Xempty (a (0%R : mR)).
   have := @boolp.choice _ _ _ hFi2; move=> [getB hgetB].
   right; left; exists (fun r => getB (Q r) r); split.
-  + exact: (@qbs_Mx_glue R Y Q getB hQ
+  + exact: (@qbs_Mx_glueT R Y Q getB hQ
       (fun i => (hgetB i).1)).
   + move=> r; exact: (hgetB (Q r)).2.
 - have [Yempty | y0] := boolp.pselectT Y.
@@ -128,7 +127,7 @@ have [Xempty | x0] := boolp.pselectT X.
         -- exfalso; exact: Yempty (b' (0%R : mR)).
     have := @boolp.choice _ _ _ hFi1; move=> [getA hgetA].
     left; exists (fun r => getA (Q r) r); split.
-    * exact: (@qbs_Mx_glue R X Q getA hQ
+    * exact: (@qbs_Mx_glueT R X Q getA hQ
         (fun i => (hgetA i).1)).
     * move=> r; exact: (hgetA (Q r)).2.
   + (* Both X and Y are inhabited *)
@@ -194,11 +193,11 @@ have [Xempty | x0] := boolp.pselectT X.
         (fun i => Pi i) hQ hPi_meas).
     * (* a' is in Mx(X) *)
       rewrite /a'.
-      exact: (@qbs_Mx_glue R X Q
+      exact: (@qbs_Mx_glueT R X Q
         (fun i => ai i) hQ hai).
     * (* b'' is in Mx(Y) *)
       rewrite /b''.
-      exact: (@qbs_Mx_glue R Y Q
+      exact: (@qbs_Mx_glueT R Y Q
         (fun i => bi i) hQ hbi).
     * (* extensional equality *)
       move=> r; rewrite /P' /a' /b'' hFi_eq //.
@@ -268,7 +267,7 @@ case=> [[a [ha hdef]] | [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
   { apply: boolp.funext => r; rewrite /Gi /Pn.
     by case: (P r). }
   rewrite heq2.
-  apply: (@qbs_Mx_glue R Z Pn Gi).
+  apply: (@qbs_Mx_glueT R Z Pn Gi).
     rewrite /Pn; apply: measurable_fun_ifT => //; exact: measurable_cst.
   move=> i; rewrite /Gi.
   by case: (i == 0); [exact: hf _ ha | exact: hg _ hb].
@@ -327,15 +326,14 @@ Arguments gen_coprodQ_random : clear implicits.
 
 Lemma gen_coprodQ_Mx_comp (d : measure_display) (I : measurableType d)
   (X : I -> qbsType R) :
-  forall (h : mR -> {i : I & X i}) (f : mR -> mR),
+  forall (h : mR -> {i : I & X i}) (f : {mfun mR >-> mR}),
     gen_coprodQ_random d I X h ->
-    measurable_fun setT f ->
     gen_coprodQ_random d I X (h \o f).
 Proof.
-move=> h f [P [Fi [hP [hFi hdef]]]] hf.
+move=> h f [P [Fi [hP [hFi hdef]]]].
 exists (P \o f), (fun i => Fi i \o f); split; [|split].
-- exact: measurableT_comp hP hf.
-- move=> i; exact: qbs_Mx_comp (hFi i) hf.
+- exact: measurableT_comp hP (measurable_funPT f).
+- move=> i; exact: qbs_Mx_comp (hFi i).
 - move=> r; rewrite /= hdef //.
 Qed.
 
@@ -370,12 +368,12 @@ Qed.
 
 Lemma gen_coprodQ_Mx_glue (d : measure_display) (I : measurableType d)
   (X : I -> qbsType R) :
-  forall (Q : mR -> nat) (Fi : nat -> mR -> {i : I & X i}),
-    measurable_fun setT Q ->
+  forall (Q : {mfun mR >-> nat}) (Fi : nat -> mR -> {i : I & X i}),
     (forall i, gen_coprodQ_random d I X (Fi i)) ->
     gen_coprodQ_random d I X (fun r => Fi (Q r) r).
 Proof.
-move=> Q Fi hQ hFi.
+move=> Q Fi hFi.
+have hQ : measurable_fun setT Q := measurable_funPT Q.
 (* Each Fi n is in gen_coprodQ_random, so extract witnesses uniformly *)
 have hFi' : forall n, exists triple :
   (mR -> I) * (forall i, mR -> X i) * Prop,
@@ -401,7 +399,7 @@ exists (fun r => Pn (Q r) r),
   (fun i => fun r => Gin (Q r) i r); split; [|split].
 - exact: (@measurable_glue R _ _ Q (fun n => Pn n) hQ hPn_meas).
 - move=> i.
-  exact: (@qbs_Mx_glue R (X i) Q (fun n => Gin n i) hQ (fun n => hGin n i)).
+  exact: (@qbs_Mx_glueT R (X i) Q (fun n => Gin n i) hQ (fun n => hGin n i)).
 - move=> r; rewrite hFi_eq //.
 Qed.
 
@@ -457,14 +455,13 @@ Definition piQ_random (I : Type) (X : I -> qbsType R) :
 Arguments piQ_random : clear implicits.
 
 Lemma piQ_Mx_comp (I : Type) (X : I -> qbsType R) :
-  forall (h : mR -> forall i, X i) (f : mR -> mR),
+  forall (h : mR -> forall i, X i) (f : {mfun mR >-> mR}),
     piQ_random I X h ->
-    measurable_fun setT f ->
     piQ_random I X (h \o f).
 Proof.
-move=> h f Hh hf i.
+move=> h f Hh i.
 have -> : (fun r => (h \o f) r i) = (fun r => h r i) \o f by [].
-exact: qbs_Mx_comp (Hh i) hf.
+exact: qbs_Mx_comp (Hh i).
 Qed.
 
 Lemma piQ_Mx_const (I : Type) (X : I -> qbsType R) :
@@ -476,13 +473,13 @@ exact: qbs_Mx_const.
 Qed.
 
 Lemma piQ_Mx_glue (I : Type) (X : I -> qbsType R) :
-  forall (Q : mR -> nat) (Fi : nat -> mR -> forall i, X i),
-    measurable_fun setT Q ->
+  forall (Q : {mfun mR >-> nat})
+    (Fi : nat -> mR -> forall i, X i),
     (forall n, piQ_random I X (Fi n)) ->
     piQ_random I X (fun r => Fi (Q r) r).
 Proof.
-move=> Q Fi hQ hFi i.
-exact: (@qbs_Mx_glue R (X i) Q (fun n r => Fi n r i) hQ (fun n => hFi n i)).
+move=> Q Fi hFi i.
+exact: (@qbs_Mx_glue _ (X i) Q (fun n r => Fi n r i) (fun n => hFi n i)).
 Qed.
 
 (** Dependent product (Pi type) QBS. *)
@@ -605,15 +602,14 @@ Definition listQ_random (X : qbsType R) :
 Arguments listQ_random : clear implicits.
 
 Lemma listQ_Mx_comp (X : qbsType R) :
-  forall (h : mR -> seq X) (f : mR -> mR),
+  forall (h : mR -> seq X) (f : {mfun mR >-> mR}),
     listQ_random X h ->
-    measurable_fun setT f ->
     listQ_random X (h \o f).
 Proof.
-move=> h f [len [Fi [hlen [hFi hdef]]]] hf.
+move=> h f [len [Fi [hlen [hFi hdef]]]].
 exists (len \o f), (fun i => Fi i \o f); split; [|split].
-- exact: measurableT_comp hlen hf.
-- move=> i; exact: qbs_Mx_comp (hFi i) hf.
+- exact: measurableT_comp hlen (measurable_funPT f).
+- move=> i; exact: qbs_Mx_comp (hFi i).
 - move=> r; rewrite /= hdef //.
 Qed.
 
@@ -630,12 +626,12 @@ split; [|split].
 Qed.
 
 Lemma listQ_Mx_glue (X : qbsType R) :
-  forall (Q : mR -> nat) (Gi : nat -> mR -> seq X),
-    measurable_fun setT Q ->
+  forall (Q : {mfun mR >-> nat}) (Gi : nat -> mR -> seq X),
     (forall i, listQ_random X (Gi i)) ->
     listQ_random X (fun r => Gi (Q r) r).
 Proof.
-move=> Q Gi hQ hGi.
+move=> Q Gi hGi.
+have hQ : measurable_fun setT Q := measurable_funPT Q.
 have hGi' : forall n, exists pair : (mR -> nat) * (nat -> mR -> X),
   measurable_fun setT pair.1 /\
   (forall i, @qbs_Mx R X (pair.2 i)) /\
@@ -656,7 +652,7 @@ have hGi_eq : forall n r,
 exists (fun r => lenN (Q r) r), (fun i r => FiN (Q r) i r); split; [|split].
 - exact: (@measurable_glue _ _ _ Q (fun n => lenN n) hQ hlenN).
 - move=> i.
-  exact: (@qbs_Mx_glue R X Q (fun n => FiN n i) hQ (fun n => hFiN n i)).
+  exact: (@qbs_Mx_glueT R X Q (fun n => FiN n i) hQ (fun n => hFiN n i)).
 - move=> r; rewrite hGi_eq //.
 Qed.
 
@@ -712,7 +708,7 @@ have heq2 : (fun r => if i < len r then Fi i r else x0) =
   apply: boolp.funext => r; rewrite /Gi /P.
   by case: (i < len r).
 rewrite heq2.
-apply: (@qbs_Mx_glue R X P Gi hP).
+apply: (@qbs_Mx_glueT R X P Gi hP).
 move=> n; rewrite /Gi.
 by case: (n == 0); [exact: hFi | exact: qbs_Mx_const].
 Qed.

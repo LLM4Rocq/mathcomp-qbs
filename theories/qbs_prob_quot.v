@@ -239,12 +239,11 @@ Definition qps_Mx (X : qbsType R) : set (mR -> qbs_prob_space X) :=
 Arguments qps_Mx {X}.
 
 Lemma qps_Mx_comp (X : qbsType R) :
-  forall beta f,
+  forall beta (f : {mfun mR >-> mR}),
     @qps_Mx X beta ->
-    measurable_fun setT f ->
     @qps_Mx X (beta \o f).
 Proof.
-move=> beta f hbeta hf r /=.
+move=> beta f hbeta r /=.
 exact: hbeta.
 Qed.
 
@@ -256,12 +255,12 @@ exact: (qbs_prob_alpha_random (qps_repr x)).
 Qed.
 
 Lemma qps_Mx_glue (X : qbsType R) :
-  forall (P : mR -> nat) (Fi : nat -> mR -> qbs_prob_space X),
-    measurable_fun setT P ->
+  forall (P : {mfun mR >-> nat})
+    (Fi : nat -> mR -> qbs_prob_space X),
     (forall i, @qps_Mx X (Fi i)) ->
     @qps_Mx X (fun r => Fi (P r) r).
 Proof.
-move=> P Fi hP hFi r /=.
+move=> P Fi hFi r /=.
 exact: hFi.
 Qed.
 

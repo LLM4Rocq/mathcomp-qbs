@@ -128,22 +128,21 @@ by rewrite hbeta_a.
 Qed.
 
 Lemma monadP_comp (X : qbsType R) :
-  forall beta f,
+  forall beta (f : {mfun mR >-> mR}),
     monadP_random_pw X beta ->
-    measurable_fun setT f ->
     monadP_random_pw X (beta \o f).
-Proof. by move=> beta f hbeta hf r; apply: hbeta. Qed.
+Proof. by move=> beta f hbeta r; apply: hbeta. Qed.
 
 Lemma monadP_const (X : qbsType R) :
   forall x : qbs_prob X, monadP_random_pw X (fun _ => x).
 Proof. by move=> x r; exact: (qbs_prob_alpha_random x). Qed.
 
 Lemma monadP_glue (X : qbsType R) :
-  forall (P : mR -> nat) (Fi : nat -> mR -> qbs_prob X),
-    measurable_fun setT P ->
+  forall (P : {mfun mR >-> nat})
+    (Fi : nat -> mR -> qbs_prob X),
     (forall i, monadP_random_pw X (Fi i)) ->
     monadP_random_pw X (fun r => Fi (P r) r).
-Proof. by move=> P Fi hP hFi r; apply: hFi. Qed.
+Proof. by move=> P Fi hFi r; apply: hFi. Qed.
 
 (** The probability monad P(X) on QBS, equipped
     with the pointwise random-element structure. *)
