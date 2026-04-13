@@ -1,10 +1,9 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_algebra.
-From mathcomp Require Import reals ereal topology classical_sets normedtype
-  numfun measure lebesgue_integral lebesgue_integral_fubini
-  lebesgue_stieltjes_measure probability hoelder.
-From mathcomp Require Import functions.
+From mathcomp Require Import all_boot all_algebra reals ereal topology
+  classical_sets normedtype numfun measure lebesgue_integral
+  lebesgue_integral_fubini lebesgue_stieltjes_measure probability
+  hoelder functions.
 From QBS Require Import quasi_borel probability_qbs standard_borel.
 
 (**md**************************************************************************)

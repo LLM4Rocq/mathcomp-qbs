@@ -1,11 +1,9 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C. *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_algebra.
-From mathcomp Require Import reals ereal topology classical_sets
-  borel_hierarchy measure kernel probability.
-From mathcomp Require Import measurable_structure
-  measurable_function measure_function lebesgue_integral
-  lebesgue_measure probability_measure
+From mathcomp Require Import all_boot all_algebra reals ereal topology
+  classical_sets borel_hierarchy measure kernel probability
+  measurable_structure measurable_function measure_function
+  lebesgue_integral lebesgue_measure probability_measure
   lebesgue_stieltjes_measure.
 From QBS Require Import quasi_borel measure_qbs_adjunction
   probability_qbs qbs_giry.

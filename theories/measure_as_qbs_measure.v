@@ -1,11 +1,9 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_algebra.
-From mathcomp Require Import reals ereal topology classical_sets
-  borel_hierarchy measure lebesgue_stieltjes_measure lebesgue_measure
-  lebesgue_integral probability measurable_realfun derive ftc
-  gauss_integral charge.
-From mathcomp.classical Require Import boolp.
+From mathcomp Require Import all_boot all_algebra reals ereal topology
+  classical_sets borel_hierarchy measure lebesgue_stieltjes_measure
+  lebesgue_measure lebesgue_integral probability measurable_realfun
+  derive ftc gauss_integral charge boolp.
 From QBS Require Import quasi_borel probability_qbs.
 
 (**md**************************************************************************)

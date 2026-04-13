@@ -1,15 +1,9 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_algebra.
-From mathcomp Require Import reals.
-From mathcomp Require Import classical_sets filter.
-From mathcomp Require Import num_topology.
-From mathcomp Require Import normedtype sequences.
-From mathcomp Require Import measurable_structure.
-From mathcomp Require Import measurable_function.
-From mathcomp Require Import measurable_realfun trigo.
-From mathcomp Require Import lebesgue_stieltjes_measure.
-From mathcomp Require Import ring.
+From mathcomp Require Import all_boot all_algebra reals classical_sets filter
+  num_topology normedtype sequences measurable_structure measurable_function
+  measurable_realfun trigo lebesgue_stieltjes_measure.
+From mathcomp.algebra_tactics Require Import ring.
 
 (**md**************************************************************************)
 (* # Standard Borel Spaces                                                    *)

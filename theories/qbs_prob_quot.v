@@ -1,14 +1,8 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_algebra.
-From mathcomp Require Import reals.
-From mathcomp Require Import classical_sets boolp.
-From mathcomp Require Import ereal.
-From mathcomp Require Import measurable_structure.
-From mathcomp Require Import measurable_function.
-From mathcomp Require Import probability_measure.
-From mathcomp Require Import lebesgue_stieltjes_measure.
-From mathcomp Require Import lebesgue_integral.
+From mathcomp Require Import all_boot all_algebra reals classical_sets boolp
+  ereal measurable_structure measurable_function probability_measure
+  lebesgue_stieltjes_measure lebesgue_integral.
 From QBS Require Import quasi_borel probability_qbs.
 
 (**md**************************************************************************)

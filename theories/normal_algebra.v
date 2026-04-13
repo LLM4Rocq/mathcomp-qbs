@@ -1,10 +1,8 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_algebra.
-From mathcomp Require Import reals ereal topology normedtype numfun measure
-  lebesgue_integral lebesgue_integral_fubini lebesgue_stieltjes_measure
-  probability.
-From mathcomp.classical Require Import boolp.
+From mathcomp Require Import all_boot all_algebra reals ereal topology
+  normedtype numfun measure lebesgue_integral lebesgue_integral_fubini
+  lebesgue_stieltjes_measure probability boolp.
 From mathcomp.algebra_tactics Require Import ring.
 
 (**md**************************************************************************)
