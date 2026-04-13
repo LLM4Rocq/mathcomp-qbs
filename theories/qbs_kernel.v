@@ -274,13 +274,12 @@ Variables (M2 : measurableType d2).
 (** qbs_to_giry(monadP_map(f,p)) = pushforward of
     qbs_to_giry(p) through f. *)
 Lemma qbs_to_giry_map
-    (f : M1 -> M2)
-    (hf : measurable_fun setT f)
+    (f : {mfun M1 >-> M2})
     (p : qbs_prob (@R_qbs R _ M1))
     (U : set M2) (mU : measurable U) :
   qbs_to_giry
     (monadP_map (@R_qbs R _ M1)
-      (@R_qbs R _ M2) f (R_qbs_morph hf) p) U =
+      (@R_qbs R _ M2) f (R_qbs_morph f) p) U =
   pushforward (qbs_to_giry p) f U.
 Proof.
 by rewrite /pushforward /qbs_to_giry
@@ -290,14 +289,13 @@ Qed.
 (** Pushforward of qbs_to_giry through f also
     equals the qbs_to_giry_mu of the mapped triple. *)
 Lemma qbs_giry_pushforward
-    (f : M1 -> M2)
-    (hf : measurable_fun setT f)
+    (f : {mfun M1 >-> M2})
     (p : qbs_prob (@R_qbs R _ M1))
     (U : set M2) (mU : measurable U) :
   pushforward (qbs_to_giry p) f U =
   @qbs_to_giry_mu R _ M2
     (monadP_map (@R_qbs R _ M1)
-      (@R_qbs R _ M2) f (R_qbs_morph hf) p) U.
+      (@R_qbs R _ M2) f (R_qbs_morph f) p) U.
 Proof.
 by rewrite /pushforward /qbs_to_giry_mu
            /monadP_map /=.
