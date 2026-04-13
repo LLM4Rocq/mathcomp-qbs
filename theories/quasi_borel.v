@@ -317,15 +317,20 @@ move=> halpha; split => /=.
 - exact: halpha.
 Qed.
 
+(** Curried function as a bundled QBS morphism Y -> Z. *)
+Definition qbs_curry (X Y Z : qbsType R)
+  (f : @qbsHomType R (prodQ X Y) Z)
+  (x : X) : @qbsHomType R Y Z :=
+  HB.pack (fun y => (f : prodQ X Y -> Z) (x, y))
+    (@isQBSMorphism.Build R Y Z
+       (fun y => (f : prodQ X Y -> Z) (x, y))
+       (fun alpha halpha => @qbs_hom_proof R (prodQ X Y) Z f _
+          (prodQ_const_random x halpha))).
+
 (** Currying: cartesian closed structure (curry). *)
 Lemma qbs_morphism_curry (X Y Z : qbsType R)
   (f : @qbsHomType R (prodQ X Y) Z) :
-  @qbs_morphism X (expQ Y Z)
-    (fun x => HB.pack (fun y => (f : prodQ X Y -> Z) (x, y))
-       (@isQBSMorphism.Build R Y Z
-          (fun y => (f : prodQ X Y -> Z) (x, y))
-          (fun alpha halpha => @qbs_hom_proof R (prodQ X Y) Z f _
-             (prodQ_const_random x halpha)))).
+  @qbs_morphism X (expQ Y Z) (qbs_curry f).
 Proof.
 move=> beta hbeta; rewrite /qbs_Mx /= => gamma [hg1 hg2].
 apply: (@qbs_hom_proof R (prodQ X Y) Z f); split => /=.
@@ -579,49 +584,10 @@ have -> : (fun p : realQ * X =>
 by [].
 Qed.
 
-(* Argument swap: given f : X -> expQ Y Z, construct the morphism
-   Y -> expQ X Z sending y to (x |-> f(x)(y)). *)
-Lemma qbs_morphism_arg_swap (X Y Z : qbsType R)
-  (f : @qbsHomType R X (expQ Y Z)) :
-  @qbs_morphism Y (expQ X Z)
-    (fun y => HB.pack
-       (fun x => ((f : X -> expQ Y Z) x : Y -> Z) y)
-       (@isQBSMorphism.Build R X Z
-          (fun x => ((f : X -> expQ Y Z) x : Y -> Z) y)
-          (fun alpha halpha =>
-             ((@qbs_hom_proof R X (expQ Y Z) f alpha halpha) :
-                @qbs_morphism (prodQ realQ Y) Z
-                  (fun p : realQ * Y =>
-                     (((f : X -> expQ Y Z) \o alpha) p.1 : Y -> Z) p.2))
-             (fun r : mR => (r, y))
-             (conj (@measurable_id _ mR setT) (qbs_Mx_const y))
-          ))).
-Proof.
-move=> beta hbeta; rewrite /qbs_Mx /= => gamma [hg1 hg2].
-have hf_sg : @qbs_Mx R (expQ Y Z)
-    ((f : X -> expQ Y Z) \o (snd \o gamma)).
-  exact: (@qbs_hom_proof R X (expQ Y Z) f) _ hg2.
-have hbfg : @qbs_Mx R Y (beta \o (fun r => (gamma r).1)).
-  exact: (@qbs_Mx_comp _ Y beta (mfun_Sub (mem_set hg1)) hbeta).
-set delta := (fun r : mR => (r, beta ((gamma r).1))) :
-  mR -> realQ * Y.
-have hdelta : @qbs_Mx R (prodQ realQ Y) delta.
-  split => /=.
-  - have -> : (fun r : mR => (delta r).1) = idfun by [].
-    exact: measurable_id.
-  - exact: hbfg.
-have := hf_sg delta hdelta.
-have -> : (fun p : realQ * Y =>
-             ((f : X -> expQ Y Z) \o (snd \o gamma)) p.1 p.2) \o delta =
-          (fun r : mR => ((f : X -> expQ Y Z) (snd (gamma r)) : Y -> Z)
-             (beta ((gamma r).1))) by [].
-have -> : (fun p : realQ * X =>
-             (fun x : X => ((f : X -> expQ Y Z) x : Y -> Z)
-                (beta p.1)) p.2) \o gamma =
-          (fun r : mR => ((f : X -> expQ Y Z) (snd (gamma r)) : Y -> Z)
-             (beta ((gamma r).1))) by [].
-by [].
-Qed.
+(* NB: qbs_morphism_arg_swap removed per maintainer feedback:
+   HB.pack should not appear in lemma statements, and this lemma
+   was never used. Argument swap can be recovered from qbs_curry
+   composed with eval if needed. *)
 
 (* 13. Image QBS (map_qbs) *)
 (* Given a QBS morphism f : X -> Y, the image QBS map_qbs f X has
