@@ -33,12 +33,11 @@ Local Notation mR := (measurableTypeR R).
 (* If f is measurable, then f is a QBS morphism between R_qbs spaces *)
 Lemma R_qbs_morph (d1 d2 : measure_display)
     (M1 : measurableType d1) (M2 : measurableType d2)
-    (f : M1 -> M2) :
-  measurable_fun setT f ->
+    (f : {mfun M1 >-> M2}) :
   @qbs_morphism R (@R_qbs R _ M1) (@R_qbs R _ M2) f.
 Proof.
-move=> hf alpha; rewrite /qbs_Mx /= => halpha.
-exact: measurableT_comp hf halpha.
+move=> alpha; rewrite /qbs_Mx /= => halpha.
+exact: measurableT_comp (measurable_funP f) halpha.
 Qed.
 
 (* R_qbs preserves identity *)
@@ -50,12 +49,9 @@ Proof. exact: (@qbs_morphism_id R). Qed.
 Lemma R_qbs_comp (d1 d2 d3 : measure_display)
     (M1 : measurableType d1) (M2 : measurableType d2)
     (M3 : measurableType d3)
-    (f : M1 -> M2) (g : M2 -> M3) :
-  measurable_fun setT f ->
-  measurable_fun setT g ->
+    (f : {mfun M1 >-> M2}) (g : {mfun M2 >-> M3}) :
   @qbs_morphism R (@R_qbs R _ M1) (@R_qbs R _ M3) (g \o f).
 Proof.
-move=> hf hg.
 apply: (@qbs_morphism_comp R (@R_qbs R _ M1) (@R_qbs R _ M2) (@R_qbs R _ M3)).
 - exact: R_qbs_morph.
 - exact: R_qbs_morph.
@@ -181,16 +177,14 @@ Qed.
 (** [is_standard_borel M] holds when [M] admits measurable
     maps witnessing an isomorphism with a subset of R. *)
 Definition is_standard_borel (d : measure_display) (M : measurableType d) :=
-  exists (f : M -> mR) (g : mR -> M),
-    measurable_fun setT f /\
-    measurable_fun setT g /\
-    (forall x, g (f x) = x).
+  exists (f : {mfun M >-> mR}) (g : {mfun mR >-> M}),
+    forall x, g (f x) = x.
 
 (* R itself is standard Borel (via the identity) *)
 Lemma R_standard_borel : is_standard_borel mR.
 Proof.
-exists idfun, idfun; split; first exact: measurable_id.
-split; first exact: measurable_id.
+have hid : @id mR \in mfun by apply: mem_set; exact: measurable_id.
+exists (mfun_Sub hid), (mfun_Sub hid).
 by [].
 Qed.
 
@@ -205,15 +199,15 @@ Lemma R_full_faithful_standard_borel
     @qbs_morphism R (@R_qbs R _ M1) (@R_qbs R _ M2) f ->
     measurable_fun setT f.
 Proof.
-move=> [phi1 [psi1 [hphi1 [hpsi1 hpsi1phi1]]]]
-       [phi2 [psi2 [hphi2 [hpsi2 hpsi2phi2]]]] f hf.
+move=> [phi1 [psi1 hpsi1phi1]]
+       [phi2 [psi2 hpsi2phi2]] f hf.
 have hfpsi1 : measurable_fun setT (f \o psi1).
-  exact: (hf psi1 hpsi1).
+  exact: (hf psi1 (measurable_funP psi1)).
 have heq : f = psi2 \o (phi2 \o f \o psi1) \o phi1.
   by apply: boolp.funext => x /=; rewrite hpsi1phi1 hpsi2phi2.
-rewrite heq; apply: measurableT_comp; last exact: hphi1.
-apply: measurableT_comp; first exact: hpsi2.
-exact: measurableT_comp hphi2 hfpsi1.
+rewrite heq; apply: measurableT_comp; last exact: (measurable_funP phi1).
+apply: measurableT_comp; first exact: (measurable_funP psi2).
+exact: measurableT_comp (measurable_funP phi2) hfpsi1.
 Qed.
 
 (* The unit of the adjunction: X -> R(L(X)) at the level of
@@ -312,19 +306,17 @@ Qed.
 (** nat is standard Borel: embed via [n%:R], retract via [truncn]. *)
 Lemma nat_standard_borel : is_standard_borel nat.
 Proof.
-exists (fun n : nat => n%:R : mR), (@truncn R : mR -> nat).
-split; first by move=> _ U _; rewrite setTI.
-split; first exact: measurable_truncn.
+have hf : (fun n : nat => n%:R : mR) \in mfun by apply: mem_set => _ U _; rewrite setTI.
+have hg : (@truncn R : mR -> nat) \in mfun by exact: mem_set measurable_truncn.
+exists (mfun_Sub hf), (mfun_Sub hg).
 exact: natrK.
 Qed.
 
 (** bool is standard Borel: embed via [b%:R], decode via [0 < r]. *)
 Lemma bool_standard_borel : is_standard_borel bool.
 Proof.
-exists (fun b : bool => b%:R : mR),
-       (fun r : mR => (0 < r)%R : bool).
-split; first by move=> _ U _; rewrite setTI.
-split.
+have hf : (fun b : bool => b%:R : mR) \in mfun by apply: mem_set => _ U _; rewrite setTI.
+have hg_meas : measurable_fun setT (fun r : mR => (0 < r)%R : bool).
   apply: (@measurable_fun_bool _ _ _ _ true).
   rewrite setTI.
   suff -> : ((fun r : mR => (0 < r)%R) @^-1` [set true] : set mR) =
@@ -333,6 +325,8 @@ split.
   rewrite eqEsubset; split => r /=.
     move=> hr; rewrite in_itv /=; apply/andP; split => //.
   by rewrite in_itv /= => /andP [].
+have hg : (fun r : mR => (0 < r)%R : bool) \in mfun by exact: mem_set hg_meas.
+exists (mfun_Sub hf), (mfun_Sub hg).
 move=> []; rewrite /=.
   by rewrite ltr01.
 by rewrite order.Order.POrderTheory.ltxx.
@@ -344,31 +338,37 @@ Lemma prod_standard_borel (d1 d2 : measure_display)
   is_standard_borel M1 -> is_standard_borel M2 ->
   is_standard_borel [the measurableType _ of (M1 * M2)%type].
 Proof.
-move=> [f1 [g1 [hf1 [hg1 hgf1]]]] [f2 [g2 [hf2 [hg2 hgf2]]]].
-exists (fun xy : M1 * M2 =>
-         @standard_borel.encode_RR R (f1 xy.1, f2 xy.2)),
-       (fun r : mR =>
-         let p := @standard_borel.decode_RR R r in
-         (g1 p.1, g2 p.2)).
-split.
+move=> [f1 [g1 hgf1]] [f2 [g2 hgf2]].
+have hf_meas : measurable_fun setT (fun xy : M1 * M2 =>
+         @encode_RR R (f1 xy.1, f2 xy.2)).
   apply: measurableT_comp.
-    exact: standard_borel.measurable_encode_RR.
+    exact: measurable_encode_RR.
   apply/measurable_fun_pairP; split.
-  - exact: measurableT_comp hf1 measurable_fst.
-  - exact: measurableT_comp hf2 measurable_snd.
-split.
+  - exact: measurableT_comp (measurable_funP f1) measurable_fst.
+  - exact: measurableT_comp (measurable_funP f2) measurable_snd.
+have hf : (fun xy : [the measurableType (d1, d2).-prod of (M1 * M2)%type] =>
+         @encode_RR R (f1 xy.1, f2 xy.2) : mR) \in mfun.
+  by apply: mem_set; exact: hf_meas.
+have hg_meas : measurable_fun setT (fun r : mR =>
+         let p := @decode_RR R r in
+         (g1 p.1, g2 p.2) :
+           [the measurableType (d1, d2).-prod of (M1 * M2)%type]).
   apply/measurable_fun_pairP; split.
-  - apply: measurableT_comp hg1 _.
+  - apply: measurableT_comp (measurable_funP g1) _.
     apply: measurableT_comp measurable_fst _.
-    exact: standard_borel.measurable_decode_RR.
-  - apply: measurableT_comp hg2 _.
+    exact: measurable_decode_RR.
+  - apply: measurableT_comp (measurable_funP g2) _.
     apply: measurableT_comp measurable_snd _.
-    exact: standard_borel.measurable_decode_RR.
+    exact: measurable_decode_RR.
+have hg : (fun r : mR => let p := @decode_RR R r in (g1 p.1, g2 p.2) :
+         [the measurableType (d1, d2).-prod of (M1 * M2)%type]) \in mfun.
+  by apply: mem_set; exact: hg_meas.
+exists (mfun_Sub hf), (mfun_Sub hg).
 move=> [x1 x2] /=.
-change ((let p := @standard_borel.decode_RR R
-  (@standard_borel.encode_RR R (f1 x1, f2 x2))
+change ((let p := @decode_RR R
+  (@encode_RR R (f1 x1, f2 x2))
   in (g1 p.1, g2 p.2)) = (x1, x2)).
-by rewrite standard_borel.encode_RRK /= hgf1 hgf2.
+by rewrite encode_RRK /= hgf1 hgf2.
 Qed.
 
 (** For standard Borel [M], [L_sigma (R_qbs M)] coincides with
@@ -378,15 +378,15 @@ Lemma standard_borel_lr_sets_ident (d : measure_display)
   is_standard_borel M ->
   forall U : set M, L_sigma (@R_qbs R _ M) U <-> measurable U.
 Proof.
-move=> [f [g [hf [hg hgf]]]] U; split.
+move=> [f [g hgf]] U; split.
 - (* L_sigma -> measurable: use f, g to recover measurability.
      g is measurable so g is in Mx(R_qbs M), hence g^{-1}(U) is
      measurable. Then U = f^{-1}(g^{-1}(U)) since g(f(x)) = x,
      and f is measurable, so U is measurable. *)
   move=> hU.
-  have hgU : measurable (g @^-1` U) by exact: (hU g hg).
+  have hgU : measurable (g @^-1` U) by exact: (hU g (measurable_funP g)).
   suff -> : U = f @^-1` (g @^-1` U).
-    have := hf measurableT _ hgU; rewrite setTI; exact.
+    have := (measurable_funP f) measurableT _ hgU; rewrite setTI; exact.
   rewrite eqEsubset; split => x /=.
     rewrite /preimage /= => hUx; by rewrite hgf.
   rewrite /preimage /= => hgfU; by rewrite -(hgf x).
@@ -439,9 +439,10 @@ Qed.
 (** The extended reals are standard Borel via [contract]/[expand]. *)
 Lemma ereal_standard_borel : is_standard_borel (\bar R : measurableType _).
 Proof.
-exists (@contract R), (@expand R).
-split; first exact: measurable_contract.
-split; last exact: ereal.contractK.
+have hc : (@contract R : (\bar R : measurableType _) -> mR) \in mfun.
+  by apply: mem_set; exact: measurable_contract.
+have he_meas : measurable_fun setT
+  (@expand R : mR -> (\bar R : measurableType _)).
 move=> _ U mU; rewrite setTI.
 rewrite /expand.
 have -> : (fun r : R =>
@@ -516,6 +517,10 @@ apply: measurableU; [apply: measurableU|].
     exact: h _ U mU.
   congr (_ `&` _).
   by rewrite eqEsubset; split => r /=; rewrite in_itv /= => /andP.
+have he : (@expand R : mR -> (\bar R : measurableType _)) \in mfun.
+  by apply: mem_set; exact: he_meas.
+exists (mfun_Sub hc), (mfun_Sub he).
+exact: ereal.contractK.
 Qed.
 
 End mqa.
