@@ -6,6 +6,7 @@ theories/coproduct_qbs.v
 theories/probability_qbs.v
 theories/pair_qbs_measure.v
 theories/qbs_prob_quot.v
+theories/qbs_quotient.v
 theories/measure_as_qbs_measure.v
 theories/normal_algebra.v
 theories/standard_borel.v
