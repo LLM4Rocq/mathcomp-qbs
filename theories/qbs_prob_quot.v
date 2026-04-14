@@ -227,45 +227,30 @@ Qed.
     and monadP X already equips qbs_prob X with a QBS structure,
     we transfer the QBS structure to qbs_prob_space X. *)
 
-Definition qps_Mx (X : qbsType R) : set (mR -> qbs_prob_space X) :=
+Section qbs_prob_space_instance.
+Variable (X : qbsType R).
+
+Let Mx : set (mR -> qbs_prob_space X) :=
   [set beta | @monadP_random_pw R X (fun r => qps_repr (beta r))].
 
-Arguments qps_Mx {X}.
+Let Mx_comp : forall beta (f : {mfun mR >-> mR}),
+    Mx beta -> Mx (beta \o f).
+Proof. move=> beta f hbeta r /=; exact: hbeta. Qed.
 
-Lemma qps_Mx_comp (X : qbsType R) :
-  forall beta (f : {mfun mR >-> mR}),
-    @qps_Mx X beta ->
-    @qps_Mx X (beta \o f).
-Proof.
-move=> beta f hbeta r /=.
-exact: hbeta.
-Qed.
+Let Mx_const : forall x : qbs_prob_space X, Mx (fun _ => x).
+Proof. move=> x r /=; exact: (qbs_prob_alpha_random (qps_repr x)). Qed.
 
-Lemma qps_Mx_const (X : qbsType R) :
-  forall x : qbs_prob_space X, @qps_Mx X (fun _ => x).
-Proof.
-move=> x r /=.
-exact: (qbs_prob_alpha_random (qps_repr x)).
-Qed.
-
-Lemma qps_Mx_glue (X : qbsType R) :
-  forall (P : {mfun mR >-> nat})
+Let Mx_glue : forall (P : {mfun mR >-> nat})
     (Fi : nat -> mR -> qbs_prob_space X),
-    (forall i, @qps_Mx X (Fi i)) ->
-    @qps_Mx X (fun r => Fi (P r) r).
-Proof.
-move=> P Fi hFi r /=.
-exact: hFi.
-Qed.
+    (forall i, Mx (Fi i)) -> Mx (fun r => Fi (P r) r).
+Proof. move=> P Fi hFi r /=; exact: hFi. Qed.
 
-Definition qbs_prob_space_qbs (X : qbsType R) : qbsType R :=
-  (* NB: manual HB.pack to equip the quotient wrapper with a QBS structure *)
-  HB.pack (qbs_prob_space X)
-    (@isQBS.Build R (qbs_prob_space X)
-      (@qps_Mx X)
-      (@qps_Mx_comp X)
-      (@qps_Mx_const X)
-      (@qps_Mx_glue X)).
+HB.instance Definition _ :=
+  @isQBS.Build R (qbs_prob_space X) Mx Mx_comp Mx_const Mx_glue.
+
+Definition qbs_prob_space_qbs : qbsType R := qbs_prob_space X.
+
+End qbs_prob_space_instance.
 
 (** Integration on the quotient: linearity properties. *)
 
