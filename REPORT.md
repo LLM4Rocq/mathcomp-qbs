@@ -3,8 +3,8 @@
 **Project:** QBS -- Quasi-Borel Spaces in Rocq/Coq
 **Repository:** `/home/rocq/QBS`
 **Date:** 2026-04-04
-**Status:** 410 proofs (408 Qed + 2 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 8,717 across 12 files
+**Status:** 415 proofs (414 Qed + 1 Defined), **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** 8,672 across 12 files
 
 > **Note**: The higher-order PPL development (`ppl_qbs.v`,
 > `ppl_kernel.v`, `showcase/ppl_examples.v`) is on the `ppl`
@@ -1613,19 +1613,19 @@ quasi_borel.v
 
 | File | Lines | Proofs |
 |------|------:|-------:|
-| `quasi_borel.v` | 750 | 47 |
-| `measure_qbs_adjunction.v` | 525 | 27 |
-| `coproduct_qbs.v` | 720 | 25 |
-| `probability_qbs.v` | 1,328 | 63 |
-| `pair_qbs_measure.v` | 604 | 17 |
-| `qbs_prob_quot.v` | 333 | 17 |
-| `measure_as_qbs_measure.v` | 289 | 10 |
-| `normal_algebra.v` | 1,310 | 77 |
-| `showcase/bayesian_regression.v` | 926 | 34 |
-| `qbs_giry.v` | 201 | 12 |
-| `qbs_kernel.v` | 449 | 21 |
-| `standard_borel.v` | 1,282 | 60 |
-| **Total** | **8,717** | **410** |
+| `quasi_borel.v` | 746 | 52 |
+| `measure_qbs_adjunction.v` | 528 | 27 |
+| `coproduct_qbs.v` | 715 | 25 |
+| `probability_qbs.v` | 1,334 | 63 |
+| `pair_qbs_measure.v` | 603 | 17 |
+| `qbs_prob_quot.v` | 311 | 17 |
+| `measure_as_qbs_measure.v` | 287 | 10 |
+| `normal_algebra.v` | 1,308 | 77 |
+| `showcase/bayesian_regression.v` | 925 | 34 |
+| `qbs_giry.v` | 194 | 12 |
+| `qbs_kernel.v` | 445 | 21 |
+| `standard_borel.v` | 1,276 | 60 |
+| **Total** | **8,672** | **415** |
 
 **0 Admitted**, 0 custom axioms.
 

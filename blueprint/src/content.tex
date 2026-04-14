@@ -51,18 +51,22 @@ $m\mathbb{R}$ for its Borel measurable space.
   satisfying three axioms:
   \begin{enumerate}
     \item \textbf{Composition} (\texttt{qbs\_Mx\_comp}):
-      If $\alpha \in M_X$ and $f : \mathbb{R} \to \mathbb{R}$ is
-      measurable, then $\alpha \circ f \in M_X$.
+      If $\alpha \in M_X$ and $f : \texttt{\{mfun mR >-> mR\}}$
+      (a bundled measurable function), then
+      $\alpha \circ f \in M_X$.
     \item \textbf{Constants} (\texttt{qbs\_Mx\_const}):
       For every $x : T$, the constant function
       $\lambda r.\; x$ is in $M_X$.
     \item \textbf{Gluing} (\texttt{qbs\_Mx\_glue}):
-      If $P : \mathbb{R} \to \mathbb{N}$ is measurable and
+      If $P : \texttt{\{mfun mR >-> nat\}}$ and
       $F_i \in M_X$ for all~$i$, then
       $\lambda r.\; F_{P(r)}(r) \in M_X$.
   \end{enumerate}
   The HB structure \texttt{QBSpace} packages this mixin with a short
-  type name \texttt{qbsType R}.
+  type name \texttt{qbsType R}. All type constructions
+  (\texttt{prodQ}, \texttt{expQ}, \texttt{unitQ}, etc.) use the
+  Section + \texttt{HB.instance Definition} pattern recommended by
+  mathcomp maintainers.
 \end{definition}
 
 
