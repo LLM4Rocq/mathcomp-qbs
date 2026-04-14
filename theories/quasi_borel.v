@@ -129,19 +129,27 @@ apply: bigcupT_measurable => i; apply: measurableI.
 - have := hFi i measurableT U mU; rewrite setTI; exact.
 Qed.
 
-(* NB: manual HB.pack because R_qbs builds a non-canonical QBS on an
-   existing measurableType *)
+Section R_qbs_instance.
+Variables (d : measure_display) (M : measurableType d).
+Let Mx := [set f : mR -> M | measurable_fun setT f].
+Let ax1 : forall alpha (f : {mfun mR >-> mR}),
+    Mx alpha -> Mx (alpha \o f).
+Proof.
+move=> alpha f ha; rewrite /Mx /= => /=.
+exact: measurableT_comp ha (measurable_funPT f).
+Qed.
+Let ax2 : forall x : M, Mx (fun _ => x).
+Proof. move=> x; rewrite /Mx /=; exact: @measurable_cst _ _ mR M setT x. Qed.
+Let ax3 : forall (P : {mfun mR >-> nat}) (Fi : nat -> mR -> M),
+    (forall i, Mx (Fi i)) -> Mx (fun r => Fi (P r) r).
+Proof.
+move=> P Fi hFi; rewrite /Mx /=.
+exact: @measurable_glue d M P Fi (measurable_funPT P) hFi.
+Qed.
+HB.instance Definition _ := @isQBS.Build R M Mx ax1 ax2 ax3.
 (** R functor: measurableType to qbsType via measurable funs. *)
-Definition R_qbs (d : measure_display) (M : measurableType d) : qbsType R :=
-  HB.pack M
-    (@isQBS.Build R M
-      [set f : mR -> M | measurable_fun setT f]
-      (fun alpha (f : {mfun mR >-> mR})
-         (ha : measurable_fun setT alpha) =>
-         measurableT_comp ha (measurable_funPT f))
-      (fun x => @measurable_cst _ _ mR M setT x)
-      (fun (P : {mfun mR >-> nat}) Fi hFi =>
-         @measurable_glue d M P Fi (measurable_funPT P) hFi)).
+Definition R_qbs : qbsType R := M.
+End R_qbs_instance.
 
 (** Concrete QBS instances for R, nat, bool. *)
 Definition realQ : qbsType R := R_qbs mR.
@@ -187,18 +195,20 @@ move=> P Fi hFi; split.
   by have [] := hFi i.
 Qed.
 
-(* NB: manual HB.pack because this is a non-canonical QBS on (X * Y)%type *)
+Section prodQ_instance.
+Variables (X Y : qbsType R).
 (* NB: We use (fun r => (f r).1) instead of (fst \o f) to avoid a universe
    constraint on Composition.u2 that would conflict with algebra_tactics.ring *)
+HB.instance Definition _ :=
+  @isQBS.Build R (X * Y)%type
+    [set f | @qbs_Mx R X (fun r => (f r).1) /\
+             @qbs_Mx R Y (fun r => (f r).2)]
+    (@prodQ_Mx_comp X Y)
+    (@prodQ_Mx_const X Y)
+    (@prodQ_Mx_glue X Y).
 (** Binary product QBS on (X * Y). *)
-Definition prodQ (X Y : qbsType R) : qbsType R :=
-  HB.pack (X * Y)%type
-    (@isQBS.Build R (X * Y)%type
-      [set f | @qbs_Mx R X (fun r => (f r).1) /\
-               @qbs_Mx R Y (fun r => (f r).2)]
-      (@prodQ_Mx_comp X Y)
-      (@prodQ_Mx_const X Y)
-      (@prodQ_Mx_glue X Y)).
+Definition prodQ : qbsType R := (X * Y)%type.
+End prodQ_instance.
 
 Arguments prodQ : clear implicits.
 
@@ -270,18 +280,19 @@ apply: (@qbs_Mx_glue _ Y Q
 move=> i; exact: hFi i _ (conj hb1 hb2).
 Qed.
 
-(* NB: manual HB.pack because this is a non-canonical QBS on
-   (qbsHomType R X Y) *)
+Section expQ_instance.
+Variables (X Y : qbsType R).
+HB.instance Definition _ :=
+  @isQBS.Build R (@qbsHomType R X Y)
+    [set g : mR -> @qbsHomType R X Y |
+      @qbs_morphism (prodQ realQ X) Y
+        (fun p : realQ * X => (g p.1 : X -> Y) p.2)]
+    (@expQ_Mx_comp X Y)
+    (@expQ_Mx_const X Y)
+    (@expQ_Mx_glue X Y).
 (** Exponential (function space) QBS. *)
-Definition expQ (X Y : qbsType R) : qbsType R :=
-  HB.pack (@qbsHomType R X Y)
-    (@isQBS.Build R (@qbsHomType R X Y)
-      [set g : mR -> @qbsHomType R X Y |
-        @qbs_morphism (prodQ realQ X) Y
-          (fun p : realQ * X => (g p.1 : X -> Y) p.2)]
-      (@expQ_Mx_comp X Y)
-      (@expQ_Mx_const X Y)
-      (@expQ_Mx_glue X Y)).
+Definition expQ : qbsType R := @qbsHomType R X Y.
+End expQ_instance.
 
 Arguments expQ : clear implicits.
 
@@ -317,15 +328,21 @@ move=> halpha; split => /=.
 - exact: halpha.
 Qed.
 
+Section qbs_curry_instance.
+Variables (X Y Z : qbsType R).
+Variable (f : @qbsHomType R (prodQ X Y) Z).
+Variable (x : X).
+Let curry_fun := fun y => (f : prodQ X Y -> Z) (x, y).
+Let curry_proof : forall alpha, @qbs_Mx R Y alpha ->
+    @qbs_Mx R Z (curry_fun \o alpha).
+Proof.
+move=> alpha halpha; exact: @qbs_hom_proof R (prodQ X Y) Z f _
+  (prodQ_const_random x halpha).
+Qed.
+HB.instance Definition _ := @isQBSMorphism.Build R Y Z curry_fun curry_proof.
 (** Curried function as a bundled QBS morphism Y -> Z. *)
-Definition qbs_curry (X Y Z : qbsType R)
-  (f : @qbsHomType R (prodQ X Y) Z)
-  (x : X) : @qbsHomType R Y Z :=
-  HB.pack (fun y => (f : prodQ X Y -> Z) (x, y))
-    (@isQBSMorphism.Build R Y Z
-       (fun y => (f : prodQ X Y -> Z) (x, y))
-       (fun alpha halpha => @qbs_hom_proof R (prodQ X Y) Z f _
-          (prodQ_const_random x halpha))).
+Definition qbs_curry : @qbsHomType R Y Z := curry_fun.
+End qbs_curry_instance.
 
 (** Currying: cartesian closed structure (curry). *)
 Lemma qbs_morphism_curry (X Y Z : qbsType R)
@@ -371,15 +388,16 @@ Proof. by []. Qed.
 
 (* 6. Unit QBS *)
 
-(* NB: manual HB.pack because this is a non-canonical QBS on unit *)
+Section unitQ_instance.
+HB.instance Definition _ :=
+  @isQBS.Build R unit
+    [set _ : mR -> unit | True]
+    (fun _ _ _ => I)
+    (fun _ => I)
+    (fun _ _ _ => I).
 (** Terminal (unit) QBS. *)
-Definition unitQ : qbsType R :=
-  HB.pack unit
-    (@isQBS.Build R unit
-      [set _ : mR -> unit | True]
-      (fun _ _ _ => I)
-      (fun _ => I)
-      (fun _ _ _ => I)).
+Definition unitQ : qbsType R := unit.
+End unitQ_instance.
 
 (* Unit is terminal: unique morphism to unit *)
 Lemma qbs_morphism_unit (X : qbsType R) :
@@ -487,11 +505,10 @@ move=> Q Fi hFi; rewrite /sub_Mx /=.
 exact: (@qbs_Mx_glue _ X Q (fun i r => sub_proj (Fi i r)) (fun i => hFi i)).
 Qed.
 
-(* NB: manual HB.pack because this is a non-canonical QBS on {x : X | P x} *)
-Definition sub_qbs : qbsType R :=
-  HB.pack sub_car
-    (@isQBS.Build R sub_car sub_Mx
-      sub_qbs_Mx_comp sub_qbs_Mx_const sub_qbs_Mx_glue).
+HB.instance Definition _ :=
+  @isQBS.Build R sub_car sub_Mx
+    sub_qbs_Mx_comp sub_qbs_Mx_const sub_qbs_Mx_glue.
+Definition sub_qbs : qbsType R := sub_car.
 
 End sub_qbs_def.
 
@@ -511,13 +528,15 @@ Inductive generating_Mx (T : Type) (G : set (mR -> T))
       (forall i, generating_Mx G (Fi i)) ->
       generating_Mx G (fun r => Fi (P r) r).
 
-(* NB: manual HB.pack because this is a non-canonical QBS on T *)
-Definition generating_qbs (T : Type) (G : set (mR -> T)) : qbsType R :=
-  HB.pack T
-    (@isQBS.Build R T (generating_Mx G)
-      (fun alpha f ha => gen_comp f ha)
-      (fun x => gen_const G x)
-      (fun P Fi hFi => gen_glue P hFi)).
+Section generating_qbs_instance.
+Variables (T : Type) (G : set (mR -> T)).
+HB.instance Definition _ :=
+  @isQBS.Build R T (generating_Mx G)
+    (fun alpha f ha => gen_comp f ha)
+    (fun x => gen_const G x)
+    (fun P Fi hFi => gen_glue P hFi).
+Definition generating_qbs : qbsType R := T.
+End generating_qbs_instance.
 
 Lemma generating_qbs_incl (T : Type) (G : set (mR -> T)) :
   G `<=` @qbs_Mx R (generating_qbs G).
