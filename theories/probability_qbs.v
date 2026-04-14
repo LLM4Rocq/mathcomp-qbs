@@ -146,13 +146,15 @@ Proof. by move=> P Fi hFi r; apply: hFi. Qed.
 
 (** The probability monad P(X) on QBS, equipped
     with the pointwise random-element structure. *)
-Definition monadP (X : qbsType R) : qbsType R :=
-  HB.pack (qbs_prob X)
-    (@isQBS.Build R (qbs_prob X)
-      (monadP_random_pw X)
-      (@monadP_comp X)
-      (@monadP_const X)
-      (@monadP_glue X)).
+Section monadP_instance.
+Variable X : qbsType R.
+Let Mx := monadP_random_pw X.
+Let ax_comp := @monadP_comp X.
+Let ax_const := @monadP_const X.
+Let ax_glue := @monadP_glue X.
+HB.instance Definition _ := @isQBS.Build R (qbs_prob X) Mx ax_comp ax_const ax_glue.
+Definition monadP : qbsType R := qbs_prob X.
+End monadP_instance.
 
 Arguments monadP : clear implicits.
 
