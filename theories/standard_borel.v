@@ -75,7 +75,7 @@ From mathcomp.algebra_tactics Require Import ring.
 (* ## Note on the no_trailing_ones gap                                        *)
 (* The round-trip pair_to_unitK requires no_trailing_ones on the       *)
 (* deinterleaved subsequences, which does NOT follow from no_trailing_ones    *)
-(* on the full binary expansion. However, for is_standard_borel (R * R),     *)
+(* on the full binary expansion. However, for standard_borel_wit (R * R),     *)
 (* only the OTHER direction (encode_RRK, i.e. g(f(x))=x) is needed,   *)
 (* and that direction (unit_to_pairK / encode_RRK) is proved    *)
 (* unconditionally. See the detailed comments in the Round-trip section.     *)
@@ -453,7 +453,7 @@ Section round_trips.
 (*                                                                            *)
 (* 1. unit_to_pairK: unit_to_pair (pair_to_unit (x,y)) = (x,y)        *)
 (*    This holds UNCONDITIONALLY for all (x,y) in [0,1)^2.                   *)
-(*    This is the direction needed for is_standard_borel (R * R), which       *)
+(*    This is the direction needed for standard_borel_wit (R * R), which       *)
 (*    only requires g(f(x)) = x (i.e., decode after encode = identity).      *)
 (*                                                                            *)
 (* 2. pair_to_unitK: pair_to_unit (unit_to_pair r) = r                 *)
@@ -464,7 +464,7 @@ Section round_trips.
 (*    Example: r with digits 1,0,1,0,... has no trailing ones, but           *)
 (*    deinterleave_even gives 1,1,1,... (all ones).                          *)
 (*                                                                            *)
-(*    This direction is NOT needed for is_standard_borel (the product of      *)
+(*    This direction is NOT needed for standard_borel_wit (the product of      *)
 (*    standard Borel spaces theorem). The set of reals where the extra        *)
 (*    hypotheses fail is a subset of the dyadic rationals (countable, hence   *)
 (*    measure zero), but we do not formalize this fact here since it is       *)
@@ -706,7 +706,7 @@ Qed.
 
 (* Note: The no_trailing_ones hypotheses on deinterleaved subsequences do NOT
    follow from no_trailing_ones on the full sequence. This lemma is therefore
-   not usable unconditionally. However, it is NOT needed for is_standard_borel:
+   not usable unconditionally. However, it is NOT needed for standard_borel_wit:
    only unit_to_pairK (the other direction, proved below without extra
    hypotheses) is required. See the comment block above for details. *)
 Lemma pair_to_unitK (r : R) :
@@ -740,7 +740,7 @@ Qed.
 
 (* This is the KEY round-trip lemma: decode after encode is the identity.
    It holds unconditionally for (x,y) in [0,1)^2, with no trailing-ones
-   hypothesis needed. This is the direction required by is_standard_borel. *)
+   hypothesis needed. This is the direction required by standard_borel_wit. *)
 Lemma unit_to_pairK (xy : R * R) :
   0 <= xy.1 < 1 -> 0 <= xy.2 < 1 ->
   unit_to_pair (pair_to_unit xy) = xy.

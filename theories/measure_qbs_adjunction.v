@@ -174,33 +174,36 @@ Qed.
     A measurable space is standard Borel if it is measurably isomorphic
     to a measurable subset of R. *)
 
-(** [is_standard_borel M] holds when [M] admits measurable
-    maps witnessing an isomorphism with a subset of R. *)
-Definition is_standard_borel (d : measure_display) (M : measurableType d) :=
-  exists (f : {mfun M >-> mR}) (g : {mfun mR >-> M}),
-    forall x, g (f x) = x.
+(** [standard_borel_wit M] witnesses that [M] admits measurable
+    maps witnessing a retraction with R (standard Borel property). *)
+Record standard_borel_wit (d : measure_display) (M : measurableType d) := StandardBorelWit {
+  sb_encode : {mfun M >-> mR} ;
+  sb_decode : {mfun mR >-> M} ;
+  sb_retractK : cancel sb_encode sb_decode
+}.
+Arguments sb_encode {d M}.
+Arguments sb_decode {d M}.
+Arguments sb_retractK {d M}.
 
 (* R itself is standard Borel (via the identity) *)
-Lemma R_standard_borel : is_standard_borel mR.
+Lemma R_standard_borel : standard_borel_wit mR.
 Proof.
 have hid : @id mR \in mfun by apply: mem_set; exact: measurable_id.
-exists (mfun_Sub hid), (mfun_Sub hid).
-by [].
+exact: {| sb_encode := mfun_Sub hid ; sb_decode := mfun_Sub hid |}.
 Qed.
 
 (** On standard Borel spaces the R functor is fully faithful:
     every QBS morphism R(M1) -> R(M2) is measurable. *)
 Lemma R_full_faithful_standard_borel
     (d1 d2 : measure_display)
-    (M1 : measurableType d1) (M2 : measurableType d2) :
-  is_standard_borel M1 ->
-  is_standard_borel M2 ->
-  forall (f : M1 -> M2),
+    (M1 : measurableType d1) (M2 : measurableType d2)
+    (sb1 : standard_borel_wit M1) (sb2 : standard_borel_wit M2)
+    (f : M1 -> M2) :
     @qbs_morphism R (@R_qbs R _ M1) (@R_qbs R _ M2) f ->
     measurable_fun setT f.
 Proof.
-move=> [phi1 [psi1 hpsi1phi1]]
-       [phi2 [psi2 hpsi2phi2]] f hf.
+move: sb1 sb2 => [phi1 psi1 hpsi1phi1]
+       [phi2 psi2 hpsi2phi2] hf.
 have hfpsi1 : measurable_fun setT (f \o psi1).
   exact: (hf psi1 (measurable_funP psi1)).
 have heq : f = psi2 \o (phi2 \o f \o psi1) \o phi1.
@@ -304,17 +307,17 @@ case: n => [|n].
 Qed.
 
 (** nat is standard Borel: embed via [n%:R], retract via [truncn]. *)
-Lemma nat_standard_borel : is_standard_borel nat.
+Lemma nat_standard_borel : standard_borel_wit nat.
 Proof.
 have hf : (fun n : nat => n%:R : mR) \in mfun.
   by apply: mem_set => _ U _; rewrite setTI.
 have hg : (@truncn R : mR -> nat) \in mfun by exact: mem_set measurable_truncn.
-exists (mfun_Sub hf), (mfun_Sub hg).
-exact: natrK.
+exact: {| sb_encode := mfun_Sub hf ; sb_decode := mfun_Sub hg ;
+           sb_retractK := natrK |}.
 Qed.
 
 (** bool is standard Borel: embed via [b%:R], decode via [0 < r]. *)
-Lemma bool_standard_borel : is_standard_borel bool.
+Lemma bool_standard_borel : standard_borel_wit bool.
 Proof.
 have hf : (fun b : bool => b%:R : mR) \in mfun.
   by apply: mem_set => _ U _; rewrite setTI.
@@ -328,7 +331,7 @@ have hg_meas : measurable_fun setT (fun r : mR => (0 < r)%R : bool).
     move=> hr; rewrite in_itv /=; apply/andP; split => //.
   by rewrite in_itv /= => /andP [].
 have hg : (fun r : mR => (0 < r)%R : bool) \in mfun by exact: mem_set hg_meas.
-exists (mfun_Sub hf), (mfun_Sub hg).
+apply: {| sb_encode := mfun_Sub hf ; sb_decode := mfun_Sub hg |}.
 move=> []; rewrite /=.
   by rewrite ltr01.
 by rewrite order.Order.POrderTheory.ltxx.
@@ -336,11 +339,11 @@ Qed.
 
 (** Standard Borel product closure via [encode_RR]/[decode_RR]. *)
 Lemma prod_standard_borel (d1 d2 : measure_display)
-    (M1 : measurableType d1) (M2 : measurableType d2) :
-  is_standard_borel M1 -> is_standard_borel M2 ->
-  is_standard_borel [the measurableType _ of (M1 * M2)%type].
+    (M1 : measurableType d1) (M2 : measurableType d2)
+    (sb1 : standard_borel_wit M1) (sb2 : standard_borel_wit M2) :
+  standard_borel_wit [the measurableType _ of (M1 * M2)%type].
 Proof.
-move=> [f1 [g1 hgf1]] [f2 [g2 hgf2]].
+move: sb1 sb2 => [f1 g1 hgf1] [f2 g2 hgf2].
 have hf_meas : measurable_fun setT (fun xy : M1 * M2 =>
          @encode_RR R (f1 xy.1, f2 xy.2)).
   apply: measurableT_comp.
@@ -365,7 +368,7 @@ have hg_meas : measurable_fun setT (fun r : mR =>
 have hg : (fun r : mR => let p := @decode_RR R r in (g1 p.1, g2 p.2) :
          [the measurableType (d1, d2).-prod of (M1 * M2)%type]) \in mfun.
   by apply: mem_set; exact: hg_meas.
-exists (mfun_Sub hf), (mfun_Sub hg).
+apply: {| sb_encode := mfun_Sub hf ; sb_decode := mfun_Sub hg |}.
 move=> [x1 x2] /=.
 change ((let p := @decode_RR R
   (@encode_RR R (f1 x1, f2 x2))
@@ -376,11 +379,10 @@ Qed.
 (** For standard Borel [M], [L_sigma (R_qbs M)] coincides with
     the original sigma-algebra. *)
 Lemma standard_borel_lr_sets_ident (d : measure_display)
-    (M : measurableType d) :
-  is_standard_borel M ->
+    (M : measurableType d) (sb : standard_borel_wit M) :
   forall U : set M, L_sigma (@R_qbs R _ M) U <-> measurable U.
 Proof.
-move=> [f [g hgf]] U; split.
+move: sb => [f g hgf] U; split.
 - (* L_sigma -> measurable: use f, g to recover measurability.
      g is measurable so g is in Mx(R_qbs M), hence g^{-1}(U) is
      measurable. Then U = f^{-1}(g^{-1}(U)) since g(f(x)) = x,
@@ -439,7 +441,7 @@ suff -> : (@contract R) @^-1` U =
 Qed.
 
 (** The extended reals are standard Borel via [contract]/[expand]. *)
-Lemma ereal_standard_borel : is_standard_borel (\bar R : measurableType _).
+Lemma ereal_standard_borel : standard_borel_wit (\bar R : measurableType _).
 Proof.
 have hc : (@contract R : (\bar R : measurableType _) -> mR) \in mfun.
   by apply: mem_set; exact: measurable_contract.
@@ -521,8 +523,8 @@ apply: measurableU; [apply: measurableU|].
   by rewrite eqEsubset; split => r /=; rewrite in_itv /= => /andP.
 have he : (@expand R : mR -> (\bar R : measurableType _)) \in mfun.
   by apply: mem_set; exact: he_meas.
-exists (mfun_Sub hc), (mfun_Sub he).
-exact: ereal.contractK.
+exact: {| sb_encode := mfun_Sub hc ; sb_decode := mfun_Sub he ;
+           sb_retractK := @ereal.contractK R |}.
 Qed.
 
 End mqa.

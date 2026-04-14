@@ -148,8 +148,8 @@ Section qbs_morph_kernel.
 Variables (d1 d2 : measure_display).
 Variables (M1 : measurableType d1).
 Variables (M2 : measurableType d2).
-Hypothesis sb1 : is_standard_borel R M1.
-Hypothesis sb2 : is_standard_borel R M2.
+Hypothesis sb1 : standard_borel_wit R M1.
+Hypothesis sb2 : standard_borel_wit R M2.
 
 (** A measurable function f : M1 -> M2 yields a
     Dirac kernel, which is automatically a
