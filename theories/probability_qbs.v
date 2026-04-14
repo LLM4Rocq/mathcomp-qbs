@@ -559,15 +559,14 @@ Qed.
 
 Lemma monadP_map_id (X : qbsType R) (p : qbs_prob X) :
   qbs_prob_equiv X
-    (monadP_map X X idfun (@qbs_morphism_id R X) p) p.
+    (monadP_map X X idfun (@qbs_hom_proof R _ _ (qbs_id X)) p) p.
 Proof. by move=> U hU. Qed.
 
 Lemma monadP_map_comp (X Y Z : qbsType R)
   (f : @qbsHomType R X Y) (g : @qbsHomType R Y Z) (p : qbs_prob X) :
   qbs_prob_equiv Z
     (monadP_map X Z ((g : Y -> Z) \o (f : X -> Y))
-       (@qbs_morphism_comp R X Y Z _ _
-          (@qbs_hom_proof R X Y f) (@qbs_hom_proof R Y Z g)) p)
+       (@qbs_hom_proof R _ _ (qbs_comp f g)) p)
     (monadP_map Y Z g (@qbs_hom_proof R Y Z g)
        (monadP_map X Y f (@qbs_hom_proof R X Y f) p)).
 Proof. by move=> U hU. Qed.
@@ -805,10 +804,7 @@ Lemma qbs_strength_natural (W W' X X' : qbsType R)
   qbs_prob_equiv (prodQ W' X')
     (monadP_map (prodQ W X) (prodQ W' X')
       (fun wx => (f wx.1, g wx.2))
-      (@qbs_morphism_pair R (prodQ W X) W' X'
-        (f \o fst) (g \o snd)
-        (qbs_morphism_comp (@qbs_morphism_fst R W X) hf)
-        (qbs_morphism_comp (@qbs_morphism_snd R W X) hg))
+      (fun alpha halpha => conj (hf _ halpha.1) (hg _ halpha.2))
       (qbs_strength W X w p))
     (qbs_strength W' X' (f w) (monadP_map X X' g hg p)).
 Proof. by move=> U hU. Qed.
@@ -817,7 +813,7 @@ Proof. by move=> U hU. Qed.
 Lemma qbs_strength_unit (X : qbsType R) (p : qbs_prob X) :
   qbs_prob_equiv X
     (monadP_map (prodQ (unitQ R) X) X snd
-      (@qbs_morphism_snd R (unitQ R) X)
+      (@qbs_hom_proof R _ _ (qbs_snd (unitQ R) X))
       (qbs_strength (unitQ R) X tt p))
     p.
 Proof. by move=> U hU. Qed.
@@ -829,15 +825,8 @@ Lemma qbs_strength_assoc (U V X : qbsType R) (u : U) (v : V)
   qbs_prob_equiv (prodQ U (prodQ V X))
     (monadP_map (prodQ (prodQ U V) X) (prodQ U (prodQ V X))
       (fun t => (t.1.1, (t.1.2, t.2)))
-      (@qbs_morphism_pair R (prodQ (prodQ U V) X) U (prodQ V X)
-        (fst \o fst) (fun t => (t.1.2, t.2))
-        (qbs_morphism_comp (@qbs_morphism_fst R (prodQ U V) X)
-          (@qbs_morphism_fst R U V))
-        (@qbs_morphism_pair R (prodQ (prodQ U V) X) V X
-          (snd \o fst) snd
-          (qbs_morphism_comp (@qbs_morphism_fst R (prodQ U V) X)
-            (@qbs_morphism_snd R U V))
-          (@qbs_morphism_snd R (prodQ U V) X)))
+      (fun alpha halpha =>
+         conj halpha.1.1 (conj halpha.1.2 halpha.2))
       (qbs_strength (prodQ U V) X (u, v) p))
     (qbs_strength U (prodQ V X) u (qbs_strength V X v p)).
 Proof. by move=> S hS. Qed.

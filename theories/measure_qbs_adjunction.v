@@ -43,7 +43,7 @@ Qed.
 (* R_qbs preserves identity *)
 Lemma R_qbs_id (d : measure_display) (M : measurableType d) :
   @qbs_morphism R (@R_qbs R _ M) (@R_qbs R _ M) idfun.
-Proof. exact: (@qbs_morphism_id R). Qed.
+Proof. exact: (@qbs_hom_proof R _ _ (qbs_id _)). Qed.
 
 (* R_qbs preserves composition *)
 Lemma R_qbs_comp (d1 d2 d3 : measure_display)
@@ -52,9 +52,7 @@ Lemma R_qbs_comp (d1 d2 d3 : measure_display)
     (f : {mfun M1 >-> M2}) (g : {mfun M2 >-> M3}) :
   @qbs_morphism R (@R_qbs R _ M1) (@R_qbs R _ M3) (g \o f).
 Proof.
-apply: (@qbs_morphism_comp R (@R_qbs R _ M1) (@R_qbs R _ M2) (@R_qbs R _ M3)).
-- exact: R_qbs_morph.
-- exact: R_qbs_morph.
+move=> alpha halpha; exact: (R_qbs_morph g (R_qbs_morph f halpha)).
 Qed.
 
 (** L functor (sigma-algebra level).

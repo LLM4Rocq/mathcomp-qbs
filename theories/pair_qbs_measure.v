@@ -218,7 +218,7 @@ Definition qbs_indep (X Y Z : qbsType R)
   (hf : @qbs_morphism R Z X f) (hg : @qbs_morphism R Z Y g) : Prop :=
   @qbs_prob_equiv R (prodQ X Y)
     (@monadP_map R Z (prodQ X Y) (fun z => (f z, g z))
-       (@qbs_morphism_pair R Z X Y f g hf hg) p)
+       (fun alpha halpha => conj (hf _ halpha) (hg _ halpha)) p)
     (qbs_prob_pair X Y
        (@monadP_map R Z X f hf p)
        (@monadP_map R Z Y g hg p)).
