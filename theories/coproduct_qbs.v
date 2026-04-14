@@ -200,14 +200,15 @@ have [Xempty | x0] := boolp.pselectT X.
 Qed.
 
 (** Binary coproduct QBS on (X + Y). *)
-Definition coprodQ (X Y : qbsType R) : qbsType R :=
-  (* NB: manual HB.pack because sum types lack a canonical QBS instance *)
-  HB.pack (X + Y)%type
-    (@isQBS.Build R (X + Y)%type
-      (coprodQ_random X Y)
-      (coprodQ_Mx_comp (X:=X) (Y:=Y))
-      (coprodQ_Mx_const (X:=X) (Y:=Y))
-      (coprodQ_Mx_glue (X:=X) (Y:=Y))).
+Section coprodQ_instance.
+Variables (X Y : qbsType R).
+Let Mx := coprodQ_random X Y.
+Let ax1 := coprodQ_Mx_comp (X:=X) (Y:=Y).
+Let ax2 := coprodQ_Mx_const (X:=X) (Y:=Y).
+Let ax3 := coprodQ_Mx_glue (X:=X) (Y:=Y).
+HB.instance Definition _ := @isQBS.Build R (X + Y)%type Mx ax1 ax2 ax3.
+Definition coprodQ : qbsType R := (X + Y)%type.
+End coprodQ_instance.
 
 Arguments coprodQ : clear implicits.
 
@@ -400,16 +401,16 @@ exists (fun r => Pn (Q r) r),
 Qed.
 
 (** General coproduct (sigma type) QBS. *)
-Definition gen_coprodQ (d : measure_display) (I : measurableType d)
-  (X : I -> qbsType R)
-  (inh : forall i, X i) : qbsType R :=
-  (* NB: manual HB.pack because sigma types lack a canonical QBS instance *)
-  HB.pack {i : I & X i}
-    (@isQBS.Build R {i : I & X i}
-      (gen_coprodQ_random d I X)
-      (gen_coprodQ_Mx_comp (I:=I) (X:=X))
-      (gen_coprodQ_Mx_const (I:=I) inh)
-      (gen_coprodQ_Mx_glue (I:=I) (X:=X))).
+Section gen_coprodQ_instance.
+Variables (d : measure_display) (I : measurableType d)
+  (X : I -> qbsType R) (inh : forall i, X i).
+Let Mx := gen_coprodQ_random d I X.
+Let ax1 := gen_coprodQ_Mx_comp (I:=I) (X:=X).
+Let ax2 := gen_coprodQ_Mx_const (I:=I) inh.
+Let ax3 := gen_coprodQ_Mx_glue (I:=I) (X:=X).
+HB.instance Definition _ := @isQBS.Build R {i : I & X i} Mx ax1 ax2 ax3.
+Definition gen_coprodQ : qbsType R := {i : I & X i}.
+End gen_coprodQ_instance.
 
 Arguments gen_coprodQ : clear implicits.
 
@@ -479,14 +480,15 @@ exact: (@qbs_Mx_glue _ (X i) Q (fun n r => Fi n r i) (fun n => hFi n i)).
 Qed.
 
 (** Dependent product (Pi type) QBS. *)
-Definition piQ (I : Type) (X : I -> qbsType R) : qbsType R :=
-  (* NB: manual HB.pack; dependent products lack a QBS instance *)
-  HB.pack (forall i : I, X i)
-    (@isQBS.Build R (forall i : I, X i)
-      (piQ_random I X)
-      (piQ_Mx_comp (X:=X))
-      (piQ_Mx_const (X:=X))
-      (piQ_Mx_glue (X:=X))).
+Section piQ_instance.
+Variables (I : Type) (X : I -> qbsType R).
+Let Mx := piQ_random I X.
+Let ax1 := piQ_Mx_comp (X:=X).
+Let ax2 := piQ_Mx_const (X:=X).
+Let ax3 := piQ_Mx_glue (X:=X).
+HB.instance Definition _ := @isQBS.Build R (forall i : I, X i) Mx ax1 ax2 ax3.
+Definition piQ : qbsType R := (forall i : I, X i).
+End piQ_instance.
 
 Arguments piQ : clear implicits.
 
@@ -655,14 +657,15 @@ Qed.
 (* The list QBS. Requires an inhabitedness witness x0 for the constant
    axiom (needed to extract nth elements from constant lists). *)
 (** List QBS: countable coproduct of finite products. *)
-Definition listQ (X : qbsType R) (x0 : X) : qbsType R :=
-  (* NB: manual HB.pack because list types lack a canonical QBS instance *)
-  HB.pack (seq X)
-    (@isQBS.Build R (seq X)
-      (listQ_random X)
-      (listQ_Mx_comp (X:=X))
-      (listQ_Mx_const x0)
-      (listQ_Mx_glue (X:=X))).
+Section listQ_instance.
+Variables (X : qbsType R) (x0 : X).
+Let Mx := listQ_random X.
+Let ax1 := listQ_Mx_comp (X:=X).
+Let ax2 := listQ_Mx_const x0.
+Let ax3 := listQ_Mx_glue (X:=X).
+HB.instance Definition _ := @isQBS.Build R (seq X) Mx ax1 ax2 ax3.
+Definition listQ : qbsType R := (seq X).
+End listQ_instance.
 
 (* Length is a QBS morphism from listQ to natQ *)
 Lemma qbs_morphism_length (X : qbsType R) (x0 : X) :
