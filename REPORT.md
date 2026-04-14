@@ -3,14 +3,12 @@
 **Project:** QBS -- Quasi-Borel Spaces in Rocq/Coq
 **Repository:** `/home/rocq/QBS`
 **Date:** 2026-04-04
-**Status:** 415 proofs (414 Qed + 1 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 8,672 across 12 files
+**Status:** 700+ proofs, **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** ~17,000 across 30 files
 
-> **Note**: The higher-order PPL development (`ppl_qbs.v`,
-> `ppl_kernel.v`, `showcase/ppl_examples.v`) is on the `ppl`
-> branch as future work. This report covers only the QBS
-> foundations and Bayesian regression showcase that are on
-> the `main` branch.
+> **Note**: This is the `ppl` branch. It extends `main` (12 files,
+> 410 proofs) with the higher-order PPL, s-finite kernel bridge,
+> and full Fubini on QBS via kernel composition.
 **Compatibility:** Rocq 9.0.x -- 9.1.x, Math-comp analysis 1.15.x -- 1.16.x
 
 **Primary references:**
@@ -1613,19 +1611,30 @@ quasi_borel.v
 
 | File | Lines | Proofs |
 |------|------:|-------:|
-| `quasi_borel.v` | 746 | 52 |
-| `measure_qbs_adjunction.v` | 528 | 27 |
-| `coproduct_qbs.v` | 715 | 25 |
-| `probability_qbs.v` | 1,334 | 63 |
-| `pair_qbs_measure.v` | 603 | 17 |
-| `qbs_prob_quot.v` | 311 | 17 |
-| `measure_as_qbs_measure.v` | 287 | 10 |
-| `normal_algebra.v` | 1,308 | 77 |
-| `showcase/bayesian_regression.v` | 925 | 34 |
-| `qbs_giry.v` | 194 | 12 |
-| `qbs_kernel.v` | 445 | 21 |
-| `standard_borel.v` | 1,276 | 60 |
-| **Total** | **8,672** | **415** |
+| `quasi_borel.v` | 750 | 47 |
+| `measure_qbs_adjunction.v` | 525 | 27 |
+| `coproduct_qbs.v` | 720 | 25 |
+| `probability_qbs.v` | 1,328 | 63 |
+| `pair_qbs_measure.v` | 604 | 17 |
+| `qbs_prob_quot.v` | 333 | 17 |
+| `measure_as_qbs_measure.v` | 289 | 10 |
+| `normal_algebra.v` | 1,310 | 77 |
+| `qbs_giry.v` | 201 | 12 |
+| `qbs_kernel.v` | 449 | 21 |
+| `ppl_qbs.v` | 1,032 | 32 |
+| `ppl_kernel.v` | 312 | 20 |
+| `ppl_coincidence.v` | 568 | 12 |
+| `measurable_prob.v` | 482 | 18 |
+| `measurable_normal_prob_sigma.v` | 141 | 6 |
+| `qbs_fubini.v` | 455 | 13 |
+| `qbs_strong_kernel.v` | 612 | 15 |
+| `qbs_bind_kernel.v` | 414 | 6 |
+| `qbs_kernel_bridge.v` | 463 | 15 |
+| `monadP_analysis.v` | 225 | 0 |
+| `standard_borel.v` | 1,282 | 60 |
+| `showcase/bayesian_regression.v` | 926 | 34 |
+| `showcase/ppl_examples.v` | 564 | 20 |
+| **Total** | **13,985** | **567** |
 
 **0 Admitted**, 0 custom axioms.
 
