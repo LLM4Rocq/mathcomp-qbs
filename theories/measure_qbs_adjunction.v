@@ -306,7 +306,8 @@ Qed.
 (** nat is standard Borel: embed via [n%:R], retract via [truncn]. *)
 Lemma nat_standard_borel : is_standard_borel nat.
 Proof.
-have hf : (fun n : nat => n%:R : mR) \in mfun by apply: mem_set => _ U _; rewrite setTI.
+have hf : (fun n : nat => n%:R : mR) \in mfun.
+  by apply: mem_set => _ U _; rewrite setTI.
 have hg : (@truncn R : mR -> nat) \in mfun by exact: mem_set measurable_truncn.
 exists (mfun_Sub hf), (mfun_Sub hg).
 exact: natrK.
@@ -315,7 +316,8 @@ Qed.
 (** bool is standard Borel: embed via [b%:R], decode via [0 < r]. *)
 Lemma bool_standard_borel : is_standard_borel bool.
 Proof.
-have hf : (fun b : bool => b%:R : mR) \in mfun by apply: mem_set => _ U _; rewrite setTI.
+have hf : (fun b : bool => b%:R : mR) \in mfun.
+  by apply: mem_set => _ U _; rewrite setTI.
 have hg_meas : measurable_fun setT (fun r : mR => (0 < r)%R : bool).
   apply: (@measurable_fun_bool _ _ _ _ true).
   rewrite setTI.
