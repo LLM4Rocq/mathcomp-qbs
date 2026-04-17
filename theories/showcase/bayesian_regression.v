@@ -40,6 +40,7 @@ Import GRing.Theory Num.Def Num.Theory measurable_realfun.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
+Import boolp order.Order.POrderTheory.
 
 Local Open Scope classical_set_scope.
 
@@ -182,7 +183,7 @@ Proof.
 rewrite /posterior_density.
 have -> : (fun params : realQ R * realQ R => 1 * (obs params)%:E) =
           (fun params => (obs params)%:E).
-  by apply: boolp.funext => p; rewrite mul1e.
+  by apply: funext => p; rewrite mul1e.
 rewrite -/(evidence).
 apply: divee.
 - by rewrite gt0_fin_numE.
@@ -215,7 +216,7 @@ Definition likelihood_single (obs_x : R) :
       (@measurable_id _ mR setT).
 
 Lemma likelihood_single_morphism (obs_x : R) :
-  @qbs_morphism R (prodQ (realQ R) (realQ R)) (monadP (realQ R))
+  qbs_morphism
     (likelihood_single obs_x).
 Proof.
 move=> alpha halpha; rewrite /qbs_Mx /= => r.
@@ -223,7 +224,7 @@ exact: (@measurable_id _ mR setT).
 Qed.
 
 Lemma likelihood_single_strong (obs_x : R) :
-  @qbs_morphism_strong R (prodQ (realQ R) (realQ R)) (realQ R)
+  qbs_morphism_strong (prodQ (realQ R) (realQ R)) (realQ R)
     (likelihood_single obs_x).
 Proof.
 move=> alpha halpha.
@@ -286,19 +287,19 @@ Definition prior : qbs_prob (prodQ (realQ R) (realQ R)) :=
 
 (* Diagonal randomness for the inner bind: r |-> (s, idfun r) *)
 Lemma prior_inner_diag (s : realQ R) :
-  @qbs_Mx R (prodQ (realQ R) (realQ R))
+  qbs_Mx
     (fun r => qbs_prob_alpha
       ((fun b => qbs_return (prodQ (realQ R) (realQ R)) (s, b)
                    (qbs_prob_mu intercept_prior))
        (qbs_prob_alpha intercept_prior r)) r).
 Proof.
 rewrite /= /qbs_Mx /=; split.
-- exact: (@qbs_Mx_const R (realQ R) s).
+- exact: (qbs_Mx_const s).
 - exact: (@measurable_id _ mR setT).
 Qed.
 
 Definition prior_inner (s : realQ R) : qbs_prob (prodQ (realQ R) (realQ R)) :=
-  @qbs_bind R (realQ R) (prodQ (realQ R) (realQ R))
+  qbs_bind (realQ R) (prodQ (realQ R) (realQ R))
     intercept_prior
     (fun b => qbs_return (prodQ (realQ R) (realQ R)) (s, b)
                 (qbs_prob_mu intercept_prior))
@@ -306,7 +307,7 @@ Definition prior_inner (s : realQ R) : qbs_prob (prodQ (realQ R) (realQ R)) :=
 
 (* Diagonal randomness for the outer bind *)
 Lemma prior_bind_diag :
-  @qbs_Mx R (prodQ (realQ R) (realQ R))
+  qbs_Mx
     (fun r => qbs_prob_alpha
       (prior_inner (qbs_prob_alpha slope_prior r)) r).
 Proof.
@@ -319,7 +320,7 @@ Qed.
    prior_bind = bind(slope_prior, fun s =>
                   bind(intercept_prior, fun b => return (s,b))) *)
 Definition prior_bind : qbs_prob (prodQ (realQ R) (realQ R)) :=
-  @qbs_bind R (realQ R) (prodQ (realQ R) (realQ R))
+  qbs_bind (realQ R) (prodQ (realQ R) (realQ R))
     slope_prior prior_inner prior_bind_diag.
 
 (* 8. Normalizer (norm_qbs) *)
@@ -659,7 +660,7 @@ suff -> : (fun b : mR =>
   apply: measurable_funM; last exact: (measurable_normal_pdf _ _).
   apply: measurable_funM; last exact: (measurable_normal_pdf _ _).
   exact: (measurable_normal_pdf _ _).
-apply: boolp.funext => b.
+apply: funext => b.
 by rewrite !(normal_pdf_recenter _ s _ b noise_sigma_neq0).
 Qed.
 
@@ -673,9 +674,9 @@ have hbd : [bounded (fun b : mR => obs (s, b)) b | b in [set: mR]].
   exists (normal_peak noise_sigma ^+ 5)%R; split; first by rewrite num_real.
   move=> M hM b _ /=.
   rewrite ger0_norm; last exact: (obs_ge0 (s, b)).
-  exact: (order.Order.POrderTheory.le_trans
+  exact: (le_trans
             (obs_ub s b)
-            (order.Order.POrderTheory.ltW hM)).
+            (ltW hM)).
 apply: measurable_bounded_integrable.
 - exact: measurableT.
 - suff: ((normal_prob 0 prior_sigma : probability _ _) setT < +oo)%E by [].
@@ -741,7 +742,7 @@ apply: (@measurable_bounded_integrable _ _ _ _ _ setT).
     (normal_peak noise_sigma *
        normal_fun ((rr.1 * 5%:R)%R + rr.2)%R
          noise_sigma 8%:R))%R).
-    by apply: boolp.funext => -[s b] /=; rewrite !(normal_pdfE _ hns).
+    by apply: funext => -[s b] /=; rewrite !(normal_pdfE _ hns).
   apply: measurable_funM; last exact: (d_pair_meas_tac 5%:R 8%:R).
   apply: measurable_funM; last exact: (d_pair_meas_tac 4%:R (31%:R / 5%:R)).
   apply: measurable_funM; last exact: (d_pair_meas_tac 3%:R (9%:R / 2%:R)).
@@ -751,9 +752,9 @@ apply: (@measurable_bounded_integrable _ _ _ _ _ setT).
   exists (normal_peak noise_sigma ^+ 5)%R; split; first by rewrite num_real.
   move=> M hM -[s' b'] _ /=.
   rewrite ger0_norm ?obs_ge0 //.
-  exact: (order.Order.POrderTheory.le_trans
+  exact: (le_trans
             (obs_ub s' b')
-            (order.Order.POrderTheory.ltW hM)).
+            (ltW hM)).
 Qed.
 
 Lemma sos_meas_proof : measurable_fun [set: mR]
@@ -827,9 +828,9 @@ suff sos_ub : forall s : R, (scalar_of_s s <= M)%R.
     exists M; split; first by rewrite num_real.
     move=> M' hM' s _ /=.
     rewrite ger0_norm ?scalar_of_s_ge0 //.
-    exact: (order.Order.POrderTheory.le_trans
+    exact: (le_trans
               (sos_ub s)
-              (order.Order.POrderTheory.ltW hM')).
+              (ltW hM')).
 move=> s'; rewrite /scalar_of_s /M.
 have le1 := nf_le1; have pk := @normal_peak_ge0 R; have nf := @normal_fun_ge0 R.
 have hge : forall a b c : R, (0 <= normal_peak a * normal_fun b a c)%R.
@@ -912,7 +913,7 @@ have -> : (fun rr =>
   (g (qbs_prob_alpha slope_prior rr.1, qbs_prob_alpha intercept_prior rr.2) *
    (obs (qbs_prob_alpha slope_prior rr.1,
          qbs_prob_alpha intercept_prior rr.2))%:E) * ((phase2_const R)^-1)%:E).
-  apply: boolp.funext => rr /=.
+  apply: funext => rr /=.
   by rewrite inver (negbTE hc_neq0) muleA.
 (* Now the goal is (∫ f) / c%:E = ∫ (f * (c^{-1})%:E) *)
 (* Rewrite the LHS:

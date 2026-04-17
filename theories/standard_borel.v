@@ -1,8 +1,8 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra reals classical_sets filter
-  num_topology normedtype sequences measurable_structure measurable_function
-  measurable_realfun trigo lebesgue_stieltjes_measure.
+  topology num_topology normedtype sequences measurable_structure
+  measurable_function measurable_realfun trigo lebesgue_stieltjes_measure.
 From mathcomp.algebra_tactics Require Import ring.
 
 (**md**************************************************************************)
@@ -178,11 +178,11 @@ have hcos : cos (pi * (y - 1 / 2)) != 0.
   have -> : (pi : R) / 2 = pi * (1 / 2) by rewrite mul1r.
   rewrite ltr_pM2l ?pi_gt0 // ltrBlDr -splitr; exact: hy1.
 rewrite /psi.
-apply: (@topology_structure.continuous_comp _ _ _
+apply: (@continuous_comp _ _ _
           (fun y0 : R => pi * (y0 - 1/2)) tan).
-  apply: continuousM; first exact: topology_structure.cvg_cst.
+  apply: continuousM; first exact: cvg_cst.
   apply: continuousB; first exact: cvg_id.
-  exact: topology_structure.cvg_cst.
+  exact: cvg_cst.
 exact: continuous_tan.
 Qed.
 
@@ -328,7 +328,7 @@ Qed.
 
 Lemma bin_sum_le1 (d : nat -> bool) : bin_sum d <= 1.
 Proof.
-apply: (@topology_structure.closed_cvg _ _ eventually _
+apply: (@closed_cvg _ _ eventually _
   (fun n => bin_partial_sum d n : R^o) (fun x : R => x <= 1)
   _ _ (bin_sum d)).
 - exact: closed_le.
@@ -338,7 +338,7 @@ Qed.
 
 Lemma bin_sum_ge0 (d : nat -> bool) : 0 <= bin_sum d.
 Proof.
-apply: (@topology_structure.closed_cvg _ _ eventually _
+apply: (@closed_cvg _ _ eventually _
   (fun n => bin_partial_sum d n : R^o) (fun x : R => 0 <= x)
   _ _ (bin_sum d)).
 - exact: closed_ge.
@@ -381,7 +381,7 @@ move=> /andP[hx0 hx1].
 rewrite /bin_sum /bin_digits.
 suff hcvg : (fun n => bin_partial_sum (bin_digit x) n : R^o) n
               @[n --> \oo] --> x.
-  exact: (separation_axioms.cvg_lim _ hcvg).
+  exact: (cvg_lim _ hcvg).
 pose step := fun (y : R) => if 2%:R^-1 <= y then y *+ 2 - 1 else y *+ 2.
 pose rem := fix f n := match n with 0%N => x | n'.+1 => step (f n') end.
 have hrem_digit : forall n, bin_digit x n = (2%:R^-1 <= rem n).
@@ -423,7 +423,7 @@ have hrem_cvg : (fun n => rem n * 2%:R^-1 ^+ n : R^o) n
       * by apply: (@Num.Theory.exprn_ge0 R); rewrite invr_ge0; apply: ler0n.
       * by have [_ h] := hrem_bound n; exact: ltW h.
       * by [].
-  - exact: topology_structure.cvg_cst.
+  - exact: cvg_cst.
   - have := @cvg_geometric R 1 _ habs_half.
     rewrite /geometric /=.
     by move=> h; have : (fun n0 => 1 * 2%:R^-1 ^+ n0 : R^o) n
@@ -435,7 +435,7 @@ suff : (fun n => x - rem n * 2%:R^-1 ^+ n : R^o) n
          @[n --> \oo] --> (x : R^o).
   by move=> h; under eq_cvg do rewrite heq; exact: h.
 have : (fun n : nat => (x : R^o)) n @[n --> \oo] --> x.
-  exact: topology_structure.cvg_cst.
+  exact: cvg_cst.
 move=> hcstx; have := cvgB hcstx hrem_cvg; rewrite subr0; exact.
 Qed.
 
@@ -481,7 +481,7 @@ Lemma bin_sum_ext (d1 d2 : nat -> bool) :
   d1 =1 d2 -> bin_sum d1 = bin_sum d2.
 Proof.
 move=> heq; rewrite /bin_sum; congr (limn _).
-apply: boolp.funext => n.
+apply: funext => n.
 rewrite /bin_partial_sum; apply: eq_bigr => i _.
 by rewrite (heq i).
 Qed.
@@ -582,7 +582,7 @@ have heps : (0 : R) < 2%:R^-1 ^+ n.+1.
 suff hlt1 : bin_sum d <= 1 - 2%:R^-1 ^+ n.+1.
   apply: (le_lt_trans hlt1).
   rewrite ltrBlDr -{1}[1]addr0 ltrD2l. exact: heps.
-apply: (@topology_structure.closed_cvg _ _ eventually _
+apply: (@closed_cvg _ _ eventually _
   (fun m => bin_partial_sum d m : R^o) (fun y : R => y <= 1 - 2%:R^-1 ^+ n.+1)
   _ _ (bin_sum d)).
 - exact: closed_le.
@@ -634,18 +634,18 @@ have hcvg2 : cvgn (fun n => bin_partial_sum (d \o succn) n : R^o).
   exact: is_cvg_bin_partial_sum.
 have hlim_shift : limn [eta bin_partial_sum d] =
   limn (fun n => bin_partial_sum d n.+1 : R^o).
-  apply/esym; apply: separation_axioms.cvg_lim => //.
+  apply/esym; apply: cvg_lim => //.
   by rewrite cvg_shiftS.
 rewrite hlim_shift.
 have -> : (fun n => bin_partial_sum d n.+1 : R^o) =
   (fun n => (d 0%N)%:R * 2%:R^-1 +
     bin_partial_sum (d \o succn) n * 2%:R^-1 : R^o).
-  by apply: boolp.funext => n; rewrite hrel.
-apply: separation_axioms.cvg_lim => //.
+  by apply: funext => n; rewrite hrel.
+apply: cvg_lim => //.
 have hcst :
   (fun _ : nat => (d 0%N)%:R * 2%:R^-1 : R^o) n
   @[n --> \oo] --> ((d 0%N)%:R * 2%:R^-1 : R^o).
-  exact: topology_structure.cvg_cst.
+  exact: cvg_cst.
 have hprod :
   (fun n : nat =>
     bin_partial_sum (d \o succn) n * 2%:R^-1 : R^o) n
@@ -809,7 +809,7 @@ Lemma measurable_bin_digit (n : nat) :
 Proof.
 rewrite (_ : (fun x : R => _) =
   (fun x => 2%:R^-1 <= iter n step x)); last first.
-  by apply: boolp.funext => x; rewrite bin_digit_iter.
+  by apply: funext => x; rewrite bin_digit_iter.
 apply: measurable_fun_ler.
 - exact: measurable_cst.
 - exact: measurable_iter_step.
@@ -853,7 +853,7 @@ Lemma measurable_bool_scale {d : measure_display} {T : measurableType d}
 Proof.
 move=> hf.
 rewrite (_ : (fun x => _) = (fun x => if f x then c else (0 : R))); last first.
-  by apply: boolp.funext => x; case: (f x) => /=; rewrite ?mul1r ?mul0r.
+  by apply: funext => x; case: (f x) => /=; rewrite ?mul1r ?mul0r.
 by apply: measurable_fun_ifT => //; exact: measurable_cst.
 Qed.
 
@@ -873,7 +873,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R * R]
 - move=> m; rewrite /bin_partial_sum.
   elim: m => [|m IHm].
     rewrite (_ : (fun _ : R * R => _) = (fun _ => (0 : R))); last first.
-      by apply: boolp.funext => xy; rewrite big_ord0.
+      by apply: funext => xy; rewrite big_ord0.
     exact: measurable_cst.
   rewrite (_ : (fun xy : R * R => \sum_(i < m.+1) _) =
     ((fun xy : R * R =>
@@ -882,7 +882,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R * R]
      (fun xy : R * R =>
       (interleave (bin_digits xy.1) (bin_digits xy.2) m)%:R *
         2%:R^-1 ^+ m.+1))%R); last first.
-    by apply: boolp.funext => xy; rewrite big_ord_recr.
+    by apply: funext => xy; rewrite big_ord_recr.
   apply: measurable_funD => //.
   apply: measurable_bool_scale.
   exact: measurable_interleave_digit.
@@ -901,7 +901,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R]
 - move=> m; rewrite /bin_partial_sum.
   elim: m => [|m IHm].
     rewrite (_ : (fun _ : R => _) = (fun _ => (0 : R))); last first.
-      by apply: boolp.funext => x; rewrite big_ord0.
+      by apply: funext => x; rewrite big_ord0.
     exact: measurable_cst.
   rewrite (_ : (fun x : R => \sum_(i < m.+1) _) =
     ((fun x : R =>
@@ -910,7 +910,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R]
      (fun x : R =>
       (deinterleave_even (bin_digits x) m)%:R *
         2%:R^-1 ^+ m.+1))%R); last first.
-    by apply: boolp.funext => x; rewrite big_ord_recr.
+    by apply: funext => x; rewrite big_ord_recr.
   apply: measurable_funD => //.
   apply: measurable_bool_scale.
   exact: measurable_deinterleave_even_digit.
@@ -929,7 +929,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R]
 - move=> m; rewrite /bin_partial_sum.
   elim: m => [|m IHm].
     rewrite (_ : (fun _ : R => _) = (fun _ => (0 : R))); last first.
-      by apply: boolp.funext => x; rewrite big_ord0.
+      by apply: funext => x; rewrite big_ord0.
     exact: measurable_cst.
   rewrite (_ : (fun x : R => \sum_(i < m.+1) _) =
     ((fun x : R =>
@@ -938,7 +938,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R]
      (fun x : R =>
       (deinterleave_odd (bin_digits x) m)%:R *
         2%:R^-1 ^+ m.+1))%R); last first.
-    by apply: boolp.funext => x; rewrite big_ord_recr.
+    by apply: funext => x; rewrite big_ord_recr.
   apply: measurable_funD => //.
   apply: measurable_bool_scale.
   exact: measurable_deinterleave_odd_digit.
@@ -980,7 +980,7 @@ have heps : (0 : R) < (d k)%:R * 2%:R^-1 ^+ k.+1.
 suff hle : (d k)%:R * 2%:R^-1 ^+ k.+1 <= bin_sum d.
   exact: (lt_le_trans heps hle).
 rewrite /bin_sum.
-apply: (@topology_structure.closed_cvg _ _ eventually _
+apply: (@closed_cvg _ _ eventually _
   (fun n => bin_partial_sum d n : R^o)
   (fun z : R => (d k)%:R * 2%:R^-1 ^+ k.+1 <= z)
   _ _ (bin_sum d)).
@@ -1009,7 +1009,7 @@ have hbps0 : forall n, bin_partial_sum (fun _ : nat => false) n = (0 : R).
 have hsum0 : bin_sum (bin_digits (phi x)) = 0.
   have hle : bin_sum (bin_digits (phi x)) <= 0.
     rewrite (bin_sum_ext hd0) /bin_sum.
-    apply: (@topology_structure.closed_cvg _ _ eventually _
+    apply: (@closed_cvg _ _ eventually _
       (fun n => bin_partial_sum (fun _ => false) n : R^o) (fun z : R => z <= 0)
       _ _ _).
     - exact: closed_le.
@@ -1167,16 +1167,16 @@ case: (eqVneq x 0) => [->|hx0].
 - rewrite invr0.
   suff -> : (fun n : nat => 0 / (0 * 0 + n.+1%:R^-1))
             = (fun _ : nat => (0 : R)).
-    exact: topology_structure.cvg_cst.
-  apply: boolp.funext => n; by rewrite mul0r.
+    exact: cvg_cst.
+  apply: funext => n; by rewrite mul0r.
 - have -> : x^-1 = x / (x * x).
     by rewrite invfM ?unitfE // [x * (x^-1 * x^-1)]mulrCA
                mulrV ?unitfE // mulr1.
-  apply: cvgM; first exact: topology_structure.cvg_cst.
+  apply: cvgM; first exact: cvg_cst.
   apply: cvgV.
     by rewrite mulf_neq0.
   rewrite -[X in _ --> X]addr0.
-  apply: cvgD; first exact: topology_structure.cvg_cst.
+  apply: cvgD; first exact: cvg_cst.
   exact: @cvg_harmonic.
 Qed.
 
@@ -1204,7 +1204,7 @@ apply: (@measurable_fun_cvg _ _ _ _ (fun n (x : R) =>
     by rewrite invr_gt0; exact: ltr0Sn.
   apply: cvgM; first exact: cvg_id.
   apply: cvgV => //.
-  apply: cvgD; last exact: topology_structure.cvg_cst.
+  apply: cvgD; last exact: cvg_cst.
   apply: cvgM; exact: cvg_id.
 - move=> x _; exact: inv_cvg_approx.
 Qed.

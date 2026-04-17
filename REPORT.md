@@ -3,8 +3,8 @@
 **Project:** QBS -- Quasi-Borel Spaces in Rocq/Coq
 **Repository:** `/home/rocq/QBS`
 **Date:** 2026-04-04
-**Status:** 415 proofs (414 Qed + 1 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 8,672 across 12 files
+**Status:** 412 proofs (411 Qed + 1 Defined), **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** 8,913 across 13 files
 
 > **Note**: The higher-order PPL development (`ppl_qbs.v`,
 > `ppl_kernel.v`, `showcase/ppl_examples.v`) is on the `ppl`
@@ -290,31 +290,26 @@ The three closure axioms are established by `expQ_Mx_comp`, `expQ_Mx_const`, `ex
 
 **File:** `theories/quasi_borel.v`, lines 273--323
 
-The two key theorems establishing cartesian closure:
+The key bundled definitions establishing cartesian closure:
 
-**Evaluation morphism:**
+**Evaluation morphism (bundled):**
 
 ```
-Lemma qbs_morphism_eval (X Y : qbsType R) :
-  @qbs_morphism (prodQ (expQ X Y) X) Y (fun p => qbs_hom_val p.1 p.2).
+Definition qbs_eval : @qbsHomType R (prodQ (expQ X Y) X) Y
 ```
 
 The proof constructs an auxiliary random element `gamma : mR -> realQ * X` pairing the identity with the second projection of `beta`, then applies the random element condition from `expQ`.
 
-**Currying morphism:**
+**Currying morphisms (bundled):**
 
 ```
-Lemma qbs_morphism_curry (X Y Z : qbsType R)
-  (f : qbs_hom (prodQ X Y) Z) :
-  @qbs_morphism X (expQ Y Z)
-    (fun x => @QBSHom Y Z (fun y => f (x, y))
-       (fun alpha hA => qbs_hom_proof f _
-          (prodQ_const_random x hA))).
+Definition qbs_curry : @qbsHomType R Y Z     (* curried at a point x *)
+Definition qbs_curry_morph : @qbsHomType R X (expQ Y Z)  (* full currying *)
 ```
 
 The proof shows that for any random element `beta` in X and `gamma` in `prodQ realQ Y`, the composition produces a random element of Z by applying `f`'s morphism property to the paired random element.
 
-Together, `qbs_morphism_eval` and `qbs_morphism_curry` establish that the category of QBS spaces is cartesian closed, solving the fundamental problem that the category of measurable spaces lacks exponentials.
+Together, `qbs_eval`, `qbs_curry`, and `qbs_curry_morph` establish that the category of QBS spaces is cartesian closed, solving the fundamental problem that the category of measurable spaces lacks exponentials.
 
 ### 1.8 Unit QBS
 
@@ -1607,25 +1602,26 @@ quasi_borel.v
 | Variance | Not formalized | `qbs_varianceE` + `qbs_varianceZ` |
 | E[distributions] | Not formalized | `qbs_expect_normal/bernoulli/uniform` |
 | Standard Borel inst. | Not formalized | N, bool, prod, ereal |
-| Lines | ~5000 | 8,019 |
+| Lines | ~5000 | 8,913 |
 
 ### 4.4 Statistics
 
 | File | Lines | Proofs |
 |------|------:|-------:|
-| `quasi_borel.v` | 746 | 52 |
-| `measure_qbs_adjunction.v` | 528 | 27 |
-| `coproduct_qbs.v` | 715 | 25 |
-| `probability_qbs.v` | 1,334 | 63 |
-| `pair_qbs_measure.v` | 603 | 17 |
-| `qbs_prob_quot.v` | 311 | 17 |
+| `quasi_borel.v` | 714 | 36 |
+| `measure_qbs_adjunction.v` | 520 | 27 |
+| `coproduct_qbs.v` | 716 | 25 |
+| `probability_qbs.v` | 1,328 | 63 |
+| `pair_qbs_measure.v` | 604 | 17 |
+| `qbs_prob_quot.v` | 312 | 17 |
 | `measure_as_qbs_measure.v` | 287 | 10 |
-| `normal_algebra.v` | 1,308 | 77 |
-| `showcase/bayesian_regression.v` | 925 | 34 |
+| `qbs_quotient.v` | 310 | 13 |
+| `normal_algebra.v` | 1,307 | 77 |
+| `showcase/bayesian_regression.v` | 926 | 34 |
 | `qbs_giry.v` | 194 | 12 |
-| `qbs_kernel.v` | 445 | 21 |
+| `qbs_kernel.v` | 419 | 21 |
 | `standard_borel.v` | 1,276 | 60 |
-| **Total** | **8,672** | **415** |
+| **Total** | **8,913** | **412** |
 
 **0 Admitted**, 0 custom axioms.
 

@@ -1,4 +1,4 @@
-(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C. *)
+(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra reals ereal topology
   classical_sets borel_hierarchy measure kernel probability
@@ -8,32 +8,26 @@ From mathcomp Require Import all_boot all_algebra reals ereal topology
 From QBS Require Import quasi_borel measure_qbs_adjunction
   probability_qbs qbs_giry.
 
-(**md*************************************************************)
-(* # Bridge: QBS Probability and S-Finite Kernels               *)
-(*                                                               *)
-(* Following Heunen-Kammar-Staton-Yang (2017), we connect the   *)
-(* QBS probability monad to the s-finite kernel formalism of    *)
-(* mathcomp-analysis 1.16.0.                                    *)
-(*                                                               *)
-(* Key results:                                                  *)
-(* ```                                                           *)
-(*   probability_fin_num_fun   == probability measures have      *)
-(*                                finite values                  *)
-(*   prob_sfinite_measure      == probability => s-finite        *)
-(*   qbs_prob_sfinite          == QBS probs are s-finite via     *)
-(*                                qbs_to_giry                    *)
-(*   qbs_morph_kdirac          == QBS morph on std Borel gives   *)
-(*                                a Dirac probability kernel     *)
-(*   qbs_to_giry_map           == qbs_to_giry commutes with     *)
-(*                                pushforward (monadP_map)       *)
-(*   kdirac_comp_noparam       == composition of Dirac kernels   *)
-(*                                is the Dirac of composition    *)
-(*   kernel_round_trip         == qbs_to_giry o giry_to_qbs = id*)
-(*   qbs_prob_equiv_giry       == equiv QBS probs => same Giry   *)
-(*   kernel_integration        == QBS integral = Lebesgue vs     *)
-(*                                qbs_to_giry                    *)
-(* ```                                                           *)
-(*****************************************************************)
+(**md**************************************************************************)
+(* # Bridge: QBS Probability and S-Finite Kernels                            *)
+(*                                                                           *)
+(* Following Heunen-Kammar-Staton-Yang (2017), we connect the QBS            *)
+(* probability monad to the s-finite kernel formalism of                     *)
+(* mathcomp-analysis 1.16.0.                                                 *)
+(*                                                                           *)
+(* Key results:                                                              *)
+(* ```                                                                       *)
+(*   probability_fin_num_fun == probability measures have finite values       *)
+(*   prob_sfinite_measure == probability => s-finite                         *)
+(*   qbs_prob_sfinite == QBS probs are s-finite via qbs_to_giry              *)
+(*   qbs_morph_kdirac == QBS morph on std Borel gives Dirac kernel           *)
+(*   qbs_to_giry_map == qbs_to_giry commutes with monadP_map                *)
+(*   kdirac_comp_noparam == composition of Dirac kernels                     *)
+(*   kernel_round_trip == qbs_to_giry o giry_to_qbs = id                    *)
+(*   qbs_prob_equiv_giry == equiv QBS probs => same Giry                     *)
+(*   kernel_integration == QBS integral = Lebesgue vs qbs_to_giry           *)
+(* ```                                                                       *)
+(******************************************************************************)
 
 Import GRing.Theory Num.Def Num.Theory measurable_realfun.
 
@@ -53,7 +47,7 @@ Local Notation mR := (measurableTypeR R).
 (** A probability measure is [fin_num_fun]: every
     measurable set receives a finite value. *)
 Lemma probability_fin_num_fun
-    (d : measure_display) (T : measurableType d)
+    d (T : measurableType d)
     (P : probability T R) :
   fin_num_fun P.
 Proof. by move=> U mU; exact: fin_num_measure. Qed.
@@ -62,7 +56,7 @@ Proof. by move=> U mU; exact: fin_num_measure. Qed.
     Probabilities are finite, hence sigma-finite,
     hence s-finite. *)
 Lemma prob_sfinite_measure
-    (d : measure_display) (T : measurableType d)
+    d (T : measurableType d)
     (P : probability T R) :
   sfinite_measure P.
 Proof.
@@ -74,17 +68,15 @@ Qed.
 
 (** The Giry image of a QBS probability is s-finite. *)
 Lemma qbs_prob_sfinite
-    (d : measure_display) (M : measurableType d)
-    (p : qbs_prob (@R_qbs R _ M)) :
+    d (M : measurableType d)
+    (p : qbs_prob (R_qbs R M)) :
   sfinite_measure (qbs_to_giry p).
 Proof. exact: prob_sfinite_measure. Qed.
 
 (** ** Pushforward preserves probability *)
 
 Section pushforward_prob.
-Variables (d1 d2 : measure_display).
-Variables (M1 : measurableType d1).
-Variables (M2 : measurableType d2).
+Context d1 d2 (M1 : measurableType d1) (M2 : measurableType d2).
 
 (** The pushforward of a probability through a
     measurable function has total mass 1. *)
@@ -102,15 +94,13 @@ End pushforward_prob.
 (** ** Dirac kernel: kdirac unfolds to dirac *)
 
 Section kdirac_unfold.
-Variables (d1 d2 : measure_display).
-Variables (M1 : measurableType d1).
-Variables (M2 : measurableType d2).
+Context d1 d2 (M1 : measurableType d1) (M2 : measurableType d2).
 
 (** [kdirac hf x U = dirac (f x) U]. *)
 Lemma kdiracE
     (f : M1 -> M2) (hf : measurable_fun setT f)
     (x : M1) (U : set M2) :
-  kdirac hf x U = @dirac _ M2 (f x) R U.
+  kdirac hf x U = @dirac _ _ (f x) R U.
 Proof. by []. Qed.
 
 End kdirac_unfold.
@@ -118,7 +108,7 @@ End kdirac_unfold.
 (** ** QBS return and Dirac kernel *)
 
 Section qbs_return_dirac.
-Variables (d : measure_display) (M : measurableType d).
+Context d (M : measurableType d).
 Variables (encode : M -> mR) (decode : mR -> M).
 Hypothesis encode_meas : measurable_fun setT encode.
 Hypothesis decode_meas : measurable_fun setT decode.
@@ -132,12 +122,12 @@ Lemma qbs_return_to_dirac
     (x : M) (U : set M) (mU : measurable U) :
   qbs_to_giry
     (giry_to_qbs encode_meas decode_meas
-      [the probability M R of @dirac _ M x R]) U =
-  @dirac _ M x R U.
+      [the probability M R of @dirac _ _ x R]) U =
+  @dirac _ _ x R U.
 Proof.
-exact: (@qbs_to_giryK R _ M encode decode
+exact: (qbs_to_giryK
   encode_meas decode_meas decode_encode
-  [the probability M R of @dirac _ M x R] U mU).
+  [the probability M R of @dirac _ _ x R] mU).
 Qed.
 
 End qbs_return_dirac.
@@ -145,9 +135,7 @@ End qbs_return_dirac.
 (** ** QBS morphisms to kernels via standard Borel *)
 
 Section qbs_morph_kernel.
-Variables (d1 d2 : measure_display).
-Variables (M1 : measurableType d1).
-Variables (M2 : measurableType d2).
+Context d1 d2 (M1 : measurableType d1) (M2 : measurableType d2).
 Hypothesis sb1 : standard_borel_wit R M1.
 Hypothesis sb2 : standard_borel_wit R M2.
 
@@ -157,7 +145,7 @@ Hypothesis sb2 : standard_borel_wit R M2.
 Definition measfun_kernel
     (f : M1 -> M2) (hf : measurable_fun setT f) :
   M1 -> measure M2 R :=
-  @kdirac _ _ _ _ R f hf.
+  kdirac hf.
 
 (** The Dirac kernel has total mass 1. *)
 Lemma measfun_kernel_prob
@@ -172,8 +160,7 @@ Qed.
     measurable (by full faithfulness of R). *)
 Lemma qbs_morph_is_measurable
     (f : M1 -> M2)
-    (hf : @qbs_morphism R
-      (@R_qbs R _ M1) (@R_qbs R _ M2) f) :
+    (hf : @qbs_morphism R (R_qbs R M1) (R_qbs R M2) f) :
   measurable_fun setT f.
 Proof.
 exact: (R_full_faithful_standard_borel sb1 sb2 hf).
@@ -184,16 +171,14 @@ Qed.
     probability kernels on standard Borel spaces. *)
 Definition qbs_morph_kdirac
     (f : M1 -> M2)
-    (hf : @qbs_morphism R
-      (@R_qbs R _ M1) (@R_qbs R _ M2) f) :
+    (hf : @qbs_morphism R (R_qbs R M1) (R_qbs R M2) f) :
   M1 -> measure M2 R :=
-  @kdirac _ _ _ _ R f
+  kdirac
     (R_full_faithful_standard_borel sb1 sb2 hf).
 
 Lemma qbs_morph_kdirac_prob
     (f : M1 -> M2)
-    (hf : @qbs_morphism R
-      (@R_qbs R _ M1) (@R_qbs R _ M2) f)
+    (hf : @qbs_morphism R (R_qbs R M1) (R_qbs R M2) f)
     (x : M1) :
   qbs_morph_kdirac hf x setT = 1.
 Proof.
@@ -205,9 +190,7 @@ End qbs_morph_kernel.
 (** ** Kernel measurability of the Dirac kernel *)
 
 Section kdirac_measurability.
-Variables (d1 d2 : measure_display).
-Variables (M1 : measurableType d1).
-Variables (M2 : measurableType d2).
+Context d1 d2 (M1 : measurableType d1) (M2 : measurableType d2).
 
 (** For each measurable U, x |-> kdirac(f)(x)(U) is
     a measurable function (the kernel condition). *)
@@ -215,7 +198,7 @@ Lemma kdirac_measurable_kernel
     (f : M1 -> M2) (hf : measurable_fun setT f)
     (U : set M2) (mU : measurable U) :
   measurable_fun setT
-    (fun x : M1 => @kdirac _ _ _ _ R f hf x U).
+    (fun x : M1 => @kdirac _ _ _ _ R _ hf x U).
 Proof. exact: measurable_kernel. Qed.
 
 End kdirac_measurability.
@@ -223,17 +206,17 @@ End kdirac_measurability.
 (** ** Constant kernel from a QBS probability *)
 
 Section const_kernel.
-Variables (d : measure_display) (M : measurableType d).
+Context d (M : measurableType d).
 
 (** A single QBS probability gives a constant kernel:
     every input maps to the same probability on M. *)
 Definition const_kernel_of_qbs
-    (p : qbs_prob (@R_qbs R _ M)) :
+    (p : qbs_prob (R_qbs R M)) :
   mR -> measure M R :=
   fun _ => qbs_to_giry p.
 
 Lemma const_kernel_of_qbs_measurable
-    (p : qbs_prob (@R_qbs R _ M))
+    (p : qbs_prob (R_qbs R M))
     (U : set M) (mU : measurable U) :
   measurable_fun setT
     (fun x : mR => const_kernel_of_qbs p x U).
@@ -245,21 +228,21 @@ End const_kernel.
 (** ** Equivalence preservation *)
 
 Section equiv_kernel.
-Variables (d : measure_display) (M : measurableType d).
+Context d (M : measurableType d).
 
 (** Equivalent QBS probabilities yield the same
     probability measure via qbs_to_giry. *)
 Lemma qbs_prob_equiv_giry
-    (p1 p2 : qbs_prob (@R_qbs R _ M))
+    (p1 p2 : qbs_prob (R_qbs R M))
     (hequiv :
-      qbs_prob_equiv (@R_qbs R _ M) p1 p2) :
+      qbs_prob_equiv (R_qbs R M) p1 p2) :
   forall U : set M, measurable U ->
     qbs_to_giry p1 U = qbs_to_giry p2 U.
 Proof.
 move=> U mU.
 rewrite /qbs_to_giry /qbs_to_giry_mu /=.
 apply: hequiv.
-exact: (@adjunction_counit R _ M U mU).
+exact: adjunction_counit mU.
 Qed.
 
 End equiv_kernel.
@@ -267,19 +250,17 @@ End equiv_kernel.
 (** ** Pushforward commutes with qbs_to_giry *)
 
 Section giry_pushforward.
-Variables (d1 d2 : measure_display).
-Variables (M1 : measurableType d1).
-Variables (M2 : measurableType d2).
+Context d1 d2 (M1 : measurableType d1) (M2 : measurableType d2).
 
 (** qbs_to_giry(monadP_map(f,p)) = pushforward of
     qbs_to_giry(p) through f. *)
 Lemma qbs_to_giry_map
     (f : {mfun M1 >-> M2})
-    (p : qbs_prob (@R_qbs R _ M1))
+    (p : qbs_prob (R_qbs R M1))
     (U : set M2) (mU : measurable U) :
   qbs_to_giry
-    (monadP_map (@R_qbs R _ M1)
-      (@R_qbs R _ M2) f (R_qbs_morph f) p) U =
+    (monadP_map (R_qbs R M1)
+      (R_qbs R M2) f (R_qbs_morph f) p) U =
   pushforward (qbs_to_giry p) f U.
 Proof.
 by rewrite /pushforward /qbs_to_giry
@@ -290,12 +271,12 @@ Qed.
     equals the qbs_to_giry_mu of the mapped triple. *)
 Lemma qbs_giry_pushforward
     (f : {mfun M1 >-> M2})
-    (p : qbs_prob (@R_qbs R _ M1))
+    (p : qbs_prob (R_qbs R M1))
     (U : set M2) (mU : measurable U) :
   pushforward (qbs_to_giry p) f U =
-  @qbs_to_giry_mu R _ M2
-    (monadP_map (@R_qbs R _ M1)
-      (@R_qbs R _ M2) f (R_qbs_morph f) p) U.
+  qbs_to_giry_mu
+    (monadP_map (R_qbs R M1)
+      (R_qbs R M2) f (R_qbs_morph f) p) U.
 Proof.
 by rewrite /pushforward /qbs_to_giry_mu
            /monadP_map /=.
@@ -306,16 +287,13 @@ End giry_pushforward.
 (** ** Composition of Dirac kernels *)
 
 Section dirac_comp.
-Variables (d1 d2 : measure_display).
-Variables (M1 : measurableType d1).
-Variables (M2 : measurableType d2).
+Context d1 d2 (M1 : measurableType d1) (M2 : measurableType d2).
 
 (** kdirac(g o f)(x) = kdirac(g)(f(x)), i.e.,
     the Dirac kernel of a composition is the
     pointwise composition. *)
 Lemma kdirac_comp
-    (d3 : measure_display)
-    (M3 : measurableType d3)
+    d3 (M3 : measurableType d3)
     (f : M1 -> M2) (hf : measurable_fun setT f)
     (g : M2 -> M3) (hg : measurable_fun setT g)
     (x : M1) (U : set M3) (mU : measurable U) :
@@ -328,20 +306,18 @@ Proof. by rewrite /kdirac /=. Qed.
     Dirac of the composed function: the
     functoriality of deterministic kernels. *)
 Lemma kdirac_comp_noparam
-    (d3 : measure_display)
-    (M3 : measurableType d3)
+    d3 (M3 : measurableType d3)
     (f : M1 -> M2) (hf : measurable_fun setT f)
     (g : M2 -> M3) (hg : measurable_fun setT g)
     (x : M1) (U : set M3) (mU : measurable U) :
   kcomp_noparam (kdirac hf) (kdirac hg) x U =
-  @dirac _ M3 (g (f x)) R U.
+  @dirac _ _ (g (f x)) R U.
 Proof.
 rewrite /kcomp_noparam /=.
 have hm : measurable_fun setT
-    (fun y : M2 => @dirac _ M3 (g y) R U).
+    (fun y : M2 => @dirac _ _ (g y) R U).
   exact: measurableT_comp (measurable_fun_dirac mU) hg.
-rewrite (@integral_dirac _ M2 (f x) R setT
-  measurableT _ hm).
+rewrite (integral_dirac (f x) measurableT hm).
 by rewrite diracT mul1e.
 Qed.
 
@@ -350,9 +326,7 @@ End dirac_comp.
 (** ** Bind of qbs_return via a measurable function *)
 
 Section bind_return.
-Variables (d1 d2 : measure_display).
-Variables (M1 : measurableType d1).
-Variables (M2 : measurableType d2).
+Context d1 d2 (M1 : measurableType d1) (M2 : measurableType d2).
 
 (** Binding qbs_return(x) with (y |-> return(f y))
     is equivalent to qbs_return(f x).
@@ -361,18 +335,18 @@ Variables (M2 : measurableType d2).
 Lemma qbs_bind_return_map
     (f : M1 -> M2)
     (hf : measurable_fun setT f)
-    (x : @R_qbs R _ M1)
+    (x : R_qbs R M1)
     (mu : probability mR R) :
-  @qbs_prob_equiv R (@R_qbs R _ M2)
-    (qbs_bind (@R_qbs R _ M1) (@R_qbs R _ M2)
-      (qbs_return (@R_qbs R _ M1) x mu)
-      (fun y : @R_qbs R _ M1 =>
-        qbs_return (@R_qbs R _ M2) (f y) mu)
+  qbs_prob_equiv (R_qbs R M2)
+    (qbs_bind (R_qbs R M1) (R_qbs R M2)
+      (qbs_return (R_qbs R M1) x mu)
+      (fun y : R_qbs R M1 =>
+        qbs_return (R_qbs R M2) (f y) mu)
       (qbs_bind_alpha_random_const x
-        (fun y : @R_qbs R _ M1 =>
-          qbs_return (@R_qbs R _ M2)
+        (fun y : R_qbs R M1 =>
+          qbs_return (R_qbs R M2)
             (f y) mu)))
-    (qbs_return (@R_qbs R _ M2) (f x) mu).
+    (qbs_return (R_qbs R M2) (f x) mu).
 Proof. by move=> U hU. Qed.
 
 End bind_return.
@@ -380,20 +354,20 @@ End bind_return.
 (** ** Integration correspondence *)
 
 Section integration.
-Variables (d : measure_display) (M : measurableType d).
+Context d (M : measurableType d).
 
 (** Integration against qbs_to_giry equals the
     QBS integral (restates qbs_integral_giry). *)
 Lemma kernel_integration
-    (p : qbs_prob (@R_qbs R _ M))
+    (p : qbs_prob (R_qbs R M))
     (f : M -> \bar R)
     (f_meas : measurable_fun setT f)
     (f_int : (qbs_prob_mu p).-integrable setT
       (f \o qbs_prob_alpha p)) :
-  @qbs_integral R (@R_qbs R _ M) p f =
+  qbs_integral (R_qbs R M) p f =
   \int[qbs_to_giry p]_y f y.
 Proof.
-exact: (@qbs_integral_giry R _ M p f f_meas f_int).
+exact: (qbs_integral_giry f_meas f_int).
 Qed.
 
 End integration.
@@ -401,7 +375,7 @@ End integration.
 (** ** Standard Borel round-trip *)
 
 Section round_trip.
-Variables (d : measure_display) (M : measurableType d).
+Context d (M : measurableType d).
 Variables (encode : M -> mR) (decode : mR -> M).
 Hypothesis encode_meas : measurable_fun setT encode.
 Hypothesis decode_meas : measurable_fun setT decode.
@@ -413,7 +387,7 @@ Lemma kdirac_round_trip
     (x : M) (U : set M) :
   measurable U ->
   kdirac decode_meas (encode x) U =
-  @dirac _ M x R U.
+  @dirac _ _ x R U.
 Proof. by move=> mU; rewrite /kdirac /= decode_encode. Qed.
 
 (** qbs_to_giry(giry_to_qbs(P))(U) = P(U). *)
@@ -424,8 +398,8 @@ Lemma kernel_round_trip
     (giry_to_qbs encode_meas decode_meas P) U =
   P U.
 Proof.
-exact: (@qbs_to_giryK R _ M encode decode
-  encode_meas decode_meas decode_encode P U mU).
+exact: (qbs_to_giryK
+  encode_meas decode_meas decode_encode P mU).
 Qed.
 
 (** Composing encode and decode Dirac kernels via
@@ -434,7 +408,7 @@ Lemma encode_decode_kcomp_noparam
     (x : M) (U : set M) (mU : measurable U) :
   kcomp_noparam (kdirac encode_meas)
     (kdirac decode_meas) x U =
-  @dirac _ M x R U.
+  @dirac _ _ x R U.
 Proof.
 rewrite kdirac_comp_noparam //.
 by rewrite decode_encode.

@@ -81,7 +81,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \end{definition}
 
 \begin{lemma}[Identity Morphism]\label{lem:qbs_morphism_id}
-  \rocq{QBS.quasi_borel.qbs_morphism_id}
+  \rocq{QBS.quasi_borel.qbs_id}
   \rocqok
   \uses{def:qbs_morphism}
   The identity function $\mathrm{id} : X \to X$ is a QBS morphism.
@@ -89,7 +89,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Composition of Morphisms]\label{lem:qbs_morphism_comp}
-  \rocq{QBS.quasi_borel.qbs_morphism_comp}
+  \rocq{QBS.quasi_borel.qbs_comp}
   \rocqok
   \uses{def:qbs_morphism}
   If $f : X \to Y$ and $g : Y \to Z$ are QBS morphisms, then
@@ -98,7 +98,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Constant Morphism]\label{lem:qbs_morphism_const}
-  \rocq{QBS.quasi_borel.qbs_morphism_const}
+  \rocq{QBS.quasi_borel.qbs_const}
   \rocqok
   \uses{def:qbs_morphism}
   For any $y : Y$, the constant function $\lambda x.\; y$ is a QBS morphism.
@@ -175,7 +175,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \end{definition}
 
 \begin{lemma}[First Projection Morphism]\label{lem:qbs_morphism_fst}
-  \rocq{QBS.quasi_borel.qbs_morphism_fst}
+  \rocq{QBS.quasi_borel.qbs_fst}
   \rocqok
   \uses{def:prodQ, def:qbs_morphism}
   $\mathrm{fst} : X \times Y \to X$ is a QBS morphism.
@@ -183,7 +183,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Second Projection Morphism]\label{lem:qbs_morphism_snd}
-  \rocq{QBS.quasi_borel.qbs_morphism_snd}
+  \rocq{QBS.quasi_borel.qbs_snd}
   \rocqok
   \uses{def:prodQ, def:qbs_morphism}
   $\mathrm{snd} : X \times Y \to Y$ is a QBS morphism.
@@ -191,7 +191,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Pairing Morphism]\label{lem:qbs_morphism_pair}
-  \rocq{QBS.quasi_borel.qbs_morphism_pair}
+  \rocq{QBS.quasi_borel.qbs_pair}
   \rocqok
   \uses{def:prodQ, def:qbs_morphism}
   If $f : W \to X$ and $g : W \to Y$ are QBS morphisms, then
@@ -216,7 +216,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Product Swap]\label{lem:qbs_morphism_swap}
-  \rocq{QBS.quasi_borel.qbs_morphism_swap}
+  \rocq{QBS.quasi_borel.qbs_swap}
   \rocqok
   \uses{def:prodQ, def:qbs_morphism}
   $(x, y) \mapsto (y, x)$ is a QBS morphism $X \times Y \to Y \times X$.
@@ -224,7 +224,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Product Associator (left-to-right)]\label{lem:qbs_morphism_assoc_lr}
-  \rocq{QBS.quasi_borel.qbs_morphism_assoc_lr}
+  \rocq{QBS.quasi_borel.qbs_assoc_lr}
   \rocqok
   \uses{def:prodQ, def:qbs_morphism}
   $((x,y),z) \mapsto (x,(y,z))$ is a QBS morphism.
@@ -232,7 +232,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Product Associator (right-to-left)]\label{lem:qbs_morphism_assoc_rl}
-  \rocq{QBS.quasi_borel.qbs_morphism_assoc_rl}
+  \rocq{QBS.quasi_borel.qbs_assoc_rl}
   \rocqok
   \uses{def:prodQ, def:qbs_morphism}
   $(x,(y,z)) \mapsto ((x,y),z)$ is a QBS morphism.
@@ -253,7 +253,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \end{definition}
 
 \begin{theorem}[Evaluation Morphism]\label{thm:qbs_morphism_eval}
-  \rocq{QBS.quasi_borel.qbs_morphism_eval}
+  \rocq{QBS.quasi_borel.qbs_eval}
   \rocqok
   \uses{def:expQ, def:prodQ, def:qbs_morphism}
   Evaluation $(f, x) \mapsto f(x)$ is a QBS morphism
@@ -262,7 +262,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Currying Morphism]\label{thm:qbs_morphism_curry}
-  \rocq{QBS.quasi_borel.qbs_morphism_curry}
+  \rocq{QBS.quasi_borel.qbs_curry_morph}
   \rocqok
   \uses{def:expQ, def:prodQ, def:qbs_morphism, lem:prodQ_const_random}
   If $f : X \times Y \to Z$ is a QBS morphism, then
@@ -279,21 +279,12 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Exponential Composition]\label{lem:qbs_morphism_exp_comp}
-  \rocq{QBS.quasi_borel.qbs_morphism_exp_comp}
+  \rocq{QBS.quasi_borel.qbs_exp_comp}
   \rocqok
   \uses{def:expQ, def:prodQ, def:qbs_morphism}
   Given QBS morphisms $f : W \to (X \Rightarrow Y)$ and $g : W \to X$,
   the pointwise application $w \mapsto f(w)(g(w))$ is a QBS morphism
   $W \to Y$.
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
-
-\begin{lemma}[Argument Swap]\label{lem:qbs_morphism_arg_swap}
-  \rocq{QBS.quasi_borel.qbs_morphism_arg_swap}
-  \rocqok
-  \uses{def:expQ, def:qbs_morphism}
-  Given a QBS morphism $f : X \to (Y \Rightarrow Z)$, the transposition
-  $y \mapsto (\lambda x.\; f(x)(y))$ is a QBS morphism $Y \to (X \Rightarrow Z)$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -309,7 +300,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \end{definition}
 
 \begin{lemma}[Terminal Morphism]\label{lem:qbs_morphism_unit}
-  \rocq{QBS.quasi_borel.qbs_morphism_unit}
+  \rocq{QBS.quasi_borel.qbs_unit}
   \rocqok
   \uses{def:unitQ, def:qbs_morphism}
   The unique map $X \to \mathtt{unit}$ is a QBS morphism (terminality).
@@ -343,7 +334,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \section{Arithmetic Morphisms}\label{sec:arithmetic}
 
 \begin{lemma}[Addition Morphism]\label{lem:qbs_morphism_add}
-  \rocq{QBS.quasi_borel.qbs_morphism_add}
+  \rocq{QBS.quasi_borel.qbs_add}
   \rocqok
   \uses{def:prodQ, def:concrete_qbs, def:qbs_morphism}
   $(x, y) \mapsto x + y$ is a QBS morphism
@@ -352,7 +343,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Multiplication Morphism]\label{lem:qbs_morphism_mul}
-  \rocq{QBS.quasi_borel.qbs_morphism_mul}
+  \rocq{QBS.quasi_borel.qbs_mul}
   \rocqok
   \uses{def:prodQ, def:concrete_qbs, def:qbs_morphism}
   $(x, y) \mapsto x \cdot y$ is a QBS morphism
@@ -361,7 +352,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Less-Than Morphism]\label{lem:qbs_morphism_ltr}
-  \rocq{QBS.quasi_borel.qbs_morphism_ltr}
+  \rocq{QBS.quasi_borel.qbs_ltr}
   \rocqok
   \uses{def:prodQ, def:concrete_qbs, def:qbs_morphism}
   $(x, y) \mapsto (x < y)$ is a QBS morphism
@@ -370,7 +361,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Boolean Negation Morphism]\label{lem:qbs_morphism_negb}
-  \rocq{QBS.quasi_borel.qbs_morphism_negb}
+  \rocq{QBS.quasi_borel.qbs_negb}
   \rocqok
   \uses{def:concrete_qbs, def:qbs_morphism}
   $\mathtt{negb}$ is a QBS morphism $\mathtt{boolQ} \to \mathtt{boolQ}$.

@@ -28,6 +28,7 @@ Import GRing.Theory Num.Def Num.Theory.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
+Import boolp.
 
 Local Open Scope classical_set_scope.
 
@@ -87,7 +88,7 @@ Arguments qps_return {X}.
    Requires the diagonal randomness proof, just like qbs_bind. *)
 Definition qps_bind (X Y : qbsType R) (p : qbs_prob_space X)
   (f : X -> qbs_prob Y)
-  (hdiag : @qbs_Mx R Y
+  (hdiag : qbs_Mx
     (fun r => qbs_prob_alpha (f (qbs_prob_alpha (qps_repr p) r)) r)) :
   qbs_prob_space Y :=
   qps_of (qbs_bind X Y (qps_repr p) f hdiag).
@@ -111,7 +112,7 @@ Arguments qps_integral {X}.
 
 (** Functorial map lifted to the quotient. *)
 Definition qps_map (X Y : qbsType R) (f : X -> Y)
-  (hf : @qbs_morphism R X Y f) (p : qbs_prob_space X) :
+  (hf : qbs_morphism f) (p : qbs_prob_space X) :
   qbs_prob_space Y :=
   qps_of (monadP_map X Y f hf (qps_repr p)).
 
@@ -142,7 +143,7 @@ Qed.
 
 (* Map respects qps_eq *)
 Lemma qps_map_equiv (X Y : qbsType R) (f : X -> Y)
-  (hf : @qbs_morphism R X Y f)
+  (hf : qbs_morphism f)
   (p1 p2 : qbs_prob_space X) :
   qps_eq p1 p2 -> qps_eq (qps_map f hf p1) (qps_map f hf p2).
 Proof.
@@ -159,7 +160,7 @@ Qed.
 (* Left unit: bind (return x) f ~ f x *)
 Lemma qps_bind_returnl (X Y : qbsType R) (x : X)
   (f : X -> qbs_prob Y)
-  (hf : @qbs_morphism R X (monadP Y) f) :
+  (hf : qbs_morphism f) :
   qps_eq
     (qps_bind (qps_return x (qbs_prob_mu (f x))) f
       (qbs_bind_alpha_random_const x f))
@@ -178,12 +179,12 @@ Proof. exact: qbs_bind_returnr. Qed.
 (* Associativity *)
 Lemma qps_bindA (X Y Z : qbsType R) (m : qbs_prob_space X)
   (f : X -> qbs_prob Y) (g : Y -> qbs_prob Z)
-  (hf_diag : @qbs_Mx R Y
+  (hf_diag : qbs_Mx
     (fun r => qbs_prob_alpha (f (qbs_prob_alpha (qps_repr m) r)) r))
   (hg_bind : forall (p : qbs_prob Y),
-    @qbs_Mx R Z
+    qbs_Mx
       (fun r => qbs_prob_alpha (g (qbs_prob_alpha p r)) r))
-  (hfg_diag : @qbs_Mx R Z
+  (hfg_diag : qbs_Mx
     (fun r => qbs_prob_alpha
       (g (qbs_prob_alpha (f (qbs_prob_alpha (qps_repr m) r)) r)) r)) :
   qps_eq
@@ -213,7 +214,7 @@ Arguments qps_prob_event {X}.
 (* Probability of events respects qps_eq for sigma_Mx sets *)
 Lemma qps_prob_event_equiv (X : qbsType R) (p1 p2 : qbs_prob_space X)
   (U : set X) :
-  @sigma_Mx R X U ->
+  sigma_Mx U ->
   qps_eq p1 p2 ->
   qps_prob_event p1 U = qps_prob_event p2 U.
 Proof.
@@ -265,7 +266,7 @@ Proof. by []. Qed.
 
 Lemma qps_integral_bind (X Y : qbsType R) (p : qbs_prob_space X)
   (f : X -> qbs_prob Y)
-  (hdiag : @qbs_Mx R Y
+  (hdiag : qbs_Mx
     (fun r => qbs_prob_alpha (f (qbs_prob_alpha (qps_repr p) r)) r))
   (h : Y -> \bar R) :
   qps_integral (qps_bind p f hdiag) h =
@@ -282,7 +283,7 @@ Proof. by []. Qed.
 
 Definition qps_pick_repr (X : qbsType R) (p : qbs_prob_space X) :
   qbs_prob_space X :=
-  QPS (proj1_sig (boolp.constructive_indefinite_description
+  QPS (proj1_sig (constructive_indefinite_description
     (ex_intro (fun q => qbs_prob_equiv X (qps_repr p) q)
       (qps_repr p) (qbs_prob_equivxx (qps_repr p))))).
 
@@ -290,7 +291,7 @@ Lemma qps_pick_repr_equiv (X : qbsType R) (p : qbs_prob_space X) :
   qps_eq p (qps_pick_repr p).
 Proof.
 rewrite /qps_pick_repr /qps_eq /=.
-exact: (proj2_sig (boolp.constructive_indefinite_description _ )).
+exact: (proj2_sig (constructive_indefinite_description _ )).
 Qed.
 
 End qbs_prob_quot.

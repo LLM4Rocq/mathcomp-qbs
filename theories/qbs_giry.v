@@ -43,8 +43,8 @@ Local Notation mR := (measurableTypeR R).
     pushforward mu o alpha^{-1} is a probability on M. *)
 
 Section qbs_to_giry.
-Variables (d : measure_display) (M : measurableType d).
-Variable (p : qbs_prob (@R_qbs R _ M)).
+Context d (M : measurableType d).
+Variable (p : qbs_prob (R_qbs R M)).
 
 Let alpha := qbs_prob_alpha p.
 Let mu : probability mR R := qbs_prob_mu p.
@@ -89,8 +89,8 @@ HB.instance Definition _ := Measure_isProbability.Build _ _ _
 End qbs_to_giry.
 
 (** Forward: QBS probability to Giry probability. *)
-Definition qbs_to_giry (d : measure_display) (M : measurableType d)
-    (p : qbs_prob (@R_qbs R _ M)) : probability M R :=
+Definition qbs_to_giry d (M : measurableType d)
+    (p : qbs_prob (R_qbs R M)) : probability M R :=
   [the probability M R of qbs_to_giry_mu p].
 
 (** Backward map: probability M R -> qbs_prob(R(M)).
@@ -100,7 +100,7 @@ Definition qbs_to_giry (d : measure_display) (M : measurableType d)
     is a QBS probability on R(M). *)
 
 Section giry_to_qbs.
-Variables (d : measure_display) (M : measurableType d).
+Context d (M : measurableType d).
 Variables (encode : M -> mR) (decode : mR -> M).
 Hypothesis encode_meas : measurable_fun setT encode.
 Hypothesis decode_meas : measurable_fun setT decode.
@@ -136,15 +136,15 @@ HB.instance Definition _ := Measure_isProbability.Build _ _ _
   pf_mu pf_mu_setT.
 
 (** Backward: Giry probability to QBS probability. *)
-Definition giry_to_qbs : qbs_prob (@R_qbs R _ M) :=
-  @mkQBSProb R (@R_qbs R _ M) decode
+Definition giry_to_qbs : qbs_prob (R_qbs R M) :=
+  mkQBSProb decode
     [the probability mR R of pf_mu] decode_meas.
 
 End giry_to_qbs.
 
 (** Round-trip: qbs_to_giry o giry_to_qbs = id. *)
 Lemma qbs_to_giryK
-    (d : measure_display) (M : measurableType d)
+    d (M : measurableType d)
     (encode : M -> mR) (decode : mR -> M)
     (encode_meas : measurable_fun setT encode)
     (decode_meas : measurable_fun setT decode)
@@ -160,13 +160,13 @@ Qed.
 
 (** Round-trip: giry_to_qbs o qbs_to_giry ~ id. *)
 Lemma giry_to_qbsK
-    (d : measure_display) (M : measurableType d)
+    d (M : measurableType d)
     (encode : M -> mR) (decode : mR -> M)
     (encode_meas : measurable_fun setT encode)
     (decode_meas : measurable_fun setT decode)
     (decode_encode : forall x : M, decode (encode x) = x)
-    (p : qbs_prob (@R_qbs R _ M)) :
-  @qbs_prob_equiv R (@R_qbs R _ M)
+    (p : qbs_prob (R_qbs R M)) :
+  qbs_prob_equiv (R_qbs R M)
     (giry_to_qbs encode_meas decode_meas (qbs_to_giry p))
     p.
 Proof.
@@ -178,12 +178,12 @@ Qed.
 
 (** QBS integral = Lebesgue integral against qbs_to_giry. *)
 Lemma qbs_integral_giry
-    (d : measure_display) (M : measurableType d)
-    (p : qbs_prob (@R_qbs R _ M))
+    d (M : measurableType d)
+    (p : qbs_prob (R_qbs R M))
     (f : M -> \bar R)
     (f_meas : measurable_fun setT f)
     (f_int : (qbs_prob_mu p).-integrable setT (f \o qbs_prob_alpha p)) :
-  @qbs_integral R (@R_qbs R _ M) p f = \int[qbs_to_giry p]_y f y.
+  qbs_integral (R_qbs R M) p f = \int[qbs_to_giry p]_y f y.
 Proof.
 rewrite /qbs_integral.
 rewrite -(@integral_pushforward _ _ _ M R (qbs_prob_alpha p)

@@ -1,6 +1,6 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_algebra reals ereal topology
+From mathcomp Require Import all_boot all_algebra reals ereal topology boolp
   classical_sets normedtype numfun measure lebesgue_integral
   lebesgue_integral_fubini lebesgue_stieltjes_measure probability
   hoelder functions.
@@ -25,6 +25,7 @@ Import GRing.Theory Num.Def Num.Theory measurable_realfun.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
+Import boolp.
 
 Local Open Scope classical_set_scope.
 
@@ -156,8 +157,8 @@ Lemma qbs_pair_integral_iterated (X Y : qbsType R)
   (hint : (qbs_prob_mu p \x qbs_prob_mu q).-integrable
     setT (qbs_pair_fun p q h)) :
   qbs_pair_integral X Y p q h =
-  @qbs_integral R X p (fun x =>
-    @qbs_integral R Y q (fun y => h (x, y))).
+  qbs_integral X p (fun x =>
+    qbs_integral Y q (fun y => h (x, y))).
 Proof.
 rewrite /qbs_pair_integral /qbs_integral /=.
 symmetry.
@@ -165,7 +166,7 @@ set f := qbs_pair_fun p q h.
 have -> : (fun x => \int[qbs_prob_mu q]_x0
     h (qbs_prob_alpha p x, qbs_prob_alpha q x0)) =
   fubini_F (qbs_prob_mu q) f.
-  by rewrite /fubini_F; apply: boolp.funext => x.
+  by rewrite /fubini_F; apply: funext => x.
 exact: integral12_prod_meas1.
 Qed.
 
@@ -178,12 +179,12 @@ Lemma qbs_pair_integral_fst (X Y : qbsType R)
   (hint : (qbs_prob_mu p \x qbs_prob_mu q).-integrable
     setT (qbs_pair_fun p q (fun xy => h xy.1))) :
   qbs_pair_integral X Y p q (fun xy => h xy.1) =
-  @qbs_integral R X p h.
+  qbs_integral X p h.
 Proof.
 rewrite qbs_pair_integral_iterated //.
 rewrite /qbs_integral /=.
 apply: eq_integral => x _ /=.
-rewrite -(functions.cstE _ (h (qbs_prob_alpha p x))).
+rewrite -(cstE _ (h (qbs_prob_alpha p x))).
 rewrite integral_cst; last exact: measurableT.
 have h1 := @probability_setT _ _ _ (qbs_prob_mu q).
 by rewrite [X in _ * X]h1 mule1.
@@ -196,7 +197,7 @@ Lemma qbs_pair_integral_snd (X Y : qbsType R)
   (hint : (qbs_prob_mu p \x qbs_prob_mu q).-integrable
     setT (qbs_pair_fun p q (fun xy => h xy.2))) :
   qbs_pair_integral X Y p q (fun xy => h xy.2) =
-  @qbs_integral R Y q h.
+  qbs_integral Y q h.
 Proof.
 rewrite /qbs_pair_integral /qbs_integral /=.
 set f := qbs_pair_fun p q (fun xy => h xy.2).
@@ -204,7 +205,7 @@ transitivity (\int[qbs_prob_mu q]_y fubini_G (qbs_prob_mu p) f y).
   symmetry; exact: integral21_prod_meas1.
 apply: eq_integral => y _.
 rewrite /fubini_G /f /qbs_pair_fun /=.
-rewrite -(functions.cstE _ (h (qbs_prob_alpha q y))).
+rewrite -(cstE _ (h (qbs_prob_alpha q y))).
 rewrite integral_cst; last exact: measurableT.
 have h1 := @probability_setT _ _ _ (qbs_prob_mu p).
 by rewrite [X in _ * X]h1 mule1.
@@ -215,13 +216,13 @@ Qed.
 Definition qbs_indep (X Y Z : qbsType R)
   (p : qbs_prob Z)
   (f : Z -> X) (g : Z -> Y)
-  (hf : @qbs_morphism R Z X f) (hg : @qbs_morphism R Z Y g) : Prop :=
-  @qbs_prob_equiv R (prodQ X Y)
-    (@monadP_map R Z (prodQ X Y) (fun z => (f z, g z))
+  (hf : qbs_morphism f) (hg : qbs_morphism g) : Prop :=
+  qbs_prob_equiv (prodQ X Y)
+    (monadP_map Z (prodQ X Y) (fun z => (f z, g z))
        (fun alpha halpha => conj (hf _ halpha) (hg _ halpha)) p)
     (qbs_prob_pair X Y
-       (@monadP_map R Z X f hf p)
-       (@monadP_map R Z Y g hg p)).
+       (monadP_map Z X f hf p)
+       (monadP_map Z Y g hg p)).
 
 Arguments qbs_indep : clear implicits.
 
@@ -249,7 +250,7 @@ Lemma qbs_pair_integral_factorization (X Y : qbsType R)
       (f (qbs_prob_alpha px rr.1) * g (qbs_prob_alpha py rr.2))%:E)) :
   qbs_pair_integral X Y px py
     (fun xy => (f xy.1 * g xy.2)%:E) =
-  (@qbs_expect R X px f * @qbs_expect R Y py g).
+  (qbs_expect X px f * qbs_expect Y py g).
 Proof.
 rewrite qbs_pair_integral_iterated //.
 rewrite /qbs_integral /qbs_expect /= {1 2}/qbs_integral /=.
@@ -310,7 +311,7 @@ transitivity (\int[mu1]_x fubini_F mu2 f x).
   exact: integral12_prod_meas1.
 apply: eq_integral => x _.
 rewrite /fubini_F /f /=.
-rewrite -(functions.cstE _ (h x)%:E).
+rewrite -(cstE _ (h x)%:E).
 rewrite integral_cst; last exact: measurableT.
 have h1 := @probability_setT _ _ _ mu2.
 by rewrite [X in _ * X]h1 mule1.
@@ -332,7 +333,7 @@ transitivity (\int[mu2]_y fubini_G mu1 f y).
   symmetry; exact: integral21_prod_meas1.
 apply: eq_integral => y _.
 rewrite /fubini_G /f /=.
-rewrite -(functions.cstE _ (h y)%:E).
+rewrite -(cstE _ (h y)%:E).
 rewrite integral_cst; last exact: measurableT.
 have h1 := @probability_setT _ _ _ mu1.
 by rewrite [X in _ * X]h1 mule1.
@@ -360,7 +361,7 @@ unlock; congr (_ - _).
     exact: integral12_prod_meas1.
   apply: eq_integral => x _.
   rewrite /fubini_F /f /=.
-  rewrite -(functions.cstE _ (h x * h x)%:E).
+  rewrite -(cstE _ (h x * h x)%:E).
   rewrite integral_cst; last exact: measurableT.
   have h1 := @probability_setT _ _ _ mu2.
   by rewrite [X in _ * X]h1 mule1.
@@ -389,7 +390,7 @@ unlock; congr (_ - _).
     symmetry; exact: integral21_prod_meas1.
   apply: eq_integral => y _.
   rewrite /fubini_G /f /=.
-  rewrite -(functions.cstE _ (h y * h y)%:E).
+  rewrite -(cstE _ (h y * h y)%:E).
   rewrite integral_cst; last exact: measurableT.
   have h1 := @probability_setT _ _ _ mu1.
   by rewrite [X in _ * X]h1 mule1.
@@ -461,7 +462,7 @@ set mu_p := qbs_prob_mu px.
 set mu_q := qbs_prob_mu py.
 have FGeq : (fun rr : mR * mR =>
   (f (qbs_prob_alpha px rr.1) + g (qbs_prob_alpha py rr.2))%R) = (F \+ G)%R.
-  by apply: boolp.funext => rr.
+  by apply: funext => rr.
 rewrite FGeq varianceD //.
 (* Var(F) + Var(G) + 2 * Cov(F,G) = variance mu_p fp + variance mu_q gp *)
 rewrite (variance_prod_fst hf2 hf1 hintf hintf2).
@@ -586,7 +587,7 @@ rewrite -[RHS](@integral_pushforward _ _ _ mR R
 - (* Integrability of g o encode_RR *)
   rewrite preimage_setT.
   suff -> : g \o @encode_RR_mR R = qbs_pair_fun p q h by exact: hint.
-  apply: boolp.funext => rr.
+  apply: funext => rr.
   rewrite /g /qbs_pair_alpha /qbs_pair_fun /=.
   by congr (h (_, _));
     [congr (qbs_prob_alpha p) | congr (qbs_prob_alpha q)];

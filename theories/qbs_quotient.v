@@ -1,14 +1,8 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_algebra.
-From mathcomp Require Import reals.
-From mathcomp Require Import classical_sets boolp.
-From mathcomp Require Import ereal.
-From mathcomp Require Import measurable_structure.
-From mathcomp Require Import measurable_function.
-From mathcomp Require Import probability_measure.
-From mathcomp Require Import lebesgue_stieltjes_measure.
-From mathcomp Require Import lebesgue_integral.
+From mathcomp Require Import all_boot all_algebra reals classical_sets boolp
+  ereal measurable_structure measurable_function probability_measure
+  lebesgue_stieltjes_measure lebesgue_integral.
 From QBS Require Import quasi_borel probability_qbs.
 
 (**md**************************************************************************)
@@ -163,7 +157,7 @@ Definition quot_integral (q : qbs_quot X) (h : X -> \bar R) : \bar R :=
 (** Map lifted to the quotient: given a morphism f : X -> Y, push
     forward the probability. This uses repr on the input and \pi
     on the output. *)
-Definition quot_map (f : X -> Y) (hf : @qbs_morphism R X Y f)
+Definition quot_map (f : X -> Y) (hf : qbs_morphism f)
   (q : qbs_quot X) : qbs_quot Y :=
   piY (monadP_map X Y f hf (repr q)).
 
@@ -195,7 +189,7 @@ exact: qbs_return_equiv.
 Qed.
 
 (** Map respects the quotient. *)
-Lemma quot_map_proper (f : X -> Y) (hf : @qbs_morphism R X Y f)
+Lemma quot_map_proper (f : X -> Y) (hf : qbs_morphism f)
   (p1 p2 : qbs_prob X) :
   qbs_prob_equiv X p1 p2 ->
   piY (monadP_map X Y f hf p1) = piY (monadP_map X Y f hf p2) :> qbs_quot Y.
@@ -212,7 +206,7 @@ Qed.
     of qbs_bind_strong_equiv_l. *)
 Lemma quot_bind_strong_proper
   (f : X -> qbs_prob Y)
-  (g : X -> Y) (hg : @qbs_morphism R X Y g)
+  (g : X -> Y) (hg : qbs_morphism g)
   (hf : qbs_morphism_strong X Y f)
   (hfact : forall (p : qbs_prob X) r,
     qbs_prob_alpha (f (qbs_prob_alpha p r)) r = g (qbs_prob_alpha p r))
@@ -253,7 +247,7 @@ Local Notation piY := (@pi_subdef (qbs_prob Y) (qbs_quot Y)).
     structure of the return). *)
 Lemma quot_bind_returnl (x : X)
   (f : X -> qbs_prob Y)
-  (hf_morph : @qbs_morphism R X (monadP Y) f)
+  (hf_morph : qbs_morphism f)
   (hf_strong : qbs_morphism_strong X Y f) :
   piY (qbs_bind_strong X Y (qbs_return X x (qbs_prob_mu (f x))) f hf_strong) =
   piY (f x) :> qbs_quot Y.

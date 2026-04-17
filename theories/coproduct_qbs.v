@@ -1,6 +1,6 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_algebra reals classical_sets
+From mathcomp Require Import all_boot all_algebra reals classical_sets boolp
   measurable_structure measurable_function borel_hierarchy
   lebesgue_stieltjes_measure measurable_realfun.
 From QBS Require Import quasi_borel.
@@ -24,6 +24,7 @@ Import GRing.Theory Num.Def Num.Theory.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
+Import boolp.
 
 Local Open Scope classical_set_scope.
 
@@ -96,7 +97,7 @@ Proof.
 move=> Q Fi hFi.
 have hQ : measurable_fun setT Q := measurable_funPT Q.
 (* We handle the cases based on whether X and Y are inhabited *)
-have [Xempty | x0] := boolp.pselectT X.
+have [Xempty | x0] := pselectT X.
 - (* X is empty: cases 1 and 3 of coprodQ_random are impossible *)
   (* So all Fi i must factor through inr *)
   have hFi2 : forall i, exists b : mR -> Y,
@@ -107,12 +108,12 @@ have [Xempty | x0] := boolp.pselectT X.
     + case=> [[b' [hb hdef]] | [P [a _]]].
       * by exists b'.
       * exfalso; exact: Xempty (a (0%R : mR)).
-  have := @boolp.choice _ _ _ hFi2; move=> [getB hgetB].
+  have := @choice _ _ _ hFi2; move=> [getB hgetB].
   right; left; exists (fun r => getB (Q r) r); split.
   + exact: (@qbs_Mx_glueT R Y Q getB hQ
       (fun i => (hgetB i).1)).
   + move=> r; exact: (hgetB (Q r)).2.
-- have [Yempty | y0] := boolp.pselectT Y.
+- have [Yempty | y0] := pselectT Y.
   + (* Y is empty: all Fi i must factor through inl *)
     have hFi1 : forall i, exists a : mR -> X,
       @qbs_Mx R X a /\ forall r, Fi i r = inl (a r).
@@ -121,7 +122,7 @@ have [Xempty | x0] := boolp.pselectT X.
       * case=> [[b' [_ hdef]] | [_ [_ [b' _]]]].
         -- exfalso; exact: Yempty (b' (0%R : mR)).
         -- exfalso; exact: Yempty (b' (0%R : mR)).
-    have := @boolp.choice _ _ _ hFi1; move=> [getA hgetA].
+    have := @choice _ _ _ hFi1; move=> [getA hgetA].
     left; exists (fun r => getA (Q r) r); split.
     * exact: (@qbs_Mx_glueT R X Q getA hQ
         (fun i => (hgetA i).1)).
@@ -157,7 +158,7 @@ have [Xempty | x0] := boolp.pselectT X.
         (* case 3: already gluing *)
         -- exists (P, a, b').
            split; [|split; [|split]] => //.
-    have := @boolp.choice _ _ _ hFi3.
+    have := @choice _ _ _ hFi3.
     move=> [getTriple hgetTriple].
     (* Extract the components *)
     set Pi := fun i => (getTriple i).1.1.
@@ -244,24 +245,24 @@ case=> [[a [ha hdef]] | [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
 - (* gamma factors through inl *)
   have heq : (fun s => match s with inl x => f x | inr y => g y end) \o gamma =
               f \o a.
-  { apply: boolp.funext => r; rewrite /= hdef //. }
+  { apply: funext => r; rewrite /= hdef //. }
   by rewrite heq; exact: hf _ ha.
 - (* gamma factors through inr *)
   have heq : (fun s => match s with inl x => f x | inr y => g y end) \o gamma =
               g \o b'.
-  { apply: boolp.funext => r; rewrite /= hdef //. }
+  { apply: funext => r; rewrite /= hdef //. }
   by rewrite heq; exact: hg _ hb.
 - (* gamma is a measurable gluing: use qbs_Mx_glue *)
   have heq : (fun s => match s with inl x => f x | inr y => g y end) \o gamma =
               fun r => if P r then f (a r) else g (b' r).
-  { apply: boolp.funext => r; rewrite /= hdef; by case: (P r). }
+  { apply: funext => r; rewrite /= hdef; by case: (P r). }
   rewrite heq.
   set Pn : mR -> nat := fun r => if P r then 0 else 1.
   set Gi : nat -> mR -> Z :=
     fun i => if i == 0 then f \o a else g \o b'.
   have heq2 : (fun r => if P r then f (a r) else g (b' r)) =
                (fun r => Gi (Pn r) r).
-  { apply: boolp.funext => r; rewrite /Gi /Pn.
+  { apply: funext => r; rewrite /Gi /Pn.
     by case: (P r). }
   rewrite heq2.
   apply: (@qbs_Mx_glueT R Z Pn Gi).
@@ -345,20 +346,20 @@ exists (fun _ => i0).
 (* For Fi, we need forall j, mR -> X j. At j = i0, return v0;
    at j <> i0, use the inhabitedness witness inh j.
    We use pselect to decide j = i0 and eq_rect to transport v0. *)
-exists (fun j => match boolp.pselect (j = i0) with
+exists (fun j => match pselect (j = i0) with
   | left H => fun _ => eq_rect _ (fun k => X k) v0 _ (esym H)
   | right _ => fun _ => inh j
   end).
 split; [|split].
 - exact: measurable_cst.
 - move=> j.
-  case: (boolp.pselect (j = i0)) => [H | _].
+  case: (pselect (j = i0)) => [H | _].
   + subst j; exact: qbs_Mx_const.
   + exact: qbs_Mx_const.
 - move=> r /=.
-  case: (boolp.pselect (i0 = i0)) => [H | abs].
+  case: (pselect (i0 = i0)) => [H | abs].
   + congr (existT _ i0 _).
-    have -> : H = erefl by exact: boolp.Prop_irrelevance.
+    have -> : H = erefl by exact: Prop_irrelevance.
     by [].
   + exfalso; exact: abs erefl.
 Qed.
@@ -379,7 +380,7 @@ have hFi' : forall n, exists triple :
   (forall r, Fi n r = existT _ (triple.1.1 r) (triple.1.2 (triple.1.1 r) r)).
   move=> n; case: (hFi n) => [Pn [Gin [hPn [hGin hdef]]]].
   by exists (Pn, Gin, True).
-have := @boolp.choice _ _ _ hFi'.
+have := @choice _ _ _ hFi'.
 move=> [getTriple hgetTriple].
 set Pn := fun n => (getTriple n).1.1.
 set Gin := fun n => (getTriple n).1.2.
@@ -421,20 +422,20 @@ Lemma qbs_morphism_gen_inj (d : measure_display) (I : measurableType d)
   @qbs_morphism R (X i) (gen_coprodQ d I X inh) (fun x => existT _ i x).
 Proof.
 move=> alpha halpha; rewrite /qbs_Mx /=.
-exists (fun _ => i), (fun j => match boolp.pselect (j = i) with
+exists (fun _ => i), (fun j => match pselect (j = i) with
   | left H => fun r => eq_rect _ (fun k => X k) (alpha r) _ (esym H)
   | right _ => fun _ => inh j
   end).
 split; [|split].
 - exact: measurable_cst.
 - move=> j.
-  case: (boolp.pselect (j = i)) => [H | _].
+  case: (pselect (j = i)) => [H | _].
   + subst j; exact: halpha.
   + exact: qbs_Mx_const.
 - move=> r /=.
-  case: (boolp.pselect (i = i)) => [H | abs].
+  case: (pselect (i = i)) => [H | abs].
   + congr (existT _ i _).
-    have -> : H = erefl by exact: boolp.Prop_irrelevance.
+    have -> : H = erefl by exact: Prop_irrelevance.
     by [].
   + exfalso; exact: abs erefl.
 Qed.
@@ -636,7 +637,7 @@ have hGi' : forall n, exists pair : (mR -> nat) * (nat -> mR -> X),
   (forall r, Gi n r = mkseq (fun i => pair.2 i r) (pair.1 r)).
   move=> n; case: (hGi n) => [len [Fi [hlen [hFi hdef]]]].
   by exists (len, Fi).
-have := @boolp.choice _ _ _ hGi'.
+have := @choice _ _ _ hGi'.
 move=> [getPair hgetPair].
 set lenN := fun n => (getPair n).1.
 set FiN := fun n => (getPair n).2.
@@ -673,7 +674,7 @@ Lemma qbs_morphism_length (X : qbsType R) (x0 : X) :
 Proof.
 move=> alpha [len [Fi [hlen [hFi hdef]]]]; rewrite /qbs_Mx /=.
 have heq : size \o alpha = len.
-  apply: boolp.funext => r; rewrite /= hdef size_mkseq //.
+  apply: funext => r; rewrite /= hdef size_mkseq //.
 by rewrite heq.
 Qed.
 
@@ -687,7 +688,7 @@ Proof.
 move=> alpha [len [Fi [hlen [hFi hdef]]]].
 have heq : (fun r => nth x0 (alpha r) i) =
           (fun r => if i < len r then Fi i r else x0).
-  apply: boolp.funext => r; rewrite hdef.
+  apply: funext => r; rewrite hdef.
   case hlt : (i < len r).
   - by rewrite nth_mkseq.
   - rewrite nth_default //; rewrite size_mkseq.
@@ -704,7 +705,7 @@ have hP : measurable_fun setT P.
   - exact: measurable_cst.
 have heq2 : (fun r => if i < len r then Fi i r else x0) =
           (fun r => Gi (P r) r).
-  apply: boolp.funext => r; rewrite /Gi /P.
+  apply: funext => r; rewrite /Gi /P.
   by case: (i < len r).
 rewrite heq2.
 apply: (@qbs_Mx_glueT R X P Gi hP).

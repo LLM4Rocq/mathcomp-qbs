@@ -5,7 +5,7 @@
 This formalization was developed with
 [Claude Opus 4.6](https://claude.ai/claude-code) using
 [Rocq-MCP](https://github.com/LLM4Rocq/rocq-mcp) for interactive
-proof development. Claude wrote all 8,672 lines of Rocq code (415
+proof development. Claude wrote all 8,913 lines of Rocq code (412
 proofs, 0 Admitted) with guidance from a human collaborator who
 provided mathematical direction and design decisions.
 
@@ -16,7 +16,7 @@ programming semantics.
 
 ## Overview
 
-**415 proofs, 0 Admitted, 0 custom axioms, 8,672 lines across 12 files.**
+**412 proofs, 0 Admitted, 0 custom axioms, 8,913 lines across 13 files.**
 
 > **Note**: A higher-order PPL with denotational semantics in QBS
 > (`ppl_qbs.v`, `ppl_kernel.v`, `showcase/ppl_examples.v`) is
@@ -41,33 +41,34 @@ This formalization follows:
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `quasi_borel.v` | 746 | 52 | HB structure via Section+`HB.instance`, morphisms, products, exponentials, cartesian closure (β/η) |
-| `measure_qbs_adjunction.v` | 528 | 27 | L⊣R hom-set bijection, standard Borel (`{mfun}`), full faithfulness |
-| `coproduct_qbs.v` | 715 | 25 | Binary/general coproducts, dependent products, list type |
-| `probability_qbs.v` | 1,334 | 63 | Probability monad: return, bind, 3 monad laws (setoid), strength, normalizer |
-| `pair_qbs_measure.v` | 603 | 17 | Product measures via R≅R×R, iterated integration, factorization |
-| `qbs_prob_quot.v` | 311 | 17 | Setoid quotient for probability triples |
+| `quasi_borel.v` | 714 | 36 | HB structure via Section+`HB.instance`, morphisms, products, exponentials, cartesian closure (β/η) |
+| `measure_qbs_adjunction.v` | 520 | 27 | L⊣R hom-set bijection, standard Borel (`{mfun}`), full faithfulness |
+| `coproduct_qbs.v` | 716 | 25 | Binary/general coproducts, dependent products, list type |
+| `probability_qbs.v` | 1,328 | 63 | Probability monad: return, bind, 3 monad laws (setoid), strength, normalizer |
+| `pair_qbs_measure.v` | 604 | 17 | Product measures via R≅R×R, iterated integration, factorization |
+| `qbs_prob_quot.v` | 312 | 17 | Setoid quotient for probability triples |
 | `measure_as_qbs_measure.v` | 287 | 10 | Normal, Bernoulli, uniform distributions, E[Normal]=μ |
+| `qbs_quotient.v` | 310 | 13 | Mathcomp quotient type for QBS probability spaces |
 
 ### Bridges and analysis
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
 | `qbs_giry.v` | 194 | 12 | QBS↔Giry monad connection, integral correspondence |
-| `qbs_kernel.v` | 445 | 21 | QBS↔s-finite kernel bridge, Dirac kernels, composition |
+| `qbs_kernel.v` | 419 | 21 | QBS↔s-finite kernel bridge, Dirac kernels, composition |
 | `standard_borel.v` | 1,276 | 60 | R↔(0,1) via atan, digit interleaving, R≅R×R |
-| `normal_algebra.v` | 1,308 | 77 | Product of Gaussians, normalizing constant computation |
+| `normal_algebra.v` | 1,307 | 77 | Product of Gaussians, normalizing constant computation |
 
 ### Showcase
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `showcase/bayesian_regression.v` | 925 | 34 | Bayesian linear regression with explicit normalizing constant |
+| `showcase/bayesian_regression.v` | 926 | 34 | Bayesian linear regression with explicit normalizing constant |
 
 ## Key results
 
-- **Cartesian closure**: `qbs_morphism_eval`, `qbs_morphism_curry`,
-  `qbs_morphism_curry_eval` (β), `qbs_morphism_eval_curry` (η)
+- **Cartesian closure**: `qbs_eval`, `qbs_curry`, `qbs_curry_morph`,
+  `qbs_curry_eval` (β), `qbs_eval_curry` (η)
 - **L⊣R hom-set bijection**: `lr_adj_iff` (a single-object
   biconditional, not a full categorical naturality theorem)
 - **Full faithfulness**: `R_full_faithful_standard_borel`

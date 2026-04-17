@@ -1,9 +1,9 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra reals ereal topology
-  classical_sets borel_hierarchy measure lebesgue_stieltjes_measure
-  lebesgue_measure lebesgue_integral probability measurable_realfun
-  derive ftc gauss_integral charge boolp.
+  classical_sets borel_hierarchy numfun measure lebesgue_integral_definition
+  lebesgue_stieltjes_measure lebesgue_measure lebesgue_integral probability
+  measurable_realfun derive ftc gauss_integral charge boolp.
 From QBS Require Import quasi_borel probability_qbs.
 
 (**md**************************************************************************)
@@ -28,6 +28,7 @@ Import GRing.Theory Num.Def Num.Theory.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
+Import boolp order.Order.POrderTheory.
 
 Local Open Scope classical_set_scope.
 
@@ -58,7 +59,7 @@ apply: (@mkQBSProb R (realQ R) decode).
 Qed.
 
 (** Embed a probability on M into a QBS triple on R_qbs. *)
-Definition as_qbs_prob (d : measure_display) (M : measurableType d)
+Definition as_qbs_prob d (M : measurableType d)
   (f : M -> mR) (g : mR -> M)
   (hf : measurable_fun setT f)
   (hg : measurable_fun setT g)
@@ -102,7 +103,7 @@ Definition qbs_uniform : qbs_prob (realQ R) :=
     (uniform_prob ltr01 : probability mR R)
     (@measurable_id _ mR setT).
 
-Lemma as_qbs_prob_recover (d : measure_display) (M : measurableType d)
+Lemma as_qbs_prob_recover d (M : measurableType d)
   (f : M -> mR) (g : mR -> M)
   (hf : measurable_fun setT f)
   (hg : measurable_fun setT g)
@@ -113,7 +114,7 @@ Lemma as_qbs_prob_recover (d : measure_display) (M : measurableType d)
   P (g @^-1` U).
 Proof. by []. Qed.
 
-Lemma as_qbs_prob_recover_full (d : measure_display) (M : measurableType d)
+Lemma as_qbs_prob_recover_full d (M : measurableType d)
   (f : M -> mR) (g : mR -> M)
   (hf : measurable_fun setT f)
   (hg : measurable_fun setT g)
@@ -121,7 +122,7 @@ Lemma as_qbs_prob_recover_full (d : measure_display) (M : measurableType d)
   (h_retract : forall r, f (g r) = r)
   (P : probability mR R)
   (U : set M) (hU : measurable U) :
-  @qbs_prob_event R (R_qbs R M) (as_qbs_prob d M f g hf hg h_section P) U =
+  qbs_prob_event (R_qbs R M) (as_qbs_prob d M f g hf hg h_section P) U =
   P (f @` U).
 Proof.
 rewrite /qbs_prob_event /=.
@@ -140,7 +141,7 @@ exact: @measurable_id _ mR setT.
 Qed.
 
 Lemma qbs_uniform_random :
-  @qbs_Mx R (monadP (realQ R)) (fun _ : mR => qbs_uniform).
+  qbs_Mx (fun _ : mR => qbs_uniform).
 Proof.
 rewrite /qbs_Mx /= => r.
 exact: @measurable_id _ mR setT.
@@ -177,36 +178,35 @@ Section distribution_expectations.
 Local Open Scope ring_scope.
 
 (** E[Bernoulli(p)] = p. *)
-Lemma qbs_expect_bernoulli (p : R) (hp0 : (0 <= p)%R) (hp1 : (p <= 1)%R) :
+Lemma qbs_expect_bernoulli (p : R) (hp0 : 0 <= p) (hp1 : p <= 1) :
   qbs_expect (boolQ R) (qbs_bernoulli p hp0 hp1) (fun b : bool => b%:R) = p%:E.
 Proof.
 rewrite /qbs_expect /qbs_integral /=.
 rewrite integral_uniform//; last first.
-{ apply: measurableT_comp => //=.
+  apply: measurableT_comp => //=.
   apply: measurableT_comp => //=.
   exact: measurable_fun_ltr (@measurable_id _ mR setT)
-    (@measurable_cst _ _ mR mR setT p). }
+    (@measurable_cst _ _ mR mR setT p).
 rewrite subr0 invr1 mul1e.
 rewrite (_ : (fun x : mR => _) =
-  (fun x => (numfun.indic [set r : mR | (r < p)%R] x)%:E)); last first.
-{ by apply: boolp.funext => x /=; rewrite numfun.indicE mem_setE. }
-rewrite lebesgue_integral_definition.integral_indic //=; last first.
-{ have -> : [set r : mR | (r < p)%R] = [set` `]-oo, p[%R].
-  { by apply/seteqP; split => x /=; rewrite in_itv /=. }
-  exact: measurable_itv. }
-have -> : [set r : mR | (r < p)%R] `&` `[0, 1] = [set` `[0%R, p[%R].
-{ apply/seteqP; split => x /=.
+  (fun x => (indic [set r : mR | r < p] x)%:E)); last first.
+  by apply: funext => x /=; rewrite indicE mem_setE.
+rewrite integral_indic //=; last first.
+  have -> : [set r : mR | r < p] = [set` `]-oo, p[%R].
+    by apply/seteqP; split => x /=; rewrite in_itv /=.
+  exact: measurable_itv.
+have -> : [set r : mR | r < p] `&` `[0, 1] = [set` `[0%R, p[%R].
+  apply/seteqP; split => x /=.
   - rewrite in_itv /= => -[xp]; rewrite in_itv /= => /andP[x0 x1].
     by apply/andP; split.
   - rewrite in_itv /= => /andP[x0 xp]; split => //.
     rewrite in_itv /=; apply/andP; split => //.
-    exact: (order.Order.POrderTheory.le_trans
-      (order.Order.POrderTheory.ltW xp) hp1). }
-rewrite -/(lebesgue_measure.lebesgue_measure _).
-rewrite lebesgue_measure.lebesgue_measure_itv /= oppr0 adde0.
+    exact: (le_trans (ltW xp) hp1).
+rewrite -/(lebesgue_measure _).
+rewrite lebesgue_measure_itv /= oppr0 adde0.
 case: (lerP p 0) => [p0|p0].
-- have -> : p = 0 by apply: order.Order.POrderTheory.le_anti; rewrite hp0 p0.
-  by rewrite order.Order.POrderTheory.ltxx.
+- have -> : p = 0 by apply: le_anti; rewrite hp0 p0.
+  by rewrite ltxx.
 - by rewrite ifT // lte_fin.
 Qed.
 
@@ -215,12 +215,12 @@ Lemma qbs_expect_uniform :
   qbs_expect (realQ R) qbs_uniform (fun x => x) = (2%:R^-1)%:E.
 Proof.
 rewrite /qbs_expect /qbs_integral /=.
-rewrite lebesgue_integral_definition.integralE /=.
-rewrite (@integral_uniform _ 0 1 ltr01 [eta numfun.funepos.body (@EFin R)]);
-  [|exact: measurable_funepos|by move=> x; exact: numfun.funepos_ge0].
-rewrite (@integral_uniform _ 0 1 ltr01 [eta numfun.funeneg.body (@EFin R)]);
-  [|exact: measurable_funeneg|by move=> x; exact: numfun.funeneg_ge0].
-rewrite subr0 invr1 mul1e mul1e -lebesgue_integral_definition.integralE /=.
+rewrite integralE /=.
+rewrite (@integral_uniform _ 0 1 ltr01 [eta funepos.body (@EFin R)]);
+  [|exact: measurable_funepos|by move=> x; exact: funepos_ge0].
+rewrite (@integral_uniform _ 0 1 ltr01 [eta funeneg.body (@EFin R)]);
+  [|exact: measurable_funeneg|by move=> x; exact: funeneg_ge0].
+rewrite subr0 invr1 mul1e mul1e -integralE /=.
 rewrite (@ftc.continuous_FTC2 _ idfun (fun x => x ^+ 2 / 2) 0 1 ltr01).
 - by rewrite expr0n /= mul0r oppr0 adde0 expr1n mul1r.
 - by apply: (@continuous_subspaceT _ _ _ idfun) => x /=; exact: cvg_id.
@@ -232,12 +232,12 @@ rewrite (@ftc.continuous_FTC2 _ idfun (fun x => x ^+ 2 / 2) 0 1 ltr01).
     rewrite /continuous_at /= hornerZ hornerXn expr0n /= mul0r mulr0 => h.
     suff -> : (fun x : R => x ^+ 2 / 2) = horner (2^-1 *: 'X^2 : {poly R}).
       by move: h; exact: cvg_within_filter.
-    by apply: boolp.funext => x; rewrite hornerZ hornerXn mulrC.
+    by apply: funext => x; rewrite hornerZ hornerXn mulrC.
   + have := @derive.continuous_horner R (2^-1 *: 'X^2); move/(_ 1) => /=.
     rewrite /continuous_at /= hornerZ hornerXn expr1n mulr1 => h.
     suff -> : (fun x : R => x ^+ 2 / 2) = horner (2^-1 *: 'X^2 : {poly R}).
       by rewrite div1r; move: h; exact: cvg_within_filter.
-    by apply: boolp.funext => x; rewrite hornerZ hornerXn mulrC.
+    by apply: funext => x; rewrite hornerZ hornerXn mulrC.
 - move=> x hx /=.
   rewrite derive1E derive.deriveM;
     [|exact: derive.exprn_derivable|exact: derive.derivable_cst].
@@ -249,7 +249,7 @@ Qed.
 
 (** E[Normal(mu,sigma)] = mu
     (requires integrability hypotheses). *)
-Lemma qbs_expect_normal (mu sigma : R) (hsigma : (0 < sigma)%R)
+Lemma qbs_expect_normal (mu sigma : R) (hsigma : 0 < sigma)
   (id_int : (\int[normal_prob mu sigma]_x `|x%:E| < +oo)%E)
   (odd_int : lebesgue_measure.-integrable setT
     (fun x => ((x - mu) * normal_pdf mu sigma x)%:E))
@@ -266,18 +266,18 @@ under eq_integral do rewrite -EFinM.
 rewrite (_ : (fun x => (x * normal_pdf mu sigma x)%:E) =
   (fun x => (mu * normal_pdf mu sigma x +
              (x - mu) * normal_pdf mu sigma x)%:E)); last first.
-  by apply: boolp.funext => x /=; rewrite -mulrDl addrC subrK.
+  by apply: funext => x /=; rewrite -mulrDl addrC subrK.
 under eq_integral do rewrite EFinD.
 have hint1 : lebesgue_measure.-integrable setT
     (fun x => (mu * normal_pdf mu sigma x)%:E).
   rewrite (_ : (fun x => (mu * _)%:E) =
     (fun x => mu%:E * (normal_pdf mu sigma x)%:E)%E); last first.
-    by apply: boolp.funext => x; rewrite EFinM.
+    by apply: funext => x; rewrite EFinM.
   exact: (integrableZl measurableT mu (integrable_normal_pdf mu sigma)).
 rewrite (integralD measurableT hint1 odd_int).
 rewrite (_ : (fun x => (mu * normal_pdf mu sigma x)%:E) =
   (fun x => mu%:E * (normal_pdf mu sigma x)%:E)%E); last first.
-  by apply: boolp.funext => x; rewrite EFinM.
+  by apply: funext => x; rewrite EFinM.
 rewrite integralZl//=; last exact: integrable_normal_pdf.
 by rewrite integral_normal_pdf -EFinM mulr1 odd_zero adde0.
 Qed.

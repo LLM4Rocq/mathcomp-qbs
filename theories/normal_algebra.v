@@ -1,7 +1,7 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra reals ereal topology
-  normedtype numfun measure lebesgue_integral lebesgue_integral_fubini
+  normedtype numfun measure sequences lebesgue_integral lebesgue_integral_fubini
   lebesgue_stieltjes_measure probability boolp.
 From mathcomp.algebra_tactics Require Import ring.
 
@@ -23,12 +23,11 @@ Import GRing.Theory Num.Def Num.Theory.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
+Import order.Order.POrderTheory.
 
 Section normal_density_algebra.
 Variable R : realType.
 Local Open Scope ring_scope.
-
-Local Notation ltW := order.Order.POrderTheory.ltW.
 
 (* Helper: 2^-1 != 0 *)
 Let half_neq0 : (2%:R^-1 : R) != 0.
@@ -73,15 +72,15 @@ Proof.
 move=> hs hs'.
 have hS : s ^+ 2 + s' ^+ 2 != 0.
   by rewrite paddr_eq0 ?sqr_ge0 // !sqrf_eq0; apply/nandP; left.
-have hSgt0 : (0 < s ^+ 2 + s' ^+ 2)%R.
+have hSgt0 : 0 < s ^+ 2 + s' ^+ 2.
   by apply: addr_gt0; rewrite exprn_even_gt0 //=.
 have hsqS : sqrtr (s ^+ 2 + s' ^+ 2) != 0.
   by apply: lt0r_neq0; rewrite sqrtr_gt0.
 have hsnew : s * s' / sqrtr (s ^+ 2 + s' ^+ 2) != 0.
   by rewrite mulf_neq0 ?invr_neq0 // mulf_neq0.
-have hpi : (0 <= @trigo.pi R)%R := trigo.pi_ge0 R.
-have hs2pi : (0 <= s ^+ 2 * @trigo.pi R)%R := mulr_ge0 (sqr_ge0 _) hpi.
-have hS2pi : (0 <= (s ^+ 2 + s' ^+ 2) * @trigo.pi R)%R.
+have hpi : 0 <= trigo.pi := trigo.pi_ge0 R.
+have hs2pi : 0 <= s ^+ 2 * trigo.pi := mulr_ge0 (sqr_ge0 _) hpi.
+have hS2pi : 0 <= (s ^+ 2 + s' ^+ 2) * trigo.pi.
   by apply: mulr_ge0 => //; exact: addr_ge0 (sqr_ge0 _) (sqr_ge0 _).
 rewrite (normal_pdfE _ hs) (normal_pdfE _ hs') (normal_pdfE _ hsnew).
 rewrite [LHS]mulrACA [RHS]mulrACA.
@@ -95,7 +94,7 @@ congr (_ * _).
   by field; exact: hS.
 - (* funsE *)
   rewrite /normal_fun -exp.expRD -[RHS]exp.expRD.
-  congr (sequences.expR _).
+  congr (expR _).
   rewrite sqr_sqrtr ?addr_ge0 ?sqr_ge0 //.
   rewrite exprMn exprVn sqr_sqrtr ?addr_ge0 ?sqr_ge0 //.
   field.
@@ -166,7 +165,7 @@ Qed.
 
 (* Positivity of gaussian_prod_scalar: product of positive peak and fun *)
 Lemma gaussian_prod_scalar_gt0 (m m' s s' : R) :
-  s != 0 -> s' != 0 -> (0 < gaussian_prod_scalar m m' s s')%R.
+  s != 0 -> s' != 0 -> 0 < gaussian_prod_scalar m m' s s'.
 Proof.
 move=> hs hs'.
 have hsqS : sqrtr (s ^+ 2 + s' ^+ 2) != 0.
@@ -210,13 +209,13 @@ Section bayesian_phase1_intercept.
      sqrtr(V)^2 * (1/2)^2 / (sqrtr(V)^2 + (1/2)^2)
        = V * 1/4 / (V + 1/4) = V / (4V + 1)                          *)
 Lemma var_recurrence (V : R) :
-  (0 < V)%R ->
-  (sqrtr V ^+ 2 * (2%:R ^-1) ^+ 2 / (sqrtr V ^+ 2 + (2%:R ^-1) ^+ 2) =
-  V / (V *+ 4 + 1))%R.
+  0 < V ->
+  sqrtr V ^+ 2 * (2%:R ^-1) ^+ 2 / (sqrtr V ^+ 2 + (2%:R ^-1) ^+ 2) =
+  V / (V *+ 4 + 1).
 Proof.
 move=> hV.
 have hV0 : V != 0 by apply: lt0r_neq0.
-have hVn4 : (V *+ 4 + 1 != 0)%R.
+have hVn4 : V *+ 4 + 1 != 0.
   apply: lt0r_neq0.
   by rewrite addr_gt0 // ?ltr01 // mulrn_wgt0.
 rewrite sqr_sqrtr; last exact: (ltW hV).
@@ -256,7 +255,7 @@ Lemma phase1_step12_mu (s : R) :
   (1134%:R - 540%:R * s) / 365%:R.
 Proof.
 rewrite /gaussian_prod_mu.
-have h9_37 : (0 <= 9%:R / 37%:R :> R)%R.
+have h9_37 : (0 <= 9%:R / 37%:R :> R).
   by apply: divr_ge0; rewrite ?ler0n.
 rewrite sqr_sqrtr //.
 by field.
@@ -279,7 +278,7 @@ Lemma phase1_step23_mu (s : R) :
   (1944%:R - 1080%:R * s) / 545%:R.
 Proof.
 rewrite /gaussian_prod_mu.
-have h9_73 : (0 <= 9%:R / 73%:R :> R)%R.
+have h9_73 : (0 <= 9%:R / 73%:R :> R).
   by apply: divr_ge0; rewrite ?ler0n.
 rewrite sqr_sqrtr //.
 by field.
@@ -302,7 +301,7 @@ Lemma phase1_step34_mu (s : R) :
   (612%:R - 360%:R * s) / 145%:R.
 Proof.
 rewrite /gaussian_prod_mu.
-have h9_109 : (0 <= 9%:R / 109%:R :> R)%R.
+have h9_109 : (0 <= 9%:R / 109%:R :> R).
   by apply: divr_ge0; rewrite ?ler0n.
 rewrite sqr_sqrtr //.
 by field.
@@ -325,7 +324,7 @@ Lemma phase1_step45_mu (s : R) :
   (900%:R - 540%:R * s) / 181%:R.
 Proof.
 rewrite /gaussian_prod_mu.
-have h9_145 : (0 <= 9%:R / 145%:R :> R)%R.
+have h9_145 : (0 <= 9%:R / 145%:R :> R).
   by apply: divr_ge0; rewrite ?ler0n.
 rewrite sqr_sqrtr //.
 by field.
@@ -340,7 +339,7 @@ Qed.
    where Ki(s) are the scalar factors from each step. *)
 
 (* Parameterized positivity for 9/n fractions *)
-Lemma nine_div_gt0 (n : nat) : (0 < n)%N -> (0 < 9%:R / n%:R :> R)%R.
+Lemma nine_div_gt0 (n : nat) : (0 < n)%N -> 0 < 9%:R / n%:R :> R.
 Proof. by move=> hn; apply: divr_gt0; rewrite ?ltr0n. Qed.
 
 Lemma sqrtr_nine_div_neq0 (n : nat) : (0 < n)%N ->
@@ -351,19 +350,19 @@ by move=> hn; apply: lt0r_neq0; rewrite sqrtr_gt0;
 Qed.
 
 (* Positivity lemmas for the intermediate variances *)
-Lemma phase1_var1_gt0 : (0 < 9%:R / 37%:R :> R)%R.
+Lemma phase1_var1_gt0 : (0 < 9%:R / 37%:R :> R).
 Proof. exact: nine_div_gt0. Qed.
 
-Lemma phase1_var2_gt0 : (0 < 9%:R / 73%:R :> R)%R.
+Lemma phase1_var2_gt0 : (0 < 9%:R / 73%:R :> R).
 Proof. exact: nine_div_gt0. Qed.
 
-Lemma phase1_var3_gt0 : (0 < 9%:R / 109%:R :> R)%R.
+Lemma phase1_var3_gt0 : (0 < 9%:R / 109%:R :> R).
 Proof. exact: nine_div_gt0. Qed.
 
-Lemma phase1_var4_gt0 : (0 < 9%:R / 145%:R :> R)%R.
+Lemma phase1_var4_gt0 : (0 < 9%:R / 145%:R :> R).
 Proof. exact: nine_div_gt0. Qed.
 
-Lemma phase1_var5_gt0 : (0 < 9%:R / 181%:R :> R)%R.
+Lemma phase1_var5_gt0 : (0 < 9%:R / 181%:R :> R).
 Proof. exact: nine_div_gt0. Qed.
 
 (* The sqrtr of each variance is nonzero *)
@@ -405,7 +404,7 @@ rewrite phase1_step01_mu.
 (* Now the sigma is gaussian_prod_sigma 3 (2^-1).
    We need to show it equals sqrtr(9/37). *)
 have sigma01 : gaussian_prod_sigma 3%:R (2%:R^-1 : R) = sqrtr (9%:R / 37%:R).
-  have hge0 : (0 <= gaussian_prod_sigma 3%:R (2%:R^-1 : R))%R.
+  have hge0 : (0 <= gaussian_prod_sigma 3%:R (2%:R^-1 : R)).
     by apply: divr_ge0; rewrite ?mulr_ge0 ?invr_ge0 ?ler0n ?sqrtr_ge0.
   rewrite -[LHS](ger0_norm hge0) -sqrtr_sqr.
   congr (sqrtr _).
@@ -417,7 +416,7 @@ rewrite mulrA (normal_pdf_times_chain _ _ _ _ phase1_sqrtr_var1_neq0 half_neq0).
 rewrite phase1_step12_mu.
 have sigma12 : gaussian_prod_sigma (sqrtr (9%:R / 37%:R)) (2%:R^-1 : R) =
                sqrtr (9%:R / 73%:R).
-  have hge0 : (0 <= gaussian_prod_sigma (sqrtr (9%:R / 37%:R)) (2%:R^-1 : R))%R.
+  have hge0 : (0 <= gaussian_prod_sigma (sqrtr (9%:R / 37%:R)) (2%:R^-1 : R)).
     by apply: divr_ge0; rewrite ?mulr_ge0 ?invr_ge0 ?ler0n ?sqrtr_ge0.
   rewrite -[LHS](ger0_norm hge0) -sqrtr_sqr.
   congr (sqrtr _).
@@ -430,7 +429,7 @@ rewrite mulrA (normal_pdf_times_chain _ _ _ _ phase1_sqrtr_var2_neq0 half_neq0).
 rewrite phase1_step23_mu.
 have sigma23 : gaussian_prod_sigma (sqrtr (9%:R / 73%:R)) (2%:R^-1 : R) =
                sqrtr (9%:R / 109%:R).
-  have hge0 : (0 <= gaussian_prod_sigma (sqrtr (9%:R / 73%:R)) (2%:R^-1 : R))%R.
+  have hge0 : (0 <= gaussian_prod_sigma (sqrtr (9%:R / 73%:R)) (2%:R^-1 : R)).
     by apply: divr_ge0; rewrite ?mulr_ge0 ?invr_ge0 ?ler0n ?sqrtr_ge0.
   rewrite -[LHS](ger0_norm hge0) -sqrtr_sqr.
   congr (sqrtr _).
@@ -483,7 +482,7 @@ rewrite phase1_step34_mu.
 have sigma34 : gaussian_prod_sigma (sqrtr (9%:R / 109%:R)) (2%:R^-1 : R) =
                sqrtr (9%:R / 145%:R).
   have hge0 : (0 <= gaussian_prod_sigma
-    (sqrtr (9%:R / 109%:R)) (2%:R^-1 : R))%R.
+    (sqrtr (9%:R / 109%:R)) (2%:R^-1 : R)).
     by apply: divr_ge0;
        rewrite ?mulr_ge0 ?invr_ge0 ?ler0n ?sqrtr_ge0.
   rewrite -[LHS](ger0_norm hge0) -sqrtr_sqr.
@@ -499,7 +498,7 @@ rewrite phase1_step45_mu.
 have sigma45 : gaussian_prod_sigma (sqrtr (9%:R / 145%:R)) (2%:R^-1 : R) =
                sqrtr (9%:R / 181%:R).
   have hge0 : (0 <= gaussian_prod_sigma
-    (sqrtr (9%:R / 145%:R)) (2%:R^-1 : R))%R.
+    (sqrtr (9%:R / 145%:R)) (2%:R^-1 : R)).
     by apply: divr_ge0;
        rewrite ?mulr_ge0 ?invr_ge0 ?ler0n ?sqrtr_ge0.
   rewrite -[LHS](ger0_norm hge0) -sqrtr_sqr.
@@ -542,7 +541,7 @@ Section bayesian_phase2_slope.
 Lemma normal_fun_sym (m s x : R) :
   normal_fun m s x = normal_fun x s m.
 Proof.
-rewrite /normal_fun; congr (sequences.expR _).
+rewrite /normal_fun; congr (expR _).
 rewrite -sqrrN; congr (- _ / _); congr (_ ^+ 2).
 ring.
 Qed.
@@ -551,7 +550,7 @@ Qed.
 Lemma normal_fun_sub (m s a : R) :
   normal_fun 0 s (a - m) = normal_fun a s m.
 Proof.
-rewrite /normal_fun; congr (sequences.expR _).
+rewrite /normal_fun; congr (expR _).
 congr (- _ / _).
 rewrite -sqrrN; congr (_ ^+ 2).
 ring.
@@ -568,7 +567,7 @@ Proof.
 move=> hB hc hsigma hdiff.
 suff heq : (m' - m) ^+ 2 / (sigma ^+ 2 *+ 2) =
             (s - a / B) ^+ 2 / ((sigma * c / B) ^+ 2 *+ 2).
-  rewrite /normal_fun; congr (sequences.expR _).
+  rewrite /normal_fun; congr (expR _).
   rewrite !mulNr; congr (- _).
   exact: heq.
 rewrite hdiff.
@@ -765,7 +764,7 @@ suff heq : ((19%:R / 5%:R - 2%:R * s) -
             (S12 ^+ 2 *+ 2) =
             (s - 253%:R / 190%:R) ^+ 2 /
             ((S12 * 37%:R / 38%:R) ^+ 2 *+ 2).
-  rewrite /normal_fun; congr (sequences.expR _).
+  rewrite /normal_fun; congr (expR _).
   by rewrite !mulNr; congr (- _).
 rewrite -(mulr_natr (S12 ^+ 2) 2)
         -(mulr_natr ((S12 * 37%:R / 38%:R) ^+ 2) 2).
@@ -869,7 +868,7 @@ suff heq : ((9%:R / 2%:R - 3%:R * s) -
             (S23 ^+ 2 *+ 2) =
             (s - 1017%:R / 1110%:R) ^+ 2 /
             ((S23 * 73%:R / 111%:R) ^+ 2 *+ 2).
-  rewrite /normal_fun; congr (sequences.expR _).
+  rewrite /normal_fun; congr (expR _).
   by rewrite !mulNr; congr (- _).
 rewrite -(mulr_natr (S23 ^+ 2) 2)
         -(mulr_natr ((S23 * 73%:R / 111%:R) ^+ 2) 2).
@@ -967,7 +966,7 @@ suff heq : ((31%:R / 5%:R - 4%:R * s) -
             (S34 ^+ 2 *+ 2) =
             (s - 287%:R / 220%:R) ^+ 2 /
             ((S34 * 109%:R / 220%:R) ^+ 2 *+ 2).
-  rewrite /normal_fun; congr (sequences.expR _).
+  rewrite /normal_fun; congr (expR _).
   by rewrite !mulNr; congr (- _).
 rewrite -(mulr_natr (S34 ^+ 2) 2)
         -(mulr_natr ((S34 * 109%:R / 220%:R) ^+ 2) 2).
@@ -1067,7 +1066,7 @@ suff heq : ((8%:R - 5%:R * s) -
             (S45 ^+ 2 *+ 2) =
             (s - 548%:R / 365%:R) ^+ 2 /
             ((S45 * 29%:R / 73%:R) ^+ 2 *+ 2).
-  rewrite /normal_fun; congr (sequences.expR _).
+  rewrite /normal_fun; congr (expR _).
   by rewrite !mulNr; congr (- _).
 rewrite -(mulr_natr (S45 ^+ 2) 2)
         -(mulr_natr ((S45 * 29%:R / 73%:R) ^+ 2) 2).
@@ -1170,7 +1169,7 @@ Definition phase2_const : R :=
 Lemma phase2_final_sigma_neq0 : phase2_final_sigma != 0.
 Proof. exact: phase2_step4_sigma_neq0. Qed.
 
-Lemma phase2_const_gt0 : (0 < phase2_const)%R.
+Lemma phase2_const_gt0 : 0 < phase2_const.
 Proof.
 rewrite /phase2_const.
 have sqrtr37_neq0 : sqrtr (37%:R / 4%:R : R) != 0 by
@@ -1269,7 +1268,7 @@ Lemma normal_pdf_recenter (y s k sigma b : R) (hs : sigma != 0) :
   normal_pdf (s * k + b) sigma y = normal_pdf (y - k * s) sigma b.
 Proof.
 rewrite !(normal_pdfE _ hs); congr (_ * _).
-rewrite /normal_fun; congr (sequences.expR _).
+rewrite /normal_fun; congr (expR _).
 congr (- _ / _).
 suff -> : (y - (s * k + b)) = - (b - (y - k * s)) by rewrite sqrrN.
 ring.
