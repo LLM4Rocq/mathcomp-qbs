@@ -552,7 +552,7 @@ Definition generating_qbs : qbsType R := T.
 End generating_qbs_instance.
 
 Lemma generating_qbs_incl (T : Type) (G : set (mR -> T)) :
-  G `<=` @qbs_Mx R (generating_qbs G).
+  G `<=` qbs_Mx (s := generating_qbs G).
 Proof. by move=> alpha halpha; exact: gen_base. Qed.
 
 (* 11. Exponential morphisms *)
@@ -579,7 +579,7 @@ Definition map_qbs (X Y : qbsType R) (f : X -> Y)
 
 Lemma map_qbs_random (X Y : qbsType R) (f : X -> Y)
   (hf : qbs_morphism f) (alpha : mR -> X) :
-  qbs_Mx alpha -> @qbs_Mx R (map_qbs hf) (f \o alpha).
+  qbs_Mx alpha -> qbs_Mx (s := map_qbs hf) (f \o alpha).
 Proof.
 move=> halpha; apply: gen_base; exists alpha; split => //.
 Qed.
@@ -588,7 +588,7 @@ Qed.
    is also a random element of Y. *)
 Lemma map_qbs_sub (X Y : qbsType R) (f : X -> Y)
   (hf : qbs_morphism f) :
-  forall beta, @qbs_Mx R (map_qbs hf) beta -> @qbs_Mx R Y beta.
+  forall beta, qbs_Mx (s := map_qbs hf) beta -> qbs_Mx (s := Y) beta.
 Proof.
 move=> beta; elim=> {beta}.
 - by move=> _ [alpha [halpha ->]]; exact: hf halpha.
@@ -600,7 +600,7 @@ Qed.
 (* map_qbs is functorial: identity *)
 Lemma map_qbs_morphism_out (X Y Z : qbsType R) (f : X -> Y) (g : Y -> Z)
   (hf : qbs_morphism f) (hg : qbs_morphism g) :
-  @qbs_morphism (map_qbs hf) Z g.
+  qbs_morphism (X := map_qbs hf) (Y := Z) g.
 Proof.
 by move=> beta /map_qbs_sub; exact: hg.
 Qed.
@@ -608,7 +608,7 @@ Qed.
 (* The defining map f is a morphism from X to map_qbs f X *)
 Lemma map_qbs_morph_from (X Y : qbsType R) (f : X -> Y)
   (hf : qbs_morphism f) :
-  @qbs_morphism X (map_qbs hf) f.
+  qbs_morphism (X := X) (Y := map_qbs hf) f.
 Proof.
 by move=> alpha halpha; exact: map_qbs_random halpha.
 Qed.
@@ -670,14 +670,14 @@ Definition qbs_supT (T : Type) (MxX MxY : set (mR -> T)) : qbsType R :=
 
 (* Left inclusion: MxX <= Mx(sup) *)
 Lemma qbs_supT_ub_l (T : Type) (MxX MxY : set (mR -> T)) :
-  qbs_leT MxX (@qbs_Mx R (qbs_supT MxX MxY)).
+  qbs_leT MxX (qbs_Mx (s := qbs_supT MxX MxY)).
 Proof.
 by move=> alpha halpha; apply: gen_base; left.
 Qed.
 
 (* Right inclusion: MxY <= Mx(sup) *)
 Lemma qbs_supT_ub_r (T : Type) (MxX MxY : set (mR -> T)) :
-  qbs_leT MxY (@qbs_Mx R (qbs_supT MxX MxY)).
+  qbs_leT MxY (qbs_Mx (s := qbs_supT MxX MxY)).
 Proof.
 by move=> alpha halpha; apply: gen_base; right.
 Qed.
@@ -692,7 +692,7 @@ Lemma qbs_supT_least (T : Type) (MxX MxY MxZ : set (mR -> T))
     MxZ (fun r => Fi (P r) r)) :
   qbs_leT MxX MxZ ->
   qbs_leT MxY MxZ ->
-  qbs_leT (@qbs_Mx R (qbs_supT MxX MxY)) MxZ.
+  qbs_leT (qbs_Mx (s := qbs_supT MxX MxY)) MxZ.
 Proof.
 move=> hX hY.
 apply: generating_qbs_least c1 c2 c3 _.
