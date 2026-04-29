@@ -121,13 +121,12 @@ Hypothesis decode_encode :
 Lemma qbs_return_to_dirac
     (x : M) (U : set M) (mU : measurable U) :
   qbs_to_giry
-    (giry_to_qbs encode_meas decode_meas
-      [the probability M R of @dirac _ _ x R]) U =
+    (giry_to_qbs encode_meas decode_meas (@dirac _ _ x R)) U =
   @dirac _ _ x R U.
 Proof.
 exact: (qbs_to_giryK
   encode_meas decode_meas decode_encode
-  [the probability M R of @dirac _ _ x R] mU).
+  (@dirac _ _ x R) mU).
 Qed.
 
 End qbs_return_dirac.

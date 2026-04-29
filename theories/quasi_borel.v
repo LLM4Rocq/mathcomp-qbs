@@ -121,8 +121,8 @@ End qbs_const_instance.
 
 (** Convenience wrappers: accept bare [measurable_fun setT] proofs. *)
 
-Lemma qbs_Mx_compT (X : qbsType R) alpha (f : mR -> mR) :
-  @qbs_Mx R X alpha -> measurable_fun setT f -> @qbs_Mx R X (alpha \o f).
+Lemma qbs_Mx_compT (X : qbsType R) (alpha : mR -> X) (f : mR -> mR) :
+  qbs_Mx alpha -> measurable_fun setT f -> qbs_Mx (alpha \o f).
 Proof.
 by move=> ha hf; exact: (@qbs_Mx_comp _ X alpha (mfun_Sub (mem_set hf)) ha).
 Qed.
@@ -185,23 +185,21 @@ Definition boolQ : qbsType R := R_qbs bool.
 (* 3. Binary Product *)
 
 Lemma prodQ_Mx_comp (X Y : qbsType R) :
-  forall alpha (f : {mfun mR >-> mR}),
-    (@qbs_Mx R X (fun r => (alpha r).1) /\
-     @qbs_Mx R Y (fun r => (alpha r).2)) ->
-    (@qbs_Mx R X (fun r => ((alpha \o f) r).1) /\
-     @qbs_Mx R Y (fun r => ((alpha \o f) r).2)).
+  forall (alpha : mR -> X * Y) (f : {mfun mR >-> mR}),
+    (qbs_Mx (fun r => (alpha r).1) /\
+     qbs_Mx (fun r => (alpha r).2)) ->
+    (qbs_Mx (fun r => ((alpha \o f) r).1) /\
+     qbs_Mx (fun r => ((alpha \o f) r).2)).
 Proof.
 move=> alpha f [h1 h2]; split.
-- have -> : (fun r => ((alpha \o f) r).1) = (fun r => (alpha r).1) \o f by [].
   exact: qbs_Mx_comp h1.
-- have -> : (fun r => ((alpha \o f) r).2) = (fun r => (alpha r).2) \o f by [].
-  exact: qbs_Mx_comp h2.
+exact: qbs_Mx_comp h2.
 Qed.
 
 Lemma prodQ_Mx_const (X Y : qbsType R) :
   forall xy : X * Y,
-    @qbs_Mx R X (fun _ : mR => xy.1) /\
-    @qbs_Mx R Y (fun _ : mR => xy.2).
+    qbs_Mx (fun _ : mR => xy.1) /\
+    qbs_Mx (fun _ : mR => xy.2).
 Proof.
 by move=> [x y]; split; exact: qbs_Mx_const.
 Qed.
@@ -209,10 +207,10 @@ Qed.
 Lemma prodQ_Mx_glue (X Y : qbsType R) :
   forall (P : {mfun mR >-> nat})
          (Fi : nat -> mR -> X * Y),
-    (forall i, @qbs_Mx R X (fun r => (Fi i r).1) /\
-               @qbs_Mx R Y (fun r => (Fi i r).2)) ->
-    @qbs_Mx R X (fun r => (Fi (P r) r).1) /\
-    @qbs_Mx R Y (fun r => (Fi (P r) r).2).
+    (forall i, qbs_Mx (fun r => (Fi i r).1) /\
+               qbs_Mx (fun r => (Fi i r).2)) ->
+    qbs_Mx (fun r => (Fi (P r) r).1) /\
+    qbs_Mx (fun r => (Fi (P r) r).2).
 Proof.
 move=> P Fi hFi; split.
 - apply: (qbs_Mx_glue P (fun i r => (Fi i r).1)) => i.
@@ -227,8 +225,8 @@ Variables (X Y : qbsType R).
    constraint on Composition.u2 that would conflict with algebra_tactics.ring *)
 HB.instance Definition _ :=
   @isQBS.Build R (X * Y)%type
-    [set f | @qbs_Mx R X (fun r => (f r).1) /\
-             @qbs_Mx R Y (fun r => (f r).2)]
+    [set f : mR -> X * Y | qbs_Mx (fun r => (f r).1) /\
+                           qbs_Mx (fun r => (f r).2)]
     (@prodQ_Mx_comp X Y)
     (@prodQ_Mx_const X Y)
     (@prodQ_Mx_glue X Y).
@@ -287,10 +285,8 @@ have -> : (fun p : realQ * X => (alpha \o f) p.1 p.2) \o beta =
           (fun p : realQ * X => alpha p.1 p.2) \o
             (fun r => (f (fst (beta r)), snd (beta r))) by [].
 apply: halpha; split => /=.
-- have -> : (fun r : mR => f (beta r).1) =
-            f \o (fun r => (beta r).1) by [].
   exact: measurableT_comp.
-- exact: hb2.
+exact: hb2.
 Qed.
 
 Lemma expQ_Mx_const (X Y : qbsType R) :
@@ -298,8 +294,6 @@ Lemma expQ_Mx_const (X Y : qbsType R) :
     qbs_morphism (fun p : realQ * X => ((fun _ : mR => g) p.1 : X -> Y) p.2).
 Proof.
 move=> g beta [_ hb2].
-have -> : (fun p : realQ * X => (g : X -> Y) p.2) \o beta =
-          (g : X -> Y) \o (fun r => (beta r).2) by [].
 exact: qbs_hom_proof.
 Qed.
 
@@ -315,9 +309,6 @@ move=> P Fi hFi beta [hb1 hb2].
 set Q := mfun_Sub (mem_set
   (measurableT_comp (measurable_funPT P) hb1) :
   (fun r => P (fst (beta r))) \in mfun).
-have -> : (fun p : realQ * X => Fi (P p.1) p.1 p.2) \o beta =
-          (fun r => (fun i => (fun p : realQ * X => Fi i p.1 p.2) \o beta)
-            (Q r) r) by [].
 apply: (qbs_Mx_glue Q
   (fun i => (fun p : realQ * X => Fi i p.1 p.2) \o beta)).
 by move=> i; exact: hFi i _ (conj hb1 hb2).
@@ -352,9 +343,8 @@ have hmorph : qbs_morphism
 set gamma := (fun r : mR => (r, snd (beta r))) : mR -> realQ * X.
 have hgamma : qbs_Mx gamma.
   split => /=.
-  - have -> : (fun r : mR => (gamma r).1) = idfun by [].
     exact: measurable_id.
-  - exact: hb2.
+  exact: hb2.
 by have := hmorph gamma hgamma.
 Qed.
 HB.instance Definition _ :=
@@ -447,11 +437,11 @@ Definition sigma_Mx (X : qbsType R) : set (set X) :=
   [set U | forall alpha, qbs_Mx alpha ->
     measurable (alpha @^-1` U)].
 
-Lemma sigma_Mx_setT (X : qbsType R) : @sigma_Mx X setT.
+Lemma sigma_Mx_setT (X : qbsType R) : sigma_Mx (X := X) setT.
 Proof. by move=> alpha _; exact: measurableT. Qed.
 
 Lemma sigma_Mx_setC (X : qbsType R) (U : set X) :
-  @sigma_Mx X U -> @sigma_Mx X (~` U).
+  sigma_Mx U -> sigma_Mx (~` U).
 Proof.
 move=> hU alpha halpha.
 rewrite preimage_setC.
@@ -459,8 +449,8 @@ exact: measurableC (hU _ halpha).
 Qed.
 
 Lemma sigma_Mx_bigcup (X : qbsType R) (F : nat -> set X) :
-  (forall i, @sigma_Mx X (F i)) ->
-  @sigma_Mx X (\bigcup_i F i).
+  (forall i, sigma_Mx (F i)) ->
+  sigma_Mx (\bigcup_i F i).
 Proof.
 move=> hF alpha halpha.
 rewrite preimage_bigcup.
@@ -509,8 +499,6 @@ Lemma sub_qbs_Mx_comp : forall alpha
   sub_Mx alpha -> sub_Mx (alpha \o f).
 Proof.
 move=> alpha f halpha; rewrite /sub_Mx /=.
-have -> : (fun r => sub_proj ((alpha \o f) r)) =
-          (fun r => sub_proj (alpha r)) \o f by [].
 exact: qbs_Mx_comp halpha.
 Qed.
 

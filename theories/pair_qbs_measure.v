@@ -82,8 +82,7 @@ Proof. by rewrite /pf_mu preimage_setT probability_setT. Qed.
 HB.instance Definition _ := Measure_isProbability.Build _ _ _
   pf_mu pf_mu_setT.
 
-Definition qbs_pair_mu_build : probability mR R :=
-  [the probability mR R of pf_mu].
+Definition qbs_pair_mu_build : probability mR R := pf_mu.
 
 End pair_mu_build.
 
@@ -574,9 +573,7 @@ under [RHS]eq_integral do rewrite fg_eq.
 (* Now both sides have integrand h(pair_alpha(_)) *)
 set g := (fun x : mR => h (qbs_pair_alpha p q x)).
 (* Use integral_pushforward to convert the pushforward integral *)
-have hm_enc : measurable_fun
-  [set: Datatypes_prod__canonical__measurable_structure_Measurable mR mR]
-  (@encode_RR_mR R).
+have hm_enc : measurable_fun [set: mR * mR] (@encode_RR_mR R).
   exact: measurable_RR_to_R.
 rewrite -[RHS](@integral_pushforward _ _ _ mR R
   (@encode_RR_mR R) hm_enc mu_pq setT g _ _ measurableT).

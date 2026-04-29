@@ -23,8 +23,8 @@ From QBS Require Import quasi_borel standard_borel.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-Import GRing.Theory Num.Def Num.Theory constructive_ereal.
-Import boolp order.Order.POrderTheory order.Order.TotalTheory.
+Import order.Order.TTheory GRing.Theory Num.Def Num.Theory constructive_ereal.
+Import boolp.
 
 Local Open Scope classical_set_scope.
 
@@ -74,8 +74,7 @@ by move=> alpha _; rewrite preimage_set0; exact: measurable0.
 Qed.
 
 (* L_sigma collects the sigma-algebra properties *)
-Definition L_sigma (X : qbsType R) : set (set X) := sigma_Mx (X := X).
-Arguments L_sigma : clear implicits.
+Notation L_sigma X := (sigma_Mx (X := X)).
 
 Lemma L_sigma_measurableT (X : qbsType R) : L_sigma X setT.
 Proof. exact: sigma_Mx_setT. Qed.
@@ -204,11 +203,11 @@ Proof.
 move: sb1 sb2 => [phi1 psi1 hpsi1phi1]
        [phi2 psi2 hpsi2phi2] hf.
 have hfpsi1 : measurable_fun setT (f \o psi1).
-  exact: (hf psi1 (measurable_funP psi1)).
+  exact: hf (measurable_funP psi1).
 have heq : f = psi2 \o (phi2 \o f \o psi1) \o phi1.
   by apply: funext => x /=; rewrite hpsi1phi1 hpsi2phi2.
-rewrite heq; apply: measurableT_comp; last exact: (measurable_funP phi1).
-apply: measurableT_comp; first exact: (measurable_funP psi2).
+rewrite heq; apply: measurableT_comp; last exact: measurable_funP.
+apply: measurableT_comp; first exact: measurable_funP.
 exact: measurableT_comp (measurable_funP phi2) hfpsi1.
 Qed.
 
@@ -218,7 +217,7 @@ Qed.
 Lemma adjunction_unit (X : qbsType R) (alpha : mR -> X) :
   qbs_Mx alpha ->
   forall U, L_sigma X U -> measurable (alpha @^-1` U).
-Proof. by move=> halpha U hU; exact: hU. Qed.
+Proof. by move=> halpha U; exact. Qed.
 
 (* The counit: L(R(M)) refines sigma(M), i.e., every measurable set
    is in the induced sigma-algebra *)
@@ -231,8 +230,6 @@ by have := halpha measurableT U hU; rewrite setTI; exact.
 Qed.
 
 Local Open Scope ring_scope.
-
-Let numR := [the topologicalType of R^o].
 
 Local Notation truncnP := archimedean.Num.Theory.truncnP.
 Local Notation interval_open := num_normedtype.interval_open.

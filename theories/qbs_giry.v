@@ -91,7 +91,7 @@ End qbs_to_giry.
 (** Forward: QBS probability to Giry probability. *)
 Definition qbs_to_giry d (M : measurableType d)
     (p : qbs_prob (R_qbs R M)) : probability M R :=
-  [the probability M R of qbs_to_giry_mu p].
+  qbs_to_giry_mu p.
 
 (** Backward map: probability M R -> qbs_prob(R(M)).
     Requires standard Borel witnesses: encode : M -> R, decode : R -> M
@@ -137,8 +137,7 @@ HB.instance Definition _ := Measure_isProbability.Build _ _ _
 
 (** Backward: Giry probability to QBS probability. *)
 Definition giry_to_qbs : qbs_prob (R_qbs R M) :=
-  mkQBSProb decode
-    [the probability mR R of pf_mu] decode_meas.
+  mkQBSProb decode pf_mu decode_meas.
 
 End giry_to_qbs.
 

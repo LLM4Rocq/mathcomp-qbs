@@ -221,29 +221,29 @@ rewrite (@integral_uniform _ 0 1 ltr01 [eta funepos.body (@EFin R)]);
 rewrite (@integral_uniform _ 0 1 ltr01 [eta funeneg.body (@EFin R)]);
   [|exact: measurable_funeneg|by move=> x; exact: funeneg_ge0].
 rewrite subr0 invr1 mul1e mul1e -integralE /=.
-rewrite (@ftc.continuous_FTC2 _ idfun (fun x => x ^+ 2 / 2) 0 1 ltr01).
+rewrite (@continuous_FTC2 _ idfun (fun x => x ^+ 2 / 2) 0 1 ltr01).
 - by rewrite expr0n /= mul0r oppr0 adde0 expr1n mul1r.
 - by apply: (@continuous_subspaceT _ _ _ idfun) => x /=; exact: cvg_id.
 - split.
   + move=> x hx.
-    by apply: derive.derivableM;
-      [exact: derive.exprn_derivable|exact: derive.derivable_cst].
-  + have := @derive.continuous_horner R (2^-1 *: 'X^2); move/(_ 0) => /=.
+    by apply: derivableM;
+      [exact: exprn_derivable|exact: derivable_cst].
+  + have := @continuous_horner R (2^-1 *: 'X^2); move/(_ 0) => /=.
     rewrite /continuous_at /= hornerZ hornerXn expr0n /= mul0r mulr0 => h.
     suff -> : (fun x : R => x ^+ 2 / 2) = horner (2^-1 *: 'X^2 : {poly R}).
       by move: h; exact: cvg_within_filter.
     by apply: funext => x; rewrite hornerZ hornerXn mulrC.
-  + have := @derive.continuous_horner R (2^-1 *: 'X^2); move/(_ 1) => /=.
+  + have := @continuous_horner R (2^-1 *: 'X^2); move/(_ 1) => /=.
     rewrite /continuous_at /= hornerZ hornerXn expr1n mulr1 => h.
     suff -> : (fun x : R => x ^+ 2 / 2) = horner (2^-1 *: 'X^2 : {poly R}).
       by rewrite div1r; move: h; exact: cvg_within_filter.
     by apply: funext => x; rewrite hornerZ hornerXn mulrC.
 - move=> x hx /=.
-  rewrite derive1E derive.deriveM;
-    [|exact: derive.exprn_derivable|exact: derive.derivable_cst].
-  rewrite derive.derive_cst GRing.scaler0 GRing.add0r.
-  rewrite (@derive.derive_val _ _ _ _ _ _ _
-    (derive.is_deriveX 2 (derive.is_derive_id x 1))) /=.
+  rewrite derive1E deriveM;
+    [|exact: exprn_derivable|exact: derivable_cst].
+  rewrite derive_cst GRing.scaler0 GRing.add0r.
+  rewrite (@derive_val _ _ _ _ _ _ _
+    (is_deriveX 2 (is_derive_id x 1))) /=.
   by rewrite expr1 /GRing.scale /= mulr1 mulrA mulVf ?mul1r // pnatr_eq0.
 Qed.
 

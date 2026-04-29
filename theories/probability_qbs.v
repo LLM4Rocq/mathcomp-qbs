@@ -2,7 +2,7 @@
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra reals ereal topology boolp
   classical_sets borel_hierarchy numfun measure lebesgue_measure sequences
-  lebesgue_integral hoelder probability lebesgue_stieltjes_measure.
+  lebesgue_integral hoelder probability lebesgue_stieltjes_measure charge.
 From QBS Require Import quasi_borel.
 
 (**md**************************************************************************)
@@ -1140,8 +1140,7 @@ HB.instance Definition _ := Measure_isProbability.Build _ _ _
   norm_mu norm_mu_setT.
 (** Reweighted probability measure: normalize the
     weight function w to integrate to 1. *)
-Definition normalize_mu : probability mR R :=
-  [the probability mR R of norm_mu].
+Definition normalize_mu : probability mR R := norm_mu.
 End normalize_mu_build.
 
 Section qbs_normalize_def.
@@ -1242,16 +1241,16 @@ have hac :
   by apply: null_set_integral => //;
      apply/measurable_funTS.
 have hRN_wdiv : ae_eq mu setT
-    (charge.Radon_Nikodym_SigmaFinite.f
+    (Radon_Nikodym_SigmaFinite.f
        (normalize_mu hw_ge0 hw_meas hev_pos hev_fin) mu)
     (fun r => (((alpha r).2 / fine ev)%:E : \bar R)).
   apply: integral_ae_eq.
   - exact: measurableT.
-  - exact: charge.Radon_Nikodym_SigmaFinite.f_integrable
+  - exact: Radon_Nikodym_SigmaFinite.f_integrable
       hac.
   - exact: hwdiv_meas.
   - move=> A _ mA.
-    rewrite -(charge.Radon_Nikodym_SigmaFinite.f_integral
+    rewrite -(Radon_Nikodym_SigmaFinite.f_integral
       hac mA).
     by rewrite /normalize_mu /=.
 have step1 :
@@ -1259,7 +1258,7 @@ have step1 :
     g ((alpha r).1) =
   \int[mu]_r
     (g ((alpha r).1) * (((alpha r).2 / fine ev)%:E)).
-  rewrite -(charge.Radon_Nikodym_SigmaFinite.change_of_variables
+  rewrite -(Radon_Nikodym_SigmaFinite.change_of_variables
     hac _ measurableT
     (hg_meas _ (normalize_alpha_random p)));
     last by move=> x; exact: hg_ge0.
@@ -1267,13 +1266,13 @@ have step1 :
   - exact: measurableT.
   - apply: emeasurable_funM.
     + exact: hg_meas _ (normalize_alpha_random p).
-    + have := charge.Radon_Nikodym_SigmaFinite.f_integrable
+    + have := Radon_Nikodym_SigmaFinite.f_integrable
         hac; by move=> /integrableP [? _].
   - apply: emeasurable_funM.
     + exact: hg_meas _ (normalize_alpha_random p).
     + exact: hwdiv_meas.
   - move=> r _; apply: mule_ge0; first exact: hg_ge0.
-    exact: charge.Radon_Nikodym_SigmaFinite.f_ge0.
+    exact: Radon_Nikodym_SigmaFinite.f_ge0.
   - move=> r _; apply: mule_ge0; first exact: hg_ge0.
     rewrite lee_fin; apply: divr_ge0; first exact: hw_ge0.
     by apply: fine_ge0; apply: integral_ge0 => x _;

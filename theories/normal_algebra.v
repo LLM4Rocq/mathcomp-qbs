@@ -2,7 +2,7 @@
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra reals ereal topology
   normedtype numfun measure sequences lebesgue_integral lebesgue_integral_fubini
-  lebesgue_stieltjes_measure probability boolp.
+  lebesgue_stieltjes_measure probability boolp trigo exp.
 From mathcomp.algebra_tactics Require Import ring.
 
 (**md**************************************************************************)
@@ -78,9 +78,9 @@ have hsqS : sqrtr (s ^+ 2 + s' ^+ 2) != 0.
   by apply: lt0r_neq0; rewrite sqrtr_gt0.
 have hsnew : s * s' / sqrtr (s ^+ 2 + s' ^+ 2) != 0.
   by rewrite mulf_neq0 ?invr_neq0 // mulf_neq0.
-have hpi : 0 <= trigo.pi := trigo.pi_ge0 R.
-have hs2pi : 0 <= s ^+ 2 * trigo.pi := mulr_ge0 (sqr_ge0 _) hpi.
-have hS2pi : 0 <= (s ^+ 2 + s' ^+ 2) * trigo.pi.
+have hpi : 0 <= pi := pi_ge0 R.
+have hs2pi : 0 <= s ^+ 2 * pi := mulr_ge0 (sqr_ge0 _) hpi.
+have hS2pi : 0 <= (s ^+ 2 + s' ^+ 2) * pi.
   by apply: mulr_ge0 => //; exact: addr_ge0 (sqr_ge0 _) (sqr_ge0 _).
 rewrite (normal_pdfE _ hs) (normal_pdfE _ hs') (normal_pdfE _ hsnew).
 rewrite [LHS]mulrACA [RHS]mulrACA.
@@ -93,7 +93,7 @@ congr (_ * _).
   rewrite exprMn exprVn sqr_sqrtr ?addr_ge0 ?sqr_ge0 //.
   by field; exact: hS.
 - (* funsE *)
-  rewrite /normal_fun -exp.expRD -[RHS]exp.expRD.
+  rewrite /normal_fun -expRD -[RHS]expRD.
   congr (expR _).
   rewrite sqr_sqrtr ?addr_ge0 ?sqr_ge0 //.
   rewrite exprMn exprVn sqr_sqrtr ?addr_ge0 ?sqr_ge0 //.
@@ -173,7 +173,7 @@ have hsqS : sqrtr (s ^+ 2 + s' ^+ 2) != 0.
   by apply: addr_gt0; rewrite exprn_even_gt0 //=.
 rewrite /gaussian_prod_scalar.
 apply: mulr_gt0; first exact: (normal_peak_gt0 hsqS).
-rewrite /normal_fun; exact: exp.expR_gt0.
+rewrite /normal_fun; exact: expR_gt0.
 Qed.
 
 End normal_pdf_general.
