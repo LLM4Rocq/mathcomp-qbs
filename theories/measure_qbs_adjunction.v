@@ -92,7 +92,7 @@ Lemma L_qbs_morph (X Y : qbsType R) (f : X -> Y) :
   qbs_morphism f ->
   forall U, L_sigma Y U -> L_sigma X (f @^-1` U).
 Proof.
-by move=> hf U hU alpha halpha; exact: hU (hf _ halpha).
+by move=> hf U hU alpha halpha; apply: hU; exact: hf.
 Qed.
 
 (* L preserves identity *)
@@ -107,7 +107,7 @@ Lemma L_qbs_comp (X Y Z : qbsType R) (f : X -> Y)
   qbs_morphism g ->
   forall U, L_sigma Z U -> L_sigma X ((g \o f) @^-1` U).
 Proof.
-by move=> hf hg U hU alpha halpha; exact: hU (hg _ (hf _ halpha)).
+by move=> hf hg U hU alpha halpha; apply: hU; apply: hg; exact: hf.
 Qed.
 
 (** Adjunction L -| R.
@@ -144,9 +144,7 @@ Lemma lr_adj_iff (X : qbsType R) d
   (qbs_morphism (Y := R_qbs R Y) f) <->
   (forall U, measurable U -> L_sigma X (f @^-1` U)).
 Proof.
-split.
-- exact: lr_adj_l2r.
-- exact: lr_adj_r2l.
+by split; [exact: lr_adj_l2r | exact: lr_adj_r2l].
 Qed.
 
 (** R preserves products.
@@ -161,10 +159,8 @@ Lemma R_preserves_prod d1 d2
   qbs_Mx (s := prodQ (R_qbs R M1) (R_qbs R M2)) alpha.
 Proof.
 split.
-- rewrite /qbs_Mx /= => halpha; split.
-  + exact: measurableT_comp.
-  + exact: measurableT_comp.
-- by rewrite /qbs_Mx /=; move=> [h1 h2]; apply/measurable_fun_pairP; split.
+  rewrite /qbs_Mx /= => halpha; split; exact: measurableT_comp.
+by rewrite /qbs_Mx /=; move=> [h1 h2]; apply/measurable_fun_pairP; split.
 Qed.
 
 (** Standard Borel spaces.
@@ -342,8 +338,8 @@ have hf_meas : measurable_fun setT (fun xy : M1 * M2 =>
   apply: measurableT_comp.
     exact: measurable_encode_RR.
   apply/measurable_fun_pairP; split.
-  - exact: measurableT_comp (measurable_funP f1) measurable_fst.
-  - exact: measurableT_comp (measurable_funP f2) measurable_snd.
+    exact: measurableT_comp (measurable_funP f1) measurable_fst.
+  exact: measurableT_comp (measurable_funP f2) measurable_snd.
 have hf : (fun xy : (M1 * M2)%type =>
          encode_RR (f1 xy.1, f2 xy.2) : mR) \in mfun.
   by apply: mem_set; exact: hf_meas.
@@ -351,12 +347,12 @@ have hg_meas : measurable_fun setT (fun r : mR =>
          let p := decode_RR r in
          (g1 p.1, g2 p.2) : (M1 * M2)%type).
   apply/measurable_fun_pairP; split.
-  - apply: measurableT_comp (measurable_funP g1) _.
+    apply: measurableT_comp (measurable_funP g1) _.
     apply: measurableT_comp measurable_fst _.
     exact: measurable_decode_RR.
-  - apply: measurableT_comp (measurable_funP g2) _.
-    apply: measurableT_comp measurable_snd _.
-    exact: measurable_decode_RR.
+  apply: measurableT_comp (measurable_funP g2) _.
+  apply: measurableT_comp measurable_snd _.
+  exact: measurable_decode_RR.
 have hg : (fun r : mR => let p := decode_RR r in (g1 p.1, g2 p.2) :
          (M1 * M2)%type) \in mfun.
   by apply: mem_set; exact: hg_meas.
