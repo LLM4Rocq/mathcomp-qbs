@@ -359,8 +359,8 @@ Lemma prodQ_const_random (X Y : qbsType R) (x : X) (alpha : mR -> Y) :
   qbs_Mx alpha -> qbs_Mx (fun r => (x, alpha r)).
 Proof.
 move=> halpha; split => /=.
-- exact: qbs_Mx_const.
-- exact: halpha.
+  exact: qbs_Mx_const.
+exact: halpha.
 Qed.
 
 Section qbs_curry_instance.
@@ -454,7 +454,7 @@ Lemma sigma_Mx_bigcup (X : qbsType R) (F : nat -> set X) :
 Proof.
 move=> hF alpha halpha.
 rewrite preimage_bigcup.
-exact: bigcup_measurable (fun i _ => hF i _ halpha).
+apply: bigcup_measurable => i _; exact: hF.
 Qed.
 
 (* 8. Comparison Morphisms *)
@@ -515,7 +515,7 @@ Lemma sub_qbs_Mx_glue : forall (Q : {mfun mR >-> nat})
   sub_Mx (fun r => Fi (Q r) r).
 Proof.
 move=> Q Fi hFi; rewrite /sub_Mx /=.
-exact: (qbs_Mx_glue Q (fun i r => sub_proj (Fi i r)) (fun i => hFi i)).
+exact: (qbs_Mx_glue Q (fun i r => sub_proj (Fi i r)) hFi).
 Qed.
 
 HB.instance Definition _ :=
@@ -562,8 +562,8 @@ Lemma prodQ_random_const (X Y : qbsType R) (alpha : mR -> X) (y : Y) :
   qbs_Mx alpha -> qbs_Mx (fun r => (alpha r, y)).
 Proof.
 move=> halpha; split => /=.
-- exact: halpha.
-- exact: qbs_Mx_const.
+  exact: halpha.
+exact: qbs_Mx_const.
 Qed.
 
 (* 12. Image QBS (map_qbs) *)
@@ -591,7 +591,7 @@ Lemma map_qbs_sub (X Y : qbsType R) (f : X -> Y)
   forall beta, @qbs_Mx R (map_qbs hf) beta -> @qbs_Mx R Y beta.
 Proof.
 move=> beta; elim=> {beta}.
-- by move=> beta [alpha [halpha ->]]; exact: (hf _ halpha).
+- by move=> _ [alpha [halpha ->]]; exact: hf halpha.
 - by move=> alpha g _ hIH; exact: qbs_Mx_comp hIH.
 - by move=> x; exact: qbs_Mx_const.
 - by move=> P Fi hFi IH; exact: qbs_Mx_glue IH.
@@ -657,7 +657,7 @@ Lemma generating_qbs_least (T : Type) (G : set (mR -> T)) (Mx : set (mR -> T))
   G `<=` Mx -> generating_Mx G `<=` Mx.
 Proof.
 move=> hG beta hbeta; elim: hbeta.
-- by move=> alpha hGa; exact: hG _ hGa.
+- by move=> alpha hGa; exact: hG hGa.
 - by move=> alpha f _ hIH; exact: c1 hIH.
 - by move=> x; exact: c2.
 - by move=> P Fi hFi IH; exact: c3 IH.
@@ -672,14 +672,14 @@ Definition qbs_supT (T : Type) (MxX MxY : set (mR -> T)) : qbsType R :=
 Lemma qbs_supT_ub_l (T : Type) (MxX MxY : set (mR -> T)) :
   qbs_leT MxX (@qbs_Mx R (qbs_supT MxX MxY)).
 Proof.
-by move=> alpha halpha; apply: gen_base; left; exact: halpha.
+by move=> alpha halpha; apply: gen_base; left.
 Qed.
 
 (* Right inclusion: MxY <= Mx(sup) *)
 Lemma qbs_supT_ub_r (T : Type) (MxX MxY : set (mR -> T)) :
   qbs_leT MxY (@qbs_Mx R (qbs_supT MxX MxY)).
 Proof.
-by move=> alpha halpha; apply: gen_base; right; exact: halpha.
+by move=> alpha halpha; apply: gen_base; right.
 Qed.
 
 (* The sup is the least upper bound among QBS-closed sets *)

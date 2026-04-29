@@ -273,15 +273,13 @@ case: n => [|n].
   rewrite eqEsubset; split => r.
     rewrite /preimage /= => /eqP htr.
     rewrite in_itv /=.
-    have hTP := truncnP r.
-    case: ifPn hTP => [h0 /andP [_ hr2] | hlt0 /eqP hn0].
+    case: ifPn (truncnP r) => [h0 /andP [_ hr2] | hlt0 /eqP hn0].
       by rewrite (eqP htr) in hr2.
     apply: (lt_trans _ ltr01).
     by rewrite ltNge; exact: hlt0.
   rewrite /preimage /= in_itv /= => hr1.
   apply/eqP.
-  have hTP := truncnP r.
-  case: ifPn hTP => [h0 /andP [hr1' hr2'] | hlt0 /eqP //].
+  case: ifPn (truncnP r) => [h0 /andP [hr1' hr2'] | hlt0 /eqP //].
   by rewrite truncn_eq //; apply/andP; split.
 - suff -> : ((truncn : mR -> nat) @^-1` [set n.+1] : set mR) =
             ([set` `[n.+1%:R, n.+2%:R[] : set mR).
@@ -289,12 +287,10 @@ case: n => [|n].
   rewrite eqEsubset; split => r.
     rewrite /preimage /= => /eqP htr.
     rewrite in_itv /=; apply/andP; split.
-    + have hTP := truncnP r.
-      case: ifPn hTP => [h0 /andP [hr _] | hlt0 /eqP hn].
+    + case: ifPn (truncnP r) => [h0 /andP [hr _] | hlt0 /eqP hn].
         by rewrite (eqP htr) in hr.
       by rewrite hn in htr.
-    + have hTP := truncnP r.
-      case: ifPn hTP => [h0 /andP [_ hr] | hlt0 /eqP hn].
+    + case: ifPn (truncnP r) => [h0 /andP [_ hr] | hlt0 /eqP hn].
         by rewrite (eqP htr) in hr.
       by rewrite hn in htr.
   rewrite /preimage /= in_itv /= => /andP [hr1 hr2].
@@ -384,9 +380,9 @@ move: sb => [f g hgf] U; split.
      measurable. Then U = f^{-1}(g^{-1}(U)) since g(f(x)) = x,
      and f is measurable, so U is measurable. *)
   move=> hU.
-  have hgU : measurable (g @^-1` U). exact: (hU g (measurable_funP g)).
   suff -> : U = f @^-1` (g @^-1` U).
-    by have := (measurable_funP f) measurableT _ hgU; rewrite setTI; exact.
+    have := (measurable_funP f) measurableT _ (hU g (measurable_funP g)).
+    by rewrite setTI; exact.
   rewrite eqEsubset; split => x /=.
     by rewrite /preimage /= => hUx; rewrite hgf.
   by rewrite /preimage /= => hgfU; rewrite -(hgf x).
@@ -461,9 +457,7 @@ have -> : (fun r : R =>
   move=> [[[h1 hU']|[h2 hU']]|[[h1 h2] hU']].
   - by rewrite h1.
   - case: ifPn => h1; [|by rewrite h2].
-    have h12 := le_trans h1 h2.
-    by have := le_trans h12 (lerN10 R);
-       rewrite ler10.
+    by have := le_trans (le_trans h1 h2) (lerN10 R); rewrite ler10.
   - by rewrite ifF; [rewrite ifF // lt_geF // ltNge // ltW|exact: lt_geF h2].
 apply: measurableU; [apply: measurableU|].
 - apply: measurableI.
