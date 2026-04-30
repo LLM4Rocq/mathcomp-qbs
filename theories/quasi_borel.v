@@ -19,6 +19,10 @@ From mathcomp Require Import all_boot all_algebra reals classical_sets
 (*   qbs_Mx alpha == alpha is a random element (in Mx)                        *)
 (*   qbs_morphism X Y f == f is a QBS morphism from X to Y                    *)
 (*   qbsHomType R X Y == bundled QBS morphisms from X to Y (HB structure)     *)
+(*   qbs_Mx_compT alpha hf == [qbs_Mx]-closure under bare [measurable_fun]    *)
+(*   qbs_Mx_glueT P Fi hP hFi == [qbs_Mx]-glue with bare measurability for P  *)
+(*   measurable_glue P Fi hP hFi == nat-indexed measurable glue: preimage   *)
+(*                                of selector + indexed family is measurable *)
 (*   R_qbs d M == QBS induced on measurableType M by measurable functions     *)
 (*   realQ, natQ, boolQ == QBS on R, nat, bool via R_qbs                      *)
 (*   prodQ X Y == binary product QBS on (X * Y)                               *)
@@ -84,6 +88,8 @@ Section qbs.
 Variable R : realType.
 
 Local Notation mR := (measurableTypeR R).
+
+Implicit Types (X Y Z W : qbsType R).
 
 (* 1. Morphisms *)
 
