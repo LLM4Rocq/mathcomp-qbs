@@ -116,7 +116,7 @@ Qed.
 
 (* Left-to-right: a QBS morphism X -> R(Y) gives a "measurable" map
    w.r.t. L_sigma(X) and sigma(Y) *)
-Lemma lr_adj_l2r (X : qbsType R) d
+Local Lemma lr_adj_l2r (X : qbsType R) d
     (Y : measurableType d) (f : X -> Y) :
   qbs_morphism (Y := R_qbs R Y) f ->
   forall U, measurable U -> L_sigma X (f @^-1` U).
@@ -127,7 +127,7 @@ Qed.
 
 (* Right-to-left: a "measurable" map w.r.t. L_sigma(X) and sigma(Y)
    gives a QBS morphism X -> R(Y) *)
-Lemma lr_adj_r2l (X : qbsType R) d
+Local Lemma lr_adj_r2l (X : qbsType R) d
     (Y : measurableType d) (f : X -> Y) :
   (forall U, measurable U -> L_sigma X (f @^-1` U)) ->
   qbs_morphism (Y := R_qbs R Y) f.
@@ -234,7 +234,7 @@ Local Notation contractK := ereal.contractK.
 (** Helper: measurability for functions into nat (discrete sigma-algebra).
     Every set in nat is measurable, so measurability of g reduces to
     measurability of singleton preimages. *)
-Lemma measurable_fun_nat_discrete d (T : measurableType d)
+Local Lemma measurable_fun_nat_discrete d (T : measurableType d)
     (g : T -> nat) (D : set T) :
   (forall n : nat, measurable (D `&` g @^-1` [set n])) ->
   measurable_fun D g.
@@ -258,7 +258,7 @@ Qed.
     Preimages of singletons are intervals:
     - trunc^{-1}({0}) = (-inf, 1)
     - trunc^{-1}({n+1}) = [n+1, n+2) *)
-Lemma measurable_truncn :
+Local Lemma measurable_truncn :
   measurable_fun [set: mR] (truncn : mR -> nat).
 Proof.
 apply: measurable_fun_nat_discrete => n; rewrite setTI.
@@ -389,7 +389,7 @@ Qed.
 (** QBS on the extended reals via [R_qbs]. *)
 Definition erealQ := R_qbs R (\bar R).
 
-Lemma measurable_contract_fin :
+Local Lemma measurable_contract_fin :
   measurable_fun [set: mR] (fun r : R => r / (1 + `|r|)).
 Proof.
 apply: continuous_measurable_fun => r.
@@ -401,7 +401,7 @@ apply: cvgD.
 exact: cvg_norm.
 Qed.
 
-Lemma measurable_contract :
+Local Lemma measurable_contract :
   measurable_fun [set: \bar R] (contract (R := R)).
 Proof.
 move=> _ U mU; rewrite setTI.
