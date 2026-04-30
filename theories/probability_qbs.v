@@ -67,7 +67,7 @@ Arguments qbs_prob_equiv : clear implicits.
 
 Lemma qbs_prob_equivxx (X : qbsType R) (p : qbs_prob X) :
   qbs_prob_equiv X p p.
-Proof. by move=> U hU. Qed.
+Proof. by []. Qed.
 
 Lemma qbs_prob_equivC (X : qbsType R) (p1 p2 : qbs_prob X) :
   qbs_prob_equiv X p1 p2 -> qbs_prob_equiv X p2 p1.
@@ -340,17 +340,14 @@ Lemma qbs_bind_returnl (X Y : qbsType R) (x : X)
     (qbs_bind X Y (qbs_return X x (qbs_prob_mu (f x))) f
       (qbs_bind_alpha_random_const x f))
     (f x).
-Proof.
-move=> U hU /=.
-by [].
-Qed.
+Proof. by []. Qed.
 
 Lemma qbs_bind_returnr (X : qbsType R) (m : qbs_prob X)
   (mu : probability mR R) :
   qbs_prob_equiv X
     (qbs_bind X X m (qbs_return X ^~ mu)
       (qbs_bind_alpha_random_return m mu)) m.
-Proof. by move=> U hU. Qed.
+Proof. by []. Qed.
 
 Lemma qbs_bindA (X Y Z : qbsType R) (m : qbs_prob X)
   (f : X -> qbs_prob Y) (g : Y -> qbs_prob Z)
@@ -369,7 +366,7 @@ Lemma qbs_bindA (X Y Z : qbsType R) (m : qbs_prob X)
         (g (qbs_prob_alpha (f (qbs_prob_alpha m r)) r)) r)
       (qbs_prob_mu m)
       hfg_diag).
-Proof. by move=> U hU. Qed.
+Proof. by []. Qed.
 
 End monad_bind.
 
@@ -558,7 +555,7 @@ Qed.
 Lemma monadP_map_id (X : qbsType R) (p : qbs_prob X) :
   qbs_prob_equiv X
     (monadP_map X X idfun (@qbs_hom_proof R _ _ (qbs_id X)) p) p.
-Proof. by move=> U hU. Qed.
+Proof. by []. Qed.
 
 Lemma monadP_map_comp (X Y Z : qbsType R)
   (f : @qbsHomType R X Y) (g : @qbsHomType R Y Z) (p : qbs_prob X) :
@@ -567,7 +564,7 @@ Lemma monadP_map_comp (X Y Z : qbsType R)
        (@qbs_hom_proof R _ _ (qbs_comp f g)) p)
     (monadP_map Y Z g (@qbs_hom_proof R Y Z g)
        (monadP_map X Y f (@qbs_hom_proof R X Y f) p)).
-Proof. by move=> U hU. Qed.
+Proof. by []. Qed.
 
 (* 9. Expectation and probability of events *)
 
@@ -805,7 +802,7 @@ Lemma qbs_strength_natural (W W' X X' : qbsType R)
       (fun alpha halpha => conj (hf _ halpha.1) (hg _ halpha.2))
       (qbs_strength W X w p))
     (qbs_strength W' X' (f w) (monadP_map X X' g hg p)).
-Proof. by move=> U hU. Qed.
+Proof. by []. Qed.
 
 (* Unit law: projecting away the unit component recovers p *)
 Lemma qbs_strength_unit (X : qbsType R) (p : qbs_prob X) :
@@ -814,7 +811,7 @@ Lemma qbs_strength_unit (X : qbsType R) (p : qbs_prob X) :
       (@qbs_hom_proof R _ _ (qbs_snd (unitQ R) X))
       (qbs_strength (unitQ R) X tt p))
     p.
-Proof. by move=> U hU. Qed.
+Proof. by []. Qed.
 
 (* Associativity: strength with (u,v) then reassociate = strength u then
    strength v *)
@@ -827,7 +824,7 @@ Lemma qbs_strength_assoc (U V X : qbsType R) (u : U) (v : V)
          conj halpha.1.1 (conj halpha.1.2 halpha.2))
       (qbs_strength (prodQ U V) X (u, v) p))
     (qbs_strength U (prodQ V X) u (qbs_strength V X v p)).
-Proof. by move=> S hS. Qed.
+Proof. by []. Qed.
 
 (* Strength + return: strength of a return is a return of the pair *)
 Lemma qbs_strength_return (W X : qbsType R) (w : W) (x : X)
@@ -835,7 +832,7 @@ Lemma qbs_strength_return (W X : qbsType R) (w : W) (x : X)
   qbs_prob_equiv (prodQ W X)
     (qbs_strength W X w (qbs_return X x mu))
     (qbs_return (prodQ W X) (w, x) mu).
-Proof. by move=> U hU. Qed.
+Proof. by []. Qed.
 
 (* Join morphism: join (= bind with id) is a QBS morphism
    P(P(X)) -> P(X) when id satisfies the strong morphism condition.
@@ -876,7 +873,7 @@ Lemma qbs_bind_decomp (X Y : qbsType R) (p : qbs_prob X)
   let p' := monadP_map X (monadP Y) f hf p in
   qbs_prob_equiv Y (qbs_bind X Y p f hdiag)
     (qbs_join Y p' hdiag).
-Proof. by move=> U hU. Qed.
+Proof. by []. Qed.
 
 End strength_and_monad_structure.
 
@@ -1059,7 +1056,7 @@ Lemma qbs_strength_law4 (W X : qbsType R) (w : W)
         (@qbs_strength_morphism W X)
         (qbs_strength W (monadP X) w pp))
       (@qbs_strength_law4_diag W X w pp hdiag)).
-Proof. by move=> U hU. Qed.
+Proof. by []. Qed.
 
 End probability_inequalities.
 

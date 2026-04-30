@@ -108,7 +108,7 @@ have [Xempty | x0] := pselectT X.
     + case=> [[b' [hb hdef]] | [P [a _]]].
       * by exists b'.
       * exfalso; exact: Xempty (a (0%R : mR)).
-  have := @choice _ _ _ hFi2; move=> [getB hgetB].
+  have [getB hgetB] := choice hFi2.
   right; left; exists (fun r => getB (Q r) r); split.
   + exact: (@qbs_Mx_glueT R Y Q getB hQ
       (fun i => (hgetB i).1)).
@@ -122,7 +122,7 @@ have [Xempty | x0] := pselectT X.
       * case=> [[b' [_ hdef]] | [_ [_ [b' _]]]].
         -- exfalso; exact: Yempty (b' (0%R : mR)).
         -- exfalso; exact: Yempty (b' (0%R : mR)).
-    have := @choice _ _ _ hFi1; move=> [getA hgetA].
+    have [getA hgetA] := choice hFi1.
     left; exists (fun r => getA (Q r) r); split.
     * exact: (@qbs_Mx_glueT R X Q getA hQ
         (fun i => (hgetA i).1)).
@@ -158,8 +158,7 @@ have [Xempty | x0] := pselectT X.
         (* case 3: already gluing *)
         -- exists (P, a, b').
            split; [|split; [|split]] => //.
-    have := @choice _ _ _ hFi3.
-    move=> [getTriple hgetTriple].
+    have [getTriple hgetTriple] := choice hFi3.
     (* Extract the components *)
     set Pi := fun i => (getTriple i).1.1.
     set ai := fun i => (getTriple i).1.2.
@@ -380,8 +379,7 @@ have hFi' : forall n, exists triple :
   (forall r, Fi n r = existT _ (triple.1.1 r) (triple.1.2 (triple.1.1 r) r)).
   move=> n; case: (hFi n) => [Pn [Gin [hPn [hGin hdef]]]].
   by exists (Pn, Gin, True).
-have := @choice _ _ _ hFi'.
-move=> [getTriple hgetTriple].
+have [getTriple hgetTriple] := choice hFi'.
 set Pn := fun n => (getTriple n).1.1.
 set Gin := fun n => (getTriple n).1.2.
 have hPn_meas : forall n, measurable_fun setT (Pn n).
@@ -637,8 +635,7 @@ have hGi' : forall n, exists pair : (mR -> nat) * (nat -> mR -> X),
   (forall r, Gi n r = mkseq (fun i => pair.2 i r) (pair.1 r)).
   move=> n; case: (hGi n) => [len [Fi [hlen [hFi hdef]]]].
   by exists (len, Fi).
-have := @choice _ _ _ hGi'.
-move=> [getPair hgetPair].
+have [getPair hgetPair] := choice hGi'.
 set lenN := fun n => (getPair n).1.
 set FiN := fun n => (getPair n).2.
 have hlenN : forall n, measurable_fun setT (lenN n).

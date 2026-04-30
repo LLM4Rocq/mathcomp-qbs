@@ -367,7 +367,7 @@ Definition unit_to_pair (r : R) : R * R :=
 Lemma half2 : 2%:R^-1 *+ 2 = (1 : R).
 Proof.
 have h : (1 : R) / 2%:R = 2%:R^-1 by rewrite div1r.
-by rewrite /GRing.natmul /= -[2%:R^-1]h -(@Num.Theory.splitr R 1).
+by rewrite /GRing.natmul /= -[2%:R^-1]h -(@splitr R 1).
 Qed.
 
 (******************************************************************************)
@@ -407,8 +407,8 @@ have hrem_bound : forall n, 0 <= rem n /\ rem n < 1.
   rewrite /step; case: ifP => hle; split.
   - by rewrite subr_ge0 -half2 ler_pMn2r.
   - by rewrite ltrBlDr -mulr2n ltr_pMn2r.
-  - have := @Num.Theory.mulrn_wge0 R (rem k) 2 IHk0; done.
-  - by rewrite -half2 ltr_pMn2r // Num.Theory.real_ltNge ?num_real // hle.
+  - have := @mulrn_wge0 R (rem k) 2 IHk0; done.
+  - by rewrite -half2 ltr_pMn2r // real_ltNge ?num_real // hle.
 have habs_half : `|(2%:R^-1 : R)| < 1.
   by rewrite ger0_norm ?invr_ge0 ?ler0n // invf_lt1 ?ltr0n // ltr1n.
 have hrem_cvg : (fun n => rem n * 2%:R^-1 ^+ n : R^o) n
@@ -417,10 +417,10 @@ have hrem_cvg : (fun n => rem n * 2%:R^-1 ^+ n : R^o) n
     (fun _ => 0 : R^o) (fun n => 2%:R^-1 ^+ n : R^o)).
   - apply: nearW => n; apply/andP; split.
     + apply: mulr_ge0; first by have [] := hrem_bound n.
-      by apply: Num.Theory.exprn_ge0; rewrite invr_ge0; apply: ler0n.
+      by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n.
     + rewrite -[X in _ <= X]mul1r; apply: ler_pM.
       * by have [] := hrem_bound n.
-      * by apply: (@Num.Theory.exprn_ge0 R); rewrite invr_ge0; apply: ler0n.
+      * by apply: (@exprn_ge0 R); rewrite invr_ge0; apply: ler0n.
       * by have [_ h] := hrem_bound n; exact: ltW h.
       * by [].
   - exact: cvg_cst.
@@ -511,8 +511,8 @@ have hrem_bound : forall n, 0 <= rem n /\ rem n < 1.
   rewrite /step; case: ifP => hle; split.
   - by rewrite subr_ge0 -half2 ler_pMn2r.
   - by rewrite ltrBlDr -mulr2n ltr_pMn2r.
-  - have := @Num.Theory.mulrn_wge0 R (rem k) 2 IHk0; done.
-  - by rewrite -half2 ltr_pMn2r // Num.Theory.real_ltNge ?num_real // hle.
+  - have := @mulrn_wge0 R (rem k) 2 IHk0; done.
+  - by rewrite -half2 ltr_pMn2r // real_ltNge ?num_real // hle.
 have hstep_simp : forall N n, (N <= n)%N ->
     (forall m, (N <= m)%N -> 2%:R^-1 <= rem m) ->
     rem n.+1 = rem n *+ 2 - 1.
@@ -540,7 +540,7 @@ have hle : forall k : nat, (1 - rem N) *+ 2 ^ k <= 1.
 have hpos : 0 < 1 - rem N by rewrite subr_gt0; exact: (hrem_bound N).2.
 have hinv_ge : 0 <= (1 - rem N)^-1.
   by rewrite invr_ge0; exact: ltW hpos.
-have harch := Num.Theory.archi_boundP hinv_ge.
+have harch := archi_boundP hinv_ge.
 set m := archi_bound _ in harch.
 have hm : 1 < (1 - rem N) *+ m.
   rewrite -mulr_natr.

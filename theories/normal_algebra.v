@@ -349,22 +349,6 @@ by move=> hn; apply: lt0r_neq0; rewrite sqrtr_gt0;
    exact: nine_div_gt0.
 Qed.
 
-(* Positivity lemmas for the intermediate variances *)
-Lemma phase1_var1_gt0 : (0 < 9%:R / 37%:R :> R).
-Proof. exact: nine_div_gt0. Qed.
-
-Lemma phase1_var2_gt0 : (0 < 9%:R / 73%:R :> R).
-Proof. exact: nine_div_gt0. Qed.
-
-Lemma phase1_var3_gt0 : (0 < 9%:R / 109%:R :> R).
-Proof. exact: nine_div_gt0. Qed.
-
-Lemma phase1_var4_gt0 : (0 < 9%:R / 145%:R :> R).
-Proof. exact: nine_div_gt0. Qed.
-
-Lemma phase1_var5_gt0 : (0 < 9%:R / 181%:R :> R).
-Proof. exact: nine_div_gt0. Qed.
-
 (* The sqrtr of each variance is nonzero *)
 Lemma phase1_sqrtr_var1_neq0 : sqrtr (9%:R / 37%:R) != (0 : R).
 Proof. exact: sqrtr_nine_div_neq0. Qed.
@@ -681,7 +665,7 @@ Proof. by field. Qed.
 
 (* The scalar01 factor simplifies to a normal_pdf because the width
    equals S01 = sqrt(37/4), making the peaks cancel. *)
-Lemma phase2_scalar01_is_pdf (s : R) :
+Lemma phase2_scalar01E (s : R) :
   gaussian_prod_scalar 0 (5%:R / 2%:R - s) 3%:R (2%:R^-1) =
   normal_pdf (5%:R / 2%:R) (sqrtr (37%:R / 4%:R)) s.
 Proof.
@@ -702,7 +686,7 @@ Lemma phase2_step0 (s : R) :
   normal_pdf (90%:R / 73%:R)
              (gaussian_prod_sigma 3%:R (sqrtr (37%:R / 4%:R))) s.
 Proof.
-rewrite phase2_scalar01_is_pdf.
+rewrite phase2_scalar01E.
 have hsqrt_neq0 : sqrtr (37%:R / 4%:R : R) != 0.
   apply: lt0r_neq0; rewrite sqrtr_gt0.
   by apply: divr_gt0; rewrite ?ltr0n.
@@ -786,7 +770,7 @@ by apply: divr_gt0; rewrite ?ltr0n.
 Qed.
 
 (* scalar12 = peak_ratio * normal_pdf *)
-Lemma phase2_scalar12_is_pdf (s : R) :
+Lemma phase2_scalar12E (s : R) :
   gaussian_prod_scalar ((90%:R - 36%:R * s) / 37%:R)
                        (19%:R / 5%:R - 2%:R * s)
                        (sqrtr (9%:R / 37%:R)) (2%:R^-1) =
@@ -817,7 +801,7 @@ Lemma phase2_step1 (s : R) :
   normal_pdf (gaussian_prod_mu (90%:R / 73%:R) (253%:R / 190%:R) sigma0 W12)
              (gaussian_prod_sigma sigma0 W12) s.
 Proof.
-rewrite /= phase2_scalar12_is_pdf.
+rewrite /= phase2_scalar12E.
 (* LHS: (K0 * pdf1) * (pr * pdf2)
    Rearrange to: ((K0 * pr) * pdf1) * pdf2 *)
 rewrite -mulrA (mulrCA (normal_pdf _ _ _)) !mulrA.
@@ -890,7 +874,7 @@ by apply: divr_gt0; rewrite ?ltr0n.
 Qed.
 
 (* scalar23 = peak_ratio * normal_pdf *)
-Lemma phase2_scalar23_is_pdf (s : R) :
+Lemma phase2_scalar23E (s : R) :
   gaussian_prod_scalar ((1134%:R - 540%:R * s) / 365%:R)
                        (9%:R / 2%:R - 3%:R * s)
                        (sqrtr (9%:R / 73%:R)) (2%:R^-1) =
@@ -923,7 +907,7 @@ Lemma phase2_step2 (s : R) :
              (gaussian_prod_sigma sigma1 W23) s.
 Proof.
 move=> K1.
-rewrite /= phase2_scalar23_is_pdf.
+rewrite /= phase2_scalar23E.
 (* Rearrange: K1 * pdf(mu1,sigma1,s) * (pr * pdf(c23,W23,s))
      = (K1 * pr) * pdf(mu1,sigma1,s) * pdf(c23,W23,s) *)
 rewrite -mulrA (mulrCA (normal_pdf _ _ _)) !mulrA.
@@ -988,7 +972,7 @@ by apply: divr_gt0; rewrite ?ltr0n.
 Qed.
 
 (* scalar34 = peak_ratio * normal_pdf *)
-Lemma phase2_scalar34_is_pdf (s : R) :
+Lemma phase2_scalar34E (s : R) :
   gaussian_prod_scalar ((1944%:R - 1080%:R * s) / 545%:R)
                        (31%:R / 5%:R - 4%:R * s)
                        (sqrtr (9%:R / 109%:R)) (2%:R^-1) =
@@ -1023,7 +1007,7 @@ Lemma phase2_step3 (s : R) :
              (gaussian_prod_sigma sigma2 W34) s.
 Proof.
 move=> K2.
-rewrite /= phase2_scalar34_is_pdf.
+rewrite /= phase2_scalar34E.
 (* Rearrange: K2 * pdf(mu2,sigma2,s) * (pr * pdf(c34,W34,s))
      = (K2 * pr) * pdf(mu2,sigma2,s) * pdf(c34,W34,s) *)
 rewrite -mulrA (mulrCA (normal_pdf _ _ _)) !mulrA.
@@ -1088,7 +1072,7 @@ by apply: divr_gt0; rewrite ?ltr0n.
 Qed.
 
 (* scalar45 = peak_ratio * normal_pdf *)
-Lemma phase2_scalar45_is_pdf (s : R) :
+Lemma phase2_scalar45E (s : R) :
   gaussian_prod_scalar ((612%:R - 360%:R * s) / 145%:R)
                        (8%:R - 5%:R * s)
                        (sqrtr (9%:R / 145%:R)) (2%:R^-1) =
@@ -1125,7 +1109,7 @@ Lemma phase2_step4 (s : R) :
              (gaussian_prod_sigma sigma3 W45) s.
 Proof.
 move=> K3.
-rewrite /= phase2_scalar45_is_pdf.
+rewrite /= phase2_scalar45E.
 (* Rearrange: K3 * pdf(mu3,sigma3,s) * (pr * pdf(c45,W45,s))
      = (K3 * pr) * pdf(mu3,sigma3,s) * pdf(c45,W45,s) *)
 rewrite -mulrA (mulrCA (normal_pdf _ _ _)) !mulrA.
