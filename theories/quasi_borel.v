@@ -184,7 +184,7 @@ Definition boolQ : qbsType R := R_qbs bool.
 
 (* 3. Binary Product *)
 
-Lemma prodQ_Mx_comp (X Y : qbsType R) :
+Local Lemma prodQ_Mx_comp (X Y : qbsType R) :
   forall (alpha : mR -> X * Y) (f : {mfun mR >-> mR}),
     (qbs_Mx (fun r => (alpha r).1) /\
      qbs_Mx (fun r => (alpha r).2)) ->
@@ -196,7 +196,7 @@ move=> alpha f [h1 h2]; split.
 exact: qbs_Mx_comp h2.
 Qed.
 
-Lemma prodQ_Mx_const (X Y : qbsType R) :
+Local Lemma prodQ_Mx_const (X Y : qbsType R) :
   forall xy : X * Y,
     qbs_Mx (fun _ : mR => xy.1) /\
     qbs_Mx (fun _ : mR => xy.2).
@@ -204,7 +204,7 @@ Proof.
 by move=> [x y]; split; exact: qbs_Mx_const.
 Qed.
 
-Lemma prodQ_Mx_glue (X Y : qbsType R) :
+Local Lemma prodQ_Mx_glue (X Y : qbsType R) :
   forall (P : {mfun mR >-> nat})
          (Fi : nat -> mR -> X * Y),
     (forall i, qbs_Mx (fun r => (Fi i r).1) /\
@@ -274,7 +274,7 @@ End qbs_pair_instance.
    The random elements are those g : mR -> qbsHomType R X Y such that
    the uncurried map (r, x) |-> g(r)(x) is a morphism prodQ realQ X -> Y. *)
 
-Lemma expQ_Mx_comp (X Y : qbsType R) :
+Local Lemma expQ_Mx_comp (X Y : qbsType R) :
   forall alpha (f : {mfun mR >-> mR}),
     (qbs_morphism (fun p : realQ * X => (alpha p.1 : X -> Y) p.2)) ->
     qbs_morphism
@@ -289,7 +289,7 @@ apply: halpha; split => /=.
 exact: hb2.
 Qed.
 
-Lemma expQ_Mx_const (X Y : qbsType R) :
+Local Lemma expQ_Mx_const (X Y : qbsType R) :
   forall g : qbsHomType X Y,
     qbs_morphism (fun p : realQ * X => ((fun _ : mR => g) p.1 : X -> Y) p.2).
 Proof.
@@ -297,7 +297,7 @@ move=> g beta [_ hb2].
 exact: qbs_hom_proof.
 Qed.
 
-Lemma expQ_Mx_glue (X Y : qbsType R) :
+Local Lemma expQ_Mx_glue (X Y : qbsType R) :
   forall (P : {mfun mR >-> nat})
     (Fi : nat -> mR -> qbsHomType X Y),
     (forall i, qbs_morphism
@@ -494,7 +494,7 @@ Let sub_proj : sub_car -> X := @proj1_sig _ P.
 Let sub_Mx : set (mR -> sub_car) :=
   [set alpha | qbs_Mx (fun r => sub_proj (alpha r))].
 
-Lemma sub_qbs_Mx_comp : forall alpha
+Local Lemma sub_qbs_Mx_comp : forall alpha
   (f : {mfun mR >-> mR}),
   sub_Mx alpha -> sub_Mx (alpha \o f).
 Proof.
@@ -502,14 +502,14 @@ move=> alpha f halpha; rewrite /sub_Mx /=.
 exact: qbs_Mx_comp halpha.
 Qed.
 
-Lemma sub_qbs_Mx_const : forall x : sub_car,
+Local Lemma sub_qbs_Mx_const : forall x : sub_car,
   sub_Mx (fun _ => x).
 Proof.
 move=> x; rewrite /sub_Mx /=.
 exact: qbs_Mx_const.
 Qed.
 
-Lemma sub_qbs_Mx_glue : forall (Q : {mfun mR >-> nat})
+Local Lemma sub_qbs_Mx_glue : forall (Q : {mfun mR >-> nat})
   (Fi : nat -> mR -> sub_car),
   (forall i, sub_Mx (Fi i)) ->
   sub_Mx (fun r => Fi (Q r) r).
@@ -558,7 +558,7 @@ Proof. by move=> alpha halpha; exact: gen_base. Qed.
 (* 11. Exponential morphisms *)
 
 (* Helper: random element paired with constant is random in product *)
-Lemma prodQ_random_const (X Y : qbsType R) (alpha : mR -> X) (y : Y) :
+Local Lemma prodQ_random_const (X Y : qbsType R) (alpha : mR -> X) (y : Y) :
   qbs_Mx alpha -> qbs_Mx (fun r => (alpha r, y)).
 Proof.
 move=> halpha; split => /=.
