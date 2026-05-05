@@ -23,18 +23,20 @@ From QBS Require Import quasi_borel probability_qbs.
 (* ```                                                                        *)
 (******************************************************************************)
 
-Import GRing.Theory Num.Def Num.Theory.
+Import GRing.Theory Num.Def Num.Theory boolp.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-Import boolp.
 
 Local Open Scope classical_set_scope.
+Local Open Scope ereal_scope.
 
 Section qbs_prob_quot.
 Variable R : realType.
 Local Notation mR := (measurableTypeR R).
+
+Implicit Types (X Y Z : qbsType R).
 
 (** The quotient type (setoid-style).
     A qbs_prob_space X wraps a qbs_prob X representative.
@@ -256,12 +258,12 @@ End qbs_prob_space_instance.
 (** Integration on the quotient: linearity properties. *)
 
 Lemma qps_integral_const (X : qbsType R) (p : qbs_prob_space X) (c : \bar R) :
-  qps_integral p (fun _ => c) = (\int[qbs_prob_mu (qps_repr p)]_x c)%E.
+  qps_integral p (fun _ => c) = \int[qbs_prob_mu (qps_repr p)]_x c.
 Proof. by []. Qed.
 
 Lemma qps_integral_return (X : qbsType R) (x : X)
   (mu : probability mR R) (h : X -> \bar R) :
-  qps_integral (qps_return x mu) h = (\int[mu]_r h x)%E.
+  qps_integral (qps_return x mu) h = \int[mu]_r h x.
 Proof. by []. Qed.
 
 Lemma qps_integral_bind (X Y : qbsType R) (p : qbs_prob_space X)
@@ -270,8 +272,8 @@ Lemma qps_integral_bind (X Y : qbsType R) (p : qbs_prob_space X)
     (fun r => qbs_prob_alpha (f (qbs_prob_alpha (qps_repr p) r)) r))
   (h : Y -> \bar R) :
   qps_integral (qps_bind p f hdiag) h =
-  (\int[qbs_prob_mu (qps_repr p)]_r
-    h (qbs_prob_alpha (f (qbs_prob_alpha (qps_repr p) r)) r))%E.
+  \int[qbs_prob_mu (qps_repr p)]_r
+    h (qbs_prob_alpha (f (qbs_prob_alpha (qps_repr p) r)) r).
 Proof. by []. Qed.
 
 (** Canonical representative via classical choice.

@@ -29,6 +29,8 @@ Section normal_density_algebra.
 Variable R : realType.
 Local Open Scope ring_scope.
 
+Implicit Types (m s x K : R) (n : nat).
+
 (* Helper: 2^-1 != 0 *)
 Let half_neq0 : (2%:R^-1 : R) != 0.
 Proof. by rewrite invr_neq0 // pnatr_eq0. Qed.
@@ -36,6 +38,14 @@ Proof. by rewrite invr_neq0 // pnatr_eq0. Qed.
 (* Helper: 3 != 0 *)
 Let three_neq0 : (3%:R : R) != 0.
 Proof. by rewrite pnatr_eq0. Qed.
+
+(* Helper: sqrtr of a positive rational is nonzero. *)
+Local Lemma sqrtr_pnat_div_neq0 (a b : nat) :
+  (0 < a)%N -> (0 < b)%N -> sqrtr (a%:R / b%:R : R) != 0.
+Proof.
+move=> ha hb; apply: lt0r_neq0; rewrite sqrtr_gt0.
+by apply: divr_gt0; rewrite ltr0n.
+Qed.
 
 (* General identities about normal densities                             *)
 Section normal_pdf_general.
@@ -219,7 +229,7 @@ have hVn4 : V *+ 4 + 1 != 0.
   apply: lt0r_neq0.
   by rewrite addr_gt0 // ?ltr01 // mulrn_wgt0.
 rewrite sqr_sqrtr; last exact: (ltW hV).
-field. by rewrite mulr_natr.
+by field; rewrite mulr_natr.
 Qed.
 
 (* Concrete Phase 1 combination steps *)
@@ -687,9 +697,7 @@ Lemma phase2_step0 (s : R) :
              (gaussian_prod_sigma 3%:R (sqrtr (37%:R / 4%:R))) s.
 Proof.
 rewrite phase2_scalar01E.
-have hsqrt_neq0 : sqrtr (37%:R / 4%:R : R) != 0.
-  apply: lt0r_neq0; rewrite sqrtr_gt0.
-  by apply: divr_gt0; rewrite ?ltr0n.
+have hsqrt_neq0 := sqrtr_pnat_div_neq0 (a := 37) (b := 4) isT isT.
 rewrite normal_pdf_times' //.
 have -> : gaussian_prod_mu 0 (5%:R / 2%:R) 3%:R
             (sqrtr (37%:R / 4%:R : R)) = 90%:R / 73%:R.
@@ -703,9 +711,7 @@ Lemma phase2_step0_sigma2 :
   (gaussian_prod_sigma 3%:R (sqrtr (37%:R / 4%:R : R))) ^+ 2 =
   333%:R / 73%:R.
 Proof.
-have hsqrt_neq0 : sqrtr (37%:R / 4%:R : R) != 0.
-  apply: lt0r_neq0; rewrite sqrtr_gt0.
-  by apply: divr_gt0; rewrite ?ltr0n.
+have hsqrt_neq0 := sqrtr_pnat_div_neq0 (a := 37) (b := 4) isT isT.
 rewrite gaussian_prod_sigma_sqr ?pnatr_eq0 //.
 rewrite sqr_sqrtr; last by apply: divr_ge0; rewrite ?ler0n.
 by field.
@@ -714,9 +720,7 @@ Qed.
 Lemma phase2_step0_sigma_neq0 :
   gaussian_prod_sigma 3%:R (sqrtr (37%:R / 4%:R : R)) != 0.
 Proof.
-have hsqrt_neq0 : sqrtr (37%:R / 4%:R : R) != 0.
-  apply: lt0r_neq0; rewrite sqrtr_gt0.
-  by apply: divr_gt0; rewrite ?ltr0n.
+have hsqrt_neq0 := sqrtr_pnat_div_neq0 (a := 37) (b := 4) isT isT.
 exact: gaussian_prod_sigma_neq0.
 Qed.
 
@@ -740,9 +744,8 @@ Lemma phase2_scalar12_fun (s : R) :
              (sqrtr (73%:R / 148%:R) * 37%:R / 38%:R) s.
 Proof.
 set S12 := sqrtr _.
-have hS : S12 != (0 : R).
-  apply: lt0r_neq0; rewrite sqrtr_gt0.
-  by apply: divr_gt0; rewrite ?ltr0n.
+have hS : S12 != (0 : R)
+  := sqrtr_pnat_div_neq0 (a := 73) (b := 148) isT isT.
 suff heq : ((19%:R / 5%:R - 2%:R * s) -
              (90%:R - 36%:R * s) / 37%:R) ^+ 2 /
             (S12 ^+ 2 *+ 2) =
@@ -753,7 +756,7 @@ suff heq : ((19%:R / 5%:R - 2%:R * s) -
 rewrite -(mulr_natr (S12 ^+ 2) 2)
         -(mulr_natr ((S12 * 37%:R / 38%:R) ^+ 2) 2).
 rewrite !exprMn exprVn.
-field. by rewrite hS.
+by field; rewrite hS.
 Qed.
 
 (* Width for step 1: W12 = sqrt(73/148) * 37/38 *)
@@ -844,9 +847,8 @@ Lemma phase2_scalar23_fun (s : R) :
              (sqrtr (109%:R / 292%:R) * 73%:R / 111%:R) s.
 Proof.
 set S23 := sqrtr _.
-have hS : S23 != (0 : R).
-  apply: lt0r_neq0; rewrite sqrtr_gt0.
-  by apply: divr_gt0; rewrite ?ltr0n.
+have hS : S23 != (0 : R)
+  := sqrtr_pnat_div_neq0 (a := 109) (b := 292) isT isT.
 suff heq : ((9%:R / 2%:R - 3%:R * s) -
              (1134%:R - 540%:R * s) / 365%:R) ^+ 2 /
             (S23 ^+ 2 *+ 2) =
@@ -857,7 +859,7 @@ suff heq : ((9%:R / 2%:R - 3%:R * s) -
 rewrite -(mulr_natr (S23 ^+ 2) 2)
         -(mulr_natr ((S23 * 73%:R / 111%:R) ^+ 2) 2).
 rewrite !exprMn exprVn.
-field. by rewrite hS.
+by field; rewrite hS.
 Qed.
 
 (* Width for step 2: W23 = sqrt(109/292) * 73/111 *)
@@ -942,9 +944,8 @@ Lemma phase2_scalar34_fun (s : R) :
              (sqrtr (145%:R / 436%:R) * 109%:R / 220%:R) s.
 Proof.
 set S34 := sqrtr _.
-have hS : S34 != (0 : R).
-  apply: lt0r_neq0; rewrite sqrtr_gt0.
-  by apply: divr_gt0; rewrite ?ltr0n.
+have hS : S34 != (0 : R)
+  := sqrtr_pnat_div_neq0 (a := 145) (b := 436) isT isT.
 suff heq : ((31%:R / 5%:R - 4%:R * s) -
              (1944%:R - 1080%:R * s) / 545%:R) ^+ 2 /
             (S34 ^+ 2 *+ 2) =
@@ -955,7 +956,7 @@ suff heq : ((31%:R / 5%:R - 4%:R * s) -
 rewrite -(mulr_natr (S34 ^+ 2) 2)
         -(mulr_natr ((S34 * 109%:R / 220%:R) ^+ 2) 2).
 rewrite !exprMn exprVn.
-field. by rewrite hS.
+by field; rewrite hS.
 Qed.
 
 (* Width for step 3: W34 = sqrt(145/436) * 109/220 *)
@@ -1042,9 +1043,8 @@ Lemma phase2_scalar45_fun (s : R) :
              (sqrtr (181%:R / 580%:R) * 29%:R / 73%:R) s.
 Proof.
 set S45 := sqrtr _.
-have hS : S45 != (0 : R).
-  apply: lt0r_neq0; rewrite sqrtr_gt0.
-  by apply: divr_gt0; rewrite ?ltr0n.
+have hS : S45 != (0 : R)
+  := sqrtr_pnat_div_neq0 (a := 181) (b := 580) isT isT.
 suff heq : ((8%:R - 5%:R * s) -
              (612%:R - 360%:R * s) / 145%:R) ^+ 2 /
             (S45 ^+ 2 *+ 2) =
@@ -1055,7 +1055,7 @@ suff heq : ((8%:R - 5%:R * s) -
 rewrite -(mulr_natr (S45 ^+ 2) 2)
         -(mulr_natr ((S45 * 29%:R / 73%:R) ^+ 2) 2).
 rewrite !exprMn exprVn.
-field. by rewrite hS.
+by field; rewrite hS.
 Qed.
 
 (* Width for step 4: W45 = sqrt(181/580) * 29/73 *)
@@ -1156,16 +1156,11 @@ Proof. exact: phase2_step4_sigma_neq0. Qed.
 Lemma phase2_const_gt0 : 0 < phase2_const.
 Proof.
 rewrite /phase2_const.
-have sqrtr37_neq0 : sqrtr (37%:R / 4%:R : R) != 0 by
-  apply: lt0r_neq0; rewrite sqrtr_gt0; apply: divr_gt0; rewrite ltr0n.
-have sqrtr73_neq0 : sqrtr (73%:R / 148%:R : R) != 0 by
-  apply: lt0r_neq0; rewrite sqrtr_gt0; apply: divr_gt0; rewrite ltr0n.
-have sqrtr109_neq0 : sqrtr (109%:R / 292%:R : R) != 0 by
-  apply: lt0r_neq0; rewrite sqrtr_gt0; apply: divr_gt0; rewrite ltr0n.
-have sqrtr145_neq0 : sqrtr (145%:R / 436%:R : R) != 0 by
-  apply: lt0r_neq0; rewrite sqrtr_gt0; apply: divr_gt0; rewrite ltr0n.
-have sqrtr181_neq0 : sqrtr (181%:R / 580%:R : R) != 0 by
-  apply: lt0r_neq0; rewrite sqrtr_gt0; apply: divr_gt0; rewrite ltr0n.
+have sqrtr37_neq0 := sqrtr_pnat_div_neq0 (a := 37) (b := 4) isT isT.
+have sqrtr73_neq0 := sqrtr_pnat_div_neq0 (a := 73) (b := 148) isT isT.
+have sqrtr109_neq0 := sqrtr_pnat_div_neq0 (a := 109) (b := 292) isT isT.
+have sqrtr145_neq0 := sqrtr_pnat_div_neq0 (a := 145) (b := 436) isT isT.
+have sqrtr181_neq0 := sqrtr_pnat_div_neq0 (a := 181) (b := 580) isT isT.
 (* Factor 9: gps(mu3, 548/365, sigma3, W45) *)
 apply: mulr_gt0; last first.
   exact: gaussian_prod_scalar_gt0 phase2_step3_sigma_neq0 phase2_W45_neq0.

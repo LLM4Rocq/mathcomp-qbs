@@ -34,6 +34,8 @@ Variable R : realType.
 
 Local Notation mR := (measurableTypeR R).
 
+Implicit Types (X Y : qbsType R).
+
 (** Product of QBS probability spaces.
     Given p : qbs_prob X and q : qbs_prob Y, construct
     qbs_prob (prodQ X Y) with alpha pairing the two alphas and

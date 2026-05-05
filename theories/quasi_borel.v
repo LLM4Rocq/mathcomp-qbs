@@ -76,8 +76,8 @@ HB.structure Definition QBSpace (R : realType) := { T of isQBS R T }.
 
 HB.mixin Record isQBSMorphism (R : realType) (X Y : qbsType R)
     (f : X -> Y) := {
-  qbs_hom_proof : forall alpha, @qbs_Mx R X alpha ->
-    @qbs_Mx R Y (f \o alpha)
+  qbs_hom_proof : forall alpha, qbs_Mx (s := X) alpha ->
+    qbs_Mx (s := Y) (f \o alpha)
 }.
 
 #[short(type="qbsHomType")]
@@ -98,7 +98,7 @@ Definition qbs_morphism (X Y : qbsType R) (f : X -> Y) : Prop :=
   forall alpha, qbs_Mx alpha -> qbs_Mx (f \o alpha).
 
 Section qbs_id_instance.
-Variable (X : qbsType R).
+Variable X : qbsType R.
 Let f : X -> X := idfun.
 Let hf : qbs_morphism f := fun alpha halpha => halpha.
 HB.instance Definition _ := @isQBSMorphism.Build R X X f hf.
@@ -107,7 +107,7 @@ End qbs_id_instance.
 
 Section qbs_comp_instance.
 Variables (X Y Z : qbsType R).
-Variable (f : qbsHomType X Y) (g : qbsHomType Y Z).
+Variables (f : qbsHomType X Y) (g : qbsHomType Y Z).
 Let gf := (g : Y -> Z) \o (f : X -> Y).
 Let hgf : qbs_morphism gf :=
   fun alpha halpha =>
@@ -130,7 +130,7 @@ End qbs_const_instance.
 Lemma qbs_Mx_compT (X : qbsType R) (alpha : mR -> X) (f : mR -> mR) :
   qbs_Mx alpha -> measurable_fun setT f -> qbs_Mx (alpha \o f).
 Proof.
-by move=> ha hf; exact: (@qbs_Mx_comp _ X alpha (mfun_Sub (mem_set hf)) ha).
+by move=> ha hf; exact: (qbs_Mx_comp (s := X) alpha (mfun_Sub (mem_set hf)) ha).
 Qed.
 
 Lemma qbs_Mx_glueT (X : qbsType R)
@@ -139,7 +139,7 @@ Lemma qbs_Mx_glueT (X : qbsType R)
   (forall i, qbs_Mx (Fi i)) ->
   qbs_Mx (fun r => Fi (P r) r).
 Proof.
-by move=> hP hFi; exact: (@qbs_Mx_glue _ X (mfun_Sub (mem_set hP)) Fi hFi).
+by move=> hP hFi; exact: (qbs_Mx_glue (s := X) (mfun_Sub (mem_set hP)) Fi hFi).
 Qed.
 
 (* 2. The R functor: measurableType -> qbsType *)
@@ -154,11 +154,11 @@ move=> hP hFi _ U mU; rewrite setTI.
 have -> : (fun r => Fi (P r) r) @^-1` U =
           \bigcup_i (P @^-1` [set i] `&` (Fi i) @^-1` U).
   rewrite eqEsubset; split => [r hUr | r [i _ [hPi hFir]]].
-  - by exists (P r).
-  - by rewrite /preimage /=; rewrite /preimage /= in hPi; rewrite hPi.
+    by exists (P r).
+  by rewrite /preimage /=; rewrite /preimage /= in hPi; rewrite hPi.
 apply: bigcupT_measurable => i; apply: measurableI.
-- by have := hP measurableT [set i] I; rewrite setTI; exact.
-- by have := hFi i measurableT U mU; rewrite setTI; exact.
+  by have := hP measurableT [set i] I; rewrite setTI; exact.
+by have := hFi i measurableT U mU; rewrite setTI; exact.
 Qed.
 
 Section R_qbs_instance.
@@ -219,10 +219,10 @@ Local Lemma prodQ_Mx_glue (X Y : qbsType R) :
     qbs_Mx (fun r => (Fi (P r) r).2).
 Proof.
 move=> P Fi hFi; split.
-- apply: (qbs_Mx_glue P (fun i r => (Fi i r).1)) => i.
+  apply: (qbs_Mx_glue P (fun i r => (Fi i r).1)) => i.
   by have [] := hFi i.
-- apply: (qbs_Mx_glue P (fun i r => (Fi i r).2)) => i.
-  by have [] := hFi i.
+apply: (qbs_Mx_glue P (fun i r => (Fi i r).2)) => i.
+by have [] := hFi i.
 Qed.
 
 Section prodQ_instance.
@@ -264,7 +264,7 @@ End qbs_snd_instance.
 
 Section qbs_pair_instance.
 Variables (W X Y : qbsType R).
-Variable (f : qbsHomType W X) (g : qbsHomType W Y).
+Variables (f : qbsHomType W X) (g : qbsHomType W Y).
 Let fg := fun w : W => ((f : W -> X) w, (g : W -> Y) w).
 Let hfg : qbs_morphism fg :=
   fun alpha halpha =>
@@ -371,8 +371,8 @@ Qed.
 
 Section qbs_curry_instance.
 Variables (X Y Z : qbsType R).
-Variable (f : qbsHomType (prodQ X Y) Z).
-Variable (x : X).
+Variable f : qbsHomType (prodQ X Y) Z.
+Variable x : X.
 Let curry_fun := fun y => (f : prodQ X Y -> Z) (x, y).
 Let curry_proof : forall alpha, qbs_Mx alpha ->
     qbs_Mx (curry_fun \o alpha).
@@ -428,7 +428,7 @@ Definition unitQ : qbsType R := unit.
 End unitQ_instance.
 
 Section qbs_unit_instance.
-Variable (X : qbsType R).
+Variable X : qbsType R.
 Let f := fun _ : X => tt.
 Let hf : qbs_morphism f := fun alpha _ => I.
 HB.instance Definition _ :=
@@ -489,7 +489,7 @@ Definition qbs_mul : qbsHomType (prodQ realQ realQ) realQ :=
    proj1_sig \o alpha is random in X. *)
 
 Section sub_qbs_def.
-Variable (X : qbsType R) (P : set X).
+Variables (X : qbsType R) (P : set X).
 
 Let sub_car := {x : X | P x}.
 Let sub_proj : sub_car -> X := @proj1_sig _ P.
@@ -629,7 +629,7 @@ Qed.
    set inclusion on random elements. *)
 
 Section qbs_order.
-Variable (T : Type).
+Variable T : Type.
 
 (* X <= Y iff Mx(X) <= Mx(Y) *)
 Definition qbs_leT (MxX MxY : set (mR -> T)) : Prop :=
@@ -647,8 +647,8 @@ Lemma qbs_leT_antisym (Mx1 Mx2 : set (mR -> T)) :
   qbs_leT Mx1 Mx2 -> qbs_leT Mx2 Mx1 -> Mx1 = Mx2.
 Proof.
 move=> h12 h21; rewrite eqEsubset; split => alpha h.
-- exact: h12.
-- exact: h21.
+  exact: h12.
+exact: h21.
 Qed.
 
 End qbs_order.

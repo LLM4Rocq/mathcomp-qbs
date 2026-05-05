@@ -37,26 +37,14 @@ Variable R : realType.
 
 Local Notation mR := (measurableTypeR R).
 
+Implicit Types (p mu sigma : R).
+
 (** Embedding classical probability into QBS probability.
     For a standard Borel space M with measurable isomorphism to R,
     given a probability measure P on M, we construct a QBS triple.
     The key idea: if g : R -> M is a measurable section (with
     f : M -> R measurable and g o f = id), then (g, pushforward_f P)
     is a valid QBS probability triple on R_qbs(M). *)
-
-(** Embed a probability on R into a QBS triple on realQ. *)
-Definition as_qbs_prob_realQ
-  (encode : mR -> mR)
-  (decode : mR -> mR)
-  (h_encode_meas : measurable_fun setT encode)
-  (h_decode_meas : measurable_fun setT decode)
-  (h_section : decode \o encode =1 idfun)
-  (P : probability mR R) : qbs_prob (realQ R).
-Proof.
-apply: (@mkQBSProb R (realQ R) decode).
-- exact: P.
-- exact: h_decode_meas.
-Qed.
 
 (** Embed a probability on M into a QBS triple on R_qbs. *)
 Definition as_qbs_prob d (M : measurableType d)

@@ -50,6 +50,8 @@ Section qbs_quotient.
 Variable R : realType.
 Local Notation mR := (measurableTypeR R).
 
+Implicit Types (X Y Z : qbsType R).
+
 (** * 1. Boolean equivalence relation and choiceType instance                *)
 
 Section equiv_instances.

@@ -33,6 +33,8 @@ Variable R : realType.
 
 Local Notation mR := (measurableTypeR R).
 
+Implicit Types (X Y : qbsType R).
+
 (** Binary coproduct.
     For QBS X and Y, the coproduct X + Y has carrier (X + Y) (Coq sum).
     A function f : mR -> X + Y is a random element iff it factors through
@@ -42,15 +44,15 @@ Local Notation mR := (measurableTypeR R).
 Definition coprodQ_random (X Y : qbsType R) : set (mR -> X + Y) :=
   [set f |
     (exists a : mR -> X,
-      @qbs_Mx R X a /\ forall r, f r = inl (a r))
+      qbs_Mx a /\ forall r, f r = inl (a r))
     \/
     (exists b : mR -> Y,
-      @qbs_Mx R Y b /\ forall r, f r = inr (b r))
+      qbs_Mx b /\ forall r, f r = inr (b r))
     \/
     (exists (P : mR -> bool) (a : mR -> X) (b : mR -> Y),
       measurable_fun setT P /\
-      @qbs_Mx R X a /\
-      @qbs_Mx R Y b /\
+      qbs_Mx a /\
+      qbs_Mx b /\
       forall r, f r = if P r then inl (a r) else inr (b r))].
 
 Arguments coprodQ_random : clear implicits.
@@ -60,8 +62,7 @@ Lemma coprodQ_Mx_comp (X Y : qbsType R) :
     coprodQ_random X Y h ->
     coprodQ_random X Y (h \o f).
 Proof.
-move=> h f Hh.
-case: Hh => [[a [ha hdef]] |
+move=> h f [[a [ha hdef]] |
   [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
 - left; exists (a \o f); split.
   + exact: qbs_Mx_comp ha.
@@ -101,13 +102,13 @@ have [Xempty | x0] := pselectT X.
 - (* X is empty: cases 1 and 3 of coprodQ_random are impossible *)
   (* So all Fi i must factor through inr *)
   have hFi2 : forall i, exists b : mR -> Y,
-    @qbs_Mx R Y b /\ forall r, Fi i r = inr (b r).
+    qbs_Mx b /\ forall r, Fi i r = inr (b r).
     move=> i; case: (hFi i).
-    + move=> [a [_ hdef]].
-      exfalso; exact: Xempty (a (0%R : mR)).
+    + move=> [a [_ _]].
+      by case: (Xempty (a 0%R)).
     + case=> [[b' [hb hdef]] | [P [a _]]].
       * by exists b'.
-      * exfalso; exact: Xempty (a (0%R : mR)).
+      * by case: (Xempty (a 0%R)).
   have [getB hgetB] := choice hFi2.
   right; left; exists (fun r => getB (Q r) r); split.
   + exact: (@qbs_Mx_glueT R Y Q getB hQ
@@ -116,12 +117,12 @@ have [Xempty | x0] := pselectT X.
 - have [Yempty | y0] := pselectT Y.
   + (* Y is empty: all Fi i must factor through inl *)
     have hFi1 : forall i, exists a : mR -> X,
-      @qbs_Mx R X a /\ forall r, Fi i r = inl (a r).
+      qbs_Mx a /\ forall r, Fi i r = inl (a r).
       move=> i; case: (hFi i).
       * move=> [a [ha hdef]]; by exists a.
-      * case=> [[b' [_ hdef]] | [_ [_ [b' _]]]].
-        -- exfalso; exact: Yempty (b' (0%R : mR)).
-        -- exfalso; exact: Yempty (b' (0%R : mR)).
+      * case=> [[b' [_ _]] | [_ [_ [b' _]]]].
+        -- by case: (Yempty (b' 0%R)).
+        -- by case: (Yempty (b' 0%R)).
     have [getA hgetA] := choice hFi1.
     left; exists (fun r => getA (Q r) r); split.
     * exact: (@qbs_Mx_glueT R X Q getA hQ
@@ -132,8 +133,8 @@ have [Xempty | x0] := pselectT X.
     have hFi3 : forall i,
       exists triple : (mR -> bool) * (mR -> X) * (mR -> Y),
       measurable_fun setT triple.1.1 /\
-      @qbs_Mx R X triple.1.2 /\
-      @qbs_Mx R Y triple.2 /\
+      qbs_Mx triple.1.2 /\
+      qbs_Mx triple.2 /\
       forall r, Fi i r =
         if triple.1.1 r then inl (triple.1.2 r)
         else inr (triple.2 r).
@@ -166,9 +167,9 @@ have [Xempty | x0] := pselectT X.
     have hPi_meas :
       forall i, measurable_fun setT (Pi i).
       move=> i; exact: (hgetTriple i).1.
-    have hai : forall i, @qbs_Mx R X (ai i).
+    have hai : forall i, qbs_Mx (ai i).
       move=> i; exact: (hgetTriple i).2.1.
-    have hbi : forall i, @qbs_Mx R Y (bi i).
+    have hbi : forall i, qbs_Mx (bi i).
       move=> i; exact: (hgetTriple i).2.2.1.
     have hFi_eq : forall i r,
       Fi i r = if Pi i r then inl (ai i r)
@@ -215,14 +216,14 @@ Arguments coprodQ : clear implicits.
 (** Injection morphisms. *)
 
 Lemma qbs_morphism_inl (X Y : qbsType R) :
-  @qbs_morphism R X (coprodQ X Y) (@inl X Y).
+  qbs_morphism (X := X) (Y := coprodQ X Y) (@inl X Y).
 Proof.
 move=> h ha; rewrite /qbs_Mx /=.
 left; exists h; split => //.
 Qed.
 
 Lemma qbs_morphism_inr (X Y : qbsType R) :
-  @qbs_morphism R Y (coprodQ X Y) (@inr X Y).
+  qbs_morphism (X := Y) (Y := coprodQ X Y) (@inr X Y).
 Proof.
 move=> h hb; rewrite /qbs_Mx /=.
 right; left; exists h; split => //.
@@ -234,9 +235,9 @@ Qed.
 
 Lemma qbs_morphism_case (X Y Z : qbsType R)
   (f : X -> Z) (g : Y -> Z) :
-  @qbs_morphism R X Z f ->
-  @qbs_morphism R Y Z g ->
-  @qbs_morphism R (coprodQ X Y) Z
+  qbs_morphism (X := X) (Y := Z) f ->
+  qbs_morphism (X := Y) (Y := Z) g ->
+  qbs_morphism (X := coprodQ X Y) (Y := Z)
     (fun s => match s with inl x => f x | inr y => g y end).
 Proof.
 move=> hf hg gamma.
@@ -316,7 +317,7 @@ Definition gen_coprodQ_random (d : measure_display) (I : measurableType d)
   set (mR -> {i : I & X i}) :=
   [set f | exists (P : mR -> I) (Fi : forall i, mR -> X i),
     measurable_fun setT P /\
-    (forall i, @qbs_Mx R (X i) (Fi i)) /\
+    (forall i, qbs_Mx (s := X i) (Fi i)) /\
     (forall r, f r = existT _ (P r) (Fi (P r) r))].
 
 Arguments gen_coprodQ_random : clear implicits.
@@ -352,15 +353,12 @@ exists (fun j => match pselect (j = i0) with
 split; [|split].
 - exact: measurable_cst.
 - move=> j.
-  case: (pselect (j = i0)) => [H | _].
+  case: (pselect (j = i0)) => [heq | _].
   + subst j; exact: qbs_Mx_const.
   + exact: qbs_Mx_const.
 - move=> r /=.
-  case: (pselect (i0 = i0)) => [H | abs].
-  + congr (existT _ i0 _).
-    have -> : H = erefl by exact: Prop_irrelevance.
-    by [].
-  + exfalso; exact: abs erefl.
+  case: pselect => [heq | /(_ erefl)//].
+  by congr (existT _ i0 _); rewrite (Prop_irrelevance heq erefl).
 Qed.
 
 Lemma gen_coprodQ_Mx_glue (d : measure_display) (I : measurableType d)
@@ -375,7 +373,7 @@ have hQ : measurable_fun setT Q := measurable_funPT Q.
 have hFi' : forall n, exists triple :
   (mR -> I) * (forall i, mR -> X i) * Prop,
   measurable_fun setT triple.1.1 /\
-  (forall i, @qbs_Mx R (X i) (triple.1.2 i)) /\
+  (forall i, qbs_Mx (s := X i) (triple.1.2 i)) /\
   (forall r, Fi n r = existT _ (triple.1.1 r) (triple.1.2 (triple.1.1 r) r)).
   move=> n; case: (hFi n) => [Pn [Gin [hPn [hGin hdef]]]].
   by exists (Pn, Gin, True).
@@ -385,7 +383,7 @@ set Gin := fun n => (getTriple n).1.2.
 have hPn_meas : forall n, measurable_fun setT (Pn n).
   move=> n; exact: (hgetTriple n).1.
 have hGin :
-  forall n i, @qbs_Mx R (X i) (Gin n i).
+  forall n i, qbs_Mx (s := X i) (Gin n i).
   move=> n i; exact: (hgetTriple n).2.1 i.
 have hFi_eq : forall n r,
   Fi n r = existT _ (Pn n r) (Gin n (Pn n r) r).
@@ -417,7 +415,7 @@ Arguments gen_coprodQ : clear implicits.
 Lemma qbs_morphism_gen_inj (d : measure_display) (I : measurableType d)
   (X : I -> qbsType R)
   (inh : forall i, X i) (i : I) :
-  @qbs_morphism R (X i) (gen_coprodQ d I X inh) (fun x => existT _ i x).
+  qbs_morphism (X := X i) (Y := gen_coprodQ d I X inh) (fun x => existT _ i x).
 Proof.
 move=> alpha halpha; rewrite /qbs_Mx /=.
 exists (fun _ => i), (fun j => match pselect (j = i) with
@@ -427,15 +425,12 @@ exists (fun _ => i), (fun j => match pselect (j = i) with
 split; [|split].
 - exact: measurable_cst.
 - move=> j.
-  case: (pselect (j = i)) => [H | _].
+  case: (pselect (j = i)) => [heq | _].
   + subst j; exact: halpha.
   + exact: qbs_Mx_const.
 - move=> r /=.
-  case: (pselect (i = i)) => [H | abs].
-  + congr (existT _ i _).
-    have -> : H = erefl by exact: Prop_irrelevance.
-    by [].
-  + exfalso; exact: abs erefl.
+  case: pselect => [heq | /(_ erefl)//].
+  by congr (existT _ i _); rewrite (Prop_irrelevance heq erefl).
 Qed.
 
 (** Dependent product (Pi type).
@@ -446,7 +441,7 @@ Qed.
 
 Definition piQ_random (I : Type) (X : I -> qbsType R) :
   set (mR -> forall i : I, X i) :=
-  [set alpha | forall i, @qbs_Mx R (X i) (fun r => alpha r i)].
+  [set alpha | forall i, qbs_Mx (s := X i) (fun r => alpha r i)].
 
 Arguments piQ_random : clear implicits.
 
@@ -455,9 +450,9 @@ Lemma piQ_Mx_comp (I : Type) (X : I -> qbsType R) :
     piQ_random I X h ->
     piQ_random I X (h \o f).
 Proof.
-move=> h f Hh i.
+move=> h f hh i.
 have -> : (fun r => (h \o f) r i) = (fun r => h r i) \o f by [].
-exact: qbs_Mx_comp (Hh i).
+exact: qbs_Mx_comp (hh i).
 Qed.
 
 Lemma piQ_Mx_const (I : Type) (X : I -> qbsType R) :
@@ -493,7 +488,7 @@ Arguments piQ : clear implicits.
 
 (* Projection morphism *)
 Lemma qbs_morphism_proj (I : Type) (X : I -> qbsType R) (i : I) :
-  @qbs_morphism R (piQ I X) (X i) (fun f => f i).
+  qbs_morphism (X := piQ I X) (Y := X i) (fun f => f i).
 Proof.
 move=> alpha halpha; rewrite /qbs_Mx /=.
 exact: (halpha i).
@@ -502,8 +497,8 @@ Qed.
 (* Tupling morphism *)
 Lemma qbs_morphism_tuple (I : Type) (X : I -> qbsType R) (W : qbsType R)
   (fi : forall i, W -> X i)
-  (hfi : forall i, @qbs_morphism R W (X i) (fi i)) :
-  @qbs_morphism R W (piQ I X) (fun w i => fi i w).
+  (hfi : forall i, qbs_morphism (X := W) (Y := X i) (fi i)) :
+  qbs_morphism (X := W) (Y := piQ I X) (fun w i => fi i w).
 Proof.
 move=> alpha halpha; rewrite /qbs_Mx /= => i.
 have -> : (fun r => fi i (alpha r)) = (fi i) \o alpha by [].
@@ -516,9 +511,11 @@ Qed.
 
 Lemma qbs_morphism_coprod_to_gen (X Y : qbsType R)
   (inhX : X) (inhY : Y) :
-  @qbs_morphism R (coprodQ X Y) (gen_coprodQ default_measure_display bool
-    (fun b => if b then X else Y)
-    (fun b => if b as b0 return (if b0 then X else Y) then inhX else inhY))
+  qbs_morphism (X := coprodQ X Y)
+    (Y := gen_coprodQ default_measure_display bool
+      (fun b => if b then X else Y)
+      (fun b => if b as b0 return (if b0 then X else Y)
+                  then inhX else inhY))
     (fun s => match s with
      | inl x => existT _ true x
      | inr y => existT _ false y
@@ -559,10 +556,11 @@ Qed.
 
 Lemma qbs_morphism_gen_to_coprod (X Y : qbsType R)
   (inhX : X) (inhY : Y) :
-  @qbs_morphism R (gen_coprodQ default_measure_display bool
-    (fun b => if b then X else Y)
-    (fun b => if b as b0 return (if b0 then X else Y) then inhX else inhY))
-    (coprodQ X Y)
+  qbs_morphism (X := gen_coprodQ default_measure_display bool
+      (fun b => if b then X else Y)
+      (fun b => if b as b0 return (if b0 then X else Y)
+                  then inhX else inhY))
+    (Y := coprodQ X Y)
     (fun s => match projT1 s as b return
       ((if b then X else Y) -> X + Y)
       with true => inl | false => inr end (projT2 s)).
@@ -593,7 +591,7 @@ Definition listQ_random (X : qbsType R) :
   set (mR -> seq X) :=
   [set alpha | exists (len : mR -> nat) (Fi : nat -> mR -> X),
     measurable_fun setT len /\
-    (forall i, @qbs_Mx R X (Fi i)) /\
+    (forall i, qbs_Mx (Fi i)) /\
     (forall r, alpha r = mkseq (fun i => Fi i r) (len r))].
 
 Arguments listQ_random : clear implicits.
@@ -631,7 +629,7 @@ move=> Q Gi hGi.
 have hQ : measurable_fun setT Q := measurable_funPT Q.
 have hGi' : forall n, exists pair : (mR -> nat) * (nat -> mR -> X),
   measurable_fun setT pair.1 /\
-  (forall i, @qbs_Mx R X (pair.2 i)) /\
+  (forall i, qbs_Mx (pair.2 i)) /\
   (forall r, Gi n r = mkseq (fun i => pair.2 i r) (pair.1 r)).
   move=> n; case: (hGi n) => [len [Fi [hlen [hFi hdef]]]].
   by exists (len, Fi).
@@ -640,7 +638,7 @@ set lenN := fun n => (getPair n).1.
 set FiN := fun n => (getPair n).2.
 have hlenN : forall n, measurable_fun setT (lenN n).
   move=> n; exact: (hgetPair n).1.
-have hFiN : forall n i, @qbs_Mx R X (FiN n i).
+have hFiN : forall n i, qbs_Mx (FiN n i).
   move=> n i; exact: (hgetPair n).2.1 i.
 have hGi_eq : forall n r,
   Gi n r = mkseq (fun i => FiN n i r) (lenN n r).
@@ -667,7 +665,7 @@ End listQ_instance.
 
 (* Length is a QBS morphism from listQ to natQ *)
 Lemma qbs_morphism_length (X : qbsType R) (x0 : X) :
-  @qbs_morphism R (listQ x0) (natQ R) (@size X).
+  qbs_morphism (X := listQ x0) (Y := natQ R) (@size X).
 Proof.
 move=> alpha [len [Fi [hlen [hFi hdef]]]]; rewrite /qbs_Mx /=.
 have heq : size \o alpha = len.
@@ -679,8 +677,8 @@ Qed.
    preserves randomness. When i < len(r), the result is Fi i r;
    when i >= len(r), the result is the default x0. *)
 Lemma listQ_nth_random (X : qbsType R) (x0 : X) (i : nat) :
-  forall alpha, @qbs_Mx R (listQ x0) alpha ->
-    @qbs_Mx R X (fun r => nth x0 (alpha r) i).
+  forall alpha, qbs_Mx (s := listQ x0) alpha ->
+    qbs_Mx (fun r => nth x0 (alpha r) i).
 Proof.
 move=> alpha [len [Fi [hlen [hFi hdef]]]].
 have heq : (fun r => nth x0 (alpha r) i) =

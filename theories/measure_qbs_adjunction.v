@@ -1,8 +1,9 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_algebra reals classical_sets boolp
-  topology normedtype filter measurable_structure measurable_function
-  borel_hierarchy lebesgue_stieltjes_measure measurable_realfun.
+  topology normedtype num_normedtype filter measurable_structure
+  measurable_function borel_hierarchy lebesgue_stieltjes_measure
+  measurable_realfun ereal.
 From QBS Require Import quasi_borel standard_borel.
 
 (**md**************************************************************************)
@@ -33,11 +34,13 @@ Variable R : realType.
 
 Local Notation mR := (measurableTypeR R).
 
+Implicit Types (X Y : qbsType R).
+
 (** R functor properties.
     R_qbs is defined in quasi_borel.v. Here we show it is functorial. *)
 
 (* If f is measurable, then f is a QBS morphism between R_qbs spaces *)
-Lemma R_qbs_morph d1 d2
+Lemma R_qbs_morphism d1 d2
     (M1 : measurableType d1) (M2 : measurableType d2)
     (f : {mfun M1 >-> M2}) :
   qbs_morphism (X := R_qbs R M1) (Y := R_qbs R M2) f.
@@ -58,7 +61,7 @@ Lemma R_qbs_comp d1 d2 d3
     (f : {mfun M1 >-> M2}) (g : {mfun M2 >-> M3}) :
   qbs_morphism (X := R_qbs R M1) (Y := R_qbs R M3) (g \o f).
 Proof.
-by move=> alpha halpha; exact: (R_qbs_morph g (R_qbs_morph f halpha)).
+by move=> alpha halpha; exact: (R_qbs_morphism g (R_qbs_morphism f halpha)).
 Qed.
 
 (** L functor (sigma-algebra level).
@@ -76,14 +79,14 @@ Qed.
 (* L_sigma collects the sigma-algebra properties *)
 Notation L_sigma X := (sigma_Mx (X := X)).
 
-Lemma L_sigma_measurableT (X : qbsType R) : L_sigma X setT.
+Lemma L_sigma_setT (X : qbsType R) : L_sigma X setT.
 Proof. exact: sigma_Mx_setT. Qed.
 
-Lemma L_sigma_measurableC (X : qbsType R) (U : set X) :
+Lemma L_sigma_setC (X : qbsType R) (U : set X) :
   L_sigma X U -> L_sigma X (~` U).
 Proof. exact: sigma_Mx_setC. Qed.
 
-Lemma L_sigma_measurable_bigcup (X : qbsType R) (F : nat -> set X) :
+Lemma L_sigma_bigcup (X : qbsType R) (F : nat -> set X) :
   (forall i, L_sigma X (F i)) -> L_sigma X (\bigcup_i F i).
 Proof. exact: sigma_Mx_bigcup. Qed.
 
@@ -228,8 +231,6 @@ Qed.
 Local Open Scope ring_scope.
 
 Local Notation truncnP := archimedean.Num.Theory.truncnP.
-Local Notation interval_open := num_normedtype.interval_open.
-Local Notation contractK := ereal.contractK.
 
 (** Helper: measurability for functions into nat (discrete sigma-algebra).
     Every set in nat is measurable, so measurability of g reduces to

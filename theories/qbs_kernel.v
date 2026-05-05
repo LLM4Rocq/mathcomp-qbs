@@ -126,7 +126,7 @@ Lemma qbs_return_to_dirac
 Proof.
 exact: (qbs_to_giryK
   encode_meas decode_meas decode_encode
-  (@dirac _ _ x R) mU).
+  (@dirac _ _ x R) U).
 Qed.
 
 End qbs_return_dirac.
@@ -157,9 +157,9 @@ Qed.
 
 (** A QBS morphism between standard Borel spaces is
     measurable (by full faithfulness of R). *)
-Lemma qbs_morph_is_measurable
+Lemma qbs_morph_measurable
     (f : M1 -> M2)
-    (hf : @qbs_morphism R (R_qbs R M1) (R_qbs R M2) f) :
+    (hf : qbs_morphism (X := R_qbs R M1) (Y := R_qbs R M2) f) :
   measurable_fun setT f.
 Proof.
 exact: (R_full_faithful_standard_borel sb1 sb2 hf).
@@ -259,7 +259,7 @@ Lemma qbs_to_giry_map
     (U : set M2) (mU : measurable U) :
   qbs_to_giry
     (monadP_map (R_qbs R M1)
-      (R_qbs R M2) f (R_qbs_morph f) p) U =
+      (R_qbs R M2) f (R_qbs_morphism f) p) U =
   pushforward (qbs_to_giry p) f U.
 Proof.
 by rewrite /pushforward /qbs_to_giry
@@ -275,7 +275,7 @@ Lemma qbs_giry_pushforward
   pushforward (qbs_to_giry p) f U =
   qbs_to_giry_mu
     (monadP_map (R_qbs R M1)
-      (R_qbs R M2) f (R_qbs_morph f) p) U.
+      (R_qbs R M2) f (R_qbs_morphism f) p) U.
 Proof.
 by rewrite /pushforward /qbs_to_giry_mu
            /monadP_map /=.
@@ -398,7 +398,7 @@ Lemma kernel_round_trip
   P U.
 Proof.
 exact: (qbs_to_giryK
-  encode_meas decode_meas decode_encode P mU).
+  encode_meas decode_meas decode_encode P U).
 Qed.
 
 (** Composing encode and decode Dirac kernels via

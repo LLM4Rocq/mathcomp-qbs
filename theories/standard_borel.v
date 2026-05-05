@@ -1165,10 +1165,8 @@ Lemma inv_cvg_approx (x : R) :
 Proof.
 case: (eqVneq x 0) => [->|hx0].
 - rewrite invr0.
-  suff -> : (fun n : nat => 0 / (0 * 0 + n.+1%:R^-1))
-            = (fun _ : nat => (0 : R)).
-    exact: cvg_cst.
-  apply: funext => n; by rewrite mul0r.
+  under eq_cvg do rewrite mul0r.
+  exact: cvg_cst.
 - have -> : x^-1 = x / (x * x).
     by rewrite invfM ?unitfE // [x * (x^-1 * x^-1)]mulrCA
                mulrV ?unitfE // mulr1.

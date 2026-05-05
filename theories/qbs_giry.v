@@ -149,10 +149,9 @@ Lemma qbs_to_giryK
     (decode_meas : measurable_fun setT decode)
     (decode_encode : forall x : M, decode (encode x) = x)
     (P : probability M R) (A : set M) :
-  measurable A ->
   qbs_to_giry_mu (giry_to_qbs encode_meas decode_meas P) A = P A.
 Proof.
-move=> mA; rewrite /qbs_to_giry_mu /giry_to_qbs /=.
+rewrite /qbs_to_giry_mu /giry_to_qbs /=.
 congr (P _).
 by apply/seteqP; split => x /=; rewrite decode_encode.
 Qed.
@@ -169,7 +168,7 @@ Lemma giry_to_qbsK
     (giry_to_qbs encode_meas decode_meas (qbs_to_giry p))
     p.
 Proof.
-move=> U hU.
+move=> U _.
 rewrite /giry_to_qbs /qbs_to_giry_mu /=.
 congr (qbs_prob_mu p _).
 by apply/seteqP; split => r /=; rewrite decode_encode.
@@ -185,8 +184,8 @@ Lemma qbs_integral_giry
   qbs_integral (R_qbs R M) p f = \int[qbs_to_giry p]_y f y.
 Proof.
 rewrite /qbs_integral.
-rewrite -(@integral_pushforward _ _ _ M R (qbs_prob_alpha p)
-  (qbs_prob_alpha_random p) (qbs_prob_mu p) setT f f_meas f_int measurableT).
+rewrite -(integral_pushforward (qbs_prob_alpha_random p) f_meas f_int
+  measurableT).
 by congr (integral _ setT f).
 Qed.
 
