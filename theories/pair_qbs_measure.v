@@ -666,8 +666,8 @@ Lemma qbs_integral_indep_factorization (X Y Z : qbsType R)
           (phi (f (qbs_prob_alpha p rr.1))
            * psi (g (qbs_prob_alpha p rr.2)))%:E)) :
   qbs_integral Z p (fun z => (phi (f z) * psi (g z))%:E) =
-  (qbs_expect X (monadP_map Z X f hf p) phi
-   * qbs_expect Y (monadP_map Z Y g hg p) psi)%E.
+  qbs_expect X (monadP_map Z X f hf p) phi
+  * qbs_expect Y (monadP_map Z Y g hg p) psi.
 Proof.
 set pf := monadP_map Z X f hf p.
 set pg := monadP_map Z Y g hg p.
@@ -683,10 +683,7 @@ have prod_eq : (h \o qbs_prob_alpha (qbs_prob_pair X Y pf pg))
    (fun rr : mR * mR =>
       (phi (f (qbs_prob_alpha p rr.1))
        * psi (g (qbs_prob_alpha p rr.2)))%:E).
-  apply: funext => rr.
-  rewrite /=.
-  rewrite /qbs_pair_alpha.
-  by rewrite encode_RR_mRK.
+  by apply: funext => rr; rewrite /= /qbs_pair_alpha encode_RR_mRK.
 (* Integrability of [h] against the product probability measure
    underlying [qbs_prob_pair X Y pf pg], derived by pushforward
    from [hintprod] on [mR * mR]. *)
@@ -699,10 +696,8 @@ have hint_pair :
     by rewrite preimage_setT prod_eq.
   exact: measurableT.
 (* Step 1: LHS is by definition the integral against [ppair]. *)
-have eq1 : qbs_integral Z p (fun z => (phi (f z) * psi (g z))%:E) =
-           qbs_integral (prodQ X Y) ppair h.
-  by [].
-rewrite eq1.
+have -> : qbs_integral Z p (fun z => (phi (f z) * psi (g z))%:E) =
+          qbs_integral (prodQ X Y) ppair h by [].
 (* Step 2: by [qbs_indep], integral against [ppair] equals integral
    against [qbs_prob_pair X Y pf pg]. *)
 rewrite (qbs_integral_equiv hmeas _ hint_pair hindep) //.
