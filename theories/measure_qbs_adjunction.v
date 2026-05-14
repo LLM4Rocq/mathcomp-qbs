@@ -150,6 +150,73 @@ Proof.
 by split; [exact: lr_adj_l2r | exact: lr_adj_r2l].
 Qed.
 
+(** Naturality of the L-R adjunction in the QBS argument (contravariant).
+    Precomposing with a QBS morphism [phi : X' -> X] commutes with the
+    hom-set bijection.  Stated both as a transport of QBS morphisms and
+    as a transport of measurable-preimage characterizations. *)
+Lemma lr_adj_natural_dom (X' X : qbsType R) d
+    (M : measurableType d) (phi : X' -> X) (f : X -> M) :
+  qbs_morphism phi ->
+  qbs_morphism (Y := R_qbs R M) f ->
+  qbs_morphism (Y := R_qbs R M) (f \o phi).
+Proof.
+move=> hphi hf alpha halpha.
+by have := hf _ (hphi _ halpha); rewrite compA.
+Qed.
+
+Lemma lr_adj_natural_dom_preimage (X' X : qbsType R) d
+    (M : measurableType d) (phi : X' -> X) (f : X -> M) :
+  qbs_morphism phi ->
+  (forall U, measurable U -> L_sigma X (f @^-1` U)) ->
+  forall U, measurable U -> L_sigma X' ((f \o phi) @^-1` U).
+Proof.
+move=> hphi hf U hU; rewrite comp_preimage.
+exact: (L_qbs_morph hphi (hf U hU)).
+Qed.
+
+(** Naturality of the L-R adjunction in the measurable argument
+    (covariant).  Postcomposing with a measurable function [psi : M -> M']
+    commutes with the hom-set bijection. *)
+Lemma lr_adj_natural_cod (X : qbsType R) d d'
+    (M : measurableType d) (M' : measurableType d')
+    (psi : {mfun M >-> M'}) (f : X -> M) :
+  qbs_morphism (Y := R_qbs R M) f ->
+  qbs_morphism (Y := R_qbs R M') (psi \o f).
+Proof.
+move=> hf alpha halpha.
+by have := R_qbs_morphism psi (hf _ halpha); rewrite compA.
+Qed.
+
+Lemma lr_adj_natural_cod_preimage (X : qbsType R) d d'
+    (M : measurableType d) (M' : measurableType d')
+    (psi : {mfun M >-> M'}) (f : X -> M) :
+  (forall U, measurable U -> L_sigma X (f @^-1` U)) ->
+  forall V, measurable V -> L_sigma X ((psi \o f) @^-1` V).
+Proof.
+move=> hf V hV; rewrite comp_preimage.
+by apply: hf; have := (measurable_funP psi) measurableT V hV; rewrite setTI.
+Qed.
+
+(** Naturality square: the L->R direction of the adjunction commutes
+    with precomposition in [X] and postcomposition in [M].  Given
+    [phi : X' -> X] a QBS morphism, [psi : M -> M'] measurable, and
+    [f : X -> M] a QBS morphism into [R_qbs M], the composite
+    [psi \o f \o phi] is a QBS morphism into [R_qbs M'] and its
+    measurable preimages land in [L_sigma X']. *)
+Lemma lr_adj_natural_square (X' X : qbsType R) d d'
+    (M : measurableType d) (M' : measurableType d')
+    (phi : X' -> X) (psi : {mfun M >-> M'}) (f : X -> M) :
+  qbs_morphism phi ->
+  qbs_morphism (Y := R_qbs R M) f ->
+  qbs_morphism (Y := R_qbs R M') (psi \o f \o phi) /\
+  (forall V, measurable V ->
+     L_sigma X' ((psi \o f \o phi) @^-1` V)).
+Proof.
+move=> hphi hf.
+have hcomp := lr_adj_natural_dom hphi (lr_adj_natural_cod psi hf).
+by split=> // V hV; exact: (lr_adj_l2r hcomp hV).
+Qed.
+
 (** R preserves products.
     R(M1 x M2) has the same random elements as prodQ(R(M1), R(M2)). *)
 
