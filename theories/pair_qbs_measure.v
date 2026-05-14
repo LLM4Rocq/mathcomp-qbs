@@ -236,9 +236,11 @@ Arguments qbs_indep : clear implicits.
    The integrability hypotheses ensure Fubini and factoring apply. *)
 (** Factorization of integration on a product measure (Fubini for
     products): the integral of [f xy.1 * g xy.2] on [px \x py] equals
-    [qbs_expect px f * qbs_expect py g]. Note: this is pure product-
-    measure factorization and has no independence hypothesis; the
-    [qbs_indep] predicate is not involved. *)
+    [qbs_expect px f * qbs_expect py g]. This statement is pure
+    product-measure factorization on a tautological product; the
+    genuine independence factorization (using the [qbs_indep]
+    predicate) is [qbs_integral_indep_factorization], proved later
+    in this section. *)
 Lemma qbs_pair_integral_factorization (X Y : qbsType R)
   (px : qbs_prob X) (py : qbs_prob Y)
   (f : X -> R) (g : Y -> R)
@@ -592,6 +594,133 @@ rewrite -[RHS](@integral_pushforward _ _ _ mR R
     [congr (qbs_prob_alpha p) | congr (qbs_prob_alpha q)];
     exact: (congr1 fst (encode_RR_mRK rr))
         || exact: (congr1 snd (encode_RR_mRK rr)).
+Qed.
+
+(** Integration against the [qbs_prob_pair] product equals the
+    [qbs_pair_integral] on the product measure on [mR * mR]. This
+    isolates the first half of [qbs_prob_pair_measure_eq_bind]: it
+    transports an integral against the encoded product probability on
+    [mR] back to one against the genuine product measure on [mR * mR].
+    Used by [qbs_integral_indep_factorization]. *)
+Local Lemma qbs_integral_prob_pair (X Y : qbsType R)
+    (p : qbs_prob X) (q : qbs_prob Y)
+    (h : X * Y -> \bar R)
+    (hint : (qbs_prob_mu p \x qbs_prob_mu q).-integrable
+      setT (qbs_pair_fun p q h))
+    (hint_g : (qbs_pair_mu_build p q).-integrable setT
+      (fun r : mR => h (qbs_pair_alpha p q r))) :
+  qbs_integral (prodQ X Y) (qbs_prob_pair X Y p q) h =
+  qbs_pair_integral X Y p q h.
+Proof.
+rewrite /qbs_integral /qbs_pair_integral /=.
+set mu_pq := qbs_prob_mu p \x qbs_prob_mu q.
+move/integrableP : (hint) => [hm_pqf _].
+have fg_eq : forall rr : mR * mR,
+  h (qbs_prob_alpha p rr.1, qbs_prob_alpha q rr.2) =
+  h (qbs_pair_alpha p q (@encode_RR_mR R rr)).
+  by move=> rr; rewrite /qbs_pair_alpha encode_RR_mRK.
+under [RHS]eq_integral do rewrite fg_eq.
+set g := (fun x : mR => h (qbs_pair_alpha p q x)).
+have hm_enc : measurable_fun [set: mR * mR] (@encode_RR_mR R).
+  exact: measurable_RR_to_R.
+rewrite -[RHS](@integral_pushforward _ _ _ mR R
+  (@encode_RR_mR R) hm_enc mu_pq setT g _ _ measurableT).
+- by [].
+- by move/integrableP : hint_g => [].
+- rewrite preimage_setT.
+  suff -> : g \o @encode_RR_mR R = qbs_pair_fun p q h by exact: hint.
+  apply: funext => rr.
+  rewrite /g /qbs_pair_alpha /qbs_pair_fun /=.
+  by congr (h (_, _));
+    [congr (qbs_prob_alpha p) | congr (qbs_prob_alpha q)];
+    exact: (congr1 fst (encode_RR_mRK rr))
+        || exact: (congr1 snd (encode_RR_mRK rr)).
+Qed.
+
+(** Genuine independence factorization (using the [qbs_indep]
+    predicate): for independent [f : Z -> X] and [g : Z -> Y] under
+    [p : qbs_prob Z], with real-valued test functions [phi : X -> R]
+    and [psi : Y -> R], the expectation of the product
+    [phi (f z) * psi (g z)] factors as a product of the marginal
+    expectations.  Unlike [qbs_pair_integral_factorization], here the
+    two random variables share the same underlying probability space
+    [p]; independence is the genuine content of the hypothesis
+    [hindep]. *)
+Lemma qbs_integral_indep_factorization (X Y Z : qbsType R)
+    (p : qbs_prob Z)
+    (f : Z -> X) (g : Z -> Y)
+    (hf : qbs_morphism f) (hg : qbs_morphism g)
+    (phi : X -> R) (psi : Y -> R)
+    (hindep : qbs_indep X Y Z p f g hf hg)
+    (hmeas : qbs_measurable (prodQ X Y)
+       (fun xy : X * Y => (phi xy.1 * psi xy.2)%:E))
+    (hintphi : (qbs_prob_mu p).-integrable setT
+       (fun r => (phi (f (qbs_prob_alpha p r)))%:E))
+    (hintpsi : (qbs_prob_mu p).-integrable setT
+       (fun r => (psi (g (qbs_prob_alpha p r)))%:E))
+    (hintjoint : (qbs_prob_mu p).-integrable setT
+       (fun r => (phi (f (qbs_prob_alpha p r))
+                   * psi (g (qbs_prob_alpha p r)))%:E))
+    (hintprod : (qbs_prob_mu p \x qbs_prob_mu p).-integrable setT
+       (fun rr : mR * mR =>
+          (phi (f (qbs_prob_alpha p rr.1))
+           * psi (g (qbs_prob_alpha p rr.2)))%:E)) :
+  qbs_integral Z p (fun z => (phi (f z) * psi (g z))%:E) =
+  (qbs_expect X (monadP_map Z X f hf p) phi
+   * qbs_expect Y (monadP_map Z Y g hg p) psi)%E.
+Proof.
+set pf := monadP_map Z X f hf p.
+set pg := monadP_map Z Y g hg p.
+set ppair := monadP_map Z (prodQ X Y) (fun z => (f z, g z))
+  (fun alpha halpha => conj (hf _ halpha) (hg _ halpha)) p.
+set h := (fun xy : X * Y => (phi xy.1 * psi xy.2)%:E).
+have h_meas_pair : measurable_fun setT
+    (h \o qbs_prob_alpha (qbs_prob_pair X Y pf pg)).
+  apply: hmeas.
+  exact: (qbs_pair_alpha_random pf pg).
+have prod_eq : (h \o qbs_prob_alpha (qbs_prob_pair X Y pf pg))
+     \o @encode_RR_mR R =
+   (fun rr : mR * mR =>
+      (phi (f (qbs_prob_alpha p rr.1))
+       * psi (g (qbs_prob_alpha p rr.2)))%:E).
+  apply: funext => rr.
+  rewrite /=.
+  rewrite /qbs_pair_alpha.
+  by rewrite encode_RR_mRK.
+(* Integrability of [h] against the product probability measure
+   underlying [qbs_prob_pair X Y pf pg], derived by pushforward
+   from [hintprod] on [mR * mR]. *)
+have hint_pair :
+    (qbs_prob_mu (qbs_prob_pair X Y pf pg)).-integrable setT
+       (h \o qbs_prob_alpha (qbs_prob_pair X Y pf pg)).
+  apply: (@integrable_pushforward _ _ _ mR R (@encode_RR_mR R)
+    (@measurable_RR_to_R R) (qbs_prob_mu p \x qbs_prob_mu p) setT _
+    h_meas_pair).
+    by rewrite preimage_setT prod_eq.
+  exact: measurableT.
+(* Step 1: LHS is by definition the integral against [ppair]. *)
+have eq1 : qbs_integral Z p (fun z => (phi (f z) * psi (g z))%:E) =
+           qbs_integral (prodQ X Y) ppair h.
+  by [].
+rewrite eq1.
+(* Step 2: by [qbs_indep], integral against [ppair] equals integral
+   against [qbs_prob_pair X Y pf pg]. *)
+rewrite (qbs_integral_equiv hmeas _ hint_pair hindep) //.
+(* Step 3: convert to [qbs_pair_integral] via the helper. *)
+have hint_g : (qbs_pair_mu_build pf pg).-integrable setT
+    (fun r : mR => h (qbs_pair_alpha pf pg r)).
+  by rewrite -[qbs_pair_mu_build pf pg]/(qbs_prob_mu
+    (qbs_prob_pair X Y pf pg)).
+have hint_qf : (qbs_prob_mu pf \x qbs_prob_mu pg).-integrable setT
+    (qbs_pair_fun pf pg h).
+  by rewrite /qbs_pair_fun /pf /pg /=.
+rewrite (qbs_integral_prob_pair hint_qf hint_g).
+(* Step 4: factor the product integral. *)
+rewrite /h.
+apply: qbs_pair_integral_factorization.
+- by rewrite /pf /monadP_map /=.
+- by rewrite /pg /monadP_map /=.
+- by rewrite /pf /pg /monadP_map /=.
 Qed.
 
 End pair_qbs_measure.
