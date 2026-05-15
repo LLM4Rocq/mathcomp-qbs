@@ -5,7 +5,7 @@
 This formalization was developed with
 [Claude Opus 4.6](https://claude.ai/claude-code) using
 [Rocq-MCP](https://github.com/LLM4Rocq/rocq-mcp) for interactive
-proof development. Claude wrote all 8,913 lines of Rocq code (412
+proof development. Claude wrote all 9,043 lines of Rocq code (414
 proofs, 0 Admitted) with guidance from a human collaborator who
 provided mathematical direction and design decisions.
 
@@ -16,7 +16,7 @@ programming semantics.
 
 ## Overview
 
-**412 proofs, 0 Admitted, 0 custom axioms, 8,913 lines across 13 files.**
+**414 proofs, 0 Admitted, 0 custom axioms, 9,043 lines across 13 files.**
 
 > **Note**: A higher-order PPL with denotational semantics in QBS
 > (`ppl_qbs.v`, `ppl_kernel.v`, `showcase/ppl_examples.v`) is
@@ -41,23 +41,23 @@ This formalization follows:
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `quasi_borel.v` | 714 | 36 | HB structure via Section+`HB.instance`, morphisms, products, exponentials, cartesian closure (β/η) |
-| `measure_qbs_adjunction.v` | 520 | 27 | L⊣R hom-set bijection, standard Borel (`{mfun}`), full faithfulness |
-| `coproduct_qbs.v` | 716 | 25 | Binary/general coproducts, dependent products, list type |
-| `probability_qbs.v` | 1,328 | 63 | Probability monad: return, bind, 3 monad laws (setoid), strength, normalizer |
-| `pair_qbs_measure.v` | 604 | 17 | Product measures via R≅R×R, iterated integration, factorization |
-| `qbs_prob_quot.v` | 312 | 17 | Setoid quotient for probability triples |
-| `measure_as_qbs_measure.v` | 287 | 10 | Normal, Bernoulli, uniform distributions, E[Normal]=μ |
-| `qbs_quotient.v` | 310 | 13 | Mathcomp quotient type for QBS probability spaces |
+| `quasi_borel.v` | 708 | 36 | HB structure via Section+`HB.instance`, morphisms, products, exponentials, cartesian closure (β/η) |
+| `measure_qbs_adjunction.v` | 575 | 32 | L⊣R hom-set bijection, naturality (dom/cod/square), standard Borel (`{mfun}`), full faithfulness |
+| `coproduct_qbs.v` | 711 | 25 | Binary/general coproducts, dependent products, list type |
+| `probability_qbs.v` | 1,325 | 63 | Probability monad: return, bind, 3 monad laws (setoid), strength, normalizer |
+| `pair_qbs_measure.v` | 727 | 19 | Product measures via R≅R×R, iterated integration, product-measure and genuine independence factorizations |
+| `qbs_prob_quot.v` | 314 | 17 | Setoid quotient for probability triples |
+| `measure_as_qbs_measure.v` | 275 | 9 | Normal, Bernoulli, uniform distributions, E[Normal]=μ |
+| `qbs_quotient.v` | 312 | 13 | Mathcomp quotient type for QBS probability spaces |
 
 ### Bridges and analysis
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `qbs_giry.v` | 194 | 12 | QBS↔Giry monad connection, integral correspondence |
-| `qbs_kernel.v` | 419 | 21 | QBS↔s-finite kernel bridge, Dirac kernels, composition |
-| `standard_borel.v` | 1,276 | 60 | R↔(0,1) via atan, digit interleaving, R≅R×R |
-| `normal_algebra.v` | 1,307 | 77 | Product of Gaussians, normalizing constant computation |
+| `qbs_giry.v` | 192 | 12 | QBS↔Giry monad connection, integral correspondence |
+| `qbs_kernel.v` | 418 | 21 | QBS↔s-finite kernel bridge, Dirac kernels, composition |
+| `standard_borel.v` | 1,274 | 60 | R↔(0,1) via atan, digit interleaving, R≅R×R |
+| `normal_algebra.v` | 1,286 | 73 | Product of Gaussians, normalizing constant computation |
 
 ### Showcase
 
@@ -69,16 +69,21 @@ This formalization follows:
 
 - **Cartesian closure**: `qbs_eval`, `qbs_curry`, `qbs_curry_morph`,
   `qbs_curry_eval` (β), `qbs_eval_curry` (η)
-- **L⊣R hom-set bijection**: `lr_adj_iff` (a single-object
-  biconditional, not a full categorical naturality theorem)
+- **L⊣R hom-set bijection**: `lr_adj_iff`
+- **L⊣R naturality**: `lr_adj_natural_dom` (contravariant in X),
+  `lr_adj_natural_cod` (covariant in M), `lr_adj_natural_square`
+  (full commuting square), plus the L-side preimage variants
+  `lr_adj_natural_dom_preimage` / `lr_adj_natural_cod_preimage`
 - **Full faithfulness**: `R_full_faithful_standard_borel`
 - **Probability monad**: `qbs_bind_returnl`, `qbs_bind_returnr`, `qbs_bindA`
 - **Iterated integration on product measures**: `qbs_pair_integral_iterated`
   (Fubini for the specific QBS product measure construction)
 - **Product-measure factorization**: `qbs_pair_integral_factorization`
   (E[fg] = E[f]E[g] when f, g depend on disjoint coordinates of a
-  product measure; this is a tautology of products, not a general
-  independence theorem)
+  product measure; tautology of product measures)
+- **Genuine independence factorization**: `qbs_integral_indep_factorization`
+  (E[fg] = E[f]E[g] from `qbs_indep`, via pushforward equivalence;
+  uses the `qbs_indep` predicate non-trivially)
 - **QBS↔Giry**: `qbs_to_giry`, `qbs_integral_giry`
 - **R≅R×R**: `pair_standard_borel`, `encode_RRK`
 - **Normalizer**: `qbs_normalize`, `qbs_normalize_total`, `qbs_normalize_integral`
@@ -99,10 +104,6 @@ The formalization is honest about its scope. Key limitations:
   for `qbs_bind` is provided in special cases (`qbs_bind_equiv_l`,
   `qbs_bind_strong_equiv_l`, `qbs_bind_equiv_l_return`); a fully
   unconditional congruence would require disintegration.
-
-- **`lr_adj_iff` is a hom-set bijection**, not a full categorical
-  naturality statement. The functorial naturality squares are not
-  proved.
 
 - **Standard Borel** is defined via the existence of an
   encode/decode pair, not via the classical Polish-space

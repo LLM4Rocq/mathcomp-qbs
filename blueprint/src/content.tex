@@ -545,8 +545,12 @@ $m\mathbb{R}$ for its Borel measurable space.
     \mathrm{Hom}_{\mathbf{QBS}}(X, R(M)) \cong
     \mathrm{Hom}_{\sigma\text{-}\mathbf{Alg}}(L(X), \sigma(M)).
   \]
-  This is a single-object biconditional, not a full categorical
-  naturality statement (the functorial squares are not formalized).
+  Naturality of this bijection in both arguments is formalized by
+  the five lemmas \texttt{lr\_adj\_natural\_dom},
+  \texttt{lr\_adj\_natural\_dom\_preimage},
+  \texttt{lr\_adj\_natural\_cod},
+  \texttt{lr\_adj\_natural\_cod\_preimage}, and
+  \texttt{lr\_adj\_natural\_square} below.
 \end{theorem}
 \begin{proof}
   \rocqok
@@ -556,6 +560,61 @@ $m\mathbb{R}$ for its Borel measurable space.
   The right-to-left direction (\texttt{lr\_adj\_r2l}) uses the measurability
   hypothesis to verify $f \circ \alpha$ is measurable for each random element.
 \end{proof}
+
+\begin{lemma}[Naturality in the QBS Argument (Contravariant)]\label{lem:lr_adj_natural_dom}
+  \rocq{QBS.measure_qbs_adjunction.lr_adj_natural_dom}
+  \rocqok
+  \uses{thm:lr_adj_iff, def:qbs_morphism, def:R_qbs}
+  Precomposition with a QBS morphism $\phi : X' \to X$ commutes with
+  the hom-set bijection on the QBS side: if $\phi$ is a QBS morphism
+  and $f : X \to M$ is a QBS morphism into $R(M)$, then $f \circ \phi
+  : X' \to M$ is also a QBS morphism into $R(M)$.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Naturality in the QBS Argument (Preimage Form)]\label{lem:lr_adj_natural_dom_preimage}
+  \rocq{QBS.measure_qbs_adjunction.lr_adj_natural_dom_preimage}
+  \rocqok
+  \uses{lem:lr_adj_natural_dom, def:L_sigma, lem:L_qbs_morph}
+  The measurable-preimage characterization transports along
+  $\phi$: if $\phi : X' \to X$ is a QBS morphism and every
+  measurable $U \subseteq M$ has $f^{-1}(U) \in L(X)$, then every
+  measurable $U$ has $(f \circ \phi)^{-1}(U) \in L(X')$.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Naturality in the Measurable Argument (Covariant)]\label{lem:lr_adj_natural_cod}
+  \rocq{QBS.measure_qbs_adjunction.lr_adj_natural_cod}
+  \rocqok
+  \uses{thm:lr_adj_iff, def:qbs_morphism, def:R_qbs, lem:R_qbs_morph}
+  Postcomposition with a measurable $\psi : M \to M'$ commutes with
+  the hom-set bijection on the measurable side: if $f : X \to M$ is
+  a QBS morphism into $R(M)$, then $\psi \circ f : X \to M'$ is a
+  QBS morphism into $R(M')$.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Naturality in the Measurable Argument (Preimage Form)]\label{lem:lr_adj_natural_cod_preimage}
+  \rocq{QBS.measure_qbs_adjunction.lr_adj_natural_cod_preimage}
+  \rocqok
+  \uses{lem:lr_adj_natural_cod, def:L_sigma}
+  If every measurable $U \subseteq M$ has $f^{-1}(U) \in L(X)$, then
+  for measurable $\psi : M \to M'$ and every measurable $V \subseteq
+  M'$, $(\psi \circ f)^{-1}(V) \in L(X)$.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Naturality Square]\label{lem:lr_adj_natural_square}
+  \rocq{QBS.measure_qbs_adjunction.lr_adj_natural_square}
+  \rocqok
+  \uses{lem:lr_adj_natural_dom, lem:lr_adj_natural_cod}
+  Full commuting square for $L \dashv R$ naturality: given a QBS
+  morphism $\phi : X' \to X$, a measurable $\psi : M \to M'$, and a
+  QBS morphism $f : X \to M$ into $R(M)$, the composite $\psi \circ
+  f \circ \phi$ is a QBS morphism $X' \to R(M')$ and its measurable
+  preimages land in $L(X')$.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[R Preserves Products]\label{lem:R_preserves_prod}
   \rocq{QBS.measure_qbs_adjunction.R_preserves_prod}
@@ -1447,7 +1506,7 @@ and variance results.
   $f_*(p) \otimes g_*(p)$.
 \end{definition}
 
-\begin{lemma}[Product-Measure Factorization]\label{lem:qbs_pair_integral_factorization}
+\begin{lemma}[Product-Measure Factorization (Tautology)]\label{lem:qbs_pair_integral_factorization}
   \rocq{QBS.pair_qbs_measure.qbs_pair_integral_factorization}
   \rocqok
   \uses{def:qbs_expect, def:qbs_pair_integral}
@@ -1455,10 +1514,33 @@ and variance results.
   product measure:
   $\int_{p_X \otimes p_Y} f(x) \cdot g(y)
   = \mathbb{E}_{p_X}[f] \cdot \mathbb{E}_{p_Y}[g]$.
-  This is a tautology of products, not a non-trivial statistical
-  independence theorem -- the lemma has no independence hypothesis.
-  The actual \texttt{qbs\_indep} predicate is defined separately
-  but is not yet connected to a non-trivial independence theorem.
+  This is product-measure factorization (a tautology of
+  products), not a non-trivial statistical independence theorem --
+  the lemma has no independence hypothesis. The genuine
+  independence factorization, using the \texttt{qbs\_indep}
+  predicate, is Lemma~\ref{lem:qbs_integral_indep_factorization}.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Independence Factorization]\label{lem:qbs_integral_indep_factorization}
+  \rocq{QBS.pair_qbs_measure.qbs_integral_indep_factorization}
+  \rocqok
+  \uses{def:qbs_indep, lem:qbs_pair_integral_factorization, def:qbs_expect, def:qbs_prob_equiv, def:monadP_map}
+  Genuine independence factorization. For random variables
+  $f : Z \to X$ and $g : Z \to Y$ on a common probability space
+  $p : \mathrm{qbs\_prob}(Z)$ that are independent in the sense of
+  Definition~\ref{def:qbs_indep}, and real-valued test functions
+  $\phi : X \to \mathbb{R}$, $\psi : Y \to \mathbb{R}$:
+  \[
+    \mathbb{E}_p\bigl[\phi(f(z)) \cdot \psi(g(z))\bigr]
+    = \mathbb{E}_{f_*(p)}[\phi] \cdot \mathbb{E}_{g_*(p)}[\psi].
+  \]
+  Unlike Lemma~\ref{lem:qbs_pair_integral_factorization}, the
+  hypothesis \texttt{qbs\_indep} is used non-trivially: the proof
+  rewrites the joint integral against the pushforward
+  $(f, g)_*(p)$ through the product
+  $f_*(p) \otimes g_*(p)$ via \texttt{qbs\_prob\_equiv}, then
+  reduces to the product-measure factorization.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 

@@ -2,9 +2,9 @@
 
 **Project:** QBS -- Quasi-Borel Spaces in Rocq/Coq
 **Repository:** `/home/rocq/QBS`
-**Date:** 2026-04-04
-**Status:** 412 proofs (411 Qed + 1 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 8,913 across 13 files
+**Date:** 2026-05-15
+**Status:** 414 proofs (413 Qed + 1 Defined), **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** 9,043 across 13 files
 
 > **Note**: The higher-order PPL development (`ppl_qbs.v`,
 > `ppl_kernel.v`, `showcase/ppl_examples.v`) is on the `ppl`
@@ -514,14 +514,13 @@ Definition qbs_supT (T : Type) (MxX MxY : set (mR -> T)) : qbsType R :=
 
 ### 1.17 L-R Adjunction
 
-**File:** `theories/measure_qbs_adjunction.v`, lines 126--164
+**File:** `theories/measure_qbs_adjunction.v`, lines 122--218
 
 The central theorem: the R functor (measurable spaces to QBS) is right adjoint to the L functor (QBS to sigma-algebras).
 
 ```
-Lemma lr_adj_natural (X : qbsType R) (d : measure_display)
-    (Y : measurableType d) (f : X -> Y) :
-  (@qbs_morphism R X (@R_qbs R _ Y) f) <->
+Lemma lr_adj_iff (X : qbsType R) d (Y : measurableType d) (f : X -> Y) :
+  qbs_morphism (Y := R_qbs R Y) f <->
   (forall U, measurable U -> L_sigma X (f @^-1` U)).
 ```
 
@@ -531,6 +530,18 @@ This is the iff form of the adjunction: a function `f : X -> Y` is a QBS morphis
 |------|-----------|-----------|
 | `lr_adj_l2r` | QBS morphism implies measurability | `qbs_morphism X (R_qbs Y) f -> forall U, measurable U -> L_sigma X (f @^-1` U)` |
 | `lr_adj_r2l` | Measurability implies QBS morphism | `(forall U, measurable U -> L_sigma X (f @^-1` U)) -> qbs_morphism X (R_qbs Y) f` |
+
+**Naturality of the hom-set bijection.** The bijection `lr_adj_iff` is upgraded to a genuine 2-sided naturality statement by five lemmas (commit 28cb4ae):
+
+| Name | Statement |
+|------|-----------|
+| `lr_adj_natural_dom` | Contravariant naturality in `X`: precomposition with a QBS morphism `phi : X' -> X` preserves "QBS morphism into `R(M)`": if `qbs_morphism phi` and `qbs_morphism (Y := R_qbs M) f`, then `qbs_morphism (Y := R_qbs M) (f \o phi)`. |
+| `lr_adj_natural_dom_preimage` | Same naturality on the L-side: the measurable-preimage characterization transports along `phi`, sending `L_sigma X`-measurable preimages to `L_sigma X'`-measurable preimages of `f \o phi`. |
+| `lr_adj_natural_cod` | Covariant naturality in `M`: postcomposition with a measurable `psi : {mfun M >-> M'}` preserves "QBS morphism into `R(_)`": if `qbs_morphism (Y := R_qbs M) f`, then `qbs_morphism (Y := R_qbs M') (psi \o f)`. |
+| `lr_adj_natural_cod_preimage` | Same on the L-side: measurable preimages along `psi \o f` are still in `L_sigma X`. |
+| `lr_adj_natural_square` | Full commuting square: if `qbs_morphism phi`, `psi : {mfun M >-> M'}`, and `qbs_morphism (Y := R_qbs M) f`, then `qbs_morphism (Y := R_qbs M') (psi \o f \o phi)` and its measurable preimages land in `L_sigma X'`. |
+
+These close the gap previously called out in the limitations section: `lr_adj_iff` is no longer just a single-object biconditional but the action of a genuine natural bijection of hom-sets.
 
 **Product preservation:**
 
@@ -1117,17 +1128,32 @@ Definition qbs_indep (X Y Z : qbsType R) (p : qbs_prob Z)
     (qbs_prob_pair X Y (monadP_map Z X f hf p) (monadP_map Z Y g hg p)).
 ```
 
-**Key theorem (E[f*g] = E[f]*E[g] for independent variables):**
+**Product-measure factorization (E[f*g] = E[f]*E[g] on a tautological product):**
 
 ```
-Lemma qbs_integral_indep_mult (X Y : qbsType R)
+Lemma qbs_pair_integral_factorization (X Y : qbsType R)
   (px : qbs_prob X) (py : qbs_prob Y)
   (f : X -> R) (g : Y -> R) ... :
   qbs_pair_integral X Y px py (fun xy => (f xy.1 * g xy.2)%:E) =
   (qbs_expect X px f * qbs_expect Y py g).
 ```
 
-The proof uses Fubini to factor the joint integral into a product of marginal integrals via `integralZl` and `integralZr`.
+The proof uses Fubini to factor the joint integral into a product of marginal integrals via `integralZl` and `integralZr`. This statement is a tautology of product measures and does not use the `qbs_indep` predicate.
+
+**Genuine independence factorization (commit 03fe22b).** The lemma `qbs_integral_indep_factorization` connects `qbs_indep` to a non-trivial expectation factorization. For `f : Z -> X` and `g : Z -> Y` independent under `p : qbs_prob Z` (witnessed by `qbs_indep`), with real-valued test functions `phi : X -> R`, `psi : Y -> R`:
+
+```
+Lemma qbs_integral_indep_factorization (X Y Z : qbsType R)
+    (p : qbs_prob Z) (f : Z -> X) (g : Z -> Y)
+    (hf : qbs_morphism f) (hg : qbs_morphism g)
+    (phi : X -> R) (psi : Y -> R)
+    (hindep : qbs_indep X Y Z p f g hf hg) ... :
+  qbs_integral Z p (fun z => (phi (f z) * psi (g z))%:E) =
+  qbs_expect X (monadP_map Z X f hf p) phi *
+  qbs_expect Y (monadP_map Z Y g hg p) psi.
+```
+
+The key step uses `qbs_indep` non-trivially via `qbs_prob_equiv` on the pushforward: `qbs_integral_equiv` rewrites the LHS through the joint pushforward `(f, g)_*(p)` against the product `f_*(p) \otimes g_*(p)`. A `Local` helper `qbs_integral_prob_pair` then converts the integral against the encoded product probability on `mR` to one against the genuine product measure on `mR * mR`, and `qbs_pair_integral_factorization` finishes the proof. Unlike the older `qbs_pair_integral_factorization`, this is a genuine independence theorem.
 
 ### 2.21 Variance of Independent Sums
 
@@ -1594,7 +1620,7 @@ quasi_borel.v
 | Program correctness | `program_result` (Inl) | `program_integrates_to_1` (unconditional) |
 | Monad strength | Not formalized | 4 coherence lemmas |
 | Fubini on QBS | Not formalized | `qbs_pair_integralE` + marginals |
-| Independence | Not formalized | `qbs_integral_indep_mult` |
+| Independence | Not formalized | `qbs_pair_integral_factorization` (product tautology) + `qbs_integral_indep_factorization` (genuine, via `qbs_indep`) |
 | QBS↔Giry bridge | Not formalized | `qbs_to_giry` + `qbs_integral_giry` |
 | Normalizer | Not formalized | `qbs_normalize` + `qbs_normalize_integral` |
 | Integral arithmetic | Not formalized | `qbs_integralD/B/Zl` + `qbs_integrable` |
@@ -1602,26 +1628,26 @@ quasi_borel.v
 | Variance | Not formalized | `qbs_varianceE` + `qbs_varianceZ` |
 | E[distributions] | Not formalized | `qbs_expect_normal/bernoulli/uniform` |
 | Standard Borel inst. | Not formalized | N, bool, prod, ereal |
-| Lines | ~5000 | 8,913 |
+| Lines | ~5000 | 9,043 |
 
 ### 4.4 Statistics
 
 | File | Lines | Proofs |
 |------|------:|-------:|
-| `quasi_borel.v` | 714 | 36 |
-| `measure_qbs_adjunction.v` | 520 | 27 |
-| `coproduct_qbs.v` | 716 | 25 |
-| `probability_qbs.v` | 1,328 | 63 |
-| `pair_qbs_measure.v` | 604 | 17 |
-| `qbs_prob_quot.v` | 312 | 17 |
-| `measure_as_qbs_measure.v` | 287 | 10 |
-| `qbs_quotient.v` | 310 | 13 |
-| `normal_algebra.v` | 1,307 | 77 |
+| `quasi_borel.v` | 708 | 36 |
+| `measure_qbs_adjunction.v` | 575 | 32 |
+| `coproduct_qbs.v` | 711 | 25 |
+| `probability_qbs.v` | 1,325 | 63 |
+| `pair_qbs_measure.v` | 727 | 19 |
+| `qbs_prob_quot.v` | 314 | 17 |
+| `measure_as_qbs_measure.v` | 275 | 9 |
+| `qbs_quotient.v` | 312 | 13 |
+| `normal_algebra.v` | 1,286 | 73 |
 | `showcase/bayesian_regression.v` | 926 | 34 |
-| `qbs_giry.v` | 194 | 12 |
-| `qbs_kernel.v` | 419 | 21 |
-| `standard_borel.v` | 1,276 | 60 |
-| **Total** | **8,913** | **412** |
+| `qbs_giry.v` | 192 | 12 |
+| `qbs_kernel.v` | 418 | 21 |
+| `standard_borel.v` | 1,274 | 60 |
+| **Total** | **9,043** | **414** |
 
 **0 Admitted**, 0 custom axioms.
 
@@ -1642,31 +1668,29 @@ documented in the source files and in this report, not hidden:
    would require disintegration, which is not yet in
    mathcomp-analysis.
 
-2. **`lr_adj_iff` is a hom-set bijection, not full naturality.**
-   The lemma in `measure_qbs_adjunction.v` (formerly named
-   `lr_adj_natural`) is a single-object biconditional. The
-   functorial naturality squares of an L⊣R adjunction are not
-   proved; doing so would require a richer category-theoretic
-   infrastructure than mathcomp-analysis currently provides.
-
-3. **`qbs_pair_integral_iterated` is iterated integration on a
+2. **`qbs_pair_integral_iterated` is iterated integration on a
    specific product measure**, not full Fubini. It works for the
    QBS product measure constructed via R≅R×R, not for arbitrary
    product measures. (Formerly named `qbs_pair_integralE`.)
 
-4. **`qbs_pair_integral_factorization` is product-measure
+3. **`qbs_pair_integral_factorization` is product-measure
    factorization, not statistical independence.** The lemma
    (formerly `qbs_integral_indep_mult`) states `E[fg] = E[f]E[g]`
    when `f` and `g` depend on disjoint coordinates of a product
-   measure, which is a tautology of products. The actual `qbs_indep`
-   predicate exists but is not yet connected to a non-trivial
-   independence theorem.
+   measure, which is a tautology of products. **Closed:** the
+   genuine independence factorization
+   `qbs_integral_indep_factorization` (commit 03fe22b) uses the
+   `qbs_indep` predicate non-trivially via `qbs_prob_equiv` on
+   the pushforward and recovers
+   `E_p[(phi (f z)) * (psi (g z))] = E[phi (f z)] * E[psi (g z)]`
+   from genuine independence rather than from a tautology of
+   product measures.
 
-5. **`is_standard_borel` uses encode/decode**, not the classical
+4. **`is_standard_borel` uses encode/decode**, not the classical
    Polish-space characterization. This is convenient for our needs
    but doesn't match the standard literature definition.
 
-6. **`qbs_normalize` returns `option`** and may return `None` when
+5. **`qbs_normalize` returns `option`** and may return `None` when
    the evidence is zero or infinite. Programs using normalization
    must check or prove the success case. Compare to
    `bayesian_regression.v` which explicitly proves `evidence_pos`.
