@@ -58,7 +58,7 @@ Arguments qbs_normal_distribution : clear implicits.
 
 (** Bernoulli distribution as QBS probability on boolQ. *)
 Definition qbs_bernoulli p : qbs_prob (boolQ R) :=
-  @mkQBSProb R (boolQ R) (fun r : mR => (r < p)%R)
+  @mkQBSProb R (boolQ R) (fun r : mR => (r < p))
     (uniform_prob ltr01 : probability mR R)
     (measurable_fun_ltr
       (@measurable_id _ mR setT)
@@ -67,7 +67,7 @@ Definition qbs_bernoulli p : qbs_prob (boolQ R) :=
 Arguments qbs_bernoulli : clear implicits.
 
 (** Uniform distribution on [a,b], for a < b, as QBS probability. *)
-Definition qbs_interval_uniform (a b : R) (ab : (a < b)%R) :
+Definition qbs_interval_uniform (a b : R) (ab : (a < b)) :
     qbs_prob (realQ R) :=
   @mkQBSProb R (realQ R) idfun
     (uniform_prob ab : probability mR R)
@@ -81,7 +81,7 @@ Definition qbs_uniform : qbs_prob (realQ R) := qbs_interval_uniform ltr01.
 (** The QBS of intervals (a, b) with a < b, and Uniform[a,b] as a morphism
     out of it (AFP qbs_interval_uniform_distribution_morphism). *)
 Definition intervalQ : qbsType R :=
-  @sub_qbs R (prodQ (realQ R) (realQ R)) (fun ab => (ab.1 < ab.2)%R).
+  @sub_qbs R (prodQ (realQ R) (realQ R)) (fun ab => (ab.1 < ab.2)).
 
 Definition qbs_uniform_of (ab : intervalQ) : monadP (realQ R) :=
   qbs_interval_uniform (svalP ab).
@@ -146,10 +146,10 @@ Section distribution_expectations.
 
 (** The mass of [0,1]-uniform below p is p. *)
 Lemma uniform_prob_lt (p : R) : 0 <= p <= 1 ->
-  uniform_prob ltr01 [set r : mR | (r < p)%R] = p%:E.
+  uniform_prob ltr01 [set r : mR | (r < p)] = p%:E.
 Proof.
 move=> /andP[hp0 hp1].
-have mE : measurable [set r : mR | (r < p)%R].
+have mE : measurable [set r : mR | (r < p)].
   have -> : [set r : mR | r < p] = [set` `]-oo, p[%R].
     by apply/seteqP; split => x /=; rewrite in_itv /=.
   exact: measurable_itv.
@@ -201,7 +201,7 @@ pose P : probability bool R :=
 suff: P =1 bernoulli_prob p by exact.
 apply: eq_bernoulli => //.
 rewrite /P /distribution /= /pushforward.
-have -> : f @^-1` [set true] = [set r : mR | (r < p)%R].
+have -> : f @^-1` [set true] = [set r : mR | (r < p)].
   by apply/seteqP; split => r /=.
 exact: uniform_prob_lt.
 Qed.
