@@ -125,7 +125,6 @@ Definition qbs_uniformQ : qbsHomType intervalQ (monadP (realQ R)) :=
   HB.pack qbs_uniform_of
     (isQBSMorphism.Build R _ _ _ qbs_uniform_of_morphism).
 
-
 Lemma qbs_normal_morphism s :
   @qbs_morphism R (realQ R) (monadP (realQ R))
     (fun m => qbs_normal_distribution m s).
