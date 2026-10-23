@@ -49,13 +49,13 @@ Proof. by move=> p; exact/asboolP/qbs_prob_equivxx. Qed.
 
 Let qbs_equiv_op_sym : symmetric qbs_equiv_op.
 Proof.
-by move=> p q; apply/idP/idP => /asboolP h; exact/asboolP/qbs_prob_equiv_sym.
+by move=> p q; apply/idP/idP=> /asboolP/qbs_prob_equiv_sym/asboolP.
 Qed.
 
 Let qbs_equiv_op_trans : transitive qbs_equiv_op.
 Proof.
 move=> q p r /asboolP hpq /asboolP hqr.
-exact/asboolP/(qbs_prob_equiv_trans hpq hqr).
+by apply/asboolP; exact: qbs_prob_equiv_trans hpq hqr.
 Qed.
 
 Canonical qbs_prob_equiv_rel :=
@@ -73,7 +73,7 @@ Proof. by rewrite eqquotE; exact: asboolP. Qed.
 Lemma qbs_quot_eq (p1 p2 : qbs_prob X) :
   qbs_prob_equiv X p1 p2 -> \pi_qbs_quot p1 = \pi_qbs_quot p2.
 Proof.
-by move=> e; apply/eqmodP; exact/asboolP.
+by move=> e; apply/eqmodP/asboolP.
 Qed.
 
 Lemma qbs_prob_equiv_repr (p : qbs_prob X) :

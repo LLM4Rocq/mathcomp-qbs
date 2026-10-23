@@ -51,7 +51,7 @@ Implicit Types (p m s : R).
 
 (** A probability measure on R as a QBS probability (random element idfun). *)
 Let qbs_of_prob (P : probability mR R) : qbs_prob (realQ R) :=
-  @mkQBSProb R (realQ R) idfun P (@measurable_id _ mR setT).
+  mkQBSProb (X := realQ R) idfun P (@measurable_id _ mR setT).
 
 (** Normal distribution as QBS probability. *)
 Definition qbs_normal_distribution m s : qbs_prob (realQ R) :=
@@ -67,7 +67,7 @@ Qed.
 
 (** Bernoulli distribution as QBS probability on boolQ. *)
 Definition qbs_bernoulli p : qbs_prob (boolQ R) :=
-  @mkQBSProb R (boolQ R) (fun r : mR => r < p)
+  mkQBSProb (X := boolQ R) (fun r : mR => r < p)
     (uniform_prob ltr01 : probability mR R) (measurable_ltr p).
 
 Arguments qbs_bernoulli : clear implicits.
@@ -94,8 +94,9 @@ Lemma qbs_uniform_of_morphism :
 Proof.
 move=> c [m1 m2].
 exists idfun, (fun r => uniform_prob (svalP (c r)) : giry.giry mR R).
-split => //; first exact: (@measurable_id _ mR setT).
-- apply: giry.measurable_giry_codensity => // B mB.
+split=> //; [exact: (@measurable_id _ mR setT) | |
+  by move=> r; exact: probability_setT].
+apply: giry.measurable_giry_codensity => // B mB.
   pose f (z : (mR * mR) * mR) : \bar R :=
     (\1_B z.2 * uniform_pdf z.1.1 z.1.2 z.2)%:E.
   have -> : (fun x => uniform_prob (svalP (c x)) B) =
@@ -105,11 +106,11 @@ split => //; first exact: (@measurable_id _ mR setT).
     by case: (y \in B); rewrite ?mul1r ?mul0r.
   have mf : measurable_fun [set: (mR * mR) * mR] f.
     apply/measurable_EFinP; apply: measurable_funM.
-      exact: measurableT_comp (measurable_indic mB) measurable_snd.
+      exact: measurableT_comp.
     rewrite /uniform_pdf; apply: measurable_fun_ifT => //.
       apply: measurable_and; apply: measurable_fun_ler => //.
-      - exact: measurableT_comp measurable_fst measurable_fst.
-      - exact: measurableT_comp measurable_snd measurable_fst.
+        exact: measurableT_comp measurable_fst measurable_fst.
+      exact: measurableT_comp measurable_snd measurable_fst.
     apply: measurableT_comp measurable_invr _.
     by apply: measurable_funB; apply: measurableT_comp.
   have f0 z : (0 <= f z)%E.
@@ -118,7 +119,6 @@ split => //; first exact: (@measurable_id _ mR setT).
     by rewrite invr_ge0 subr_ge0 (le_trans h1 h2).
   apply: measurableT_comp; first exact: measurable_fun_fubini_tonelli_F.
   by apply/measurable_fun_pairP; split.
-- by move=> r; exact: probability_setT.
 Qed.
 
 Definition qbs_uniformQ : qbsHomType intervalQ (monadP (realQ R)) :=
@@ -126,15 +126,14 @@ Definition qbs_uniformQ : qbsHomType intervalQ (monadP (realQ R)) :=
     (isQBSMorphism.Build R _ _ _ qbs_uniform_of_morphism).
 
 Lemma qbs_normal_morphism s :
-  @qbs_morphism R (realQ R) (monadP (realQ R))
+  qbs_morphism (X := realQ R) (Y := monadP (realQ R))
     (fun m => qbs_normal_distribution m s).
 Proof.
 move=> a ha; exists idfun, (fun r => normal_prob (a r) s : giry.giry mR R).
-split => //.
-- exact: (@measurable_id _ mR setT).
-- apply: giry.measurable_giry_codensity => // B mB.
-  exact: measurableT_comp (measurable_normal_prob _ mB) ha.
-- by move=> r; exact: probability_setT.
+split=> //; [exact: (@measurable_id _ mR setT) | |
+  by move=> r; exact: probability_setT].
+apply: giry.measurable_giry_codensity => // B mB.
+exact: measurableT_comp (measurable_normal_prob _ mB) ha.
 Qed.
 
 (** m |-> N(m, s) as a bundled morphism R -> P(R). *)
@@ -147,7 +146,7 @@ Definition qbs_normalQ s : qbsHomType (realQ R) (monadP (realQ R)) :=
 Section distribution_expectations.
 
 Let lt_itv p : [set r : mR | r < p] = [set` `]-oo, p[%R].
-Proof. by apply/seteqP; split => x /=; rewrite in_itv/=. Qed.
+Proof. by apply/seteqP; split=> x /=; rewrite in_itv/=. Qed.
 
 Let measurable_lt p : measurable [set r : mR | r < p].
 Proof. by rewrite lt_itv; exact: measurable_itv. Qed.
@@ -163,12 +162,12 @@ rewrite integral_uniform//.
 - by move=> x; rewrite lee_fin.
 rewrite subr0 invr1 mul1e integral_indic //=.
 have -> : [set r : mR | r < p] `&` `[0, 1] = [set` `[0%R, p[%R].
-  apply/seteqP; split => x /=.
-  - rewrite in_itv /= => -[xp]; rewrite in_itv /= => /andP[x0 x1].
+  apply/seteqP; split=> x /=.
+    rewrite in_itv /= => -[xp]; rewrite in_itv /= => /andP[x0 x1].
     by apply/andP; split.
-  - rewrite in_itv /= => /andP[x0 xp]; split => //.
-    rewrite in_itv /=; apply/andP; split => //.
-    exact: (le_trans (ltW xp) hp1).
+  rewrite in_itv /= => /andP[x0 xp]; split=> //.
+  rewrite in_itv /=; apply/andP; split=> //.
+  exact: (le_trans (ltW xp) hp1).
 rewrite -/(lebesgue_measure _).
 rewrite lebesgue_measure_itv /= oppr0 adde0.
 have [->|p0] := eqVneq p 0; first by rewrite ltxx.
@@ -183,7 +182,7 @@ rewrite /qbs_expect /qbs_integral /=.
 have -> : (fun x : mR => ((((x < p)%R : bool)%:R : R))%:E) =
     (fun x => (\1_[set r : mR | r < p] x)%:E).
   by apply: funext => x /=; rewrite indicE mem_setE.
-rewrite integral_indic//= ?setIT ?uniform_prob_lt ?hp0//.
+by rewrite integral_indic//= ?setIT ?uniform_prob_lt ?hp0//.
 Qed.
 
 (** The law of qbs_bernoulli is the Bernoulli probability of
@@ -200,7 +199,7 @@ suff: P =1 bernoulli_prob p by exact.
 apply: eq_bernoulli => //.
 rewrite /P /distribution /= /pushforward.
 have -> : f @^-1` [set true] = [set r : mR | r < p].
-  by apply/seteqP; split => r /=.
+  by apply/seteqP; split=> r /=.
 exact: uniform_prob_lt.
 Qed.
 
