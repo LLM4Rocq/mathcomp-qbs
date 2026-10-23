@@ -88,6 +88,10 @@ Definition qbs_measurable X (h : X -> \bar R) : Prop :=
 
 Arguments qbs_measurable : clear implicits.
 
+Lemma qbs_measurable_comp X Y (f : qbsHomType X Y) (h : Y -> \bar R) :
+  qbs_measurable Y h -> qbs_measurable X (h \o f).
+Proof. by move=> mh a ha; exact: mh _ (qbs_hom_proof _ ha). Qed.
+
 (* If h is sigma_Mx-measurable, then preimages of
    measurable sets are in sigma_Mx. *)
 Lemma qbs_measurable_sigma_Mx X (h : X -> \bar R)

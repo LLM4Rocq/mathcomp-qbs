@@ -37,8 +37,7 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad qbs_normalize
 (* ```                                                                        *)
 (*                                                                            *)
 (* Main results: wprior_evidence (the evidence is the closed-form constant    *)
-(* evidence_const) and program_posterior (program = Some q with q equivalent  *)
-(* to the posterior).                                                         *)
+(* evidence_const) and program_posterior (program = Some posterior).        *)
 (******************************************************************************)
 
 Import Order.TTheory GRing.Theory Num.Def Num.Theory.
@@ -228,14 +227,26 @@ Lemma prior2_integral (h : W -> \bar R) :
   qbs_measurable W h -> (forall x, 0 <= h x) ->
   qbs_integral W prior2 h =
   \int[normal_prob 0 3]_s \int[normal_prob 0 3]_b h (s, b).
-Proof. by move=> mh h0; rewrite ge0_qbs_integral_bind. Qed.
+Proof.
+move=> mh h0; rewrite ge0_qbs_integral_bind// qbs_integral_normal.
+  exact: ge0_qbs_measurable_integral.
+apply: eq_integral => s _.
+rewrite /= qbs_strength_integral// qbs_integral_normal//.
+by move=> a ha; exact: mh _ (qbs_Mx_pair_cstl s ha).
+Qed.
 
 Lemma posterior2_integral (h : W -> \bar R) :
   qbs_measurable W h -> (forall x, 0 <= h x) ->
   qbs_integral W posterior2 h =
   \int[normal_prob post_s_mean (sqrtr post_s_var)]_s
     \int[normal_prob (post_b_mean s) (sqrtr post_b_var)]_b h (s, b).
-Proof. by move=> mh h0; rewrite ge0_qbs_integral_bind. Qed.
+Proof.
+move=> mh h0; rewrite ge0_qbs_integral_bind// qbs_integral_normal.
+  exact: ge0_qbs_measurable_integral.
+apply: eq_integral => s _.
+rewrite /= qbs_strength_integral// qbs_integral_normal//.
+by move=> a ha; exact: mh _ (qbs_Mx_pair_cstl s ha).
+Qed.
 
 (** Helpers. *)
 
@@ -317,8 +328,10 @@ Proof.
 move=> mh h0.
 pose g := qbs_comp (qbs_pair (qbs_id RQ) (qbs_comp m (qbs_normalQ sigma)))
   (qbs_strengthQ RQ RQ).
-have hg := qbs_hom_proof (s := g) idfun (@measurable_id _ mR setT).
-by have := ge0_qbs_integral_morphism mh h0 hg.
+have := ge0_qbs_measurable_integral g mh h0 (@measurable_id _ mR setT).
+apply: eq_measurable_fun => s _ /=.
+rewrite qbs_strength_integral// qbs_integral_normal//.
+by move=> a ha; exact: mh _ (qbs_Mx_pair_cstl (s : RQ) ha).
 Qed.
 
 Let evidence_const_gt0 : (0 < evidence_const)%R.
@@ -409,6 +422,10 @@ Qed.
 
 Lemma wprior_evidence : qbs_evidence wprior = evidence_const%:E.
 Proof.
+have mw0 := @qbs_measurable_weight R F.
+have mw := qbs_measurable_comp (qbs_pair (qbs_id F) obs) mw0.
+rewrite -[LHS]/(qbs_integral _ wprior (@qbs_pweight R F)).
+rewrite !monadP_map_integral//.
 rewrite -[LHS]/(qbs_integral W prior2 (fun sb => (maxr 0 (obs2 sb.1 sb.2))%:E)).
 have -> : (fun sb : W => (maxr 0 (obs2 sb.1 sb.2))%:E) =
     (fun sb => 1 * (obs2 sb.1 sb.2)%:E).
@@ -425,28 +442,29 @@ Qed.
 
 (** ** Main theorem: the program normalises to the closed-form posterior *)
 
-Theorem program_posterior :
-  exists2 q, program = Some q & qbs_prob_equiv F q posterior.
+Theorem program_posterior : program = Some posterior.
 Proof.
 have ev : 0 < qbs_evidence wprior < +oo.
   by rewrite wprior_evidence ltry lte_fin evidence_const_gt0.
-rewrite /program /qbs_normalize ev; eexists; first reflexivity.
-move=> U mU; pose V := lin @^-1` U.
+rewrite /program /qbs_normalize ev; congr Some; apply/qbs_prob_eqP => U mU.
+pose V := lin @^-1` U.
 have mV : sigma_Mx V := sigma_Mx_preimage lin mU.
 pose h (sb : W) : \bar R := (\1_V sb)%:E.
 have mh : qbs_measurable W h.
   by move=> a ha; apply/measurable_EFinP/measurable_indic; exact: mV.
 have h01 x : 0 <= h x <= 1.
   by rewrite /h indicE; case: (_ \in _); rewrite ?lee01 ?lexx.
-rewrite -[LHS]/(qbs_prob_event _ _ _) qbs_normalize_event// wprior_evidence.
-rewrite -[RHS]/(qbs_prob_event W posterior2 V).
-have -> : qbs_prob_event W posterior2 V = qbs_integral W posterior2 h.
-  rewrite /qbs_prob_event -[X in qbs_prob_mu _ X]setIT -integral_indic//.
-  exact: mV _ (qbs_prob_alpha_random _).
-have -> : qbs_integral (prodQ F RQ) wprior
-    (fun xw : prodQ F RQ => (\1_U xw.1 * maxr 0 xw.2)%:E) =
+have mw := qbs_measurable_weighted_indic mU.
+have mw' := qbs_measurable_comp (qbs_pair (qbs_id F) obs) mw.
+rewrite qbs_normalize_event// wprior_evidence monadP_map_event//.
+rewrite qbs_prob_event_integral// !monadP_map_integral//.
+have -> : (fun x : W => (x \in V)%:R%:E) = h.
+  by apply/funext => x; rewrite /h indicE.
+have -> : qbs_integral W prior2
+    ((fun xw : prodQ F RQ => (\1_U xw.1 * maxr 0 xw.2)%:E) \o
+      qbs_pair (qbs_id F) obs \o lin) =
     qbs_integral W prior2 (fun sb => h sb * (obs2 sb.1 sb.2)%:E).
-  by apply: eq_integral => r _; rewrite /h max_r ?obs2_ge0// EFinM.
+  by apply: eq_integral => r _; rewrite /h /= max_r ?obs2_ge0// EFinM.
 rewrite prior2_integral; first exact: measurable_mul_obs2 mh.
   exact: mul_obs2_ge0 (ge0_of_le1 h01).
 rewrite factor_integral// posterior2_integral//; first exact: ge0_of_le1 h01.

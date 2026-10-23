@@ -554,6 +554,14 @@ Lemma ge0_qbs_integral_morphism X (h : X -> \bar R) :
     (fun p => qbs_integral X p h).
 Proof. by move=> mh h0 b hb; exact: ge0_monadP_random_integral. Qed.
 
+Lemma ge0_qbs_measurable_integral X Y (f : qbsHomType X (monadP Y))
+    (h : Y -> \bar R) : qbs_measurable Y h -> (forall y, 0 <= h y) ->
+  qbs_measurable X (fun x => qbs_integral Y (f x) h).
+Proof.
+move=> mh h0 a ha.
+exact: (ge0_monadP_random_integral (b := f \o a)) (qbs_hom_proof _ ha) mh h0.
+Qed.
+
 Definition qbs_swap X Y : qbsHomType (prodQ X Y) (prodQ Y X) :=
   qbs_pair (qbs_snd X Y) (qbs_fst X Y).
 

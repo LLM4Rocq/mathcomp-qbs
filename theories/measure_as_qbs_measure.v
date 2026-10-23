@@ -188,6 +188,12 @@ Proof.
 by move=> mA a ha; have := ha measurableT A mA; rewrite setTI.
 Qed.
 
+Lemma qbs_integral_normal m s (h : R -> \bar R) :
+  qbs_measurable (realQ R) h ->
+  qbs_integral (realQ R) (qbs_normal_distribution m s) h =
+  (\int[normal_prob m s]_x h x)%E.
+Proof. exact: qbs_integral_mk. Qed.
+
 (** E[Bernoulli(p)] = p. *)
 Lemma qbs_expect_bernoulli p (hp0 : 0 <= p) (hp1 : p <= 1) :
   qbs_expect (boolQ R) (qbs_bernoulli p) (fun b : bool => b%:R) = p%:E.
