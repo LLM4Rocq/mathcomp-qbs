@@ -60,7 +60,7 @@ From mathcomp.algebra_tactics Require Import ring.
 (*   phiK    == cancel phi psi (psi is left inverse of phi)                   *)
 (*   psiK    == cancel psi phi on (0,1)                                       *)
 (*   measurable_phi == phi is measurable on R                                 *)
-(*   measurable_psi == psi is measurable on (0,1)                             *)
+(*   measurable_psi_setT == psi is measurable on R                            *)
 (*   bin_digits_reconstruction == bin_sum (bin_digits x) = x for [0,1)       *)
 (*   pair_to_unitK == unit_to_pair (pair_to_unit (x,y)) = (x,y)              *)
 (*                    (unconditional on [0,1)^2)                              *)
@@ -76,12 +76,12 @@ From mathcomp.algebra_tactics Require Import ring.
 (*                                  measurable                               *)
 (*                                                                            *)
 (* ## Note on the no_trailing_ones gap                                        *)
-(* The round-trip unit_to_pairK requires no_trailing_ones on the       *)
-(* deinterleaved subsequences, which does NOT follow from no_trailing_ones    *)
-(* on the full binary expansion. However, for standard_borel_wit (R * R),     *)
-(* only the OTHER direction (encode_RRK, i.e. g(f(x))=x) is needed,   *)
-(* and that direction (pair_to_unitK / encode_RRK) is proved    *)
-(* unconditionally. See the detailed comments in the Round-trip section.     *)
+(* The round-trip unit_to_pairK requires no_trailing_ones on the              *)
+(* deinterleaved subsequences, which does NOT follow from no_trailing_ones on *)
+(* the full binary expansion. However, only the OTHER direction (encode_RRK,  *)
+(* i.e. g(f(x)) = x) is needed to show that R * R is standard Borel, and that *)
+(* direction (pair_to_unitK / encode_RRK) is proved unconditionally. See the  *)
+(* comments in the round-trip section.                                        *)
 (******************************************************************************)
 
 Import GRing.Theory Num.Def Num.Theory.
@@ -410,7 +410,8 @@ have hinv n :
     x - bin_partial_sum (bin_digit x) n = bin_rem x n * 2^-1 ^+ n :> R.
   elim: n => [|k IHk].
     by rewrite /bin_partial_sum big_ord0 subr0 expr0 mulr1.
-  rewrite /bin_partial_sum big_ord_recr /= -/bin_partial_sum bin_digit_rem exprSr.
+  rewrite /bin_partial_sum big_ord_recr /= -/bin_partial_sum.
+  rewrite bin_digit_rem exprSr.
   case hle: (2^-1 <= bin_rem x k).
   - rewrite /= mul1r /bin_step hle opprD addrA -/bin_partial_sum.
     have -> : x - bin_partial_sum (bin_digit x) k - (2^-1 ^+ k / 2) =
@@ -454,24 +455,23 @@ Section round_trips.
 (*                                                                            *)
 (* We prove two round-trip lemmas:                                            *)
 (*                                                                            *)
-(* 1. pair_to_unitK: unit_to_pair (pair_to_unit (x,y)) = (x,y)        *)
-(*    This holds UNCONDITIONALLY for all (x,y) in [0,1)^2.                   *)
-(*    This is the direction needed for standard_borel_wit (R * R), which       *)
-(*    only requires g(f(x)) = x (i.e., decode after encode = identity).      *)
+(* 1. pair_to_unitK: unit_to_pair (pair_to_unit (x,y)) = (x,y)                *)
+(*    This holds UNCONDITIONALLY for all (x,y) in [0,1)^2. It is the          *)
+(*    direction needed to show that R * R is standard Borel, which only       *)
+(*    requires g(f(x)) = x (i.e., decode after encode = identity).            *)
 (*                                                                            *)
-(* 2. unit_to_pairK: pair_to_unit (unit_to_pair r) = r                 *)
+(* 2. unit_to_pairK: pair_to_unit (unit_to_pair r) = r                        *)
 (*    This requires no_trailing_ones on the deinterleaved subsequences.       *)
 (*    The full binary expansion bin_digits(r) has no trailing ones for        *)
 (*    r in [0,1) (proved in bin_digits_no_trailing_ones), but this does NOT   *)
 (*    imply that the deinterleaved even/odd subsequences lack trailing ones.  *)
-(*    Example: r with digits 1,0,1,0,... has no trailing ones, but           *)
-(*    deinterleave_even gives 1,1,1,... (all ones).                          *)
+(*    Example: r with digits 1,0,1,0,... has no trailing ones, but            *)
+(*    deinterleave_even gives 1,1,1,... (all ones).                           *)
 (*                                                                            *)
-(*    This direction is NOT needed for standard_borel_wit (the product of      *)
-(*    standard Borel spaces theorem). The set of reals where the extra        *)
-(*    hypotheses fail is a subset of the dyadic rationals (countable, hence   *)
-(*    measure zero), but we do not formalize this fact here since it is       *)
-(*    not required.                                                           *)
+(*    This direction is NOT needed for the product of standard Borel spaces.  *)
+(*    The set of reals where the extra hypotheses fail is a subset of the     *)
+(*    dyadic rationals (countable, hence measure zero), but we do not         *)
+(*    formalize this fact here since it is not required.                      *)
 (******************************************************************************)
 
 (* Round-trip: these follow from bin_digits_reconstruction combined with
@@ -513,7 +513,8 @@ have hall n : (N <= n)%N -> 2^-1 <= bin_rem x n.
 have hstep_eq n : (N <= n)%N ->
     1 - bin_rem x n.+1 = (1 - bin_rem x n) *+ 2.
   move=> hn; rewrite bin_remS /bin_step (hall n hn) /=.
-  by rewrite -[bin_rem x n *+ 2]mulr_natr -[(1 - bin_rem x n) *+ 2]mulr_natr; ring.
+  rewrite -[bin_rem x n *+ 2]mulr_natr -[(1 - bin_rem x n) *+ 2]mulr_natr.
+  by ring.
 have hinv k : 1 - bin_rem x (N + k)%N = (1 - bin_rem x N) *+ 2 ^ k.
   elim: k => [|k IHk]; first by rewrite /= expn0 mulr1n addn0.
   have -> : (N + k.+1)%N = (N + k).+1 by rewrite addnS.
@@ -837,8 +838,8 @@ Qed.
 End measurability_constructions.
 
 (* Subsection: the composed R x R <-> R bijection encode_RR/decode_RR,
-   its round-trip property, and measurability (including measurable_psi
-   on all of R), culminating in pair_standard_borel. *)
+   its round-trip property, and measurability, culminating in
+   pair_standard_borel. *)
 Section composed_bijection.
 
 (******************************************************************************)
@@ -1031,18 +1032,11 @@ Local Lemma measurable_fun_nat_discrete d (T : measurableType d)
   measurable_fun D g.
 Proof.
 move=> hg _ Y _; rewrite /measurable /=.
-suff -> : D `&` g @^-1` Y = \bigcup_(n in setT)
-  (fun n => if asbool (Y n) then D `&` g @^-1` [set n] else set0) n.
-  apply: bigcup_measurable => n _.
-  by case: asboolP => _; [exact: hg | exact: measurable0].
-rewrite eqEsubset; split => [r [hDr hYgr] | r [n _ /=]].
-  exists (g r) => //=.
-  case: asboolP => [_ | hNY].
-    by split => //; rewrite /preimage /=.
-  by exfalso; exact: hNY hYgr.
-case: asboolP => [hYn | _]; last by [].
-move=> [hDr]; rewrite /preimage /= => ->.
-by split => //; exact: hYn.
+have -> : D `&` g @^-1` Y = \bigcup_(n in Y) (D `&` g @^-1` [set n]).
+  apply/seteqP; split=> [r [Dr Ygr]|r [n Yn [Dr /= gr]]].
+    by exists (g r).
+  by split=> //; rewrite /preimage /= gr.
+by apply: bigcup_measurable => n Yn; exact: hg.
 Qed.
 
 (** truncn : R -> nat is measurable.
