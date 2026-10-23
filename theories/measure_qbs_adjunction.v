@@ -19,6 +19,9 @@ From QBS Require Import quasi_borel standard_borel.
 (* ```                                                                        *)
 (*   standard_borel_wit M == witness that measurableType M is standard Borel  *)
 (*     erealQ == QBS on extended reals \bar R via R_qbs                       *)
+(*   sigma_of Mx == sets measurable along all maps of Mx (L side)             *)
+(*   Mx_of S == maps measurable for the set system S (R side)                 *)
+(*   sigma_of_Mx_of == Galois connection S <= sigma_of Mx <-> Mx <= Mx_of S   *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -328,5 +331,50 @@ have he : (expand (R := R) : mR -> \bar R) \in mfun.
 exact: {| sb_encode := mfun_Sub hc ; sb_decode := mfun_Sub he ;
            sb_retractK := contractK (R := R) |}.
 Defined.
+
+(** Order adjunction on a fixed carrier T (AFP rl_order_adjunction).
+    [sigma_of Mx] is the L side: the sets measurable along every map of Mx
+    ([sigma_Mx X = sigma_of qbs_Mx]); [Mx_of S] is the R side: the maps
+    measurable for the set system S ([qbs_Mx (R_qbs M) = Mx_of measurable]).
+    Both are antitone, and they form a (contravariant) Galois connection. *)
+Definition sigma_of (T : Type) (Mx : set (mR -> T)) : set (set T) :=
+  [set U | forall a, Mx a -> measurable (a @^-1` U)].
+
+Definition Mx_of (T : Type) (S : set (set T)) : set (mR -> T) :=
+  [set a | forall U, S U -> measurable (a @^-1` U)].
+
+Lemma sigma_of_antitone (T : Type) (Mx1 Mx2 : set (mR -> T)) :
+  Mx1 `<=` Mx2 -> sigma_of Mx2 `<=` sigma_of Mx1.
+Proof. by move=> h U hU a /h; exact: hU. Qed.
+
+Lemma Mx_of_antitone (T : Type) (S1 S2 : set (set T)) :
+  S1 `<=` S2 -> Mx_of S2 `<=` Mx_of S1.
+Proof. by move=> h a ha U /h; exact: ha. Qed.
+
+Lemma sigma_of_Mx_of (T : Type) (S : set (set T)) (Mx : set (mR -> T)) :
+  S `<=` sigma_of Mx <-> Mx `<=` Mx_of S.
+Proof.
+split=> h.
+  by move=> a ha U hU; exact: h hU a ha.
+by move=> U hU a ha; exact: h a ha U hU.
+Qed.
+
+Lemma sigma_MxE (X : qbsType R) :
+  sigma_Mx (X := X) = sigma_of (qbs_Mx (s := X)).
+Proof. by []. Qed.
+
+Lemma qbs_Mx_R_qbs d (M : measurableType d) :
+  qbs_Mx (s := R_qbs R M) = Mx_of (@measurable _ M).
+Proof.
+rewrite eqEsubset; split=> a ha.
+  by move=> U mU; have := ha measurableT U mU; rewrite setTI.
+by move=> _ U mU; rewrite setTI; exact: ha.
+Qed.
+
+(** Unit of the adjunction: random elements of X are measurable into L X
+    (AFP L_max_of_measurables). *)
+Lemma qbs_Mx_sub_Mx_of (X : qbsType R) :
+  qbs_Mx (s := X) `<=` Mx_of (sigma_Mx (X := X)).
+Proof. by apply/sigma_of_Mx_of. Qed.
 
 End mqa.
