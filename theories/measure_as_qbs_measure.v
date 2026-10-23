@@ -1,4 +1,4 @@
-(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
+(* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
 From mathcomp Require Import boot algebra reals ereal topology normedtype
   classical_sets borel_hierarchy numfun measure lebesgue_integral_definition
@@ -15,17 +15,18 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad normal_centred.
 (* probability measure on a standard Borel space is giry_to_qbs (qbs_giry.v). *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*   qbs_normal_distribution mu sigma == Normal(mu, sigma) as QBS probability *)
+(*   qbs_normal_distribution m s == Normal(m, s) as QBS probability           *)
+(*   qbs_normalQ s == m |-> Normal(m, s) as a morphism realQ -> P(R)          *)
 (*   qbs_bernoulli p == Bernoulli(p) as QBS probability on boolQ              *)
 (*   qbs_interval_uniform ab == Uniform[a,b] as QBS probability on realQ, for *)
 (*                           ab : a < b                                       *)
 (*   qbs_uniform == Uniform[0,1] = qbs_interval_uniform ltr01                 *)
 (*   intervalQ == QBS of pairs (a, b) with a < b (subspace of R * R)          *)
-(*   qbs_uniformQ == (a, b) |-> Uniform[a,b] as a morphism                    *)
-(*                   intervalQ -> P(R) (qbs_uniform_of_morphism)              *)
+(*   qbs_uniform_of == ab |-> Uniform[a,b] on intervalQ                       *)
+(*   qbs_uniformQ == qbs_uniform_of as a morphism intervalQ -> P(R)           *)
 (*   qbs_bernoulli_event == the law of qbs_bernoulli is bernoulli_prob p      *)
 (*   qbs_expect_interval_uniform == E[Uniform[a,b]] = (a + b) / 2             *)
-(*   qbs_expect_normal == E[Normal(mu,sigma)] = mu                            *)
+(*   qbs_expect_normal == E[Normal(m, s)] = m                                 *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -44,21 +45,20 @@ Variable R : realType.
 
 Local Notation mR := (measurableTypeR R).
 
-Implicit Types (p mu sigma : R).
+Implicit Types (p m s : R).
 
 (** Standard distributions as QBS probabilities. *)
 
 (** Normal distribution as QBS probability. *)
-Definition qbs_normal_distribution (mu sigma : R) : qbs_prob (realQ R) :=
+Definition qbs_normal_distribution m s : qbs_prob (realQ R) :=
   @mkQBSProb R (realQ R) idfun
-    (normal_prob mu sigma : probability mR R)
+    (normal_prob m s : probability mR R)
     (@measurable_id _ mR setT).
 
 Arguments qbs_normal_distribution : clear implicits.
 
 (** Bernoulli distribution as QBS probability on boolQ. *)
-Definition qbs_bernoulli
-  (p : R) (hp0 : (0 <= p)%R) (hp1 : (p <= 1)%R) : qbs_prob (boolQ R) :=
+Definition qbs_bernoulli p : qbs_prob (boolQ R) :=
   @mkQBSProb R (boolQ R) (fun r : mR => (r < p)%R)
     (uniform_prob ltr01 : probability mR R)
     (measurable_fun_ltr
@@ -124,11 +124,11 @@ Definition qbs_uniformQ : qbsHomType intervalQ (monadP (realQ R)) :=
     (isQBSMorphism.Build R _ _ _ qbs_uniform_of_morphism).
 
 
-Lemma qbs_normal_morphism (sigma : R) :
+Lemma qbs_normal_morphism s :
   @qbs_morphism R (realQ R) (monadP (realQ R))
-    (fun mu => qbs_normal_distribution mu sigma).
+    (fun m => qbs_normal_distribution m s).
 Proof.
-move=> a ha; exists idfun, (fun r => normal_prob (a r) sigma : giry.giry mR R).
+move=> a ha; exists idfun, (fun r => normal_prob (a r) s : giry.giry mR R).
 split => //.
 - exact: (@measurable_id _ mR setT).
 - apply: giry.measurable_giry_codensity => // B mB.
@@ -136,10 +136,10 @@ split => //.
 - by move=> r; exact: probability_setT.
 Qed.
 
-(** mu |-> N(mu, sigma) as a bundled morphism R -> P(R). *)
-Definition qbs_normalQ (sigma : R) : qbsHomType (realQ R) (monadP (realQ R)) :=
-  HB.pack (fun mu : realQ R => qbs_normal_distribution mu sigma : monadP _)
-    (isQBSMorphism.Build R _ _ _ (qbs_normal_morphism sigma)).
+(** m |-> N(m, s) as a bundled morphism R -> P(R). *)
+Definition qbs_normalQ s : qbsHomType (realQ R) (monadP (realQ R)) :=
+  HB.pack (fun m : realQ R => qbs_normal_distribution m s : monadP _)
+    (isQBSMorphism.Build R _ _ _ (qbs_normal_morphism s)).
 
 (** Distribution expectation lemmas. *)
 
@@ -177,7 +177,7 @@ Qed.
 
 (** E[Bernoulli(p)] = p. *)
 Lemma qbs_expect_bernoulli (p : R) (hp0 : 0 <= p) (hp1 : p <= 1) :
-  qbs_expect (boolQ R) (qbs_bernoulli p hp0 hp1) (fun b : bool => b%:R) = p%:E.
+  qbs_expect (boolQ R) (qbs_bernoulli p) (fun b : bool => b%:R) = p%:E.
 Proof.
 rewrite /qbs_expect /qbs_integral /=.
 have -> : (fun x : mR => ((((x < p)%R : bool)%:R : R))%:E) =
@@ -193,7 +193,7 @@ Qed.
     mathcomp-analysis. *)
 Lemma qbs_bernoulli_event (p : R) (hp0 : 0 <= p) (hp1 : p <= 1)
     (A : set bool) :
-  qbs_prob_event (boolQ R) (qbs_bernoulli p hp0 hp1) A = bernoulli_prob p A.
+  qbs_prob_event (boolQ R) (qbs_bernoulli p) A = bernoulli_prob p A.
 Proof.
 have p01 : 0 <= p <= 1 by apply/andP.
 pose f : {mfun mR >-> bool} := mfun_Sub (mem_set (measurable_fun_ltr
@@ -207,19 +207,6 @@ have -> : f @^-1` [set true] = [set r : mR | (r < p)%R].
   by apply/seteqP; split => r /=.
 exact: uniform_prob_lt.
 Qed.
-
-Lemma qbs_bernoulli_law (p : R) (hp0 : 0 <= p) (hp1 : p <= 1)
-    (A : set bool) :
-  qbs_law (qbs_bernoulli p hp0 hp1) A = bernoulli_prob p A.
-Proof. exact: qbs_bernoulli_event. Qed.
-
-(** Integrals against Uniform(a,b) of nonnegative measurable functions. *)
-Lemma ge0_qbs_integral_interval_uniform (a b : R) (ab : a < b)
-    (h : mR -> \bar R) :
-  measurable_fun setT h -> (forall x, 0 <= h x)%E ->
-  qbs_integral (realQ R) (qbs_interval_uniform ab) h =
-  ((b - a)^-1%:E * \int[lebesgue_measure]_(x in `[a, b]) h x)%E.
-Proof. by move=> mh h0; exact: integral_uniform. Qed.
 
 (** E[Uniform(a,b)] = (a+b)/2. *)
 Lemma qbs_expect_interval_uniform (a b : R) (ab : a < b) :
@@ -269,35 +256,11 @@ Lemma qbs_expect_uniform :
   qbs_expect (realQ R) qbs_uniform (fun x => x) = (2%:R^-1)%:E.
 Proof. by rewrite qbs_expect_interval_uniform add0r div1r. Qed.
 
-(** E[Normal(mu,sigma)] = mu. *)
-Lemma qbs_expect_normal (mu sigma : R) : sigma != 0 ->
-  qbs_expect (realQ R) (qbs_normal_distribution mu sigma)
-    (fun x => x) = mu%:E.
+(** E[Normal(m,s)] = m. *)
+Lemma qbs_expect_normal m s : s != 0 ->
+  qbs_expect (realQ R) (qbs_normal_distribution m s) (fun x => x) = m%:E.
 Proof.
-move=> s0; have id_int := normal_prob_abs_lty mu sigma s0.
-have centred_int := integrable_normal_centred mu sigma s0.
-have centred_moment0 := integral_normal_centred mu sigma s0.
-rewrite /qbs_expect /qbs_integral /=.
-rewrite integral_normal_prob//=; first by apply/integrableP; split.
-under eq_integral do rewrite -EFinM.
-(* Split x * pdf = mu * pdf + (x - mu) * pdf *)
-rewrite (_ : (fun x => (x * normal_pdf mu sigma x)%:E) =
-  (fun x => (mu * normal_pdf mu sigma x +
-             (x - mu) * normal_pdf mu sigma x)%:E)).
-  by apply: funext => x /=; rewrite -mulrDl addrC subrK.
-under eq_integral do rewrite EFinD.
-have hint1 : lebesgue_measure.-integrable setT
-    (fun x => (mu * normal_pdf mu sigma x)%:E).
-  rewrite (_ : (fun x => (mu * _)%:E) =
-    (fun x => mu%:E * (normal_pdf mu sigma x)%:E)%E).
-    by apply: funext => x; rewrite EFinM.
-  exact: (integrableZl measurableT mu (integrable_normal_pdf mu sigma)).
-rewrite (integralD measurableT hint1 centred_int).
-rewrite (_ : (fun x => (mu * normal_pdf mu sigma x)%:E) =
-  (fun x => mu%:E * (normal_pdf mu sigma x)%:E)%E).
-  by apply: funext => x; rewrite EFinM.
-rewrite integralZl//=; first exact: integrable_normal_pdf.
-by rewrite integral_normal_pdf -EFinM mulr1 centred_moment0 adde0.
+by move=> s0; rewrite /qbs_expect /qbs_integral/=; exact: integral_normal_mean.
 Qed.
 
 End distribution_expectations.
