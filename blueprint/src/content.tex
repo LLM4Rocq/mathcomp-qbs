@@ -197,8 +197,8 @@ $m\mathbb{R}$ for its Borel measurable space.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
-\begin{lemma}[Constant--Random Pairing]\label{lem:prodQ_const_random}
-  \rocq{QBS.quasi_borel.prodQ_const_random}
+\begin{lemma}[Constant--Random Pairing]\label{lem:qbs_Mx_pair_cstl}
+  \rocq{QBS.quasi_borel.qbs_Mx_pair_cstl}
   \rocqok
   \uses{def:prodQ}
   If $\alpha \in M_Y$, then $\lambda r.\; (x, \alpha(r)) \in M_{X \times Y}$.
@@ -238,7 +238,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{theorem}[Currying Morphism]\label{thm:qbs_morphism_curry}
   \rocq{QBS.quasi_borel.qbs_curry_morph}
   \rocqok
-  \uses{def:expQ, def:prodQ, def:qbs_morphism, lem:prodQ_const_random}
+  \uses{def:expQ, def:prodQ, def:qbs_morphism, lem:qbs_Mx_pair_cstl}
   If $f : X \times Y \to Z$ is a QBS morphism, then
   $\hat{f} : X \to (Y \Rightarrow Z)$ defined by
   $\hat{f}(x)(y) = f(x,y)$ is a QBS morphism
@@ -332,9 +332,9 @@ $m\mathbb{R}$ for its Borel measurable space.
 \end{definition}
 
 \begin{lemma}[Sigma-Algebra Axioms]\label{lem:sigma_Mx_axioms}
-  \rocq{QBS.quasi_borel.sigma_Mx_set0}
-  \rocq{QBS.quasi_borel.sigma_Mx_setT}
-  \rocq{QBS.quasi_borel.sigma_Mx_setC}
+  \rocq{QBS.quasi_borel.sigma_Mx0}
+  \rocq{QBS.quasi_borel.sigma_MxT}
+  \rocq{QBS.quasi_borel.sigma_MxC}
   \rocq{QBS.quasi_borel.sigma_Mx_bigcup}
   \rocqok
   \uses{def:sigma_Mx}
@@ -440,8 +440,8 @@ $m\mathbb{R}$ for its Borel measurable space.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
-\begin{lemma}[Image Morphism In]\label{lem:map_qbs_morph_from}
-  \rocq{QBS.quasi_borel.map_qbs_morph_from}
+\begin{lemma}[Image Morphism In]\label{lem:map_qbs_morphism_in}
+  \rocq{QBS.quasi_borel.map_qbs_morphism_in}
   \rocqok
   \uses{def:map_qbs, def:qbs_morphism}
   $f$ is a QBS morphism $X \to \mathrm{im}(f)$.
@@ -585,8 +585,8 @@ $m\mathbb{R}$ for its Borel measurable space.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
-\begin{lemma}[R Preserves Products]\label{lem:R_preserves_prod}
-  \rocq{QBS.measure_qbs_adjunction.R_preserves_prod}
+\begin{lemma}[R Preserves Products]\label{lem:qbs_Mx_R_qbs_prod}
+  \rocq{QBS.measure_qbs_adjunction.qbs_Mx_R_qbs_prod}
   \rocqok
   \uses{def:R_qbs, def:prodQ}
   $R(M_1 \times M_2)$ and $R(M_1) \times R(M_2)$ have the same random
@@ -594,8 +594,8 @@ $m\mathbb{R}$ for its Borel measurable space.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
-\begin{lemma}[Sigma-Algebra of $R(M)$]\label{lem:sigma_Mx_measurable}
-  \rocq{QBS.measure_qbs_adjunction.sigma_Mx_measurable}
+\begin{lemma}[Sigma-Algebra of $R(M)$]\label{lem:sigma_Mx_R_qbs}
+  \rocq{QBS.measure_qbs_adjunction.sigma_Mx_R_qbs}
   \rocqok
   \uses{def:sigma_Mx, def:R_qbs}
   Every measurable $U \subseteq M$ belongs to $\sigma_{M_{R(M)}}$.
@@ -605,7 +605,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{lemma}[Adjunction Counit]\label{lem:adjunction_counit}
   \rocq{QBS.measure_qbs_adjunction.adjunction_counit}
   \rocqok
-  \uses{def:qbs_meas, def:R_qbs, lem:sigma_Mx_measurable}
+  \uses{def:qbs_meas, def:R_qbs, lem:sigma_Mx_R_qbs}
   The identity $L(R(M)) \to M$ is measurable.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
@@ -709,7 +709,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{lemma}[Standard Borel: $\sigma_{M_{R(M)}}$ Coincides with Measurability]\label{lem:sigma_Mx_standard_borel}
   \rocq{QBS.measure_qbs_adjunction.sigma_Mx_standard_borel}
   \rocqok
-  \uses{def:standard_borel_wit, def:sigma_Mx, def:R_qbs, lem:sigma_Mx_measurable}
+  \uses{def:standard_borel_wit, def:sigma_Mx, def:R_qbs, lem:sigma_Mx_R_qbs}
   For $M$ with a standard Borel witness and $U \subseteq M$:
   $U \in \sigma_{M_{R(M)}}$ iff $U$ is measurable.
 \end{lemma}
@@ -1458,7 +1458,7 @@ equalities.
   \rocq{QBS.qbs_monad.qbs_strength}
   \rocq{QBS.qbs_monad.qbs_strength_event}
   \rocqok
-  \uses{def:qbs_prob, def:prodQ, lem:prodQ_const_random}
+  \uses{def:qbs_prob, def:prodQ, lem:qbs_Mx_pair_cstl}
   $\mathrm{str}(w, p) = (\lambda r.\; (w, \alpha_p(r)),\; \mu_p)$,
   pairing a constant $w : W$ with a probability~$p$ on~$X$.
   Its event probabilities are $\Pr_{\mathrm{str}(w,p)}[U] =
@@ -2061,7 +2061,7 @@ probability measure on a standard Borel space is \texttt{giry\_to\_qbs}
 \begin{lemma}[Equivalence Gives Equal Distributions]\label{lem:qbs_prob_equiv_giry}
   \rocq{QBS.qbs_giry.qbs_prob_equiv_giry}
   \rocqok
-  \uses{def:qbs_to_giry, def:qbs_prob_equiv, lem:sigma_Mx_measurable}
+  \uses{def:qbs_to_giry, def:qbs_prob_equiv, lem:sigma_Mx_R_qbs}
   If $p_1 \sim p_2$ on $R(M)$ then $\mathrm{qbs\_to\_giry}(p_1)(A) =
   \mathrm{qbs\_to\_giry}(p_2)(A)$ for every measurable~$A$.
 \end{lemma}

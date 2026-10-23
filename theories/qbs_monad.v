@@ -503,7 +503,7 @@ End giry_section.
 
 Definition qbs_strength W X (wp : W * monadP X) : monadP (prodQ W X) :=
   mkQBSProb (fun r => (wp.1, qbs_prob_alpha wp.2 r))
-    (qbs_prob_mu wp.2) (prodQ_const_random wp.1 (qbs_prob_alpha_random wp.2)).
+    (qbs_prob_mu wp.2) (qbs_Mx_pair_cstl wp.1 (qbs_prob_alpha_random wp.2)).
 
 Lemma qbs_strength_event W X (w : W) (p : monadP X) (U : set (prodQ W X)) :
   qbs_prob_event _ (qbs_strength (w, p)) U =
@@ -512,7 +512,7 @@ Proof. by []. Qed.
 
 Lemma sigma_Mx_section W X (w : W) (U : set (prodQ W X)) :
   sigma_Mx U -> sigma_Mx [set x : X | U (w, x)].
-Proof. by move=> mU a ha; exact: mU _ (prodQ_const_random w ha). Qed.
+Proof. by move=> mU a ha; exact: mU _ (qbs_Mx_pair_cstl w ha). Qed.
 
 Lemma qbs_strength_morphism W X :
   qbs_morphism (X := prodQ W (monadP X)) (Y := monadP (prodQ W X))

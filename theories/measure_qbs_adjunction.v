@@ -68,7 +68,7 @@ exact: mU _ (hf _ ha).
 Qed.
 
 (** Counit of L -| R: the identity L (R M) -> M is measurable. *)
-Lemma sigma_Mx_measurable d (M : measurableType d) (U : set M) :
+Lemma sigma_Mx_R_qbs d (M : measurableType d) (U : set M) :
   measurable U -> sigma_Mx (X := R_qbs R M) U.
 Proof.
 move=> mU a ha; rewrite -[X in measurable X]setTI.
@@ -78,7 +78,7 @@ Qed.
 Lemma adjunction_counit d (M : measurableType d) :
   measurable_fun [set: qbs_meas (R_qbs R M)] (idfun : _ -> M).
 Proof.
-by move=> _ U mU; rewrite setTI qbs_measE; exact: sigma_Mx_measurable.
+by move=> _ U mU; rewrite setTI qbs_measE; exact: sigma_Mx_R_qbs.
 Qed.
 
 (** R preserves products.
@@ -86,7 +86,7 @@ Qed.
 
 (* The random elements of R_qbs applied to a product measurable type
    coincide with those of the QBS product of R_qbs spaces *)
-Lemma R_preserves_prod d1 d2
+Lemma qbs_Mx_R_qbs_prod d1 d2
     (M1 : measurableType d1) (M2 : measurableType d2)
     (alpha : mR -> M1 * M2) :
   qbs_Mx (s := R_qbs R (M1 * M2)%type) alpha <->
@@ -201,7 +201,7 @@ case: sb => f g hgf U; split.
   apply/seteqP; split => x /=.
     by rewrite /preimage /= => hUx; rewrite hgf.
   by rewrite /preimage /= => hgfU; rewrite -(hgf x).
-- exact: sigma_Mx_measurable.
+- exact: sigma_Mx_R_qbs.
 Qed.
 
 (** QBS on the extended reals via [R_qbs]. *)

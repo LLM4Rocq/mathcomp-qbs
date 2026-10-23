@@ -57,7 +57,7 @@ Proof. by move=> *; rewrite integral_distribution. Qed.
 Lemma qbs_prob_equiv_giry (p1 p2 : qbs_prob (R_qbs R M)) (A : set M) :
   qbs_prob_equiv (R_qbs R M) p1 p2 -> measurable A ->
   qbs_to_giry p1 A = qbs_to_giry p2 A.
-Proof. by move=> e /sigma_Mx_measurable/(e _). Qed.
+Proof. by move=> e /sigma_Mx_R_qbs/(e _). Qed.
 
 Lemma qbs_to_giry_return (x : M) (A : set M) :
   qbs_to_giry (qbs_return (x : R_qbs R M)) A = (\d_x)%R A.
@@ -95,10 +95,10 @@ Lemma qbs_to_giry_bind d' (M' : measurableType d') (p : qbs_prob (R_qbs R M))
   qbs_to_giry (qbs_bind p f : qbs_prob _) A =
   \int[qbs_to_giry p]_x qbs_to_giry (f x : qbs_prob _) A.
 Proof.
-move=> mA; rewrite qbs_to_giryE (qbs_bind_event _ _ (sigma_Mx_measurable mA)).
+move=> mA; rewrite qbs_to_giryE (qbs_bind_event _ _ (sigma_Mx_R_qbs mA)).
 have mh : measurable_fun [set: M] (fun x => qbs_to_giry (f x : qbs_prob _) A).
   apply: (R_qbs_full sb (M2 := \bar R)) => a ha.
-  apply: monadP_random_event (sigma_Mx_measurable mA).
+  apply: monadP_random_event (sigma_Mx_R_qbs mA).
   exact: qbs_hom_proof.
 by rewrite ge0_integral_distribution.
 Qed.
