@@ -211,8 +211,8 @@ Definition monadP X : Type := qbs_prob X.
 Arguments monadP : clear implicits.
 
 HB.instance Definition _ X :=
-  @isQBS.Build R (monadP X) (monadP_random X)
-    (@monadP_comp X) (@monadP_const X) (@monadP_glue X).
+  isQBS.Build R (monadP X) (@monadP_comp X) (@monadP_const X)
+    (@monadP_glue X).
 
 Lemma monadP_randomE X : qbs_Mx (s := monadP X) = monadP_random X.
 Proof. by []. Qed.
@@ -244,7 +244,7 @@ by move=> r; exact: diracT.
 Qed.
 
 HB.instance Definition _ X :=
-  @isQBSMorphism.Build R X (monadP X) (@qbs_return X)
+  isQBSMorphism.Build R X (monadP X) (@qbs_return X)
     (@qbs_return_morphism X).
 
 Lemma qbs_return_integral X (x : X) (h : X -> \bar R) :
@@ -398,7 +398,7 @@ by move=> r U mU; rewrite /= monadP_map_event hb//; exact: sigma_Mx_preimage.
 Qed.
 
 HB.instance Definition _ X Y (f : qbsHomType X Y) :=
-  @isQBSMorphism.Build R (monadP X) (monadP Y) (monadP_map f)
+  isQBSMorphism.Build R (monadP X) (monadP Y) (monadP_map f)
     (@monadP_map_morphism X Y f).
 
 Lemma qbs_prob_ext X (p1 p2 : qbs_prob X) :
@@ -470,7 +470,7 @@ Lemma qbs_join_morphism X :
 Proof. exact: qbs_bind_morphism (qbs_id _) (qbs_id _). Qed.
 
 HB.instance Definition _ X :=
-  @isQBSMorphism.Build R (monadP (monadP X)) (monadP X) (@qbs_join X)
+  isQBSMorphism.Build R (monadP (monadP X)) (monadP X) (@qbs_join X)
     (@qbs_join_morphism X).
 
 Definition qbs_joinQ X : qbsHomType (monadP (monadP X)) (monadP X) :=
@@ -539,7 +539,7 @@ exists b, (fun r => giry_map (me r) (g r)); split.
 Qed.
 
 HB.instance Definition _ W X :=
-  @isQBSMorphism.Build R (prodQ W (monadP X)) (monadP (prodQ W X))
+  isQBSMorphism.Build R (prodQ W (monadP X)) (monadP (prodQ W X))
     (@qbs_strength W X) (@qbs_strength_morphism W X).
 
 Definition qbs_strengthQ W X :

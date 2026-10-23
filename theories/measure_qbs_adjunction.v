@@ -91,7 +91,7 @@ Lemma qbs_Mx_measQ_prod d1 d2
   qbs_Mx (s := prodQ (measQ R M1) (measQ R M2)) alpha.
 Proof.
 split.
-  rewrite /qbs_Mx /= => halpha; split; exact: measurableT_comp.
+  by rewrite /qbs_Mx /= => halpha; split; apply: measurableT_comp.
 by rewrite /qbs_Mx /=; move=> [h1 h2]; exact/measurable_fun_pairP.
 Qed.
 
@@ -162,18 +162,12 @@ Proof.
 have hf : (fun xy : M1 * M2 =>
     encode_RR (sb_encode sb1 xy.1, sb_encode sb2 xy.2) : mR) \in mfun.
   apply: mem_set; apply: measurableT_comp; first exact: measurable_encode_RR.
-  apply: measurable_fun_pair.
-    exact: measurableT_comp (measurable_funP (sb_encode sb1)) measurable_fst.
-  exact: measurableT_comp (measurable_funP (sb_encode sb2)) measurable_snd.
+  by apply: measurable_fun_pair; apply: measurableT_comp.
 have hg : (fun r : mR => (sb_decode sb1 (decode_RR r).1,
     sb_decode sb2 (decode_RR r).2) : M1 * M2) \in mfun.
-  apply: mem_set; apply: measurable_fun_pair.
-    apply: measurableT_comp (measurable_funP (sb_decode sb1)) _.
-    apply: measurableT_comp measurable_fst _.
-    exact: measurable_decode_RR.
-  apply: measurableT_comp (measurable_funP (sb_decode sb2)) _.
-  apply: measurableT_comp measurable_snd _.
-  exact: measurable_decode_RR.
+  apply: mem_set; apply: measurable_fun_pair; apply: measurableT_comp => //.
+    exact: measurableT_comp measurable_decode_RR.
+  exact: measurableT_comp measurable_decode_RR.
 apply: {| sb_encode := mfun_Sub hf; sb_decode := mfun_Sub hg |}.
 move=> [x1 x2].
 change ((sb_decode sb1 (decode_RR (encode_RR (sb_encode sb1 x1,
@@ -184,23 +178,18 @@ Defined.
 
 (** For standard Borel [M], [sigma_Mx (measQ M)] coincides with
     the original sigma-algebra. *)
-Lemma sigma_Mx_standard_borelP d
-    (M : measurableType d) (sb : standard_borel_wit M) :
-  forall U : set M, sigma_Mx (X := measQ R M) U <-> measurable U.
+Lemma sigma_Mx_standard_borelP d (M : measurableType d)
+    (sb : standard_borel_wit M) (U : set M) :
+  sigma_Mx (X := measQ R M) U <-> measurable U.
 Proof.
-case: sb => f g hgf U; split.
-- (* sigma_Mx -> measurable: use f, g to recover measurability.
-     g is measurable so g is in Mx(measQ M), hence g^{-1}(U) is
-     measurable. Then U = f^{-1}(g^{-1}(U)) since g(f(x)) = x,
-     and f is measurable, so U is measurable. *)
-  move=> hU.
-  suff -> : U = f @^-1` (g @^-1` U).
-    have := (measurable_funP f) measurableT _ (hU g (measurable_funP g)).
-    by rewrite setTI.
-  apply/seteqP; split => x /=.
-    by rewrite /preimage /= => hUx; rewrite hgf.
-  by rewrite /preimage /= => hgfU; rewrite -(hgf x).
-- exact: sigma_Mx_measQ.
+case: sb => f g hgf; split; last exact: sigma_Mx_measQ.
+(* U = f^-1 (g^-1 U) since g (f x) = x, with g random and f measurable *)
+move=> hU; suff -> : U = f @^-1` (g @^-1` U).
+  have := (measurable_funP f) measurableT _ (hU g (measurable_funP g)).
+  by rewrite setTI.
+apply/seteqP; split=> x /=.
+  by rewrite /preimage /= => hUx; rewrite hgf.
+by rewrite /preimage /= => hgfU; rewrite -(hgf x).
 Qed.
 
 Local Lemma measurable_contract_fin :
@@ -221,22 +210,20 @@ Proof.
 move=> _ U mU; rewrite setTI.
 suff -> : (contract (R := R)) @^-1` U =
   EFin @` ((fun r : R => r / (1 + `|r|)) @^-1` U)
-  `|` (if asbool (U 1) then [set +oo%E] else set0)
-  `|` (if asbool (U (-1)) then [set -oo%E] else set0).
-- apply: measurableU; [apply: measurableU|].
-  + apply: measurable_image_EFin.
+  `|` (if `[< U 1 >] then [set +oo%E] else set0)
+  `|` (if `[< U (-1) >] then [set -oo%E] else set0).
+  apply: measurableU; [apply: measurableU|].
+  - apply: measurable_image_EFin.
     by have := measurable_contract_fin measurableT mU; rewrite setTI.
-  + by case: asboolP => _; [exact: emeasurable_set1 | exact: measurable0].
-  + by case: asboolP => _; [exact: emeasurable_set1 | exact: measurable0].
-- apply/seteqP; split => x.
-  + rewrite /preimage /= => hUx.
-    case: x hUx => [r| | ] /= hU'.
-    * by left; left; exists r.
-    * by left; right; case: asboolP.
-    * by right; case: asboolP.
-  + rewrite /preimage /=.
-    move=> [[[r hUr <-]|]|] /=; first done.
-    all: by case: asboolP => [hU1 [->]|_ []].
+  - by case: asboolP => _; [exact: emeasurable_set1 | exact: measurable0].
+  - by case: asboolP => _; [exact: emeasurable_set1 | exact: measurable0].
+apply/seteqP; split=> x.
+  rewrite /preimage /=; case: x => [r||] /= hU.
+  - by left; left; exists r.
+  - by left; right; case: asboolP.
+  - by right; case: asboolP.
+rewrite /preimage /= => -[[[r hUr <-]|]|] //=.
+all: by case: asboolP => [hU1 [->]|_ []].
 Qed.
 
 Local Lemma measurable_expand : measurable_fun [set: mR] (expand (R := R)).
@@ -247,12 +234,12 @@ have -> : (fun r : R => if 1 <= r then +oo%E else if r <= -1 then -oo%E
   ([set` `[1, +oo[] `&` (fun=> +oo%E) @^-1` U) `|`
   ([set` `]-oo, -1]] `&` (fun=> -oo%E) @^-1` U) `|`
   ([set` `]-1, 1[] `&` (EFin \o (fun r : R => r / (1 - `|r|))) @^-1` U).
-  apply/seteqP; split => r /=.
+  apply/seteqP; split=> r /=.
     case: ifPn => h1.
-      by move=> hU; left; left; split => //=; rewrite in_itv /= h1.
+      by move=> hU; left; left; split=> //=; rewrite in_itv /= h1.
     case: ifPn => h2.
-      by move=> hU; left; right; split => //=; rewrite in_itv /=.
-    move=> hU; right; split => //=; rewrite in_itv /=.
+      by move=> hU; left; right; split=> //=; rewrite in_itv /=.
+    move=> hU; right; split=> //=; rewrite in_itv /=.
     by apply/andP; split; rewrite ltNge.
   move=> [[[h hU]|[h hU]]|[h hU]]; move: h => /=.
   - by rewrite in_itv /= andbT => ->.

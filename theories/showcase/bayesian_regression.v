@@ -426,11 +426,11 @@ Qed.
 (** ** Main theorem: the program normalises to the closed-form posterior *)
 
 Theorem program_posterior :
-  exists q, program = Some q /\ qbs_prob_equiv F q posterior.
+  exists2 q, program = Some q & qbs_prob_equiv F q posterior.
 Proof.
 have ev : 0 < qbs_evidence wprior < +oo.
   by rewrite wprior_evidence ltry lte_fin evidence_const_gt0.
-rewrite /program /qbs_normalize ev; eexists; split; first reflexivity.
+rewrite /program /qbs_normalize ev; eexists; first reflexivity.
 move=> U mU; pose V := lin @^-1` U.
 have mV : sigma_Mx V := sigma_Mx_preimage lin mU.
 pose h (sb : W) : \bar R := (\1_V sb)%:E.

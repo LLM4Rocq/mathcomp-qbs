@@ -103,8 +103,8 @@ Proof.
 by move=> hF; exact: (@qbs_Mx_glue _ (monadP X) P (fun i r => repr (F i r))).
 Qed.
 
-HB.instance Definition _ := @isQBS.Build R (qbs_quot X) qbs_quot_Mx
-  Mx_comp Mx_const Mx_glue.
+HB.instance Definition _ := isQBS.Build R (qbs_quot X) Mx_comp Mx_const
+  Mx_glue.
 
 (** The projection P(X) -> qbs_quot X is a morphism. *)
 Lemma qbs_quot_pi_morphism :

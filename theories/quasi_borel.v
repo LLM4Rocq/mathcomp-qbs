@@ -113,7 +113,7 @@ Section qbs_id_instance.
 Variable X : qbsType R.
 Let f : X -> X := idfun.
 Let hf : qbs_morphism f := fun alpha halpha => halpha.
-HB.instance Definition _ := @isQBSMorphism.Build R X X f hf.
+HB.instance Definition _ := isQBSMorphism.Build R X X f hf.
 Definition qbs_id : qbsHomType X X := f.
 End qbs_id_instance.
 
@@ -124,7 +124,7 @@ Let gf := (g : Y -> Z) \o (f : X -> Y).
 Let hgf : qbs_morphism gf :=
   fun alpha halpha =>
     qbs_hom_proof _ (qbs_hom_proof _ halpha).
-HB.instance Definition _ := @isQBSMorphism.Build R X Z gf hgf.
+HB.instance Definition _ := isQBSMorphism.Build R X Z gf hgf.
 Definition qbs_comp : qbsHomType X Z := gf.
 End qbs_comp_instance.
 
@@ -133,7 +133,7 @@ Variables (X Y : qbsType R) (y : Y).
 Let f := fun _ : X => y.
 Let hf : qbs_morphism f :=
   fun alpha _ => qbs_Mx_const y.
-HB.instance Definition _ := @isQBSMorphism.Build R X Y f hf.
+HB.instance Definition _ := isQBSMorphism.Build R X Y f hf.
 Definition qbs_const : qbsHomType X Y := f.
 End qbs_const_instance.
 
@@ -199,16 +199,16 @@ Qed.
 Section measQ_instance.
 Context d (M : measurableType d).
 Let Mx := [set f : mR -> M | measurable_fun setT f].
-Let measQ_Mx_comp : forall alpha (f : {mfun mR >-> mR}),
-    Mx alpha -> Mx (alpha \o f).
-Proof. by move=> alpha f ha; apply: measurableT_comp. Qed.
-Let measQ_Mx_const : forall x : M, Mx (fun _ => x).
-Proof. by move=> x; apply: measurable_cst. Qed.
-Let measQ_Mx_glue : forall (P : {mfun mR >-> nat}) (Fi : nat -> mR -> M),
-    (forall i, Mx (Fi i)) -> Mx (fun r => Fi (P r) r).
-Proof. by move=> P Fi hFi; apply: measurable_glue. Qed.
+Let measQ_Mx_comp alpha (f : {mfun mR >-> mR}) :
+  Mx alpha -> Mx (alpha \o f).
+Proof. by move=> ha; apply: measurableT_comp. Qed.
+Let measQ_Mx_const (x : M) : Mx (fun _ => x).
+Proof. exact: measurable_cst. Qed.
+Let measQ_Mx_glue (P : {mfun mR >-> nat}) (Fi : nat -> mR -> M) :
+  (forall i, Mx (Fi i)) -> Mx (fun r => Fi (P r) r).
+Proof. by move=> hFi; apply: measurable_glue. Qed.
 HB.instance Definition _ :=
-  @isQBS.Build R M Mx measQ_Mx_comp measQ_Mx_const measQ_Mx_glue.
+  isQBS.Build R M measQ_Mx_comp measQ_Mx_const measQ_Mx_glue.
 (** R functor: measurableType to qbsType via measurable funs. *)
 Definition measQ : qbsType R := M.
 End measQ_instance.
@@ -220,35 +220,27 @@ Definition boolQ : qbsType R := measQ bool.
 
 (* 3. Binary Product *)
 
-Local Lemma prodQ_Mx_comp (X Y : qbsType R) :
-  forall (alpha : mR -> X * Y) (f : {mfun mR >-> mR}),
-    (qbs_Mx (fun r => (alpha r).1) /\
-     qbs_Mx (fun r => (alpha r).2)) ->
-    (qbs_Mx (fun r => ((alpha \o f) r).1) /\
-     qbs_Mx (fun r => ((alpha \o f) r).2)).
+Local Lemma prodQ_Mx_comp (X Y : qbsType R) (alpha : mR -> X * Y)
+    (f : {mfun mR >-> mR}) :
+  qbs_Mx (fun r => (alpha r).1) /\ qbs_Mx (fun r => (alpha r).2) ->
+  qbs_Mx (fun r => ((alpha \o f) r).1) /\
+  qbs_Mx (fun r => ((alpha \o f) r).2).
 Proof.
-move=> alpha f [h1 h2]; split.
+move=> [h1 h2]; split.
   exact: qbs_Mx_comp h1.
 exact: qbs_Mx_comp h2.
 Qed.
 
-Local Lemma prodQ_Mx_const (X Y : qbsType R) :
-  forall xy : X * Y,
-    qbs_Mx (fun _ : mR => xy.1) /\
-    qbs_Mx (fun _ : mR => xy.2).
-Proof.
-by move=> [x y]; split; apply: qbs_Mx_const.
-Qed.
+Local Lemma prodQ_Mx_const (X Y : qbsType R) (xy : X * Y) :
+  qbs_Mx (fun _ : mR => xy.1) /\ qbs_Mx (fun _ : mR => xy.2).
+Proof. by split; apply: qbs_Mx_const. Qed.
 
-Local Lemma prodQ_Mx_glue (X Y : qbsType R) :
-  forall (P : {mfun mR >-> nat})
-         (Fi : nat -> mR -> X * Y),
-    (forall i, qbs_Mx (fun r => (Fi i r).1) /\
-               qbs_Mx (fun r => (Fi i r).2)) ->
-    qbs_Mx (fun r => (Fi (P r) r).1) /\
-    qbs_Mx (fun r => (Fi (P r) r).2).
+Local Lemma prodQ_Mx_glue (X Y : qbsType R) (P : {mfun mR >-> nat})
+    (Fi : nat -> mR -> X * Y) :
+  (forall i, qbs_Mx (fun r => (Fi i r).1) /\ qbs_Mx (fun r => (Fi i r).2)) ->
+  qbs_Mx (fun r => (Fi (P r) r).1) /\ qbs_Mx (fun r => (Fi (P r) r).2).
 Proof.
-move=> P Fi hFi; split.
+move=> hFi; split.
   by apply: (qbs_Mx_glue P (fun i r => (Fi i r).1)) => i; have [] := hFi i.
 by apply: (qbs_Mx_glue P (fun i r => (Fi i r).2)) => i; have [] := hFi i.
 Qed.
@@ -261,9 +253,7 @@ HB.instance Definition _ :=
   @isQBS.Build R (X * Y)%type
     [set f : mR -> X * Y | qbs_Mx (fun r => (f r).1) /\
                            qbs_Mx (fun r => (f r).2)]
-    (@prodQ_Mx_comp X Y)
-    (@prodQ_Mx_const X Y)
-    (@prodQ_Mx_glue X Y).
+    (@prodQ_Mx_comp X Y) (@prodQ_Mx_const X Y) (@prodQ_Mx_glue X Y).
 (** Binary product QBS on (X * Y). *)
 Definition prodQ : qbsType R := (X * Y)%type.
 End prodQ_instance.
@@ -276,7 +266,7 @@ Let f : X * Y -> X := fst.
 Let hf : qbs_morphism f :=
   fun alpha h => h.1.
 HB.instance Definition _ :=
-  @isQBSMorphism.Build R (prodQ X Y) X f hf.
+  isQBSMorphism.Build R (prodQ X Y) X f hf.
 Definition qbs_fst : qbsHomType (prodQ X Y) X := f.
 End qbs_fst_instance.
 
@@ -286,7 +276,7 @@ Let f : X * Y -> Y := snd.
 Let hf : qbs_morphism f :=
   fun alpha h => h.2.
 HB.instance Definition _ :=
-  @isQBSMorphism.Build R (prodQ X Y) Y f hf.
+  isQBSMorphism.Build R (prodQ X Y) Y f hf.
 Definition qbs_snd : qbsHomType (prodQ X Y) Y := f.
 End qbs_snd_instance.
 
@@ -298,7 +288,7 @@ Let hfg : qbs_morphism fg :=
   fun alpha halpha =>
     conj (qbs_hom_proof _ halpha) (qbs_hom_proof _ halpha).
 HB.instance Definition _ :=
-  @isQBSMorphism.Build R W (prodQ X Y) fg hfg.
+  isQBSMorphism.Build R W (prodQ X Y) fg hfg.
 Definition qbs_pair : qbsHomType W (prodQ X Y) := fg.
 End qbs_pair_instance.
 
@@ -308,34 +298,25 @@ End qbs_pair_instance.
    The random elements are those g : mR -> qbsHomType R X Y such that
    the uncurried map (r, x) |-> g(r)(x) is a morphism prodQ realQ X -> Y. *)
 
-Local Lemma expQ_Mx_comp (X Y : qbsType R) :
-  forall alpha (f : {mfun mR >-> mR}),
-    qbs_morphism (fun p : realQ * X => (alpha p.1 : X -> Y) p.2) ->
-    qbs_morphism (fun p : realQ * X => (alpha (f p.1) : X -> Y) p.2).
+Local Lemma expQ_Mx_comp (X Y : qbsType R) alpha (f : {mfun mR >-> mR}) :
+  qbs_morphism (fun p : realQ * X => (alpha p.1 : X -> Y) p.2) ->
+  qbs_morphism (fun p : realQ * X => (alpha (f p.1) : X -> Y) p.2).
 Proof.
-move=> alpha f halpha beta [hb1 hb2].
-have -> : (fun p : realQ * X => (alpha \o f) p.1 p.2) \o beta =
-          (fun p : realQ * X => alpha p.1 p.2) \o
-            (fun r => (f (fst (beta r)), snd (beta r))) by [].
-apply: halpha; split=> /=; first exact: measurableT_comp.
-exact: hb2.
+move=> halpha beta [hb1 hb2].
+by apply: (halpha (fun r => (f (beta r).1, (beta r).2))); split=> //=;
+  exact: measurableT_comp.
 Qed.
 
-Local Lemma expQ_Mx_const (X Y : qbsType R) :
-  forall g : qbsHomType X Y,
-    qbs_morphism (fun p : realQ * X => (g : X -> Y) p.2).
-Proof.
-by move=> g beta [_ hb2]; apply: qbs_hom_proof.
-Qed.
+Local Lemma expQ_Mx_const (X Y : qbsType R) (g : qbsHomType X Y) :
+  qbs_morphism (fun p : realQ * X => (g : X -> Y) p.2).
+Proof. by move=> beta [_ hb2]; apply: qbs_hom_proof. Qed.
 
-Local Lemma expQ_Mx_glue (X Y : qbsType R) :
-  forall (P : {mfun mR >-> nat})
-    (Fi : nat -> mR -> qbsHomType X Y),
-    (forall i, qbs_morphism
-       (fun p : realQ * X => (Fi i p.1 : X -> Y) p.2)) ->
-    qbs_morphism (fun p : realQ * X => (Fi (P p.1) p.1 : X -> Y) p.2).
+Local Lemma expQ_Mx_glue (X Y : qbsType R) (P : {mfun mR >-> nat})
+    (Fi : nat -> mR -> qbsHomType X Y) :
+  (forall i, qbs_morphism (fun p : realQ * X => (Fi i p.1 : X -> Y) p.2)) ->
+  qbs_morphism (fun p : realQ * X => (Fi (P p.1) p.1 : X -> Y) p.2).
 Proof.
-move=> P Fi hFi beta [hb1 hb2].
+move=> hFi beta [hb1 hb2].
 set Q := mfun_Sub (mem_set
   (measurableT_comp (measurable_funPT P) hb1) :
   (fun r => P (fst (beta r))) \in mfun).
@@ -350,9 +331,7 @@ HB.instance Definition _ :=
   @isQBS.Build R (qbsHomType X Y)
     [set g : mR -> qbsHomType X Y |
       qbs_morphism (fun p : realQ * X => (g p.1 : X -> Y) p.2)]
-    (@expQ_Mx_comp X Y)
-    (@expQ_Mx_const X Y)
-    (@expQ_Mx_glue X Y).
+    (@expQ_Mx_comp X Y) (@expQ_Mx_const X Y) (@expQ_Mx_glue X Y).
 (** Exponential (function space) QBS. *)
 Definition expQ : qbsType R := qbsHomType X Y.
 End expQ_instance.
@@ -372,7 +351,7 @@ have hgamma : qbs_Mx (fun r : mR => (r, (beta r).2) : realQ * X).
 exact: (hb1 _ hgamma).
 Qed.
 HB.instance Definition _ :=
-  @isQBSMorphism.Build R (prodQ (expQ X Y) X) Y f hf.
+  isQBSMorphism.Build R (prodQ (expQ X Y) X) Y f hf.
 (** Evaluation: cartesian closed structure (eval). *)
 Definition qbs_eval : qbsHomType (prodQ (expQ X Y) X) Y :=
   f.
@@ -394,7 +373,7 @@ Let hg : qbs_morphism g.
 Proof.
 by move=> alpha halpha; apply: qbs_hom_proof (qbs_Mx_pair_cstl x halpha).
 Qed.
-HB.instance Definition _ := @isQBSMorphism.Build R Y Z g hg.
+HB.instance Definition _ := isQBSMorphism.Build R Y Z g hg.
 (** Curried function as a bundled QBS morphism Y -> Z. *)
 Definition qbs_curry : qbsHomType Y Z := g.
 End qbs_curry_instance.
@@ -408,7 +387,7 @@ Proof.
 move=> beta hbeta gamma [hg1 hg2]; apply: qbs_hom_proof; split=> //=.
 exact: qbs_Mx_compT hbeta hg1.
 Qed.
-HB.instance Definition _ := @isQBSMorphism.Build R X (expQ Y Z) F hF.
+HB.instance Definition _ := isQBSMorphism.Build R X (expQ Y Z) F hF.
 (** Curried morphism [X -> (Y => Z)] of [f : X * Y -> Z]. *)
 Definition qbs_curry_morph : qbsHomType X (expQ Y Z) := F.
 End qbs_curry_morph_instance.
@@ -459,12 +438,12 @@ Proof.
 move=> k hk beta [hb1 hb2] gamma [hg1 hg2].
 apply: (hk (fun r => ((beta (gamma r).1).1,
                       ((beta (gamma r).1).2, (gamma r).2)))).
-split=> /=; first exact: (measurableT_comp hb1 hg1).
+split=> /=; first exact: measurableT_comp hb1 hg1.
 split=> //=.
 exact: qbs_Mx_compT hb2 hg1.
 Qed.
 HB.instance Definition _ :=
-  @isQBSMorphism.Build R (expQ (prodQ X Y) Z) (expQ X (expQ Y Z)) C hC.
+  isQBSMorphism.Build R (expQ (prodQ X Y) Z) (expQ X (expQ Y Z)) C hC.
 (** Internal currying [(X * Y => Z) -> (X => Y => Z)]. *)
 Definition qbs_curry_exp : qbsHomType (expQ (prodQ X Y) Z)
   (expQ X (expQ Y Z)) := C.
@@ -478,7 +457,7 @@ apply: (hk _ hb (fun r => (r, (delta r).2.2))).
 by split=> //=; apply: measurable_id.
 Qed.
 HB.instance Definition _ :=
-  @isQBSMorphism.Build R (expQ X (expQ Y Z)) (expQ (prodQ X Y) Z) U hU.
+  isQBSMorphism.Build R (expQ X (expQ Y Z)) (expQ (prodQ X Y) Z) U hU.
 (** Internal uncurrying [(X => Y => Z) -> (X * Y => Z)]. *)
 Definition qbs_uncurry_exp : qbsHomType (expQ X (expQ Y Z))
   (expQ (prodQ X Y) Z) := U.
@@ -502,7 +481,7 @@ Variable X : qbsType R.
 Let f := fun _ : X => tt.
 Let hf : qbs_morphism f := fun alpha _ => I.
 HB.instance Definition _ :=
-  @isQBSMorphism.Build R X unitQ f hf.
+  isQBSMorphism.Build R X unitQ f hf.
 (* Unit is terminal: unique morphism to unit *)
 Definition qbs_unit : qbsHomType X unitQ := f.
 End qbs_unit_instance.
@@ -580,7 +559,7 @@ Section qbs_add_instance.
 Let f : prodQ realQ realQ -> realQ := fun p => p.1 + p.2.
 Let hf : qbs_morphism f := fun alpha h => measurable_funD h.1 h.2.
 HB.instance Definition _ :=
-  @isQBSMorphism.Build R (prodQ realQ realQ) realQ f hf.
+  isQBSMorphism.Build R (prodQ realQ realQ) realQ f hf.
 (** Addition as a bundled QBS morphism prodQ realQ realQ -> realQ. *)
 Definition qbs_add : qbsHomType (prodQ realQ realQ) realQ := f.
 End qbs_add_instance.
@@ -589,7 +568,7 @@ Section qbs_mul_instance.
 Let f : prodQ realQ realQ -> realQ := fun p => p.1 * p.2.
 Let hf : qbs_morphism f := fun alpha h => measurable_funM h.1 h.2.
 HB.instance Definition _ :=
-  @isQBSMorphism.Build R (prodQ realQ realQ) realQ f hf.
+  isQBSMorphism.Build R (prodQ realQ realQ) realQ f hf.
 (** Multiplication as a bundled QBS morphism. *)
 Definition qbs_mul : qbsHomType (prodQ realQ realQ) realQ := f.
 End qbs_mul_instance.
@@ -611,38 +590,25 @@ Let sub_proj : sub_car -> X := @proj1_sig _ P.
 Let sub_Mx : set (mR -> sub_car) :=
   [set alpha | qbs_Mx (fun r => sub_proj (alpha r))].
 
-Local Lemma subQ_Mx_comp : forall alpha
-  (f : {mfun mR >-> mR}),
+Local Lemma subQ_Mx_comp alpha (f : {mfun mR >-> mR}) :
   sub_Mx alpha -> sub_Mx (alpha \o f).
-Proof.
-move=> alpha f halpha.
-exact: qbs_Mx_comp halpha.
-Qed.
+Proof. exact: qbs_Mx_comp. Qed.
 
-Local Lemma subQ_Mx_const : forall x : sub_car,
-  sub_Mx (fun _ => x).
-Proof.
-move=> x.
-exact: qbs_Mx_const.
-Qed.
+Local Lemma subQ_Mx_const (x : sub_car) : sub_Mx (fun _ => x).
+Proof. exact: qbs_Mx_const. Qed.
 
-Local Lemma subQ_Mx_glue : forall (Q : {mfun mR >-> nat})
-  (Fi : nat -> mR -> sub_car),
-  (forall i, sub_Mx (Fi i)) ->
-  sub_Mx (fun r => Fi (Q r) r).
-Proof.
-move=> Q Fi hFi.
-exact: (qbs_Mx_glue Q (fun i r => sub_proj (Fi i r)) hFi).
-Qed.
+Local Lemma subQ_Mx_glue (Q : {mfun mR >-> nat}) (Fi : nat -> mR -> sub_car) :
+  (forall i, sub_Mx (Fi i)) -> sub_Mx (fun r => Fi (Q r) r).
+Proof. exact: (qbs_Mx_glue Q (fun i r => sub_proj (Fi i r))). Qed.
 
 HB.instance Definition _ :=
-  @isQBS.Build R sub_car sub_Mx
+  isQBS.Build R sub_car
     subQ_Mx_comp subQ_Mx_const subQ_Mx_glue.
 Definition subQ : qbsType R := sub_car.
 
 Let sval_hom : qbs_morphism (X := subQ) (Y := X) sub_proj :=
   fun alpha halpha => halpha.
-HB.instance Definition _ := @isQBSMorphism.Build R subQ X sub_proj sval_hom.
+HB.instance Definition _ := isQBSMorphism.Build R subQ X sub_proj sval_hom.
 (** Bundled first projection of the subspace. *)
 Definition qbs_sval : qbsHomType subQ X := sub_proj.
 
@@ -712,7 +678,7 @@ Qed.
 
 Definition mapQ (X Y : qbsType R) (f : X -> Y) : qbsType R :=
   generatingQ [set beta : mR -> Y |
-    exists alpha, qbs_Mx alpha /\ beta = f \o alpha].
+    exists2 alpha, qbs_Mx alpha & beta = f \o alpha].
 
 Lemma mapQ_random (X Y : qbsType R) (f : X -> Y) (alpha : mR -> X) :
   qbs_Mx alpha -> qbs_Mx (s := mapQ f) (f \o alpha).
@@ -726,7 +692,7 @@ Lemma mapQ_sub (X Y : qbsType R) (f : X -> Y) (hf : qbs_morphism f) :
   qbs_Mx (s := mapQ f) `<=` qbs_Mx (s := Y).
 Proof.
 apply: (generatingQ_least (qbs_closed_Mx Y)).
-by move=> _ [alpha [halpha ->]]; apply: hf halpha.
+by move=> _ [alpha halpha ->]; apply: hf halpha.
 Qed.
 
 (* Morphisms out of Y restrict to morphisms out of mapQ f. *)
@@ -885,7 +851,7 @@ Section qbs_void_instance.
 Variable X : qbsType R.
 Let f (v : emptyQ) : X := match v with end.
 Let hf : qbs_morphism f := fun alpha _ => match alpha 0 with end.
-HB.instance Definition _ := @isQBSMorphism.Build R emptyQ X f hf.
+HB.instance Definition _ := isQBSMorphism.Build R emptyQ X f hf.
 (* initial: the unique morphism from the empty QBS *)
 Definition qbs_void : qbsHomType emptyQ X := f.
 End qbs_void_instance.

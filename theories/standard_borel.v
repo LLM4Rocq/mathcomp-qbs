@@ -489,7 +489,7 @@ Qed.
 (* A digit sequence is "canonical" if it has no infinite trailing ones,
    i.e., there exists a false digit at or beyond every position. *)
 Definition no_trailing_ones (d : nat -> bool) : Prop :=
-  forall N : nat, exists n, (N <= n)%N /\ d n = false.
+  forall N : nat, exists2 n, (N <= n)%N & d n = false.
 
 (* bin_digit x has no trailing ones for x in [0,1).
    Proof: if all digits from N onward are 1, then the remainder
@@ -500,13 +500,13 @@ Lemma bin_digits_no_trailing_ones (x : R) :
 Proof.
 move=> hx N.
 have hrem n := elimT andP (bin_rem_itv n hx).
-suff : exists n, (N <= n)%N /\ ~~ (2^-1 <= bin_rem x n).
-  move=> [n [hn hlt]]; exists n; split=> //.
+suff : exists2 n, (N <= n)%N & ~~ (2^-1 <= bin_rem x n).
+  move=> [n hn hlt]; exists n => //.
   by rewrite bin_digit_rem; apply/negbTE.
-apply: contrapT => /forallNP hnex.
+apply: contrapT => hnex.
 have hall n : (N <= n)%N -> 2^-1 <= bin_rem x n.
   move=> hn; apply: contrapT => hlt.
-  by apply: (hnex n); split => //; apply/negP.
+  by apply: hnex; exists n => //; apply/negP.
 have hstep_eq n : (N <= n)%N ->
     1 - bin_rem x n.+1 = (1 - bin_rem x n) *+ 2.
   move=> hn; rewrite bin_remS /bin_step (hall n hn) /=.
@@ -545,8 +545,8 @@ Lemma interleave_no_trailing_ones (d1 d2 : nat -> bool) :
   no_trailing_ones (interleave d1 d2).
 Proof.
 move=> h1 h2 N.
-have [n1 [hn1 hd1]] := h1 N./2.+1.
-exists (n1.*2)%N; split.
+have [n1 hn1 hd1] := h1 N./2.+1.
+exists (n1.*2)%N.
   have hlt : (N./2.*2 < n1.*2)%N by rewrite ltn_double.
   have hN : N = (odd N + N./2.*2)%N by rewrite odd_double_half.
   by rewrite hN; exact: (leq_trans (leq_add (leq_b1 _) (leqnn _)) hlt).
@@ -557,7 +557,7 @@ Qed.
 Lemma bin_sum_no_trailing_lt1 (d : nat -> bool) :
   no_trailing_ones d -> bin_sum d < 1.
 Proof.
-move=> hnt; have [n [_ hdn]] := hnt 0%N.
+move=> hnt; have [n _ hdn] := hnt 0%N.
 have heps : (0 : R) < 2^-1 ^+ n.+1 by rewrite exprn_gt0 // invr_gt0.
 suff hlt1 : bin_sum d <= 1 - 2^-1 ^+ n.+1.
   by apply: le_lt_trans hlt1 _; rewrite ltrBlDr -{1}[1]addr0 ltrD2l.
@@ -622,11 +622,10 @@ Qed.
 Lemma no_trailing_ones_shift (d : nat -> bool) :
   no_trailing_ones d -> no_trailing_ones (d \o succn).
 Proof.
-move=> hnt N; have [m [hm hdm]] := hnt N.+1.
+move=> hnt N; have [m hm hdm] := hnt N.+1.
 have hm0 : (0 < m)%N by exact: leq_ltn_trans (leq0n _) hm.
-exists m.-1; split.
-- by rewrite -ltnS (prednK hm0).
-- by rewrite /= (prednK hm0).
+exists m.-1; first by rewrite -ltnS (prednK hm0).
+by rewrite /= (prednK hm0).
 Qed.
 
 Lemma bin_digits_bin_sum (d : nat -> bool) :

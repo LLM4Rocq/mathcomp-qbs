@@ -225,7 +225,7 @@ Arguments sigmaQ_random : clear implicits.
 Local Lemma qbs_fibre_choice (A : qbsType R) (a0 : A) (p : mR -> Prop)
     (Q : (mR -> A) -> mR -> Prop) :
   ((exists r, p r) -> exists2 a, qbs_Mx a & forall r, p r -> Q a r) ->
-  exists a, qbs_Mx a /\ forall r, p r -> Q a r.
+  exists a, qbs_Mx a /\ forall r, p r -> Q a r. (* this shape feeds choice *)
 Proof.
 move=> h; have [ex|nex] := pselect (exists r, p r).
   by have [a ? ?] := h ex; exists a.
@@ -272,7 +272,7 @@ by move=> r ri; exact: (ha (P r)).2.
 Qed.
 
 HB.instance Definition _ :=
-  @isQBS.Build R {n & X n} (sigmaQ_random X) sigma_comp sigma_const sigma_glue.
+  isQBS.Build R {n & X n} sigma_comp sigma_const sigma_glue.
 Definition sigmaQ : qbsType R := {n & X n}.
 End sigmaQ_instance.
 

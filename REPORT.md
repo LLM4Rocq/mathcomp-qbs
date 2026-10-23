@@ -1486,7 +1486,7 @@ Definition posterior : monadP F := monadP_map lin posterior2.
 Lemma wprior_evidence : qbs_evidence wprior = evidence_const%:E.
 
 Theorem program_posterior :
-  exists q, program = Some q /\ qbs_prob_equiv F q posterior.
+  exists2 q, program = Some q & qbs_prob_equiv F q posterior.
 ```
 
 The theorem says that the program succeeds (the evidence is positive and finite, as it equals `evidence_const`), and that the resulting QBS probability on functions is equivalent to the explicit Gaussian posterior.
