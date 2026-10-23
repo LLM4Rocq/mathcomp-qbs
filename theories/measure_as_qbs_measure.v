@@ -56,13 +56,16 @@ Definition qbs_normal_distribution m s : qbs_prob (realQ R) :=
 
 Arguments qbs_normal_distribution : clear implicits.
 
+Let measurable_ltr p : measurable_fun setT (fun r : mR => r < p).
+Proof.
+exact: measurable_fun_ltr (@measurable_id _ mR setT)
+  (@measurable_cst _ _ mR mR setT p).
+Qed.
+
 (** Bernoulli distribution as QBS probability on boolQ. *)
 Definition qbs_bernoulli p : qbs_prob (boolQ R) :=
-  @mkQBSProb R (boolQ R) (fun r : mR => (r < p))
-    (uniform_prob ltr01 : probability mR R)
-    (measurable_fun_ltr
-      (@measurable_id _ mR setT)
-      (@measurable_cst _ _ mR mR setT p)).
+  @mkQBSProb R (boolQ R) (fun r : mR => r < p)
+    (uniform_prob ltr01 : probability mR R) (measurable_ltr p).
 
 Arguments qbs_bernoulli : clear implicits.
 
@@ -174,7 +177,7 @@ by rewrite ifT// lte_fin lt0r p0.
 Qed.
 
 (** E[Bernoulli(p)] = p. *)
-Lemma qbs_expect_bernoulli (p : R) (hp0 : 0 <= p) (hp1 : p <= 1) :
+Lemma qbs_expect_bernoulli p (hp0 : 0 <= p) (hp1 : p <= 1) :
   qbs_expect (boolQ R) (qbs_bernoulli p) (fun b : bool => b%:R) = p%:E.
 Proof.
 rewrite /qbs_expect /qbs_integral /=.
@@ -186,13 +189,12 @@ Qed.
 
 (** The law of qbs_bernoulli is the Bernoulli probability of
     mathcomp-analysis. *)
-Lemma qbs_bernoulli_event (p : R) (hp0 : 0 <= p) (hp1 : p <= 1)
+Lemma qbs_bernoulli_event p (hp0 : 0 <= p) (hp1 : p <= 1)
     (A : set bool) :
   qbs_prob_event (boolQ R) (qbs_bernoulli p) A = bernoulli_prob p A.
 Proof.
 have p01 : 0 <= p <= 1 by apply/andP.
-pose f : {mfun mR >-> bool} := mfun_Sub (mem_set (measurable_fun_ltr
-  (@measurable_id _ mR setT) (@measurable_cst _ _ mR mR setT p))).
+pose f : {mfun mR >-> bool} := mfun_Sub (mem_set (measurable_ltr p)).
 pose P : probability bool R :=
   distribution (uniform_prob ltr01 : probability mR R) f.
 suff: P =1 bernoulli_prob p by exact.
