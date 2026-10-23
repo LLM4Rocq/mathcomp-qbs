@@ -49,11 +49,13 @@ Implicit Types (p m s : R).
 
 (** Standard distributions as QBS probabilities. *)
 
+(** A probability measure on R as a QBS probability (random element idfun). *)
+Let qbs_of_prob (P : probability mR R) : qbs_prob (realQ R) :=
+  @mkQBSProb R (realQ R) idfun P (@measurable_id _ mR setT).
+
 (** Normal distribution as QBS probability. *)
 Definition qbs_normal_distribution m s : qbs_prob (realQ R) :=
-  @mkQBSProb R (realQ R) idfun
-    (normal_prob m s : probability mR R)
-    (@measurable_id _ mR setT).
+  qbs_of_prob (normal_prob m s).
 
 Arguments qbs_normal_distribution : clear implicits.
 
@@ -71,11 +73,8 @@ Definition qbs_bernoulli p : qbs_prob (boolQ R) :=
 Arguments qbs_bernoulli : clear implicits.
 
 (** Uniform distribution on [a,b], for a < b, as QBS probability. *)
-Definition qbs_interval_uniform (a b : R) (ab : (a < b)) :
-    qbs_prob (realQ R) :=
-  @mkQBSProb R (realQ R) idfun
-    (uniform_prob ab : probability mR R)
-    (@measurable_id _ mR setT).
+Definition qbs_interval_uniform (a b : R) (ab : a < b) : qbs_prob (realQ R) :=
+  qbs_of_prob (uniform_prob ab).
 
 Arguments qbs_interval_uniform {a b}.
 
@@ -205,6 +204,20 @@ have -> : f @^-1` [set true] = [set r : mR | r < p].
 exact: uniform_prob_lt.
 Qed.
 
+(** Integrals against the uniform law, for f integrable on [a,b]. *)
+Let integral_uniform_integrable (a b : R) (ab : a < b) (f : mR -> \bar R) :
+  measurable_fun setT f -> lebesgue_measure.-integrable `[a, b] f ->
+  (\int[uniform_prob ab]_x f x =
+   (b - a)^-1%:E * \int[lebesgue_measure]_(x in `[a, b]) f x)%E.
+Proof.
+move=> mf if_; have mab : measurable `[a, b] by exact: measurable_itv.
+rewrite integralE [in RHS]integralE.
+rewrite (integral_uniform ab (measurable_funepos mf) (funepos_ge0 _)).
+rewrite (integral_uniform ab (measurable_funeneg mf) (funeneg_ge0 _)).
+have fB := integrable_neg_fin_num mab if_.
+by rewrite -muleBr// fin_num_adde_defl// fin_numN.
+Qed.
+
 (** E[Uniform(a,b)] = (a+b)/2. *)
 Lemma qbs_expect_interval_uniform (a b : R) (ab : a < b) :
   qbs_expect (realQ R) (qbs_interval_uniform ab) (fun x => x) =
@@ -213,16 +226,7 @@ Proof.
 have iid : lebesgue_measure.-integrable `[a, b] (@EFin R).
   apply: (@continuous_compact_integrable R idfun); first exact: segment_compact.
   by apply: continuous_in_subspaceT => x _; exact: cvg_id.
-rewrite /qbs_expect /qbs_integral /= integralE /=.
-rewrite (@integral_uniform _ a b ab [eta funepos.body (@EFin R)]);
-  [exact: measurable_funepos|by move=> x; exact: funepos_ge0|].
-rewrite (@integral_uniform _ a b ab [eta funeneg.body (@EFin R)]);
-  [exact: measurable_funeneg|by move=> x; exact: funeneg_ge0|].
-have mab : measurable `[a, b] by exact: measurable_itv.
-have fB : (\int[lebesgue_measure]_(x in `[a, b]) (@EFin R)^\- x)%E
-    \is a fin_num := integrable_neg_fin_num mab iid.
-rewrite -muleBr; [by []|by rewrite fin_num_adde_defl// fin_numN|].
-rewrite -integralE /=.
+rewrite /qbs_expect /qbs_integral /= integral_uniform_integrable//.
 have dF (x : R) : is_derive x 1 (fun x : R => x ^+ 2 / 2) x.
   have h := is_deriveM (is_deriveX 2 (is_derive_id x 1))
     (is_derive_cst (2^-1 : R) x 1).
