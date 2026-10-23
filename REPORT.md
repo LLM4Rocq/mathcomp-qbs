@@ -627,7 +627,7 @@ Lemma list_rec_cons b f x l :
   list_rec b f (qbs_cons (x, l)) = f x l (list_rec b f l).
 ```
 
-It is a morphism, uniformly in a parameter `W` (via `qbs_morphism_sigma_case_prod`, after the case of finite powers `qbs_morphism_list_rec_ord`):
+It is a morphism, uniformly in a parameter `W` (via `qbs_morphism_sigma_case_prod`, after induction on the length):
 
 ```
 Lemma qbs_morphism_list_rec (W : qbsType R) (b : qbsHomType W Y)
@@ -636,7 +636,7 @@ Lemma qbs_morphism_list_rec (W : qbsType R) (b : qbsHomType W Y)
     (fun p => list_rec (b p.1) (fun x l y => F (p.1, (x, (l, y)))) p.2).
 ```
 
-`qbs_morphism_list_rec_ext` is the unparametrised version, and `list_rec_hom : qbsHomType Y (expQ step_ty (expQ (listQ X) Y))` (with `list_rec_homE`) shows that the recursor is itself a morphism in the base case and the step.
+`list_rec_hom : qbsHomType Y (expQ step_ty (expQ (listQ X) Y))` (with `list_rec_homE`) shows that the recursor is itself a morphism in the base case and the step.
 
 ---
 
@@ -702,7 +702,7 @@ Lemma qbs_integral_equiv (X : qbsType R) (p1 p2 : qbs_prob X)
   qbs_integral X p1 h = qbs_integral X p2 h.
 ```
 
-(The nonnegative core is `ge0_integral_sigma_Mx`. `qbs_integral_equiv_same_alpha` is the simpler case of a shared `alpha`.) The pushforward formulation is `qbs_integral_as_pushforward` and `qbs_pushforward_integrable`.
+(The nonnegative core is `ge0_integral_sigma_Mx`.) The pushforward formulation is `qbs_integral_as_pushforward` and `qbs_pushforward_integrable`.
 
 ### 2.4 The Law of a QBS Probability (HKSY eq. (3))
 
@@ -783,23 +783,17 @@ Definition qbs_integrable (X : qbsType R) (p : qbs_prob X)
 
 | Name | Statement |
 |------|-----------|
-| `qbs_integrableD` / `qbs_integrableB` | Closure under `\+` / `\-` |
-| `qbs_integrableN` | Closure under negation |
-| `qbs_integrableZl` | Closure under scalar multiplication `k%:E * f x` |
-| `qbs_integralD` / `qbs_integralB` | Integral of a sum / difference (under integrability) |
-| `qbs_integralZl` | `qbs_integral X p (fun x => k%:E * f x) = k%:E * qbs_integral X p f` |
 | `qbs_varianceE` | `Var(h) = E[h^2] - E[h]^2` (for `h` in `Lfun 2`) |
 | `qbs_varianceZ` | `Var(a h) = a^2 Var(h)` |
-| `qbs_varianceD_cst_r` | `Var(h + b) = Var(h)` (for `h` in `Lfun 2`) |
 | `qbs_variance_affine` | `Var(a * h + b) = a^2 * Var(h)` (for `h` in `Lfun 2`) |
 | `qbs_integralE` | `qbs_integral X p h = qbs_integral X p h^\+ - qbs_integral X p h^\-` |
 | `qbs_integrable_cst`, `qbs_integral_cst` | Constants are integrable; `qbs_integral X p (fun=> c) = c` |
 | `qbs_integrable_equiv` | Integrability depends only on the equivalence class |
 | `qbs_integrableP` | For measurable `h`: `qbs_integrable X p h <-> qbs_integral X p (fun x => `|h x|) < +oo` |
-| `qbs_integrable_abse` / `qbs_integrable_abseP` | Integrability of `h` and of `abse \o h` coincide (for measurable `h`) |
+| `qbs_integrable_abseP` | Integrability of `h` and of `abse \o h` coincide (for measurable `h`) |
 | `qbs_integrableMr` | Integrability is stable under bounded multipliers |
 | `qbs_integrable_bounded` | Bounded measurable real functions are integrable |
-| `qbs_integrable_sqr` / `qbs_integrable_sqrB` | Squares (resp. squares of `k - c`) of `Lfun 2` functions are integrable |
+| `qbs_integrable_sqrB` | Squares of `k - c` for `k` in `Lfun 2` are integrable |
 | `qbs_integral_le` | Monotonicity for integrable functions: `f <= g` pointwise implies `qbs_integral X p f <= qbs_integral X p g` |
 | `ge0_qbs_integral_le` | The same for nonnegative measurable functions |
 
@@ -1805,7 +1799,7 @@ quasi_borel.v
 | Independence | Not formalized | `qbs_indep`, `qbs_indep_rect`, `qbs_integral_indep_factorization` |
 | QBS↔Giry bridge | Not formalized | `qbs_to_giry` / `giry_to_qbs`, `qbs_to_giry_bind` |
 | Normalizer | Not formalized | `qbs_normalize` + `qbs_normalize_event`, `qbs_normalize_equiv`, `qbs_normalize_morphism` (AFP `norm_qbs_measure_morphism`) |
-| Integral arithmetic | Not formalized | `qbs_integralD/B/Zl` + `qbs_integrable`, `qbs_integrableP`, `qbs_integral_le`, `qbs_integral_bind` (`qbs_monad_integral.v`) |
+| Integral arithmetic | Not formalized | `qbs_integrable`, `qbs_integrableP`, `qbs_integral_le`, `qbs_integral_bind` (`qbs_monad_integral.v`) |
 | Probability ineq. | Not formalized | `qbs_markov` + `qbs_chebyshev` |
 | Variance | Not formalized | `qbs_varianceE` + `qbs_varianceZ`, `qbs_variance_affine`, `qbs_variance_equiv` |
 | E[distributions] | Not formalized | `qbs_expect_normal` / `bernoulli` / `uniform`, `qbs_expect_interval_uniform` (Uniform(a,b)), `qbs_bernoulli_law` |

@@ -23,15 +23,15 @@ From QBS Require Import quasi_borel.
 (*   qbs_nil X, qbs_cons == nil, and cons : X * listQ X -> listQ X            *)
 (*   list_rec b f l == recursion, f : X -> listQ X -> Y -> Y                  *)
 (*                    (list_rec_nil, list_rec_cons)                           *)
-(*   qbs_morphism_list_rec_ext == list_rec is a morphism listQ X -> Y         *)
+(*   qbs_morphism_list_rec == list_rec is a morphism W * listQ X -> Y         *)
 (*   list_rec_hom == Y => (X => listQ X => Y => Y) => listQ X => Y            *)
 (*   qbs_negb, qbs_andb, qbs_orb, qbs_implb == boolean operations             *)
 (*   qbs_ltr, qbs_ltn == < on realQ and on natQ, into boolQ                   *)
+(*   qbs_hom_of f hf == f bundled with a proof hf that it is a morphism       *)
 (*   qbs_arg_swap == (X => Y => Z) -> (Y => X => Z)                           *)
 (*   qbs_exp_compose == (X => Y) * (Y => Z) -> (X => Z)                       *)
 (*   qbs_case f g == copairing of f : X -> Z and g : Y -> Z                   *)
 (*   qbs_case_exp == (X => Z) * (Y => Z) -> (X + Y => Z)                      *)
-(*   qbs_hom_of f hf == f bundled with a proof hf that it is a morphism       *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -483,39 +483,30 @@ Proof. by move=> b [mi _]. Qed.
 
 (** Bundle a function together with a proof that it is a morphism. *)
 Definition qbs_hom_of (X Y : qbsType R) (f : X -> Y) (hf : qbs_morphism f) :
-    qbsHomType X Y :=
-  @QBSHom.Pack R X Y f (QBSHom.Class (@isQBSMorphism.Build R X Y f hf)).
+    qbsHomType X Y := HB.pack f (isQBSMorphism.Build R X Y f hf).
 
+(** Measurable operations on [boolQ], [natQ], [realQ] are morphisms. *)
 Definition qbs_negb : qbsHomType (boolQ R) (boolQ R) :=
   qbs_hom_of (f := negb : boolQ R -> boolQ R) (fun a ha => measurable_neg ha).
 
 Definition qbs_andb : qbsHomType (prodQ (boolQ R) (boolQ R)) (boolQ R) :=
-  qbs_hom_of (f := fun p : prodQ (boolQ R) (boolQ R) => (p.1 && p.2 : boolQ R))
+  qbs_hom_of (f := fun p : prodQ (boolQ R) (boolQ R) => p.1 && p.2 : boolQ R)
     (fun a ha => measurable_and ha.1 ha.2).
 
 Definition qbs_orb : qbsHomType (prodQ (boolQ R) (boolQ R)) (boolQ R) :=
   qbs_hom_of (f := fun p : prodQ (boolQ R) (boolQ R) => (p.1 || p.2 : boolQ R))
     (fun a ha => measurable_or ha.1 ha.2).
 
-Lemma qbs_morphism_implb :
-  qbs_morphism (X := prodQ (boolQ R) (boolQ R)) (Y := boolQ R)
-    (fun p => p.1 ==> p.2).
-Proof.
-move=> a ha; have -> : (fun p : bool * bool => p.1 ==> p.2) \o a =
-    fun r => ~~ (a r).1 || (a r).2 by apply/funext => r; rewrite /= implybE.
-exact: measurable_or (measurable_neg ha.1) ha.2.
-Qed.
-
 Definition qbs_implb : qbsHomType (prodQ (boolQ R) (boolQ R)) (boolQ R) :=
-  qbs_hom_of qbs_morphism_implb.
+  qbs_hom_of (f := fun p : prodQ (boolQ R) (boolQ R) => ~~ p.1 || p.2 : boolQ R)
+    (fun a ha => measurable_or (measurable_neg ha.1) ha.2).
 
 Definition qbs_ltr : qbsHomType (prodQ (realQ R) (realQ R)) (boolQ R) :=
-  qbs_hom_of
-    (f := fun p : prodQ (realQ R) (realQ R) => ((p.1 < p.2)%R : boolQ R))
+  qbs_hom_of (f := fun p : prodQ (realQ R) (realQ R) => (p.1 < p.2)%R : boolQ R)
     (fun a ha => measurable_fun_ltr ha.1 ha.2).
 
 Definition qbs_ltn : qbsHomType (prodQ (natQ R) (natQ R)) (boolQ R) :=
-  qbs_hom_of (f := fun p : prodQ (natQ R) (natQ R) => ((p.1 < p.2)%N : boolQ R))
+  qbs_hom_of (f := fun p : prodQ (natQ R) (natQ R) => (p.1 < p.2)%N : boolQ R)
     (fun a ha => measurable_fun_ltn ha.1 ha.2).
 
 (** Gluing two random elements along a measurable boolean test. *)
@@ -782,47 +773,27 @@ by [].
 Qed.
 
 (** Recursion is a morphism, uniformly in a parameter [w : W]. *)
-Lemma qbs_morphism_list_rec_ord (W : qbsType R) (b : qbsHomType W Y)
-  (F : qbsHomType (prodQ W (prodQ X (prodQ (listQ X) Y))) Y) n :
-  qbs_morphism (X := prodQ W (piQ 'I_n (fun=> X))) (Y := Y)
-    (fun p => list_rec_ord (b p.1) (fun x l y => F (p.1, (x, (l, y)))) p.2).
-Proof.
-elim: n => [|n IH] a [hw ha] /=.
-  exact: (qbs_hom_proof (s := b) (fun r => (a r).1) hw).
-have hl : qbs_Mx (s := piQ 'I_n (fun=> X)) (fun r => (a r).2 \o lift ord0).
-  by move=> j; exact: (ha (lift ord0 j)).
-apply: (qbs_hom_proof (s := F)
-  (fun r => ((a r).1, ((a r).2 ord0, (list_mk ((a r).2 \o lift ord0),
-    list_rec_ord (b (a r).1) (fun x l y => F ((a r).1, (x, (l, y))))
-      ((a r).2 \o lift ord0)))))).
-split => //; split; first exact: (ha ord0).
-split; first exact: (qbs_morphism_sigma_inj
-  (X := fun n => piQ 'I_n (fun=> X)) (i := n) hl).
-exact: (IH (fun r => ((a r).1, (a r).2 \o lift ord0)) (conj hw hl)).
-Qed.
-
 Lemma qbs_morphism_list_rec (W : qbsType R) (b : qbsHomType W Y)
   (F : qbsHomType (prodQ W (prodQ X (prodQ (listQ X) Y))) Y) :
   qbs_morphism (X := prodQ W (listQ X)) (Y := Y)
     (fun p => list_rec (b p.1) (fun x l y => F (p.1, (x, (l, y)))) p.2).
 Proof.
-have h := qbs_morphism_sigma_case_prod
-  (X := fun n => piQ 'I_n (fun=> X)) (fun n => qbs_hom_of
-    (qbs_morphism_list_rec_ord b F (n := n))).
-exact: h.
-Qed.
-
-(** External form: a base case and a morphism for the cons step. *)
-Lemma qbs_morphism_list_rec_ext (b : Y)
-  (f : qbsHomType (prodQ X (prodQ (listQ X) Y)) Y) :
-  qbs_morphism (X := listQ X) (Y := Y)
-    (list_rec b (fun x l y => f (x, (l, y)))).
-Proof.
-move=> a ha.
-have hr : qbs_Mx (s := prodQ (unitQ R) (listQ X)) (fun r => (tt, a r)) :=
-  conj I ha.
-exact: (qbs_morphism_list_rec (W := unitQ R) (qbs_const _ b)
-  (qbs_comp (qbs_snd _ _) f) hr).
+have ord n : qbs_morphism (X := prodQ W (piQ 'I_n (fun=> X))) (Y := Y)
+    (fun p => list_rec_ord (b p.1) (fun x l y => F (p.1, (x, (l, y)))) p.2).
+  elim: n => [|n IH] a [hw ha] /=.
+    exact: (qbs_hom_proof (s := b) (fun r => (a r).1) hw).
+  have hl : qbs_Mx (s := piQ 'I_n (fun=> X)) (fun r => (a r).2 \o lift ord0).
+    by move=> j; exact: (ha (lift ord0 j)).
+  apply: (qbs_hom_proof (s := F)
+    (fun r => ((a r).1, ((a r).2 ord0, (list_mk ((a r).2 \o lift ord0),
+      list_rec_ord (b (a r).1) (fun x l y => F ((a r).1, (x, (l, y))))
+        ((a r).2 \o lift ord0)))))).
+  split => //; split; first exact: (ha ord0).
+  split; first exact: (qbs_morphism_sigma_inj
+    (X := fun n => piQ 'I_n (fun=> X)) (i := n) hl).
+  exact: (IH (fun r => ((a r).1, (a r).2 \o lift ord0)) (conj hw hl)).
+exact: (qbs_morphism_sigma_case_prod
+  (X := fun n => piQ 'I_n (fun=> X)) (fun n => qbs_hom_of (ord n))).
 Qed.
 
 End qbs_list_rec.
