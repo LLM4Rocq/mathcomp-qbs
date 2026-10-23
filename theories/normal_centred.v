@@ -92,6 +92,13 @@ Qed.
 Let normal_pdfxx m s : s != 0 -> normal_pdf m s m = normal_peak s.
 Proof. by move=> s0; rewrite /normal_pdf (negbTE s0) NormalPdf0.normal_pdf0xx. Qed.
 
+Let continuous_normal_centred m s : s != 0 ->
+  continuous (fun x => (x - m) * normal_pdf m s x).
+Proof.
+move=> s0 x; apply: cvgM; first by apply: cvgB; [exact: cvg_id|exact: cvg_cst].
+exact: continuous_normal_pdf.
+Qed.
+
 Let integral_normal_centred_right m s : s != 0 ->
   (\int[mu]_(x in `[m, +oo[) ((x - m) * normal_pdf m s x)%:E =
    (s ^+ 2 * normal_peak s)%:E)%E.
@@ -100,9 +107,7 @@ move=> s0.
 rewrite (@ge0_continuous_FTC2y R (fun x => (x - m) * normal_pdf m s x)
   (fun x => - (s ^+ 2) * normal_pdf m s x) m 0).
 - by move=> x mx; rewrite mulr_ge0// ?normal_pdf_ge0// subr_ge0.
-- apply: continuous_subspaceT => x.
-  apply: cvgM; first by apply: cvgB; [exact: cvg_id|exact: cvg_cst].
-  exact: continuous_normal_pdf.
+- by apply: continuous_subspaceT; exact: continuous_normal_centred.
 - have := cvg_normal_pdf m s s0 => h.
   rewrite -[X in _ --> X](mulr0 (- (s ^+ 2))).
   by apply: cvgM; [exact: cvg_cst|exact: h].
@@ -142,10 +147,7 @@ Let measurable_normal_centred m s : s != 0 ->
   measurable_fun setT (fun x : R => ((x - m) * normal_pdf m s x)%:E).
 Proof.
 move=> s0; apply/measurable_EFinP.
-have cg : continuous (fun x : R => (x - m) * normal_pdf m s x).
-  move=> x; apply: cvgM; first by apply: cvgB; [exact: cvg_id|exact: cvg_cst].
-  exact: continuous_normal_pdf.
-exact: continuous_measurable_fun cg.
+exact: continuous_measurable_fun (continuous_normal_centred m s s0).
 Qed.
 
 Let setT_split m : [set: R] = `]-oo, m]%classic `|` `]m, +oo[%classic.
@@ -188,8 +190,9 @@ have eB : (\int[mu]_(x in `]m, +oo[%classic) `|((x - m) * normal_pdf m s x)%:E|
   have xm' : 0 <= x - m by rewrite subr_ge0.
   by rewrite normrM (ger0_norm (normal_pdf_ge0 _ _ _)) (ger0_norm xm').
 rewrite TAB ge0_integral_setU//=.
-all: first [by rewrite eA eB -EFinD ltry
-  |by move=> x _; rewrite lee_fin normr_ge0|by rewrite -TAB].
+- by rewrite -TAB.
+- by move=> x _; rewrite lee_fin normr_ge0.
+by rewrite eA eB -EFinD ltry.
 Qed.
 
 Lemma integral_normal_centred m s : s != 0 ->
