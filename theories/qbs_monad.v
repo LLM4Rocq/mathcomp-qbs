@@ -22,7 +22,7 @@ From QBS Require Import quasi_borel standard_borel probability_qbs.
 (*                qbs_return x == the Dirac probability at x                  *)
 (*                qbs_bind p f == bind, for f : qbsHomType X (monadP Y)       *)
 (*              monadP_map f p == pushforward of p along f : qbsHomType X Y   *)
-(*                 qbs_join pp == multiplication P(P(X)) -> P(X)                  *)
+(*                 qbs_join pp == multiplication P(P(X)) -> P(X)              *)
 (*         qbs_strength (w, p) == strength W * monadP X -> monadP (W * X)     *)
 (*             qbs_assoc U W X == associativity (U * W) * X -> U * (W * X)    *)
 (*      qbs_returnQ, qbs_bindQ == return and bind as qbsHomType morphisms     *)
