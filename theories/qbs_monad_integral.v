@@ -161,8 +161,10 @@ Lemma monadP_random_integral X (b : mR -> qbs_prob X) (h : X -> \bar R) :
 Proof.
 move=> hb mh; under eq_fun do rewrite qbs_integralE.
 apply: emeasurable_funB.
-- exact: ge0_monadP_random_integral hb (qbs_measurable_funepos mh) (funepos_ge0 h).
-- exact: ge0_monadP_random_integral hb (qbs_measurable_funeneg mh) (funeneg_ge0 h).
+- exact: ge0_monadP_random_integral hb (qbs_measurable_funepos mh)
+    (funepos_ge0 h).
+- exact: ge0_monadP_random_integral hb (qbs_measurable_funeneg mh)
+    (funeneg_ge0 h).
 Qed.
 
 Lemma qbs_integral_morphism X (h : X -> \bar R) :

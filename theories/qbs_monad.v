@@ -594,7 +594,8 @@ Definition monadP_pair X Y (p : monadP X) (q : monadP Y) : monadP (prodQ X Y) :=
   qbs_bind p
     (qbs_comp (qbs_pair (qbs_id X) (qbs_const X q)) (qbs_strengthQ X Y)).
 
-Lemma monadP_pair_event X Y (p : monadP X) (q : monadP Y) (U : set (prodQ X Y)) :
+Lemma monadP_pair_event X Y (p : monadP X) (q : monadP Y)
+    (U : set (prodQ X Y)) :
   sigma_Mx U ->
   qbs_prob_event _ (monadP_pair p q) U =
   \int[qbs_prob_mu p]_r qbs_prob_mu q

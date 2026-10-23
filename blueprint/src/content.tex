@@ -399,7 +399,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \rocq{QBS.quasi_borel.generating_qbs_least}
   \rocqok
   \uses{def:generating_qbs}
-  If $M'$ satisfies the QBS axioms and $G \subseteq M'$, then
+  If $M'$ is closed (\texttt{qbs\_closed}, a conjunction of the three QBS axioms) and $G \subseteq M'$, then
   $M_{\mathrm{gen}(G)} \subseteq M'$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
@@ -485,7 +485,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \rocqok
   \uses{def:qbs_supT, def:qbs_leT}
   The supremum is an upper bound for both components and is the least
-  such upper bound.
+  such upper bound among closed sets (a single \texttt{qbs\_closed} hypothesis).
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -990,6 +990,24 @@ and variance results.
 
 \section{The Probability Monad $P(X)$}\label{sec:monadP}
 
+\begin{lemma}[Equivalence via Events]\label{lem:qbs_prob_equivP_events}
+  \rocq{QBS.qbs_monad.qbs_prob_equivP}
+  \rocqok
+  \uses{def:qbs_prob_equiv}
+  $p_1 \sim p_2$ iff $\Pr_{p_1}[U] = \Pr_{p_2}[U]$ for all $U \in \sigma_{M_X}$
+  (a view on the definition of equivalence).
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Event Probability Is Measurable]\label{lem:qbs_measurable_event}
+  \rocq{QBS.qbs_monad.qbs_measurable_event}
+  \rocqok
+  \uses{def:qbs_prob_event}
+  For a morphism $f : X \to P(Y)$ and $U \in \sigma_{M_Y}$, the map
+  $x \mapsto \Pr_{f(x)}[U]$ is QBS-measurable.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
 \begin{definition}[Representation of a Family of Probabilities]\label{def:qbs_prob_rep}
   \rocq{QBS.qbs_monad.qbs_prob_rep}
   \rocqok
@@ -1207,23 +1225,6 @@ equalities.
   For QBS-measurable~$h$, $\int_p h = \int_{\mathrm{law}_p} h$
   (without sign assumption for \texttt{qbs\_integral\_law};
   \texttt{ge0\_qbs\_integral\_law} is the nonnegative version).
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
-
-\begin{lemma}[Integral as Pushforward]\label{lem:qbs_integral_as_pushforward}
-  \rocq{QBS.probability_qbs.qbs_integral_as_pushforward}
-  \rocqok
-  \uses{def:qbs_integral}
-  If $h$ is QBS measurable and $h \circ \alpha$ is $\mu$-integrable, then
-  $\int_p h = \int_{\mathrm{pushforward}(\mu, h \circ \alpha)} \mathrm{id}$.
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
-
-\begin{lemma}[Pushforward Integrability]\label{lem:qbs_pushforward_integrable}
-  \rocq{QBS.probability_qbs.qbs_pushforward_integrable}
-  \rocqok
-  \uses{def:qbs_integral}
-  Integrability transfers through the pushforward.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -1638,9 +1639,12 @@ evidence is $0$ or infinite.
 
 \begin{lemma}[Normalized Event Probability]\label{lem:qbs_normalize_event}
   \rocq{QBS.qbs_normalize.qbs_normalize_event}
+  \rocq{QBS.qbs_normalize.qbs_pweight}
+  \rocq{QBS.qbs_normalize.qbs_pweight_ge0}
+  \rocq{QBS.qbs_normalize.qbs_evidence_degen}
   \rocqok
   \uses{def:qbs_normalize_prob, def:qbs_integral}
-  If $0 < Z_p < +\infty$ and $U \in \sigma_{M_X}$, then
+  If $0 < Z_p < +\infty$, then for every $U \subseteq X$ (\texttt{qbs\_pweight} is the weight $\max(0,w)$ as an extended real; \texttt{qbs\_evidence\_degen} says the evidence is $0$ or $+\infty$ otherwise),
   $\Pr_{\mathrm{norm}(p)}[U] =
   \Bigl(\int_p (x, w) \mapsto \mathbf{1}_U(x) \cdot \max(0, w)\Bigr)
   \cdot Z_p^{-1}$.
@@ -1909,7 +1913,7 @@ probability measure on a standard Borel space is \texttt{giry\_to\_qbs}
   \rocq{QBS.measure_as_qbs_measure.qbs_bernoulli}
   \rocqok
   \uses{def:qbs_prob, def:concrete_qbs}
-  For $0 \le p \le 1$, $\mathrm{Bernoulli}(p)$ as a QBS probability on
+  For any $p$ (no side conditions), $\mathrm{Bernoulli}(p)$ as a QBS probability on
   $\mathtt{boolQ}$: random element $r \mapsto (r < p)$ with the uniform
   measure on $[0,1]$.
 \end{definition}
@@ -1967,22 +1971,20 @@ probability measure on a standard Borel space is \texttt{giry\_to\_qbs}
   \mathrm{pdf}_{a,b}(x)\,dx$ (Fubini--Tonelli).
 \end{proof}
 
-\begin{lemma}[Integral and Expectation of Uniform$(a,b)$]\label{lem:qbs_expect_interval_uniform}
-  \rocq{QBS.measure_as_qbs_measure.ge0_qbs_integral_interval_uniform}
+\begin{lemma}[Expectation of Uniform$(a,b)$]\label{lem:qbs_expect_interval_uniform}
   \rocq{QBS.measure_as_qbs_measure.qbs_expect_interval_uniform}
   \rocq{QBS.measure_as_qbs_measure.uniform_prob_lt}
   \rocqok
   \uses{def:qbs_interval_uniform, def:qbs_expect}
-  $\int h\, d\mathrm{Uniform}(a,b) = (b-a)^{-1} \int_{[a,b]} h$ for nonnegative measurable $h$, and $\mathbb{E}[\mathrm{Uniform}(a,b)] = (a+b)/2$; $\mathrm{Uniform}[0,1](\{r < p\}) = p$.
+  $\mathbb{E}[\mathrm{Uniform}(a,b)] = (a+b)/2$; $\mathrm{Uniform}[0,1](\{r < p\}) = p$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
-\begin{lemma}[Law of Bernoulli]\label{lem:qbs_bernoulli_law}
+\begin{lemma}[Event Probability of Bernoulli]\label{lem:qbs_bernoulli_event}
   \rocq{QBS.measure_as_qbs_measure.qbs_bernoulli_event}
-  \rocq{QBS.measure_as_qbs_measure.qbs_bernoulli_law}
   \rocqok
-  \uses{def:qbs_bernoulli, def:qbs_law, def:qbs_prob_event}
-  The event probabilities and the law of \texttt{qbs\_bernoulli p} are those of \texttt{bernoulli\_prob p}.
+  \uses{def:qbs_bernoulli, def:qbs_prob_event}
+  For $0 \le p \le 1$, the event probabilities of \texttt{qbs\_bernoulli p} are those of \texttt{bernoulli\_prob p}.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -2015,10 +2017,20 @@ probability measure on a standard Borel space is \texttt{giry\_to\_qbs}
   $|x| \le |x - \mu| + |\mu|$.
 \end{proof}
 
+\begin{lemma}[Mean of the Normal Law]\label{lem:integral_normal_mean}
+  \rocq{QBS.normal_centred.integral_normal_mean}
+  \rocqok
+  \uses{lem:integral_normal_centred, lem:normal_prob_abs_lty}
+  For $\sigma \neq 0$, $\int x\, d\mathcal{N}(\mu,\sigma)(x) = \mu$.
+\end{lemma}
+\begin{proof}\rocqok
+  Split $x = (x-\mu) + \mu$ and use the centred moment lemma.
+\end{proof}
+
 \begin{lemma}[Expected Value of Normal]\label{lem:qbs_expect_normal}
   \rocq{QBS.measure_as_qbs_measure.qbs_expect_normal}
   \rocqok
-  \uses{def:qbs_normal_distribution, def:qbs_expect, lem:integral_normal_centred, lem:normal_prob_abs_lty}
+  \uses{def:qbs_normal_distribution, def:qbs_expect, lem:integral_normal_mean}
   For $\sigma \neq 0$, $\mathbb{E}[\mathcal{N}(\mu, \sigma)] = \mu$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
@@ -2160,12 +2172,11 @@ and (3) the composed encode/decode pair.
 
 \begin{lemma}[Phi and Psi Measurability]\label{lem:phi_psi_measurable}
   \rocq{QBS.standard_borel.measurable_phi}
-  \rocq{QBS.standard_borel.measurable_psi}
   \rocq{QBS.standard_borel.measurable_psi_setT}
   \rocqok
   \uses{def:phi_psi}
   $\phi$ is measurable on all of~$\mathbb{R}$. $\psi$ is measurable on
-  $(0,1)$ and (via an approximation argument) on all of~$\mathbb{R}$.
+  all of~$\mathbb{R}$ (\texttt{measurable\_psi\_setT}, via an approximation argument).
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -2177,9 +2188,17 @@ and (3) the composed encode/decode pair.
   \rocq{QBS.standard_borel.bin_partial_sum}
   \rocq{QBS.standard_borel.bin_sum}
   \rocq{QBS.standard_borel.bin_digits}
+  \rocq{QBS.standard_borel.bin_step}
+  \rocq{QBS.standard_borel.bin_rem}
+  \rocq{QBS.standard_borel.bin_remS}
+  \rocq{QBS.standard_borel.bin_digit_rem}
+  \rocq{QBS.standard_borel.bin_rem_itv}
   \rocqok
   $\mathrm{bin\_digit}(x, n)$ extracts the $n$-th binary digit of
-  $x \in [0,1)$ via the doubling map.
+  $x \in [0,1)$ via the doubling map
+  $\mathrm{bin\_step}(y) = 2y - \lfloor 2y \rfloor$ (\texttt{bin\_rem x n} is its $n$-th iterate, with
+  $\mathrm{bin\_digit}(x,n) = (1/2 \le \mathrm{bin\_rem}(x,n))$ and
+  $\mathrm{bin\_rem}(x,n) \in [0,1)$ for $x \in [0,1)$).
   $\mathrm{bin\_partial\_sum}(d, n) = \sum_{i<n} d(i) \cdot 2^{-(i+1)}$
   and $\mathrm{bin\_sum}(d) = \lim_n \mathrm{bin\_partial\_sum}(d, n)$.
 \end{definition}
@@ -2189,10 +2208,13 @@ and (3) the composed encode/decode pair.
   \rocq{QBS.standard_borel.bin_sum_le1}
   \rocq{QBS.standard_borel.bin_sum_ge0}
   \rocq{QBS.standard_borel.bin_partial_sum_nd}
+  \rocq{QBS.standard_borel.measurable_bin_step}
+  \rocq{QBS.standard_borel.measurable_bin_rem}
+  \rocq{QBS.standard_borel.measurable_bin_sum}
   \rocqok
   \uses{def:bin_digits}
   Partial sums converge, are non-decreasing, and the limit satisfies
-  $0 \leq \mathrm{bin\_sum}(d) \leq 1$.
+  $0 \leq \mathrm{bin\_sum}(d) \leq 1$. The maps \texttt{bin\_step}, \texttt{bin\_rem} and \texttt{bin\_sum} are measurable.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -2475,7 +2497,7 @@ math-comp algebra-tactics.
 \section{Closed-Form Posterior}\label{sec:posterior}
 
 \begin{definition}[Posterior Parameters and Evidence Constant]\label{def:post_params}
-  \rocq{QBS.showcase.bayesian_regression.C}
+  \rocq{QBS.showcase.bayesian_regression.evidence_const}
   \rocq{QBS.showcase.bayesian_regression.post_s_mean}
   \rocq{QBS.showcase.bayesian_regression.post_s_var}
   \rocq{QBS.showcase.bayesian_regression.post_b_mean}
@@ -2485,7 +2507,7 @@ math-comp algebra-tactics.
   $m_s = \frac{8\cdot 9\cdot 7\cdot 19\cdot 47}{5\cdot 29\cdot 2309}$ and
   variance $v_s = \frac{9 \cdot 181}{29 \cdot 2309}$; given the slope~$s$,
   the intercept has mean $m_b(s) = \frac{900 - 540 s}{181}$ and variance
-  $v_b = \frac{9}{181}$; $C$ is the closed-form evidence constant
+  $v_b = \frac{9}{181}$; $C$ (\texttt{evidence\_const}) is the closed-form evidence constant
   \[
     C = \frac{4\sqrt{2}}{\pi^2 \sqrt{29 \cdot 2309 \cdot \pi}}
     \exp\Bigl(-\frac{11 \cdot 11 \cdot (138\cdot 100 + 41)}

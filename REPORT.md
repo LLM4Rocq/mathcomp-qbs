@@ -3,8 +3,8 @@
 **Project:** QBS -- Quasi-Borel Spaces in Rocq
 **Repository:** https://github.com/LLM4Rocq/mathcomp-qbs
 **Date:** 2026-10-23
-**Status:** 392 proofs (387 Qed + 5 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 6,941 across 14 files
+**Status:** 411 proofs (406 Qed + 5 Defined), **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** 6,460 across 14 files
 
 > **Note**: The higher-order PPL development (`ppl_qbs.v`,
 > `ppl_kernel.v`, `showcase/ppl_examples.v`) is on the `ppl`
@@ -98,7 +98,7 @@ Throughout, HKSY refers to the LICS 2017 paper above; "Prop. n" and "Thm. n" ref
 
 ## Part I: Core QBS Theory
 
-Source files: `theories/quasi_borel.v` (948 lines, 61 Qed), `theories/measure_qbs_adjunction.v` (380 lines, 15 Qed + 5 Defined), `theories/coproduct_qbs.v` (835 lines, 42 Qed).
+Source files: `theories/quasi_borel.v` (912 lines, 61 Qed), `theories/measure_qbs_adjunction.v` (342 lines, 16 Qed + 5 Defined), `theories/coproduct_qbs.v` (725 lines, 43 Qed).
 
 ### 1.1 The isQBS Mixin and QBSpace Structure
 
@@ -472,7 +472,7 @@ Inductive generating_Mx (T : Type) (G : set (mR -> T))
       generating_Mx G (fun r => Fi (P r) r).
 ```
 
-The instance is declared on an alias `generating_type := T` (declaring it on `T` itself would make every type a `qbsType` with an undetermined generator). The lemma `generating_qbs_incl` states `G `<=` qbs_Mx (s := generating_qbs G)`, and `generating_qbs_least` states that `generating_Mx G` is contained in every closed set containing `G`.
+The instance is declared on an alias `generating_type := T` (declaring it on `T` itself would make every type a `qbsType` with an undetermined generator). The lemma `generating_qbs_incl` states `G `<=` qbs_Mx (s := generating_qbs G)`, and `generating_qbs_least` states that `generating_Mx G` is contained in every closed set containing `G` (a single `qbs_closed Mx` hypothesis).
 
 ### 1.15 Image QBS
 
@@ -498,16 +498,16 @@ Definition qbs_leT (MxX MxY : set (mR -> T)) : Prop :=
   MxX `<=` MxY.
 ```
 
-with `qbs_leT_refl`, `qbs_leT_trans` and `qbs_leT_antisym`. The join of two sets of random elements is `qbs_supT MxX MxY := generating_qbs [set alpha | MxX alpha \/ MxY alpha]`, with `qbs_supT_ub_l`, `qbs_supT_ub_r` and `qbs_supT_least` (least upper bound among closed sets).
+with `qbs_leT_refl`, `qbs_leT_trans` and `qbs_leT_antisym`. The join of two sets of random elements is `qbs_supT MxX MxY := generating_qbs [set alpha | MxX alpha \/ MxY alpha]`, with `qbs_supT_ub_l`, `qbs_supT_ub_r` and `qbs_supT_least` (least upper bound among closed sets, taking a single `qbs_closed` hypothesis).
 
 **Infimum, top, bottom (AFP lattice of QBS structures).** A set of maps is closed when it satisfies the three QBS axioms:
 
 ```
 Definition qbs_closed (T : Type) (Mx : set (mR -> T)) : Prop :=
-  (forall alpha (f : {mfun mR >-> mR}), Mx alpha -> Mx (alpha \o f)) /\
-  (forall x : T, Mx (fun _ => x)) /\
-  (forall (P : {mfun mR >-> nat}) (Fi : nat -> mR -> T),
-    (forall i, Mx (Fi i)) -> Mx (fun r => Fi (P r) r)).
+  [/\ forall alpha (f : {mfun mR >-> mR}), Mx alpha -> Mx (alpha \o f),
+      forall x : T, Mx (fun _ => x) &
+      forall (P : {mfun mR >-> nat}) (Fi : nat -> mR -> T),
+        (forall i, Mx (Fi i)) -> Mx (fun r => Fi (P r) r)].
 ```
 
 `qbs_closed_Mx` (the random elements of a QBS are closed) and `qbs_closedI` (closure under `` `&` ``) give the infimum `qbs_infT MxX MxY := generating_qbs (MxX `&` MxY)`, with `qbs_infT_lb_l`, `qbs_infT_lb_r`, `qbs_infT_greatest` and `qbs_infT_Mx`. The top structure `qbs_topT T` (all maps `mR -> T` random, an instance on the alias `top_type`) satisfies `qbs_topT_ub`; the bottom `qbs_botT T := generating_qbs set0` satisfies `qbs_botT_lb`.
@@ -523,9 +523,10 @@ Lemma emptyQ_initial (X : qbsType R) (f g : emptyQ -> X) : f = g.
 
 **File:** `theories/coproduct_qbs.v`
 
-A function `f : mR -> X + Y` is random iff it factors through `inl`, through `inr`, or is a measurable gluing of an `inl`-part and an `inr`-part via a measurable boolean predicate:
+A function `f : mR -> X + Y` is random iff (the set of random elements is the section-local definition `coprodQ_random`, not exported) it factors through `inl`, through `inr`, or is a measurable gluing of an `inl`-part and an `inr`-part via a measurable boolean predicate:
 
 ```
+(* section-local *)
 Definition coprodQ_random (X Y : qbsType R) : set (mR -> X + Y) :=
   [set f |
     (exists a : mR -> X,
@@ -589,7 +590,7 @@ Lemma qbs_morphism_sigma_case_prod (W Z : qbsType R) (X : nat -> qbsType R)
 
 **File:** `theories/coproduct_qbs.v`
 
-For a family `X : I -> qbsType R`, `piQ I X` has carrier `forall i, X i`, and `alpha` is random iff `fun r => alpha r i` is random in `X i` for every `i`. The projection `qbs_morphism_proj` and tupling `qbs_morphism_tuple` are morphisms.
+For a family `X : I -> qbsType R`, `piQ I X` has carrier `forall i, X i`, and `alpha` is random iff `fun r => alpha r i` is random in `X i` for every `i`. (The set of random elements is the section-local `piQ_random`.) The projection `qbs_morphism_proj` and tupling `qbs_morphism_tuple` are morphisms.
 
 ### 1.20 List Type
 
@@ -642,7 +643,7 @@ Lemma qbs_morphism_list_rec (W : qbsType R) (b : qbsHomType W Y)
 
 ## Part II: Probability Monad and Integration
 
-Source files: `theories/probability_qbs.v` (623 lines, 37 Qed), `theories/qbs_monad.v` (705 lines, 58 Qed), `theories/qbs_monad_integral.v` (204 lines, 11 Qed), `theories/qbs_normalize.v` (257 lines, 17 Qed), `theories/qbs_quotient.v` (194 lines, 19 Qed), `theories/pair_qbs_measure.v` (363 lines, 15 Qed), `theories/qbs_giry.v` (132 lines, 9 Qed), `theories/normal_centred.v` (280 lines, 14 Qed), `theories/measure_as_qbs_measure.v` (307 lines, 10 Qed), `theories/showcase/bayesian_regression.v` (426 lines, 22 Qed).
+Source files: `theories/probability_qbs.v` (535 lines, 35 Qed), `theories/qbs_monad.v` (723 lines, 61 Qed), `theories/qbs_monad_integral.v` (202 lines, 11 Qed), `theories/qbs_normalize.v` (263 lines, 19 Qed), `theories/qbs_quotient.v` (189 lines, 19 Qed), `theories/pair_qbs_measure.v` (362 lines, 15 Qed), `theories/qbs_giry.v` (133 lines, 9 Qed), `theories/normal_centred.v` (289 lines, 16 Qed), `theories/measure_as_qbs_measure.v` (265 lines, 11 Qed), `theories/showcase/bayesian_regression.v` (457 lines, 29 Qed).
 
 ### 2.1 QBS Probability Triple
 
@@ -702,7 +703,7 @@ Lemma qbs_integral_equiv (X : qbsType R) (p1 p2 : qbs_prob X)
   qbs_integral X p1 h = qbs_integral X p2 h.
 ```
 
-(The nonnegative core is `ge0_integral_sigma_Mx`.) The pushforward formulation is `qbs_integral_as_pushforward` and `qbs_pushforward_integrable`.
+(The nonnegative core is `ge0_integral_sigma_Mx`.)
 
 ### 2.4 The Law of a QBS Probability (HKSY eq. (3))
 
@@ -844,7 +845,7 @@ HB.instance Definition _ X :=
     (@monadP_comp X) (@monadP_const X) (@monadP_glue X).
 ```
 
-Here `G := giry mR R`, and `qbs_prob_rep b a g` says that `b r` is represented by `[a, g r]` for every `r`. Random elements are saturated with respect to pointwise equivalence (`monadP_random_equiv`), and `monadP_random_event` shows that the probability of a `sigma_Mx` event is measurable in `r`. The glue axiom (`monadP_glue`) decodes the selector with the retraction `encode_RR_mR`/`decode_RR_mR` from `standard_borel.v`.
+Here `G := giry mR R`, and `qbs_prob_rep b a g` says that `b r` is represented by `[a, g r]` for every `r`. Random elements are saturated with respect to pointwise equivalence (`monadP_random_equiv`), and `monadP_random_event` shows that the probability of a `sigma_Mx` event is measurable in `r`; for a morphism `f : X -> monadP Y` this is `qbs_measurable_event` (`x |-> qbs_prob_event Y (f x) U` is QBS-measurable). The view `qbs_prob_equivP` (in `qbs_monad.v`) restates `qbs_prob_equiv` as equality of event probabilities on all `sigma_Mx` events. The glue axiom (`monadP_glue`) decodes the selector with the retraction `encode_RR_mR`/`decode_RR_mR` from `standard_borel.v`.
 
 The file also defines a small helper `giry_prob m m1`, the probability measure `m : giry T R` given a proof `m1` that `m` has total mass 1, with `giry_bindE` and `giry_bind_setT` for the Giry bind.
 
@@ -1117,7 +1118,9 @@ Definition qbs_normalize p : option (qbs_prob X) :=
 |------|-----------|
 | `qbs_weight_ge0`, `measurable_qbs_weight` | The weight is nonnegative and measurable |
 | `qbs_densityT` | `qbs_density p [set: mR] = qbs_evidence p` |
-| `qbs_normalize_event` | The normalised probability of `U` is the weighted probability of `U` divided by the evidence |
+| `qbs_pweight`, `qbs_pweight_ge0` | The weight `max 0 w` as an extended real, and its nonnegativity |
+| `qbs_evidence_degen` | If the evidence is not in `(0, +oo)` then it is `0` or `+oo` |
+| `qbs_normalize_event` | The normalised probability of `U` is the weighted probability of `U` divided by the evidence (no measurability hypothesis on `U`) |
 | `qbs_evidence_equiv` | Evidence is invariant under equivalence |
 | `qbs_normalize_equiv` | Normalisation is well defined on equivalence classes (both `Some` and equivalent, or both `None`) |
 | `qbs_evidence_ge0` | `0 <= qbs_evidence p` |
@@ -1126,7 +1129,7 @@ Definition qbs_normalize p : option (qbs_prob X) :=
 
 ```
 Lemma qbs_normalize_event p (U : set X) :
-  0 < qbs_evidence p < +oo -> sigma_Mx U ->
+  0 < qbs_evidence p < +oo ->
   qbs_prob_event X (qbs_normalize_prob p) U =
   qbs_integral _ p (fun xw => ((\1_U xw.1 : R) * maxr 0 xw.2)%:E) *
   (fine (qbs_evidence p))^-1%:E.
@@ -1213,15 +1216,11 @@ Definition qbs_pair_alpha (X Y : qbsType R)
     let uv := @decode_RR_mR R r in
     (qbs_prob_alpha p uv.1, qbs_prob_alpha q uv.2).
 
-Definition qbs_pair_mu (X Y : qbsType R)
-  (p : qbs_prob X) (q : qbs_prob Y) : probability mR R :=
-  qbs_pair_mu_build p q.
-
 Definition qbs_prob_pair (X Y : qbsType R)
   (p : qbs_prob X) (q : qbs_prob Y) : qbs_prob (prodQ X Y) :=
   @mkQBSProb R (prodQ X Y)
     (qbs_pair_alpha p q)
-    (qbs_pair_mu p q)
+    (qbs_pair_mu_build p q)
     (qbs_pair_alpha_random p q).
 ```
 
@@ -1361,13 +1360,10 @@ Definition qbs_normal_distribution (mu sigma : R) : qbs_prob (realQ R) :=
     (normal_prob mu sigma : probability mR R)
     (@measurable_id _ mR setT).
 
-Definition qbs_bernoulli
-  (p : R) (hp0 : (0 <= p)%R) (hp1 : (p <= 1)%R) : qbs_prob (boolQ R) :=
+Definition qbs_bernoulli (p : R) : qbs_prob (boolQ R) :=
   @mkQBSProb R (boolQ R) (fun r : mR => (r < p)%R)
     (uniform_prob ltr01 : probability mR R)
-    (measurable_fun_ltr
-      (@measurable_id _ mR setT)
-      (@measurable_cst _ _ mR mR setT p)).
+    (measurable_ltr p).
 
 Definition qbs_interval_uniform (a b : R) (ab : (a < b)%R) :
     qbs_prob (realQ R) :=
@@ -1384,16 +1380,10 @@ Expectation lemmas:
 
 ```
 Lemma qbs_expect_bernoulli (p : R) (hp0 : 0 <= p) (hp1 : p <= 1) :
-  qbs_expect (boolQ R) (qbs_bernoulli p hp0 hp1) (fun b : bool => b%:R) = p%:E.
+  qbs_expect (boolQ R) (qbs_bernoulli p) (fun b : bool => b%:R) = p%:E.
 
 Lemma qbs_expect_uniform :
   qbs_expect (realQ R) qbs_uniform (fun x => x) = (2%:R^-1)%:E.
-
-Lemma ge0_qbs_integral_interval_uniform (a b : R) (ab : a < b)
-    (h : mR -> \bar R) :
-  measurable_fun setT h -> (forall x, 0 <= h x)%E ->
-  qbs_integral (realQ R) (qbs_interval_uniform ab) h =
-  ((b - a)^-1%:E * \int[lebesgue_measure]_(x in `[a, b]) h x)%E.
 
 Lemma qbs_expect_interval_uniform (a b : R) (ab : a < b) :
   qbs_expect (realQ R) (qbs_interval_uniform ab) (fun x => x) =
@@ -1404,15 +1394,18 @@ Lemma uniform_prob_lt (p : R) : 0 <= p <= 1 ->
 
 Lemma qbs_bernoulli_event (p : R) (hp0 : 0 <= p) (hp1 : p <= 1)
     (A : set bool) :
-  qbs_prob_event (boolQ R) (qbs_bernoulli p hp0 hp1) A = bernoulli_prob p A.
-
-Lemma qbs_bernoulli_law (p : R) (hp0 : 0 <= p) (hp1 : p <= 1)
-    (A : set bool) :
-  qbs_law (qbs_bernoulli p hp0 hp1) A = bernoulli_prob p A.
+  qbs_prob_event (boolQ R) (qbs_bernoulli p) A = bernoulli_prob p A.
 
 Lemma qbs_expect_normal (mu sigma : R) : sigma != 0 ->
   qbs_expect (realQ R) (qbs_normal_distribution mu sigma)
     (fun x => x) = mu%:E.
+```
+
+Its proof uses `integral_normal_mean` (`normal_centred.v`), the mean of the normal law:
+
+```
+Lemma integral_normal_mean m s : s != 0 ->
+  \int[normal_prob m s]_x x%:E = m%:E.
 ```
 
 The analytic facts it needs are proved in `theories/normal_centred.v`:
@@ -1435,7 +1428,7 @@ On each half-line around `m`, the integral of `(x - m) * pdf` is `±s^2 * normal
 
 ### 2.24 Bayesian Linear Regression
 
-**File:** `theories/showcase/bayesian_regression.v` (426 lines, 22 Qed)
+**File:** `theories/showcase/bayesian_regression.v` (457 lines, 29 Qed)
 
 Following HKSY Sec. VI and the Isabelle AFP development (Bayesian_Linear_Regression.thy) by Hirata, Minamide, Sato, the prior is a probability on the *function space* `R => R`.
 
@@ -1463,10 +1456,10 @@ Definition wprior : monadP (prodQ F RQ) :=
 Definition program : option (qbs_prob F) := qbs_normalize wprior.
 ```
 
-**Posterior in closed form.** Completing the square gives explicit parameters (`post_s_mean`, `post_s_var`, `post_b_mean s`, `post_b_var`) and a constant `C`:
+**Posterior in closed form.** Completing the square gives explicit parameters (`post_s_mean`, `post_s_var`, `post_b_mean s`, `post_b_var`) and a constant `evidence_const`:
 
 ```
-Definition C : R :=
+Definition evidence_const : R :=
   4 * Num.sqrt 2 / (pi ^+ 2 * Num.sqrt (29 * 2309 * pi)) *
   expR (- (11 * 11 * (138 * 100 + 41) / (25 * 29 * 2309))).
 
@@ -1481,27 +1474,27 @@ Definition posterior : monadP F := monadP_map lin posterior2.
 
 | Name | Statement |
 |------|-----------|
-| `obs_prior_factor` | Prior density times likelihood is `C` times the posterior density (completing the square) |
+| `obs_prior_factor` | Prior density times likelihood is `evidence_const` times the posterior density (completing the square) |
 | `prior2_integral` / `posterior2_integral` | Integrals against `prior2` / `posterior2` are iterated integrals against the Gaussians |
-| `factor_integral` | `\int[N(0,3)]_s \int[N(0,3)]_b (h (s, b) * obs2 s b) = C * \int[post]_s \int[post(s)]_b h (s, b)` for `h` with values in [0, 1] |
-| `wprior_evidence` | `qbs_evidence wprior = C%:E` (closed-form evidence) |
+| `factor_integral` | `\int[N(0,3)]_s \int[N(0,3)]_b (h (s, b) * obs2 s b) = evidence_const * \int[post]_s \int[post(s)]_b h (s, b)` for `h` with values in [0, 1] |
+| `wprior_evidence` | `qbs_evidence wprior = evidence_const%:E` (closed-form evidence) |
 | `program_posterior` | **Main theorem** |
 
 ```
-Lemma wprior_evidence : qbs_evidence wprior = C%:E.
+Lemma wprior_evidence : qbs_evidence wprior = evidence_const%:E.
 
 Theorem program_posterior :
   exists q, program = Some q /\ qbs_prob_equiv F q posterior.
 ```
 
-The theorem says that the program succeeds (the evidence is positive and finite, as it equals `C`), and that the resulting QBS probability on functions is equivalent to the explicit Gaussian posterior.
+The theorem says that the program succeeds (the evidence is positive and finite, as it equals `evidence_const`), and that the resulting QBS probability on functions is equivalent to the explicit Gaussian posterior.
 
 ---
 
 
 ## Part III: Standard Borel Spaces (R × R as a Retract of R)
 
-Source file: `theories/standard_borel.v` (1,287 lines, 57 Qed).
+Source file: `theories/standard_borel.v` (1,063 lines, 61 Qed).
 
 This file constructs a measurable retraction of R × R onto R: a measurable `encode_RR : R × R -> R` with a measurable left inverse `decode_RR`. This is exactly what the characterisation of standard Borel spaces as retracts of R (HKSY Prop. 5) needs, and it shows that the product of standard Borel spaces is standard Borel. `encode_RR` is not surjective (binary expansions ending in infinitely many 1s are missed), so this is a retraction, not an isomorphism. The construction composes three layers: (1) a bijection R ↔ (0,1) via arctangent, (2) a map (0,1)² -> (0,1) by binary digit interleaving with a left inverse, and (3) the composed encode/decode pair. The retraction is used by `qbs_monad.v` (gluing of random elements of P(X)) and `pair_qbs_measure.v` (product probability triples), and by `prod_standard_borel` in `measure_qbs_adjunction.v`.
 
@@ -1519,7 +1512,7 @@ Definition psi (y : R) : R := tan (pi * (y - 1 / 2)).
 | `phiK` | `cancel phi psi` (psi is a left inverse of phi, unconditional) |
 | `psiK` | `{in `](0,1)[, cancel psi phi}` (phi is a left inverse of psi on (0,1)) |
 | `measurable_phi` | `measurable_fun setT phi` |
-| `measurable_psi` | `measurable_fun (`](0,1)[) psi` (measurable on the open interval) |
+| `measurable_psi_setT` | `measurable_fun setT psi` (measurable on all of R) |
 
 The proofs use `atan_gtNpi2`, `atan_ltpi2`, `atanK`, `tanK`, `cos_gt0_pihalf`, and `continuous_atan`/`continuous_tan` from math-comp analysis.
 
@@ -1550,6 +1543,9 @@ Definition bin_sum (d : nat -> bool) : R :=
 | `is_cvg_bin_partial_sum` | Convergence of partial sums |
 | `bin_sum_le1` | Binary sum bounded by 1 |
 | `bin_sum_ge0` | Binary sum non-negative |
+| `bin_step`, `bin_rem`, `bin_remS` | The doubling step `y |-> if 1/2 <= y then 2y - 1 else 2y`, its `n`-th iterate `bin_rem x n`, and the unfolding `bin_rem x n.+1 = bin_step (bin_rem x n)` |
+| `bin_digit_rem`, `bin_rem_itv` | `bin_digit x n = (1/2 <= bin_rem x n)`; `0 <= x < 1 -> 0 <= bin_rem x n < 1` |
+| `measurable_bin_step`, `measurable_bin_rem`, `measurable_bin_sum` | Measurability of the step, of `x |-> bin_rem x n`, and of `bin_sum` of a family of measurable digit functions |
 
 **Reconstruction theorem:**
 
@@ -1698,7 +1694,7 @@ This direction requires extra hypotheses (see Section 3.4) but is not needed for
 | `measurable_encode_RR` | `measurable_fun setT encode_RR` |
 | `measurable_decode_RR` | `measurable_fun setT decode_RR` |
 
-The `measurable_encode_RR` proof composes `measurable_phi` (on each component), `measurable_pair_to_unit`, and `measurable_psi` (restricted to `(0,1)` via `measurable_comp` with `pair_to_unit_phi_in_itv`). The `measurable_decode_RR` proof uses `measurable_psi_setT`, `measurable_unit_to_pair_fst/snd`, and `measurable_phi`.
+The `measurable_encode_RR` proof composes `measurable_phi` (on each component), `measurable_pair_to_unit`, and `measurable_psi_setT`. The `measurable_decode_RR` proof also uses `measurable_psi_setT`, `measurable_unit_to_pair_fst/snd`, and `measurable_phi`.
 
 ### 3.7 The Punchline: pair_standard_borel
 
@@ -1762,7 +1758,7 @@ quasi_borel.v
 
 **Setoid first, quotient second.** The monad laws are proved up to `qbs_prob_equiv` on `qbs_prob X`, and the quotient `qbs_quot X` (`qbs_quotient.v`) restates them as equalities. Congruence of bind and map for equivalence is proved unconditionally.
 
-**Product measure via the retraction R x R -> R.** `qbs_pair_mu` pushes the product measure `mu_p \x mu_q` through `encode_RR_mR` from `standard_borel.v`. Integrals against the resulting product reduce to integrals against `mu_p \x mu_q` (`qbs_prob_pair_integral`), where Fubini applies. The same retraction decodes the selector in the glue axiom of `P(X)` and the product-closure of standard Borel spaces.
+**Product measure via the retraction R x R -> R.** `qbs_pair_mu_build` pushes the product measure `mu_p \x mu_q` through `encode_RR_mR` from `standard_borel.v`. Integrals against the resulting product reduce to integrals against `mu_p \x mu_q` (`qbs_prob_pair_integral`), where Fubini applies. The same retraction decodes the selector in the glue axiom of `P(X)` and the product-closure of standard Borel spaces.
 
 **Universe management.** The `\o` composition operator inside `[set ...]` comprehensions was replaced with explicit lambdas in a few places to avoid universe inconsistencies between `algebra_tactics.ring` and the QBS type hierarchy.
 
@@ -1781,7 +1777,7 @@ quasi_borel.v
 | Standard Borel R≅R×R | Not formalized | `pair_standard_borel` (retraction, via atan + digit interleaving) |
 | Bayesian regression | Function-space prior | Function-space prior `prior : monadP (expQ RQ RQ)`, closed-form posterior |
 | Program correctness | `program_result` (Inl) | `program_posterior` (program = `Some q`, `q` equivalent to the posterior) |
-| Evidence | Explicit closed form C | `wprior_evidence` (evidence = `C`) |
+| Evidence | Explicit closed form `evidence_const` | `wprior_evidence` |
 | Monad strength, join | Not formalized | `qbs_strength*` (snd, assoc, return, join), `qbs_join*` lemmas |
 | Internal bind (HKSY Thm. 21) | Not formalized | `qbs_bind_internal` |
 | Commutativity (HKSY Prop. 22(2)) | Not formalized | `monadP_pair_comm`, `qbs_bind_comm` |
@@ -1792,31 +1788,31 @@ quasi_borel.v
 | Integral arithmetic | Not formalized | `qbs_integrable`, `qbs_integrableP`, `qbs_integral_le`, `qbs_integral_bind` (`qbs_monad_integral.v`) |
 | Probability ineq. | Not formalized | `qbs_markov` + `qbs_chebyshev` |
 | Variance | Not formalized | `qbs_varianceE` + `qbs_varianceZ`, `qbs_variance_affine`, `qbs_variance_equiv` |
-| E[distributions] | Not formalized | `qbs_expect_normal` / `bernoulli` / `uniform`, `qbs_expect_interval_uniform` (Uniform(a,b)), `qbs_bernoulli_law` |
+| E[distributions] | Not formalized | `qbs_expect_normal` (from `integral_normal_mean`) / `bernoulli` / `uniform`, `qbs_expect_interval_uniform` (Uniform(a,b)), `qbs_bernoulli_event` |
 | Standard Borel inst. | Not formalized | R, nat, bool, prod, ereal |
-| Lines | ~5000 | 6,941 |
+| Lines | ~5000 | 6,460 |
 
 ### 4.4 Statistics
 
 | File | Lines | Proofs |
 |------|------:|-------:|
-| `quasi_borel.v` | 948 | 61 |
-| `measure_qbs_adjunction.v` | 380 | 20 |
-| `coproduct_qbs.v` | 835 | 42 |
-| `probability_qbs.v` | 623 | 37 |
-| `qbs_monad.v` | 705 | 58 |
-| `qbs_monad_integral.v` | 204 | 11 |
-| `qbs_normalize.v` | 257 | 17 |
-| `qbs_quotient.v` | 194 | 19 |
-| `pair_qbs_measure.v` | 363 | 15 |
-| `qbs_giry.v` | 132 | 9 |
-| `normal_centred.v` | 280 | 14 |
-| `measure_as_qbs_measure.v` | 307 | 10 |
-| `standard_borel.v` | 1,287 | 57 |
-| `showcase/bayesian_regression.v` | 426 | 22 |
-| **Total** | **6,941** | **392** |
+| `quasi_borel.v` | 912 | 61 |
+| `measure_qbs_adjunction.v` | 342 | 21 |
+| `coproduct_qbs.v` | 725 | 43 |
+| `probability_qbs.v` | 535 | 35 |
+| `qbs_monad.v` | 723 | 61 |
+| `qbs_monad_integral.v` | 202 | 11 |
+| `qbs_normalize.v` | 263 | 19 |
+| `qbs_quotient.v` | 189 | 19 |
+| `pair_qbs_measure.v` | 362 | 15 |
+| `qbs_giry.v` | 133 | 9 |
+| `normal_centred.v` | 289 | 16 |
+| `measure_as_qbs_measure.v` | 265 | 11 |
+| `standard_borel.v` | 1,063 | 61 |
+| `showcase/bayesian_regression.v` | 457 | 29 |
+| **Total** | **6,460** | **411** |
 
-The 392 proofs are 387 `Qed` and 5 `Defined` (the standard Borel witnesses in `measure_qbs_adjunction.v`). **0 Admitted**, 0 custom axioms.
+The 411 proofs are 406 `Qed` and 5 `Defined` (the standard Borel witnesses in `measure_qbs_adjunction.v`). **0 Admitted**, 0 custom axioms.
 
 ### 4.5 Honest Limitations
 
@@ -1853,7 +1849,7 @@ documented in the source files and in this report, not hidden:
 5. **`qbs_normalize` returns `option`** and returns `None` when
    the evidence is zero or infinite. Programs using normalization
    must check or prove the success case; `bayesian_regression.v` does
-   so in `program_posterior` (the evidence is the explicit constant `C`).
+   so in `program_posterior` (the evidence is the explicit constant `evidence_const`).
 
 6. **`qbs_to_giry_inj` and `qbs_to_giry_bind` need a `standard_borel_wit`**
    for the underlying measurable space, as in HKSY Prop. 23.
