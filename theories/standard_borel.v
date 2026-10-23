@@ -109,26 +109,19 @@ Definition psi (y : R) : R := tan (pi * (y - 1 / 2)).
 (** phi lands in (0,1) *)
 Lemma phi_gt0 x : 0 < phi x.
 Proof.
-rewrite /phi.
 have hpi : (0 : R) < pi := pi_gt0.
-have hatangt : - (pi / 2) < atan x := atan_gtNpi2 x.
-have h1 : - (1 / 2) < atan x / (pi : R).
-  rewrite ltr_pdivlMr //.
-  by rewrite mulNr mul1r mulrC.
-rewrite -subr_gt0 subr0; move: h1; rewrite -subr_gt0 opprK; exact.
+have hat := atan_gtNpi2 x.
+have h1 : - (1 / 2) < atan x / pi by rewrite ltr_pdivlMr // mulNr mul1r mulrC.
+rewrite /phi; by rewrite -subr_gt0 opprK in h1.
 Qed.
 
 Lemma phi_lt1 x : phi x < 1.
 Proof.
-rewrite /phi.
 have hpi : (0 : R) < pi := pi_gt0.
-have hatanlt : atan x < pi / 2 := atan_ltpi2 x.
-have h1 : atan x / (pi : R) < 1 / 2.
-  rewrite ltr_pdivrMr //.
-  by rewrite mul1r mulrC.
-have h2 : (1/2 : R) <= 1/2 by done.
-have h3 := ltr_leD h1 h2.
-by rewrite -splitr in h3.
+have hat := atan_ltpi2 x.
+have h1 : atan x / pi < 1 / 2 by rewrite ltr_pdivrMr // mul1r mulrC.
+have h3 := ltr_leD h1 (lexx (1 / 2 : R)).
+rewrite /phi; by rewrite -splitr in h3.
 Qed.
 
 (** psi is the inverse of phi *)
@@ -157,36 +150,55 @@ Qed.
 (** Both are measurable *)
 Lemma measurable_phi : measurable_fun setT phi.
 Proof.
-rewrite /phi.
-apply: measurable_funD.
-  apply: measurable_funM.
-    apply: continuous_measurable_fun; exact: continuous_atan.
-  exact: measurable_cst.
-exact: measurable_cst.
+rewrite /phi; apply: measurable_funD; last exact: measurable_cst.
+apply: measurable_funM; last exact: measurable_cst.
+by apply: continuous_measurable_fun; exact: continuous_atan.
 Qed.
 
-Lemma measurable_psi : measurable_fun (`](0:R), 1[) psi.
+(** psi is measurable on R: it is tan, and tan = sin * cos^-1 where inv is
+    a pointwise limit of continuous functions. *)
+Let inv_cvg_approx (x : R) :
+  (fun n : nat => x / (x * x + n.+1%:R^-1)) @ \oo --> x^-1.
 Proof.
-apply: open_continuous_measurable_fun; first exact: interval_open.
-move=> y hy.
-have hy01 : 0 < y < 1.
-  move: hy; rewrite inE /= => /andP [].
-  by rewrite !bnd_simp => ? ?; apply/andP.
-have /andP [hy0 hy1] := hy01.
-have hcos : cos (pi * (y - 1 / 2)) != 0.
-  rewrite lt0r_neq0 //; apply: cos_gt0_pihalf.
-  apply/andP; split.
-    have -> : - ((pi : R) / 2) = pi * (- (1 / 2)) by rewrite mulrN mul1r.
-    by rewrite ltr_pM2l ?pi_gt0 // ltrDr.
-  have -> : (pi : R) / 2 = pi * (1 / 2) by rewrite mul1r.
-  rewrite ltr_pM2l ?pi_gt0 // ltrBlDr -splitr; exact: hy1.
-rewrite /psi.
-apply: (@continuous_comp _ _ _
-          (fun y0 : R => pi * (y0 - 1/2)) tan).
-  apply: continuousM; first exact: cvg_cst.
-  apply: continuousB; first exact: cvg_id.
+case: (eqVneq x 0) => [->|hx0].
+- rewrite invr0.
+  under eq_cvg do rewrite mul0r.
   exact: cvg_cst.
-exact: continuous_tan.
+- have -> : x^-1 = x / (x * x).
+    by rewrite invfM ?unitfE // [x * (x^-1 * x^-1)]mulrCA
+               mulrV ?unitfE // mulr1.
+  apply: cvgM; first exact: cvg_cst.
+  apply: cvgV.
+    by rewrite mulf_neq0.
+  rewrite -[X in _ --> X]addr0.
+  apply: cvgD; first exact: cvg_cst.
+  exact: @cvg_harmonic.
+Qed.
+
+Lemma measurable_psi_setT : measurable_fun [set: R] psi.
+Proof.
+rewrite /psi.
+apply: measurableT_comp; last first.
+  apply: measurable_funM; first exact: measurable_cst.
+  apply: measurable_funB; first exact: measurable_id.
+  exact: measurable_cst.
+rewrite /tan.
+apply: measurable_funM.
+  apply: continuous_measurable_fun; exact: continuous_sin.
+apply: measurableT_comp; last first.
+  apply: continuous_measurable_fun; exact: continuous_cos.
+apply: (@measurable_fun_cvg _ _ _ _ (fun n (x : R) =>
+  x * (x * x + n.+1%:R^-1)^-1)).
+- move=> m; apply: continuous_measurable_fun => y.
+  rewrite /continuous_at.
+  have hden_neq0 : y * y + m.+1%:R^-1 != 0.
+    rewrite lt0r_neq0 //; apply: ltr_wpDl; first exact: sqr_ge0.
+    by rewrite invr_gt0; exact: ltr0Sn.
+  apply: cvgM; first exact: cvg_id.
+  apply: cvgV => //.
+  apply: cvgD; last exact: cvg_cst.
+  apply: cvgM; exact: cvg_id.
+- move=> x _; exact: inv_cvg_approx.
 Qed.
 
 End phi_psi.
@@ -949,106 +961,28 @@ Qed.
 Lemma measurable_encode_RR : measurable_fun [set: R * R] encode_RR.
 Proof.
 rewrite /encode_RR.
-have hmeas_phi_pair : measurable_fun [set: R * R]
-  (fun xy : R * R => (phi xy.1, phi xy.2)).
+have hphi : measurable_fun [set: R * R]
+    (fun xy : R * R => (phi xy.1, phi xy.2)).
   apply: measurable_fun_pair.
   - apply: measurableT_comp; first exact: measurable_phi.
     exact: measurable_fst.
   - apply: measurableT_comp; first exact: measurable_phi.
     exact: measurable_snd.
-have hmeas_inner : measurable_fun [set: R * R]
-  (fun xy : R * R => pair_to_unit (phi xy.1, phi xy.2)).
+have hin : measurable_fun [set: R * R]
+    (fun xy : R * R => pair_to_unit (phi xy.1, phi xy.2)).
   apply: measurableT_comp; first exact: measurable_pair_to_unit.
-  exact: hmeas_phi_pair.
-apply: (measurable_comp (F := `](0:R), 1[)).
-- exact: measurable_itv.
-- move=> _ [xy _ <-] /=.
-  rewrite in_itv /=; apply/andP; split.
-  + exact: pair_to_unit_phi_gt0.
-  + exact: pair_to_unit_phi_lt1.
-- exact: measurable_psi.
-- exact: hmeas_inner.
+  exact: hphi.
+exact: measurableT_comp (@measurable_psi_setT R) hin.
 Qed.
 
-(** Measurability of psi on setT.
-    psi y = tan(pi * (y - 1/2)) is continuous (hence measurable) on
-    every open interval ]n, n+1[ for integer n, since the only
-    singularities of tan(pi*(y-1/2)) are at y = 0, 1, -1, 2, ...
-    (integer values). Since R is a countable union of such open
-    intervals plus the countable set of integers (singletons are
-    measurable), psi is measurable on setT. *)
-Lemma inv_cvg_approx (x : R) :
-  (fun n : nat => x / (x * x + n.+1%:R^-1)) @ \oo --> x^-1.
-Proof.
-case: (eqVneq x 0) => [->|hx0].
-- rewrite invr0.
-  under eq_cvg do rewrite mul0r.
-  exact: cvg_cst.
-- have -> : x^-1 = x / (x * x).
-    by rewrite invfM ?unitfE // [x * (x^-1 * x^-1)]mulrCA
-               mulrV ?unitfE // mulr1.
-  apply: cvgM; first exact: cvg_cst.
-  apply: cvgV.
-    by rewrite mulf_neq0.
-  rewrite -[X in _ --> X]addr0.
-  apply: cvgD; first exact: cvg_cst.
-  exact: @cvg_harmonic.
-Qed.
-
-Lemma measurable_psi_setT : measurable_fun [set: R] (@psi R).
-Proof.
-rewrite /psi.
-apply: measurableT_comp; last first.
-  apply: measurable_funM; first exact: measurable_cst.
-  apply: measurable_funB; first exact: measurable_id.
-  exact: measurable_cst.
-(* Goal: measurable_fun setT tan *)
-rewrite /tan.
-apply: measurable_funM.
-  apply: continuous_measurable_fun; exact: continuous_sin.
-(* Goal: measurable_fun setT (fun x => (cos x)^-1) *)
-apply: measurableT_comp; last first.
-  apply: continuous_measurable_fun; exact: continuous_cos.
-(* Goal: measurable_fun setT inv *)
-apply: (@measurable_fun_cvg _ _ _ _ (fun n (x : R) =>
-  x * (x * x + n.+1%:R^-1)^-1)).
-- move=> m; apply: continuous_measurable_fun => y.
-  rewrite /continuous_at.
-  have hden_neq0 : y * y + m.+1%:R^-1 != 0.
-    rewrite lt0r_neq0 //; apply: ltr_wpDl; first exact: sqr_ge0.
-    by rewrite invr_gt0; exact: ltr0Sn.
-  apply: cvgM; first exact: cvg_id.
-  apply: cvgV => //.
-  apply: cvgD; last exact: cvg_cst.
-  apply: cvgM; exact: cvg_id.
-- move=> x _; exact: inv_cvg_approx.
-Qed.
-
-(** Measurability of decode_RR.
-    This follows from measurability of psi on setT (measurable_psi_setT),
-    measurable_unit_to_pair_fst/snd, and measurable_phi, by composition.
-    The proof is deferred pending the proof of measurable_psi_setT. *)
+(** Measurability of decode_RR, by composition. *)
 Lemma measurable_decode_RR : measurable_fun [set: R] decode_RR.
 Proof.
-rewrite /decode_RR.
-apply: measurable_fun_pair.
+rewrite /decode_RR; apply: measurable_fun_pair.
 - apply: measurableT_comp; first exact: measurable_psi_setT.
-  rewrite (_ : (fun x => (unit_to_pair (phi x)).1) =
-    (fun x => (unit_to_pair x).1) \o (@phi R)); first by [].
-  apply: measurableT_comp.
-    exact: measurable_unit_to_pair_fst.
-  exact: measurable_phi.
-- rewrite (_ : (fun x => psi (unit_to_pair (phi x)).2) =
-    (@psi R) \o
-    ((fun x => (unit_to_pair x).2) \o (@phi R))); first by [].
-  apply: measurableT_comp; first exact: measurable_psi_setT.
-  rewrite (_ : (fun x => (unit_to_pair x).2) \o (@phi R) =
-    (fun x => (unit_to_pair (@phi R x)).2)); first by [].
-  rewrite (_ : (fun x => (unit_to_pair (phi x)).2) =
-    (fun x => (unit_to_pair x).2) \o (@phi R)); first by [].
-  apply: measurableT_comp.
-    exact: measurable_unit_to_pair_snd.
-  exact: measurable_phi.
+  exact: measurableT_comp measurable_unit_to_pair_fst (@measurable_phi R).
+- apply: measurableT_comp; first exact: measurable_psi_setT.
+  exact: measurableT_comp measurable_unit_to_pair_snd (@measurable_phi R).
 Qed.
 
 (* The main application: product of standard Borel spaces is standard Borel *)
