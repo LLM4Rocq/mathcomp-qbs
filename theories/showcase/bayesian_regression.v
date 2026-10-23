@@ -249,7 +249,8 @@ Proof.
 rewrite /obs2 /obs_fun /d /K !exprS expr0 mulr1.
 have ub (x m : R) : (normal_pdf m 2^-1 x <= normal_peak 2^-1)%R.
   exact: normal_pdf_ub half_neq0.
-have g0 (x m : R) : (0 <= normal_pdf m 2^-1 x)%R by exact: normal_pdf_ge0.
+have g0 (x m : R) : (0 <= normal_pdf m 2^-1 x)%R.
+  exact: normal_pdf_ge0.
 by rewrite -!mulrA; repeat apply: ler_pM;
   rewrite ?mulr_ge0 ?g0 ?ub ?normal_peak_ge0.
 Qed.
@@ -258,7 +259,30 @@ Let obs2Q : qbsHomType W RQ := qbs_comp lin obs.
 
 Local Lemma measurable_obs2 : qbs_measurable W (fun sb => (obs2 sb.1 sb.2)%:E).
 Proof.
-by move=> b hb; apply/measurable_EFinP; have := qbs_hom_proof (s := obs2Q) _ hb.
+move=> b hb; apply/measurable_EFinP.
+exact: (qbs_hom_proof (s := obs2Q) _ hb).
+Qed.
+
+Local Lemma qbs_Mx_pair_cst (s : R) : qbs_Mx (s := W) (fun b : mR => (s, b)).
+Proof. by split; [exact: measurable_cst|exact: measurable_id]. Qed.
+
+Local Lemma integral_normal_prob_cst1 (m s : R) :
+  \int[normal_prob m s]_x (fun=> 1 : \bar R) x = 1.
+Proof. by rewrite integral_cst //= probability_setT mule1. Qed.
+
+Local Lemma ge0_of_le1 (T : Type) (h : T -> \bar R) :
+  (forall x, 0 <= h x <= 1) -> forall x, 0 <= h x.
+Proof. by move=> h01 x; case/andP: (h01 x). Qed.
+
+Local Lemma integral_normal_prob_bnd (m s M : R) (f : mR -> \bar R) :
+  measurable_fun [set: mR] f -> (forall x, 0 <= f x <= M%:E) ->
+  0 <= \int[normal_prob m s]_x f x <= M%:E.
+Proof.
+move=> mf fM; apply/andP; split.
+  by apply: integral_ge0 => x _; case/andP: (fM x).
+rewrite (@le_trans _ _ (\int[normal_prob m s]_x M%:E))//.
+  by apply: ge0_le_integral => // x _; case/andP: (fM x).
+by rewrite integral_cst //= probability_setT mule1.
 Qed.
 
 Local Lemma integral_normal_prob_bounded (m s : R) (f : mR -> \bar R) (M : R) :
@@ -282,18 +306,19 @@ Proof.
 move=> mh h0.
 pose g := qbs_comp (qbs_pair (qbs_id RQ) (qbs_comp m (qbs_normalQ sigma)))
   (qbs_strengthQ RQ RQ).
-have hg := @qbs_hom_proof _ _ _ g idfun (@measurable_id _ mR setT).
+have hg := qbs_hom_proof (s := g) idfun (@measurable_id _ mR setT).
 by have := qbs_integral_morphism mh h0 hg.
 Qed.
 
 Local Lemma evidence_const_gt0 : (0 < evidence_const)%R.
 Proof.
-rewrite /evidence_const mulr_gt0 ?expR_gt0// divr_gt0 ?mulr_gt0 ?sqrtr_gt0 ?exprn_gt0
-  ?pi_gt0 ?ltr0n.
+rewrite /evidence_const mulr_gt0 ?expR_gt0//.
+rewrite divr_gt0 ?mulr_gt0 ?sqrtr_gt0 ?exprn_gt0 ?pi_gt0 ?ltr0n //.
 all: by rewrite ?mulr_gt0 ?ltr0n ?pi_gt0.
 Qed.
 
-Local Lemma evidence_const_ge0 : (0 <= evidence_const)%R. Proof. exact/ltW/evidence_const_gt0. Qed.
+Local Lemma evidence_const_ge0 : (0 <= evidence_const)%R.
+Proof. exact: ltW evidence_const_gt0. Qed.
 
 Local Lemma factor_inner (h : W -> \bar R) (s : R) :
   qbs_measurable W h -> (forall x, 0 <= h x <= 1) ->
