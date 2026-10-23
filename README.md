@@ -2,14 +2,11 @@
 
 [Blueprint](https://llm4rocq.github.io/mathcomp-qbs/)
 
-This formalization was developed with
-[Claude Opus 4.6](https://claude.ai/claude-code) using
-[Rocq-MCP](https://github.com/LLM4Rocq/rocq-mcp) for interactive
-proof development, with guidance from a human collaborator who
-provided mathematical direction and design decisions. It was then
-ported to MathComp 2.6 / analysis 1.18 and refactored (notably the
-probability monad, now the one of HKSY) with Claude Opus 5.5 using
-[rocq-mcp-evolve](https://github.com/LLM4Rocq/rocq-mcp-evolve).
+This formalization was developed by Claude (Opus 5.5, with Sonnet 5.5
+subagents), using
+[rocq-mcp-evolve](https://github.com/LLM4Rocq/rocq-mcp-evolve) for
+interactive proof development, with guidance from a human collaborator
+who provided the mathematical direction and the design decisions.
 
 A formalization of Quasi-Borel Spaces (QBS) in Rocq using
 [math-comp analysis](https://github.com/math-comp/analysis),
@@ -18,12 +15,12 @@ programming semantics.
 
 ## Overview
 
-**415 proofs, 0 Admitted, 0 custom axioms, 6,491 lines across 15 files.**
+**415 proofs, 0 Admitted, 0 custom axioms, 6,438 lines across 15 files.**
 
 > **Note**: A higher-order PPL with denotational semantics in QBS
-> (`ppl_qbs.v`, `ppl_kernel.v`, `showcase/ppl_examples.v`) is
-> developed on the [`ppl`](../../tree/ppl) branch as future work.
-> See `PLAN.md` for the roadmap.
+> (`ppl_qbs.v`, `ppl_kernel.v`, `showcase/ppl_examples.v`, ...) is
+> developed on the [`ppl`](../../tree/ppl) branch as future work. It
+> targets MathComp 2.5 and has not been ported yet.
 
 Quasi-Borel spaces solve a fundamental problem: the category of
 measurable spaces is not cartesian closed, which prevents giving
@@ -44,24 +41,24 @@ This formalization follows:
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
 | `measurable_aux.v` | 81 | 3 | Auxiliary measurability lemmas: `measurable_invr`, `measurable_fun_nat_discrete`, `measurable_truncn` |
-| `quasi_borel.v` | 913 | 61 | HB structure, morphisms, products, exponentials, cartesian closure, the L functor (`qbs_meas`) and L ⊣ R, lattice of QBS structures, empty QBS |
-| `measure_qbs_adjunction.v` | 331 | 20 | Counit of L ⊣ R, standard Borel spaces, R is full on standard Borel domains, order adjunction |
+| `quasi_borel.v` | 879 | 61 | HB structure, morphisms, products, exponentials, cartesian closure, the L functor (`qbs_meas`) and L ⊣ R, lattice of QBS structures, empty QBS |
+| `measure_qbs_adjunction.v` | 318 | 20 | Counit of L ⊣ R, standard Borel spaces, R is full on standard Borel domains, order adjunction |
 | `coproduct_qbs.v` | 721 | 44 | Binary and countable coproducts (HKSY Prop. 17), dependent products, lists with cons and recursion, concrete morphisms |
-| `standard_borel.v` | 1,033 | 59 | R ≅ (0,1) via atan, digit interleaving, R ≅ R × R |
+| `standard_borel.v` | 1,031 | 59 | R ≅ (0,1) via atan, digit interleaving, R ≅ R × R |
 
 ### Probability
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `probability_qbs.v` | 515 | 35 | Probability triples, equivalence, integration and integrability, law, expectation, variance |
+| `probability_qbs.v` | 511 | 35 | Probability triples, equivalence, integration and integrability, law, expectation, variance |
 | `qbs_monad.v` | 724 | 61 | The HKSY probability monad: return, bind, laws, map, join, strength and its laws, commutativity |
 | `qbs_normalize.v` | 271 | 20 | Normalisation of weighted probabilities (HKSY Sec. VI), as a morphism P(X × R) → P(X) + 1 |
-| `qbs_monad_integral.v` | 202 | 11 | Integrals, integrability and variance through return and bind |
+| `qbs_monad_integral.v` | 203 | 11 | Integrals, integrability and variance through return and bind |
 | `qbs_quotient.v` | 188 | 19 | Quotient of probability triples; monad laws as equalities |
 | `qbs_giry.v` | 133 | 9 | Comparison with the Giry monad |
 | `pair_qbs_measure.v` | 353 | 16 | Concrete product via R ≅ R × R, Fubini, independence, variance of independent sums |
 | `normal_centred.v` | 300 | 16 | Centred first moment and mean of the normal law (`integral_normal_mean`), change of variables for `normal_prob` |
-| `measure_as_qbs_measure.v` | 270 | 12 | Normal, Bernoulli and uniform (on any [a, b]) distributions, their expectations, Bernoulli event probabilities |
+| `measure_as_qbs_measure.v` | 269 | 12 | Normal, Bernoulli and uniform (on any [a, b]) distributions, their expectations, Bernoulli event probabilities |
 
 ### Showcase
 
@@ -133,20 +130,23 @@ This formalization follows:
 
 ## Requirements
 
-- Rocq 9.2 or 9.3 (tested with 9.2.0)
-- Math-comp 2.6.x
-- Math-comp analysis 1.18.x
+- Rocq 9.2 or 9.3 (tested with 9.2.0; 9.2 is needed for `Abbreviation`)
+- MathComp 2.6.x
+- MathComp analysis 1.18.x
 - Hierarchy Builder 1.10.x
-- Math-comp algebra-tactics (for `ring`/`field`). No release supports
-  Math-comp 2.6 yet: install the `master` branch with its
-  `coq-mathcomp-ssreflect` upper bound relaxed.
+- MathComp algebra-tactics (for `ring`/`field`). No release supports
+  MathComp 2.6 yet: use its `master` branch, ignoring its
+  `coq-mathcomp-ssreflect` upper bound.
 
 ### Installation
 
 ```bash
 opam repo add rocq-released https://rocq-prover.org/opam/released
 opam install rocq-mathcomp-analysis.1.18.0
-opam pin add coq-mathcomp-algebra-tactics <path-to-patched-algebra-tactics>
+opam pin add -n -y -k git coq-mathcomp-algebra-tactics \
+  "https://github.com/math-comp/algebra-tactics.git#master"
+OPAMIGNORECONSTRAINTS=coq-mathcomp-ssreflect \
+  opam install coq-mathcomp-algebra-tactics
 ```
 
 ## Building
@@ -155,6 +155,10 @@ opam pin add coq-mathcomp-algebra-tactics <path-to-patched-algebra-tactics>
 rocq makefile -f _CoqProject -o Makefile
 make -j4
 ```
+
+`REPORT.md` describes the formalization in detail, and the
+[blueprint](https://llm4rocq.github.io/mathcomp-qbs/) maps the
+mathematical statements to the Rocq lemmas.
 
 ## References
 
