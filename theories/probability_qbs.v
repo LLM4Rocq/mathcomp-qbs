@@ -400,11 +400,13 @@ Qed.
 (** Multiplication by a bounded measurable factor preserves integrability. *)
 Lemma qbs_integrableMr X (p : qbs_prob X) (k : X -> R)
     (h : X -> \bar R) :
-  measurable_fun setT (k \o qbs_prob_alpha p) ->
+  qbs_measurable X (fun x => (k x)%:E) ->
   (exists M, forall x, `|k x| <= M)%R ->
   qbs_integrable X p h -> qbs_integrable X p (fun x => (k x)%:E * h x).
 Proof.
-move=> mk [M kM] hi; apply: (integrableMr measurableT mk _ hi).
+move=> mk [M kM] hi.
+have /measurable_EFinP mka := mk _ (qbs_prob_alpha_random p).
+apply: (integrableMr measurableT mka _ hi).
 exists M; split; first exact: num_real.
 by move=> y My x _; exact/(le_trans (kM _))/ltW.
 Qed.
@@ -442,8 +444,7 @@ Lemma qbs_integrable_bounded X (p : qbs_prob X) (k : X -> R) :
   qbs_integrable X p (fun x => (k x)%:E).
 Proof.
 move=> mk bd.
-have /measurable_EFinP mka := mk _ (qbs_prob_alpha_random p).
-have := qbs_integrableMr (h := fun=> 1%:E) mka bd (qbs_integrable_cst p 1%R).
+have := qbs_integrableMr (h := fun=> 1%:E) mk bd (qbs_integrable_cst p 1%R).
 by apply: eq_integrable => // r _ /=; rewrite mule1.
 Qed.
 
@@ -544,7 +545,7 @@ Definition qbs_rv X (p : qbs_prob X)
 (** Markov inequality lifted to QBS probabilities. *)
 Lemma qbs_markov X (p : qbs_prob X)
     (h : X -> R) (f : R -> R) (eps : R)
-    (hm : measurable_fun setT (h \o qbs_prob_alpha p))
+    (hm : qbs_measurable X (fun x => (h x)%:E))
     (heps : (0 < eps)%R)
     (hmf : measurable_fun [set: R] f)
     (hf0 : forall r, (0 <= r)%R -> (0 <= f r)%R)
@@ -552,7 +553,8 @@ Lemma qbs_markov X (p : qbs_prob X)
   (f eps)%:E * qbs_prob_event X p [set x | (eps <= `|h x|)%R] <=
   qbs_integral X p (fun x => (f `|h x|)%:E).
 Proof.
-pose rv : {RV (qbs_prob_mu p) >-> R} := qbs_rv hm.
+have /measurable_EFinP mha := hm _ (qbs_prob_alpha_random p).
+pose rv : {RV (qbs_prob_mu p) >-> R} := qbs_rv mha.
 have := @markov _ _ R _ rv f eps heps hmf hf0 hfnd.
 rewrite unlock /qbs_prob_event /qbs_integral /=.
 under eq_set => x do rewrite -abse_EFin lee_fin.
@@ -562,12 +564,13 @@ Qed.
 (** Chebyshev inequality lifted to QBS probabilities. *)
 Lemma qbs_chebyshev X (p : qbs_prob X)
     (h : X -> R) (eps : R)
-    (hm : measurable_fun setT (h \o qbs_prob_alpha p))
+    (hm : qbs_measurable X (fun x => (h x)%:E))
     (heps : (0 < eps)%R) :
   qbs_prob_event X p [set x | (eps <= `|h x - fine (qbs_expect X p h)|)%R] <=
   (eps ^- 2)%:E * qbs_variance X p h.
 Proof.
-pose rv : {RV (qbs_prob_mu p) >-> R} := qbs_rv hm.
+have /measurable_EFinP mha := hm _ (qbs_prob_alpha_random p).
+pose rv : {RV (qbs_prob_mu p) >-> R} := qbs_rv mha.
 have hE : qbs_expect X p h = 'E_(qbs_prob_mu p)[rv] by rewrite unlock.
 rewrite hE.
 exact: chebyshev rv eps heps.
