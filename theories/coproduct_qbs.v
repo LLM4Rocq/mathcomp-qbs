@@ -8,14 +8,15 @@ From QBS Require Import quasi_borel.
 (**md**************************************************************************)
 (* # Coproducts for Quasi-Borel Spaces                                        *)
 (*                                                                            *)
-(* Binary coproducts (sum types) and general coproducts (sigma types)         *)
-(* following the Isabelle AFP development by Hirata, Minamide, Sato.          *)
+(* Binary coproducts, countable coproducts (HKSY Prop. 17), dependent        *)
+(* products, and lists as the countable coproduct of finite powers.           *)
 (*                                                                            *)
 (* ```                                                                        *)
 (*   coprodQ X Y == binary coproduct QBS on X + Y                             *)
-(*   gen_coprodQ d I X inh == general coproduct (sigma type) QBS              *)
+(*   sigmaQ X == countable coproduct {n & X n} of X : nat -> qbsType R        *)
+(*   sigma_case f == copairing of a family of morphisms out of the fibres     *)
 (*   piQ I X == dependent product (Pi type) QBS                               *)
-(*   listQ X x0 == list QBS on seq X                                          *)
+(*   listQ X == lists, sigmaQ (fun n => X ^ 'I_n)                              *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -273,132 +274,112 @@ case=> [[a [ha hdef]] | [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
   by case: (i == 0); [exact: hf _ ha | exact: hg _ hb].
 Qed.
 
-(** General coproduct (Sigma type).
-    For a family X : I -> qbsType R, the general coproduct has carrier
-    {i : I & X i} (dependent sum / sigma type).
-    A random element f selects an index via P : mR -> I and then a
-    random element in the corresponding fiber. *)
+(** Countable coproduct (HKSY Prop. 17).
+    For a family X : nat -> qbsType R, a map f : mR -> {n & X n} is a
+    random element iff its index is measurable and, for every index i that
+    occurs, f agrees on the corresponding part with (i, a_i) for a random
+    element a_i of X i. Fibres that do not occur impose nothing, so empty
+    fibres are allowed. *)
 
-Definition gen_coprodQ_random (d : measure_display) (I : measurableType d)
-  (X : I -> qbsType R) :
-  set (mR -> {i : I & X i}) :=
-  [set f | exists (P : mR -> I) (Fi : forall i, mR -> X i),
-    measurable_fun setT P /\
-    (forall i, qbs_Mx (s := X i) (Fi i)) /\
-    (forall r, f r = existT _ (P r) (Fi (P r) r))].
+Definition sigmaQ_random (X : nat -> qbsType R) : set (mR -> {n & X n}) :=
+  [set f | measurable_fun [set: mR] (fun r => projT1 (f r)) /\
+    forall i, (exists r, projT1 (f r) = i) ->
+      exists2 a : mR -> X i, qbs_Mx a &
+        forall r, projT1 (f r) = i -> f r = existT X i (a r)].
 
-Arguments gen_coprodQ_random : clear implicits.
+Arguments sigmaQ_random : clear implicits.
 
-Lemma gen_coprodQ_Mx_comp (d : measure_display) (I : measurableType d)
-  (X : I -> qbsType R) :
-  forall (h : mR -> {i : I & X i}) (f : {mfun mR >-> mR}),
-    gen_coprodQ_random d I X h ->
-    gen_coprodQ_random d I X (h \o f).
+Section sigmaQ_instance.
+Variable X : nat -> qbsType R.
+
+Let sigma_comp f (g : {mfun mR >-> mR}) :
+  sigmaQ_random X f -> sigmaQ_random X (f \o g).
 Proof.
-move=> h f [P [Fi [hP [hFi hdef]]]].
-exists (P \o f), (fun i => Fi i \o f); split; [|split].
-- exact: measurableT_comp hP (measurable_funPT f).
-- move=> i; exact: qbs_Mx_comp (hFi i).
-- move=> r; rewrite /= hdef //.
+move=> [mi hf]; split; first exact: measurableT_comp mi (measurable_funPT g).
+move=> i [r ri]; have [a ha af] := hf i (ex_intro _ (g r) ri).
+by exists (a \o g); [exact: qbs_Mx_comp|move=> t ti; exact: af].
 Qed.
 
-Lemma gen_coprodQ_Mx_const (d : measure_display) (I : measurableType d)
-  (X : I -> qbsType R)
-  (inh : forall i, X i) :
-  forall x : {i : I & X i},
-    gen_coprodQ_random d I X (fun _ => x).
+Let sigma_const (x : {n & X n}) : sigmaQ_random X (fun=> x).
 Proof.
-move=> [i0 v0].
-exists (fun _ => i0).
-(* For Fi, we need forall j, mR -> X j. At j = i0, return v0;
-   at j <> i0, use the inhabitedness witness inh j.
-   We use pselect to decide j = i0 and eq_rect to transport v0. *)
-exists (fun j => match pselect (j = i0) with
-  | left H => fun _ => eq_rect _ (fun k => X k) v0 _ (esym H)
-  | right _ => fun _ => inh j
-  end).
-split; [|split].
-- exact: measurable_cst.
-- move=> j.
-  case: (pselect (j = i0)) => [heq | _].
-  + subst j; exact: qbs_Mx_const.
-  + exact: qbs_Mx_const.
-- move=> r /=.
-  case: pselect => [heq | /(_ erefl)//].
-  by congr (existT _ i0 _); rewrite (Prop_irrelevance heq erefl).
+split; first exact: measurable_cst.
+case: x => j y i [_ /= <-]; exists (fun=> y); first exact: qbs_Mx_const.
+by [].
 Qed.
 
-Lemma gen_coprodQ_Mx_glue (d : measure_display) (I : measurableType d)
-  (X : I -> qbsType R) :
-  forall (Q : {mfun mR >-> nat}) (Fi : nat -> mR -> {i : I & X i}),
-    (forall i, gen_coprodQ_random d I X (Fi i)) ->
-    gen_coprodQ_random d I X (fun r => Fi (Q r) r).
+Let sigma_glue (P : {mfun mR >-> nat}) (F : nat -> mR -> {n & X n}) :
+  (forall n, sigmaQ_random X (F n)) ->
+  sigmaQ_random X (fun r => F (P r) r).
 Proof.
-move=> Q Fi hFi.
-have hQ : measurable_fun setT Q := measurable_funPT Q.
-(* Each Fi n is in gen_coprodQ_random, so extract witnesses uniformly *)
-have hFi' : forall n, exists triple :
-  (mR -> I) * (forall i, mR -> X i) * Prop,
-  measurable_fun setT triple.1.1 /\
-  (forall i, qbs_Mx (s := X i) (triple.1.2 i)) /\
-  (forall r, Fi n r = existT _ (triple.1.1 r) (triple.1.2 (triple.1.1 r) r)).
-  move=> n; case: (hFi n) => [Pn [Gin [hPn [hGin hdef]]]].
-  by exists (Pn, Gin, True).
-have [getTriple hgetTriple] := choice hFi'.
-set Pn := fun n => (getTriple n).1.1.
-set Gin := fun n => (getTriple n).1.2.
-have hPn_meas : forall n, measurable_fun setT (Pn n).
-  move=> n; exact: (hgetTriple n).1.
-have hGin :
-  forall n i, qbs_Mx (s := X i) (Gin n i).
-  move=> n i; exact: (hgetTriple n).2.1 i.
-have hFi_eq : forall n r,
-  Fi n r = existT _ (Pn n r) (Gin n (Pn n r) r).
-  move=> n; exact: (hgetTriple n).2.2.
-(* Construct the result *)
-exists (fun r => Pn (Q r) r),
-  (fun i => fun r => Gin (Q r) i r); split; [|split].
-- exact: (@measurable_glue R _ _ Q (fun n => Pn n) hQ hPn_meas).
-- move=> i.
-  exact: (@qbs_Mx_glueT R (X i) Q (fun n => Gin n i) hQ (fun n => hGin n i)).
-- move=> r; rewrite hFi_eq //.
+move=> hF; split.
+  apply: (measurable_glue (Fi := fun n r => projT1 (F n r))).
+    exact: measurable_funPT.
+  by move=> n; have [] := hF n.
+move=> i [r0 ri0].
+have x0 : X i by rewrite -ri0; exact: projT2 (F (P r0) r0).
+have /choice[a ha] : forall n, exists a : mR -> X i, qbs_Mx a /\
+    forall r, projT1 (F n r) = i -> F n r = existT X i (a r).
+  move=> n; have [ex|nex] := pselect (exists r, projT1 (F n r) = i).
+    by have [a ? ?] := (hF n).2 i ex; exists a.
+  exists (fun=> x0); split; first exact: qbs_Mx_const.
+  by move=> r ri; exfalso; apply: nex; exists r.
+exists (fun r => a (P r) r).
+  by apply: qbs_Mx_glue => n; exact: (ha n).1.
+by move=> r ri; exact: (ha (P r)).2.
 Qed.
 
-(** General coproduct (sigma type) QBS. *)
-Section gen_coprodQ_instance.
-Variables (d : measure_display) (I : measurableType d)
-  (X : I -> qbsType R) (inh : forall i, X i).
-Let Mx := gen_coprodQ_random d I X.
-Let ax1 := gen_coprodQ_Mx_comp (I:=I) (X:=X).
-Let ax2 := gen_coprodQ_Mx_const (I:=I) inh.
-Let ax3 := gen_coprodQ_Mx_glue (I:=I) (X:=X).
-HB.instance Definition _ := @isQBS.Build R {i : I & X i} Mx ax1 ax2 ax3.
-Definition gen_coprodQ : qbsType R := {i : I & X i}.
-End gen_coprodQ_instance.
+HB.instance Definition _ :=
+  @isQBS.Build R {n & X n} (sigmaQ_random X) sigma_comp sigma_const sigma_glue.
+Definition sigmaQ : qbsType R := {n & X n}.
+End sigmaQ_instance.
 
-Arguments gen_coprodQ : clear implicits.
+Arguments sigmaQ : clear implicits.
 
-(* Injection into general coproduct *)
-Lemma qbs_morphism_gen_inj (d : measure_display) (I : measurableType d)
-  (X : I -> qbsType R)
-  (inh : forall i, X i) (i : I) :
-  qbs_morphism (X := X i) (Y := gen_coprodQ d I X inh) (fun x => existT _ i x).
+Section sigmaQ_universal.
+Variable X : nat -> qbsType R.
+
+(** Injections. *)
+Lemma qbs_morphism_sigma_inj (i : nat) :
+  qbs_morphism (X := X i) (Y := sigmaQ X) (existT X i).
 Proof.
-move=> alpha halpha; rewrite /qbs_Mx /=.
-exists (fun _ => i), (fun j => match pselect (j = i) with
-  | left H => fun r => eq_rect _ (fun k => X k) (alpha r) _ (esym H)
-  | right _ => fun _ => inh j
-  end).
-split; [|split].
-- exact: measurable_cst.
-- move=> j.
-  case: (pselect (j = i)) => [heq | _].
-  + subst j; exact: halpha.
-  + exact: qbs_Mx_const.
-- move=> r /=.
-  case: pselect => [heq | /(_ erefl)//].
-  by congr (existT _ i _); rewrite (Prop_irrelevance heq erefl).
+move=> a ha; split; first exact: measurable_cst.
+by move=> j [_ /= <-]; exists a.
 Qed.
+
+(** Copairing: a family of morphisms out of the fibres induces a morphism
+    out of the coproduct. *)
+Definition sigma_case Z (f : forall i, X i -> Z) (x : sigmaQ X) : Z :=
+  f (projT1 x) (projT2 x).
+
+Lemma qbs_morphism_sigma_case Z (f : forall i, qbsHomType (X i) Z) :
+  qbs_morphism (X := sigmaQ X) (Y := Z) (sigma_case f).
+Proof.
+move=> b [mi hb].
+have z0 : Z := sigma_case f (b 0%R).
+have /choice[a ha] : forall i, exists a : mR -> Z, qbs_Mx a /\
+    forall r, projT1 (b r) = i -> sigma_case f (b r) = a r.
+  move=> i; have [ex|nex] := pselect (exists r, projT1 (b r) = i).
+    have [a ra hab] := hb i ex; exists (f i \o a); split.
+      exact: qbs_hom_proof.
+    by move=> r ri; rewrite /sigma_case (hab r ri).
+  exists (fun=> z0); split; first exact: qbs_Mx_const.
+  by move=> r ri; exfalso; apply: nex; exists r.
+have -> : sigma_case f \o b = fun r => a (projT1 (b r)) r.
+  by apply/funext => r /=; rewrite ((ha (projT1 (b r))).2 r erefl).
+by apply: qbs_Mx_glueT mi _ => n; exact: (ha n).1.
+Qed.
+
+Lemma sigma_caseE Z (f : forall i, X i -> Z) i (x : X i) :
+  sigma_case f (existT X i x) = f i x.
+Proof. by []. Qed.
+
+(** Uniqueness: a map out of the coproduct is determined by its
+    restrictions along the injections. *)
+Lemma sigma_case_uniq Z (h : sigmaQ X -> Z) :
+  h = sigma_case (fun i x => h (existT X i x)).
+Proof. by apply/funext => -[i x]. Qed.
+
+End sigmaQ_universal.
 
 (** Dependent product (Pi type).
     For a family X : I -> qbsType R, the dependent product (Pi type) has
@@ -472,207 +453,13 @@ have -> : (fun r => fi i (alpha r)) = (fi i) \o alpha by [].
 exact: (hfi i) _ halpha.
 Qed.
 
-(** Binary coproduct ~ general coproduct isomorphism.
-    The binary coproduct X + Y is isomorphic to the general coproduct
-    over bool, where true |-> X and false |-> Y. *)
+(** Lists as the countable coproduct of finite powers (HKSY Sec. IV). *)
+Definition listQ (X : qbsType R) : qbsType R :=
+  sigmaQ (fun n => piQ 'I_n (fun=> X)).
 
-Lemma qbs_morphism_coprod_to_gen (X Y : qbsType R)
-  (inhX : X) (inhY : Y) :
-  qbs_morphism (X := coprodQ X Y)
-    (Y := gen_coprodQ default_measure_display bool
-      (fun b => if b then X else Y)
-      (fun b => if b as b0 return (if b0 then X else Y)
-                  then inhX else inhY))
-    (fun s => match s with
-     | inl x => existT _ true x
-     | inr y => existT _ false y
-     end).
-Proof.
-move=> alpha.
-case=> [[a [ha hdef]] | [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
-- (* alpha factors through inl: alpha r = inl (a r) *)
-  exists (fun _ => true), (fun (i : bool) =>
-    if i as i0 return (mR -> (if i0 then X else Y))
-    then a
-    else (fun _ => inhY)).
-  split; [|split].
-  + exact: measurable_cst.
-  + move=> [|] /=; [exact: ha | exact: qbs_Mx_const].
-  + move=> r /=; rewrite hdef //.
-- (* alpha factors through inr: alpha r = inr (b' r) *)
-  exists (fun _ => false), (fun (i : bool) =>
-    if i as i0 return (mR -> (if i0 then X else Y))
-    then (fun _ => inhX)
-    else b').
-  split; [|split].
-  + exact: measurable_cst.
-  + move=> [|] /=; [exact: qbs_Mx_const | exact: hb].
-  + move=> r /=; rewrite hdef //.
-- (* alpha is a measurable gluing *)
-  (* P : mR -> bool with measurable_fun setT P *)
-  (* We need an index function mR -> bool for the gen coproduct *)
-  exists P, (fun (i : bool) =>
-    if i as i0 return (mR -> (if i0 then X else Y))
-    then a
-    else b').
-  split; [|split].
-  + exact: hP.
-  + move=> [|] /=; [exact: ha | exact: hb].
-  + move=> r /=; rewrite hdef; by case: (P r).
-Qed.
-
-Lemma qbs_morphism_gen_to_coprod (X Y : qbsType R)
-  (inhX : X) (inhY : Y) :
-  qbs_morphism (X := gen_coprodQ default_measure_display bool
-      (fun b => if b then X else Y)
-      (fun b => if b as b0 return (if b0 then X else Y)
-                  then inhX else inhY))
-    (Y := coprodQ X Y)
-    (fun s => match projT1 s as b return
-      ((if b then X else Y) -> X + Y)
-      with true => inl | false => inr end (projT2 s)).
-Proof.
-move=> alpha [P [Fi [hP [hFi hdef]]]].
-(* P : mR -> bool, Fi : forall i : bool, mR -> (if i then X else Y) *)
-(* After rewriting with hdef, the composition becomes:
-   fun r => if P r then inl (Fi true r) else inr (Fi false r)
-   which is a coprodQ_random element. P is measurable by gen_coprodQ_random. *)
-right; right.
-exists P, (Fi true), (Fi false); split; [|split; [|split]].
-- exact: hP.
-- exact: (hFi true).
-- exact: (hFi false).
-- move=> r; rewrite /= hdef /=; by case: (P r).
-Qed.
-
-(** List type as coproduct of products.
-    Following Isabelle's Product_QuasiBorel.thy, the list type list(X) is
-    a QBS defined as a countable coproduct of finite products:
-    list(X) = coprod_{n : nat} X^n.
-    The carrier is seq X. A function alpha : mR -> seq X is a
-    random element iff there exist a measurable length function
-    len : mR -> nat and for each position i a random element Fi i in Mx(X)
-    such that alpha(r) = mkseq (fun i => Fi i r) (len r). *)
-
-Definition listQ_random (X : qbsType R) :
-  set (mR -> seq X) :=
-  [set alpha | exists (len : mR -> nat) (Fi : nat -> mR -> X),
-    measurable_fun setT len /\
-    (forall i, qbs_Mx (Fi i)) /\
-    (forall r, alpha r = mkseq (fun i => Fi i r) (len r))].
-
-Arguments listQ_random : clear implicits.
-
-Lemma listQ_Mx_comp (X : qbsType R) :
-  forall (h : mR -> seq X) (f : {mfun mR >-> mR}),
-    listQ_random X h ->
-    listQ_random X (h \o f).
-Proof.
-move=> h f [len [Fi [hlen [hFi hdef]]]].
-exists (len \o f), (fun i => Fi i \o f); split; [|split].
-- exact: measurableT_comp hlen (measurable_funPT f).
-- move=> i; exact: qbs_Mx_comp (hFi i).
-- move=> r; rewrite /= hdef //.
-Qed.
-
-Lemma listQ_Mx_const (X : qbsType R) (x0 : X) :
-  forall x : seq X,
-    listQ_random X (fun _ => x).
-Proof.
-move=> x.
-exists (fun _ => size x), (fun i _ => nth x0 x i).
-split; [|split].
-- exact: measurable_cst.
-- move=> i; exact: qbs_Mx_const.
-- move=> r; symmetry; exact: mkseq_nth.
-Qed.
-
-Lemma listQ_Mx_glue (X : qbsType R) :
-  forall (Q : {mfun mR >-> nat}) (Gi : nat -> mR -> seq X),
-    (forall i, listQ_random X (Gi i)) ->
-    listQ_random X (fun r => Gi (Q r) r).
-Proof.
-move=> Q Gi hGi.
-have hQ : measurable_fun setT Q := measurable_funPT Q.
-have hGi' : forall n, exists pair : (mR -> nat) * (nat -> mR -> X),
-  measurable_fun setT pair.1 /\
-  (forall i, qbs_Mx (pair.2 i)) /\
-  (forall r, Gi n r = mkseq (fun i => pair.2 i r) (pair.1 r)).
-  move=> n; case: (hGi n) => [len [Fi [hlen [hFi hdef]]]].
-  by exists (len, Fi).
-have [getPair hgetPair] := choice hGi'.
-set lenN := fun n => (getPair n).1.
-set FiN := fun n => (getPair n).2.
-have hlenN : forall n, measurable_fun setT (lenN n).
-  move=> n; exact: (hgetPair n).1.
-have hFiN : forall n i, qbs_Mx (FiN n i).
-  move=> n i; exact: (hgetPair n).2.1 i.
-have hGi_eq : forall n r,
-  Gi n r = mkseq (fun i => FiN n i r) (lenN n r).
-  move=> n; exact: (hgetPair n).2.2.
-exists (fun r => lenN (Q r) r), (fun i r => FiN (Q r) i r); split; [|split].
-- exact: (@measurable_glue _ _ _ Q (fun n => lenN n) hQ hlenN).
-- move=> i.
-  exact: (@qbs_Mx_glueT R X Q (fun n => FiN n i) hQ (fun n => hFiN n i)).
-- move=> r; rewrite hGi_eq //.
-Qed.
-
-(* The list QBS. Requires an inhabitedness witness x0 for the constant
-   axiom (needed to extract nth elements from constant lists). *)
-(** List QBS: countable coproduct of finite products. *)
-Section listQ_instance.
-Variables (X : qbsType R) (x0 : X).
-Let Mx := listQ_random X.
-Let ax1 := listQ_Mx_comp (X:=X).
-Let ax2 := listQ_Mx_const x0.
-Let ax3 := listQ_Mx_glue (X:=X).
-HB.instance Definition _ := @isQBS.Build R (seq X) Mx ax1 ax2 ax3.
-Definition listQ : qbsType R := (seq X).
-End listQ_instance.
-
-(* Length is a QBS morphism from listQ to natQ *)
-Lemma qbs_morphism_length (X : qbsType R) (x0 : X) :
-  qbs_morphism (X := listQ x0) (Y := natQ R) (@size X).
-Proof.
-move=> alpha [len [Fi [hlen [hFi hdef]]]]; rewrite /qbs_Mx /=.
-have heq : size \o alpha = len.
-  apply: funext => r; rewrite /= hdef size_mkseq //.
-by rewrite heq.
-Qed.
-
-(* nth projection: for any index i, the i-th element extraction
-   preserves randomness. When i < len(r), the result is Fi i r;
-   when i >= len(r), the result is the default x0. *)
-Lemma listQ_nth_random (X : qbsType R) (x0 : X) (i : nat) :
-  forall alpha, qbs_Mx (s := listQ x0) alpha ->
-    qbs_Mx (fun r => nth x0 (alpha r) i).
-Proof.
-move=> alpha [len [Fi [hlen [hFi hdef]]]].
-have heq : (fun r => nth x0 (alpha r) i) =
-          (fun r => if i < len r then Fi i r else x0).
-  apply: funext => r; rewrite hdef.
-  case hlt : (i < len r).
-  - by rewrite nth_mkseq.
-  - rewrite nth_default //; rewrite size_mkseq.
-    by rewrite leqNgt hlt.
-rewrite heq.
-set P := fun r : mR => if (i < len r)%N then 0%N else 1%N.
-set Gi := fun (n : nat) => if n == 0 then Fi i else (fun _ => x0).
-have hP : measurable_fun setT P.
-  rewrite /P.
-  apply: (@measurable_fun_ifT _ _ mR nat
-    (fun _ => 0%N) (fun _ => 1%N) (fun r => i < len r)).
-  - exact: (measurable_fun_ltn (@measurable_cst _ _ mR _ setT i) hlen).
-  - exact: measurable_cst.
-  - exact: measurable_cst.
-have heq2 : (fun r => if i < len r then Fi i r else x0) =
-          (fun r => Gi (P r) r).
-  apply: funext => r; rewrite /Gi /P.
-  by case: (i < len r).
-rewrite heq2.
-apply: (@qbs_Mx_glueT R X P Gi hP).
-move=> n; rewrite /Gi.
-by case: (n == 0); [exact: hFi | exact: qbs_Mx_const].
-Qed.
+(** The length of a list is a measurable function of a random list. *)
+Lemma qbs_morphism_size (X : qbsType R) :
+  qbs_morphism (X := listQ X) (Y := natQ R) (fun l => projT1 l).
+Proof. by move=> b [mi _]. Qed.
 
 End coproduct_qbs.
