@@ -3,7 +3,7 @@ From HB Require Import structures.
 From mathcomp Require Import boot order functions algebra reals ereal topology
   normedtype classical_sets numfun measure lebesgue_measure lebesgue_integral
   probability measurable_realfun derive ftc boolp.
-From mathcomp Require giry.
+From mathcomp Require Import giry.
 From mathcomp.algebra_tactics Require Import ring.
 From QBS Require Import measurable_aux quasi_borel probability_qbs qbs_monad
   normal_centred.
@@ -93,10 +93,10 @@ Lemma qbs_uniform_of_morphism :
   qbs_morphism (X := intervalQ) (Y := monadP (realQ R)) qbs_uniform_of.
 Proof.
 move=> c [m1 m2].
-exists idfun, (fun r => uniform_prob (svalP (c r)) : giry.giry mR R).
+exists idfun, (fun r => uniform_prob (svalP (c r)) : giry mR R).
 split=> //; [exact: (@measurable_id _ mR setT) | |
   by move=> r; exact: probability_setT].
-apply: giry.measurable_giry_codensity => // B mB.
+apply: measurable_giry_codensity => // B mB.
   pose f (z : (mR * mR) * mR) : \bar R :=
     (\1_B z.2 * uniform_pdf z.1.1 z.1.2 z.2)%:E.
   have -> : (fun x => uniform_prob (svalP (c x)) B) =
@@ -129,10 +129,10 @@ Lemma qbs_normal_morphism s :
   qbs_morphism (X := realQ R) (Y := monadP (realQ R))
     (fun m => qbs_normal_distribution m s).
 Proof.
-move=> a ha; exists idfun, (fun r => normal_prob (a r) s : giry.giry mR R).
+move=> a ha; exists idfun, (fun r => normal_prob (a r) s : giry mR R).
 split=> //; [exact: (@measurable_id _ mR setT) | |
   by move=> r; exact: probability_setT].
-apply: giry.measurable_giry_codensity => // B mB.
+apply: measurable_giry_codensity => // B mB.
 exact: measurableT_comp (measurable_normal_prob _ mB) ha.
 Qed.
 
