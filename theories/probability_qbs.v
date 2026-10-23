@@ -5,7 +5,7 @@ From mathcomp Require Import boot order algebra reals ereal topology boolp
   lebesgue_integral hoelder probability lebesgue_stieltjes_measure charge
   normedtype.
 From mathcomp.algebra_tactics Require Import ring.
-From QBS Require Import quasi_borel.
+From QBS Require Import measurable_aux quasi_borel.
 
 (**md**************************************************************************)
 (* # Probability Spaces on Quasi-Borel Spaces                                 *)
@@ -56,17 +56,6 @@ Variable R : realType.
 Local Abbreviation mR := (measurableTypeR R).
 
 Implicit Types X : qbsType R.
-
-(** Not (yet) in mathcomp-analysis. *)
-Lemma measurable_invr : measurable_fun [set: mR] (@GRing.inv R).
-Proof.
-rewrite -(setUv [set (0 : mR)%R]); apply/measurable_funU => //.
-  exact: measurableC.
-split; first exact: measurable_fun_set1.
-apply: open_continuous_measurable_fun.
-  by apply/closed_openC/accessible_closed_set1; exact: hausdorff_accessible.
-by move=> x /[!inE] /eqP x0; exact: inv_continuous.
-Qed.
 
 (** Probability triple on a QBS: a random element alpha : R -> X (in Mx) and
     a base probability measure mu on R. *)
@@ -533,4 +522,3 @@ Arguments qbs_expect {R}.
 Arguments qbs_prob_event {R}.
 Arguments qbs_variance {R}.
 Arguments qbs_integrable {R}.
-Arguments measurable_invr {R} _ [Y] _ [i] _.

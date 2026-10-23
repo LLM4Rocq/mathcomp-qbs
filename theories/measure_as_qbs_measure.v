@@ -5,7 +5,8 @@ From mathcomp Require Import boot order functions algebra reals ereal topology
   probability measurable_realfun derive ftc boolp.
 From mathcomp Require giry.
 From mathcomp.algebra_tactics Require Import ring.
-From QBS Require Import quasi_borel probability_qbs qbs_monad normal_centred.
+From QBS Require Import measurable_aux quasi_borel probability_qbs qbs_monad
+  normal_centred.
 
 (**md**************************************************************************)
 (* # Embedding Classical Probability into QBS Probability                     *)

@@ -3,7 +3,8 @@ From HB Require Import structures.
 From mathcomp Require Import boot order functions algebra reals ereal topology
   classical_sets boolp numfun measure measurable_realfun lebesgue_measure
   lebesgue_integral lebesgue_stieltjes_measure probability giry.
-From QBS Require Import quasi_borel coproduct_qbs probability_qbs qbs_monad.
+From QBS Require Import measurable_aux quasi_borel coproduct_qbs probability_qbs
+  qbs_monad.
 
 (**md**************************************************************************)
 (* # Normalisation of weighted QBS probabilities (HKSY Sec. VI)               *)

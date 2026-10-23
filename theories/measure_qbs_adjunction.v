@@ -4,7 +4,7 @@ From mathcomp Require Import boot order algebra reals classical_sets boolp
   functions topology normedtype num_normedtype filter measurable_structure
   measurable_function borel_hierarchy lebesgue_stieltjes_measure
   measurable_realfun ereal.
-From QBS Require Import quasi_borel standard_borel.
+From QBS Require Import measurable_aux quasi_borel standard_borel.
 
 (**md**************************************************************************)
 (* # Adjunction between Measurable Spaces and Quasi-Borel Spaces              *)
@@ -21,7 +21,6 @@ From QBS Require Import quasi_borel standard_borel.
 (*   R_standard_borel, nat_standard_borel, bool_standard_borel,               *)
 (*   prod_standard_borel, ereal_standard_borel == instances of the witness    *)
 (*   erealQ == QBS on extended reals \bar R via R_qbs                         *)
-(*   sigma_of Mx == sets measurable along all maps of Mx (L side)             *)
 (*   Mx_of S == maps measurable for the set system S (R side)                 *)
 (*   sigma_of_Mx_of == Galois connection S <= sigma_of Mx <-> Mx <= Mx_of S   *)
 (* ```                                                                        *)
@@ -295,13 +294,10 @@ exact: {| sb_encode := mfun_Sub hc; sb_decode := mfun_Sub he;
 Defined.
 
 (** Order adjunction on a fixed carrier T (AFP rl_order_adjunction).
-    [sigma_of Mx] is the L side: the sets measurable along every map of Mx
-    ([sigma_Mx X = sigma_of qbs_Mx]); [Mx_of S] is the R side: the maps
+    [sigma_of Mx] (quasi_borel.v) is the L side, and sigma_Mx X is
+    sigma_of qbs_Mx by definition; [Mx_of S] is the R side: the maps
     measurable for the set system S ([qbs_Mx (R_qbs M) = Mx_of measurable]).
     Both are antitone, and they form a (contravariant) Galois connection. *)
-Definition sigma_of (T : Type) (Mx : set (mR -> T)) : set (set T) :=
-  [set U | forall a, Mx a -> measurable (a @^-1` U)].
-
 Definition Mx_of (T : Type) (S : set (set T)) : set (mR -> T) :=
   [set a | forall U, S U -> measurable (a @^-1` U)].
 
@@ -320,10 +316,6 @@ split=> h.
   by move=> a ha U hU; exact: h hU a ha.
 by move=> U hU a ha; exact: h a ha U hU.
 Qed.
-
-Lemma sigma_MxE (X : qbsType R) :
-  sigma_Mx (X := X) = sigma_of (qbs_Mx (s := X)).
-Proof. by []. Qed.
 
 Lemma qbs_Mx_R_qbs d (M : measurableType d) :
   qbs_Mx (s := R_qbs R M) = Mx_of (@measurable _ M).

@@ -1,5 +1,6 @@
 -Q theories QBS
 
+theories/measurable_aux.v
 theories/quasi_borel.v
 theories/measure_qbs_adjunction.v
 theories/coproduct_qbs.v

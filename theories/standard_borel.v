@@ -4,6 +4,7 @@ From mathcomp Require Import boot order algebra reals classical_sets filter
   topology num_topology normedtype sequences measurable_structure
   measurable_function measurable_realfun trigo lebesgue_stieltjes_measure
   measurable_fun_approximation.
+From QBS Require Import measurable_aux.
 From mathcomp.algebra_tactics Require Import ring.
 
 (**md**************************************************************************)
@@ -1023,43 +1024,6 @@ Lemma encode_RR_mRK (xy : mR * mR) :
   decode_RR_mR (encode_RR_mR xy) = xy.
 Proof. exact: encode_RRK. Qed.
 
-(** Helper: measurability for functions into nat (discrete sigma-algebra).
-    Every set in nat is measurable, so measurability of g reduces to
-    measurability of singleton preimages. *)
-Local Lemma measurable_fun_nat_discrete d (T : measurableType d)
-    (g : T -> nat) (D : set T) :
-  (forall n : nat, measurable (D `&` g @^-1` [set n])) ->
-  measurable_fun D g.
-Proof.
-move=> hg _ Y _; rewrite /measurable /=.
-have -> : D `&` g @^-1` Y = \bigcup_(n in Y) (D `&` g @^-1` [set n]).
-  apply/seteqP; split=> [r [Dr Ygr]|r [n Yn [Dr /= gr]]].
-    by exists (g r).
-  by split=> //; rewrite /preimage /= gr.
-by apply: bigcup_measurable => n Yn; exact: hg.
-Qed.
-
-(** truncn : R -> nat is measurable.
-    Preimages of singletons are intervals:
-    - trunc^{-1}({0}) = (-inf, 1)
-    - trunc^{-1}({n+1}) = [n+1, n+2) *)
-Lemma measurable_truncn :
-  measurable_fun [set: mR] (truncn : mR -> nat).
-Proof.
-apply: measurable_fun_nat_discrete => n; rewrite setTI.
-have -> : (truncn : mR -> nat) @^-1` [set n] =
-    if n is 0%N then [set` `]-oo, 1%:R[] else [set` `[n%:R, n.+1%:R[].
-  apply/seteqP; split => r /=; rewrite /preimage /=.
-  - case: n => [|n] h /=.
-      by rewrite in_itv /= -real_truncn_le_nat ?num_real // h.
-    have r1 : 1 <= r by rewrite -truncn_gt0 h.
-    by rewrite in_itv /= -h truncn_itv // (le_trans ler01 r1).
-  - case: n => [|n] /=; rewrite in_itv /=.
-      by move=> r1; apply/truncn0Pn; rewrite real_ltNge ?num_real in r1.
-    by move=> hr; apply: truncn_def.
-by case: n => [|n]; exact: measurable_itv.
-Qed.
-
 End standard_borel_mR.
 
 Arguments encode_RR {R}.
@@ -1070,4 +1034,3 @@ Arguments measurable_encode_RR {R} _ [Y] _ [i] _.
 Arguments measurable_decode_RR {R} _ [Y] _ [i] _.
 Arguments measurable_RR_to_R {R} _ [Y] _ [i] _.
 Arguments measurable_R_to_RR {R} _ [Y] _ [i] _.
-Arguments measurable_truncn {R} _ [Y] _ [i] _.

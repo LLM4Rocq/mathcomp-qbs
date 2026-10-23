@@ -4,7 +4,8 @@ From mathcomp Require Import boot algebra reals ereal topology classical_sets
   boolp numfun measure measurable_realfun lebesgue_measure lebesgue_integral
   lebesgue_stieltjes_measure probability.
 From mathcomp Require Import giry kernel lebesgue_integral_fubini.
-From QBS Require Import quasi_borel standard_borel probability_qbs.
+From QBS Require Import measurable_aux quasi_borel standard_borel
+  probability_qbs.
 
 (**md**************************************************************************)
 (* # The probability monad on quasi-Borel spaces                              *)
