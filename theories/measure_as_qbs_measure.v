@@ -1,10 +1,11 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import boot algebra reals ereal topology
+From mathcomp Require Import boot algebra reals ereal topology normedtype
   classical_sets borel_hierarchy numfun measure lebesgue_integral_definition
   lebesgue_stieltjes_measure lebesgue_measure lebesgue_integral probability
   measurable_realfun derive ftc gauss_integral charge boolp.
 From mathcomp Require giry.
+From mathcomp.algebra_tactics Require Import ring.
 From QBS Require Import quasi_borel probability_qbs qbs_monad normal_centred.
 
 (**md**************************************************************************)
@@ -15,10 +16,13 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad normal_centred.
 (*                                                                            *)
 (* ```                                                                        *)
 (*   qbs_normal_distribution mu sigma == Normal(mu, sigma) as QBS probability *)
-(*   qbs_bernoulli p == Bernoulli(p) as QBS probability on boolQ             *)
-(*   qbs_uniform == Uniform[0,1] as QBS probability on realQ                 *)
-(*   qbs_expect_normal == E[Normal(mu,sigma)] = mu                           *)
-(*                        (requires integrability hypotheses)                *)
+(*   qbs_bernoulli p == Bernoulli(p) as QBS probability on boolQ              *)
+(*   qbs_interval_uniform ab == Uniform[a,b] as QBS probability on realQ, for *)
+(*                           ab : a < b                                       *)
+(*   qbs_uniform == Uniform[0,1] = qbs_interval_uniform ltr01                 *)
+(*   qbs_bernoulli_event == the law of qbs_bernoulli is bernoulli_prob p      *)
+(*   qbs_expect_interval_uniform == E[Uniform[a,b]] = (a + b) / 2             *)
+(*   qbs_expect_normal == E[Normal(mu,sigma)] = mu                            *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -60,12 +64,17 @@ Definition qbs_bernoulli
 
 Arguments qbs_bernoulli : clear implicits.
 
-(** Uniform[0,1] distribution as QBS probability. *)
-Definition qbs_uniform : qbs_prob (realQ R) :=
+(** Uniform distribution on [a,b], for a < b, as QBS probability. *)
+Definition qbs_interval_uniform (a b : R) (ab : (a < b)%R) :
+    qbs_prob (realQ R) :=
   @mkQBSProb R (realQ R) idfun
-    (uniform_prob ltr01 : probability mR R)
+    (uniform_prob ab : probability mR R)
     (@measurable_id _ mR setT).
 
+Arguments qbs_interval_uniform {a b}.
+
+(** Uniform[0,1] distribution as QBS probability. *)
+Definition qbs_uniform : qbs_prob (realQ R) := qbs_interval_uniform ltr01.
 
 Lemma qbs_normal_morphism (sigma : R) :
   @qbs_morphism R (realQ R) (monadP (realQ R))
@@ -89,24 +98,20 @@ Definition qbs_normalQ (sigma : R) : qbsHomType (realQ R) (monadP (realQ R)) :=
 Section distribution_expectations.
 Local Open Scope ring_scope.
 
-(** E[Bernoulli(p)] = p. *)
-Lemma qbs_expect_bernoulli (p : R) (hp0 : 0 <= p) (hp1 : p <= 1) :
-  qbs_expect (boolQ R) (qbs_bernoulli p hp0 hp1) (fun b : bool => b%:R) = p%:E.
+(** The mass of [0,1]-uniform below p is p. *)
+Lemma uniform_prob_lt (p : R) : 0 <= p <= 1 ->
+  uniform_prob ltr01 [set r : mR | (r < p)%R] = p%:E.
 Proof.
-rewrite /qbs_expect /qbs_integral /=.
-rewrite integral_uniform//.
-- apply: measurableT_comp => //=; apply: measurableT_comp => //=.
-  exact: measurable_fun_ltr (@measurable_id _ mR setT)
-    (@measurable_cst _ _ mR mR setT p).
-- by move=> x; rewrite lee_fin.
-rewrite subr0 invr1 mul1e.
-rewrite (_ : (fun x : mR => _) =
-  (fun x => (indic [set r : mR | r < p] x)%:E)).
-  by apply: funext => x /=; rewrite indicE mem_setE.
-rewrite integral_indic //=.
+move=> /andP[hp0 hp1].
+have mE : measurable [set r : mR | (r < p)%R].
   have -> : [set r : mR | r < p] = [set` `]-oo, p[%R].
     by apply/seteqP; split => x /=; rewrite in_itv /=.
   exact: measurable_itv.
+rewrite -[X in uniform_prob _ X]setIT -integral_indic//.
+rewrite integral_uniform//.
+- exact/measurable_EFinP/measurable_indic.
+- by move=> x; rewrite lee_fin.
+rewrite subr0 invr1 mul1e integral_indic //=.
 have -> : [set r : mR | r < p] `&` `[0, 1] = [set` `[0%R, p[%R].
   apply/seteqP; split => x /=.
   - rewrite in_itv /= => -[xp]; rewrite in_itv /= => /andP[x0 x1].
@@ -122,33 +127,82 @@ case: (lerP p 0) => [p0|p0].
 - by rewrite ifT // lte_fin.
 Qed.
 
-(** E[Uniform(0,1)] = 1/2. *)
-Lemma qbs_expect_uniform :
-  qbs_expect (realQ R) qbs_uniform (fun x => x) = (2%:R^-1)%:E.
+(** E[Bernoulli(p)] = p. *)
+Lemma qbs_expect_bernoulli (p : R) (hp0 : 0 <= p) (hp1 : p <= 1) :
+  qbs_expect (boolQ R) (qbs_bernoulli p hp0 hp1) (fun b : bool => b%:R) = p%:E.
 Proof.
 rewrite /qbs_expect /qbs_integral /=.
-rewrite integralE /=.
-rewrite (@integral_uniform _ 0 1 ltr01 [eta funepos.body (@EFin R)]);
+have -> : (fun x : mR => ((((x < p)%R : bool)%:R : R))%:E) =
+    (fun x => (\1_[set r : mR | r < p] x)%:E).
+  by apply: funext => x /=; rewrite indicE mem_setE.
+rewrite integral_indic//= ?setIT ?uniform_prob_lt ?hp0//.
+have -> : [set r : mR | r < p] = [set` `]-oo, p[%R].
+  by apply/seteqP; split => x /=; rewrite in_itv /=.
+exact: measurable_itv.
+Qed.
+
+(** The law of qbs_bernoulli is the Bernoulli probability of
+    mathcomp-analysis. *)
+Lemma qbs_bernoulli_event (p : R) (hp0 : 0 <= p) (hp1 : p <= 1)
+    (A : set bool) :
+  qbs_prob_event (boolQ R) (qbs_bernoulli p hp0 hp1) A = bernoulli_prob p A.
+Proof.
+have p01 : 0 <= p <= 1 by apply/andP.
+pose f : {mfun mR >-> bool} := mfun_Sub (mem_set (measurable_fun_ltr
+  (@measurable_id _ mR setT) (@measurable_cst _ _ mR mR setT p))).
+pose P : probability bool R :=
+  distribution (uniform_prob ltr01 : probability mR R) f.
+suff: P =1 bernoulli_prob p by exact.
+apply: eq_bernoulli => //.
+rewrite /P /distribution /= /pushforward.
+have -> : f @^-1` [set true] = [set r : mR | (r < p)%R].
+  by apply/seteqP; split => r /=.
+exact: uniform_prob_lt.
+Qed.
+
+Lemma qbs_bernoulli_law (p : R) (hp0 : 0 <= p) (hp1 : p <= 1)
+    (A : set bool) :
+  qbs_law (qbs_bernoulli p hp0 hp1) A = bernoulli_prob p A.
+Proof. exact: qbs_bernoulli_event. Qed.
+
+(** Integrals against Uniform(a,b) of nonnegative measurable functions. *)
+Lemma ge0_qbs_integral_interval_uniform (a b : R) (ab : a < b)
+    (h : mR -> \bar R) :
+  measurable_fun setT h -> (forall x, 0 <= h x)%E ->
+  qbs_integral (realQ R) (qbs_interval_uniform ab) h =
+  ((b - a)^-1%:E * \int[lebesgue_measure]_(x in `[a, b]) h x)%E.
+Proof. by move=> mh h0; exact: integral_uniform. Qed.
+
+(** E[Uniform(a,b)] = (a+b)/2. *)
+Lemma qbs_expect_interval_uniform (a b : R) (ab : a < b) :
+  qbs_expect (realQ R) (qbs_interval_uniform ab) (fun x => x) =
+  ((a + b) / 2)%:E.
+Proof.
+have iid : lebesgue_measure.-integrable `[a, b] (@EFin R).
+  apply: (@continuous_compact_integrable R idfun); first exact: segment_compact.
+  by apply: continuous_in_subspaceT => x _; exact: cvg_id.
+rewrite /qbs_expect /qbs_integral /= integralE /=.
+rewrite (@integral_uniform _ a b ab [eta funepos.body (@EFin R)]);
   [exact: measurable_funepos|by move=> x; exact: funepos_ge0|].
-rewrite (@integral_uniform _ 0 1 ltr01 [eta funeneg.body (@EFin R)]);
+rewrite (@integral_uniform _ a b ab [eta funeneg.body (@EFin R)]);
   [exact: measurable_funeneg|by move=> x; exact: funeneg_ge0|].
-rewrite subr0 invr1 mul1e mul1e -integralE /=.
-rewrite (@continuous_FTC2 _ idfun (fun x => x ^+ 2 / 2) 0 1 ltr01).
+have mab : measurable `[a, b] by exact: measurable_itv.
+have fB : (\int[lebesgue_measure]_(x in `[a, b]) (@EFin R)^\- x)%E
+    \is a fin_num := integrable_neg_fin_num mab iid.
+rewrite -muleBr; [by []|by rewrite fin_num_adde_defl// fin_numN|].
+rewrite -integralE /=.
+have cF := @continuous_horner R (2^-1 *: 'X^2 : {poly R}).
+have eF : horner (2^-1 *: 'X^2 : {poly R}) = (fun x : R => x ^+ 2 / 2).
+  by apply: funext => x; rewrite hornerZ hornerXn mulrC.
+rewrite eF in cF.
+rewrite (@continuous_FTC2 _ idfun (fun x => x ^+ 2 / 2) a b ab).
 - by apply: (@continuous_subspaceT _ _ _ idfun) => x /=; exact: cvg_id.
 - split.
   + move=> x hx.
     by apply: derivableM;
       [exact: exprn_derivable|exact: derivable_cst].
-  + have := @continuous_horner R (2^-1 *: 'X^2); move/(_ 0) => /=.
-    rewrite /continuous_at /= hornerZ hornerXn expr0n /= mul0r mulr0 => h.
-    suff -> : (fun x : R => x ^+ 2 / 2) = horner (2^-1 *: 'X^2 : {poly R}).
-      by move: h; exact: cvg_within_filter.
-    by apply: funext => x; rewrite hornerZ hornerXn mulrC.
-  + have := @continuous_horner R (2^-1 *: 'X^2); move/(_ 1) => /=.
-    rewrite /continuous_at /= hornerZ hornerXn expr1n mulr1 => h.
-    suff -> : (fun x : R => x ^+ 2 / 2) = horner (2^-1 *: 'X^2 : {poly R}).
-      by rewrite div1r; move: h; exact: cvg_within_filter.
-    by apply: funext => x; rewrite hornerZ hornerXn mulrC.
+  + by move: (cF a); rewrite /continuous_at; exact: cvg_within_filter.
+  + by move: (cF b); rewrite /continuous_at; exact: cvg_within_filter.
 - move=> x hx /=.
   rewrite derive1E deriveM;
     [exact: exprn_derivable|exact: derivable_cst|].
@@ -156,8 +210,16 @@ rewrite (@continuous_FTC2 _ idfun (fun x => x ^+ 2 / 2) 0 1 ltr01).
   rewrite (@derive_val _ _ _ _ _ _ _
     (is_deriveX 2 (is_derive_id x 1))) /=.
   by rewrite expr1 /GRing.scale /= mulr1 mulrA mulVf ?mul1r // pnatr_eq0.
-- by rewrite expr0n /= mul0r oppr0 adde0 expr1n mul1r.
+have ba0 : b - a != 0 by rewrite gt_eqF// subr_gt0.
+rewrite -EFinB -EFinM; congr (_%:E).
+have -> : b ^+ 2 / 2 - a ^+ 2 / 2 = (b - a) * ((a + b) / 2) by ring.
+by rewrite mulKf.
 Qed.
+
+(** E[Uniform(0,1)] = 1/2. *)
+Lemma qbs_expect_uniform :
+  qbs_expect (realQ R) qbs_uniform (fun x => x) = (2%:R^-1)%:E.
+Proof. by rewrite qbs_expect_interval_uniform add0r div1r. Qed.
 
 (** E[Normal(mu,sigma)] = mu. *)
 Lemma qbs_expect_normal (mu sigma : R) : sigma != 0 ->

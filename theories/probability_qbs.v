@@ -3,20 +3,35 @@ From HB Require Import structures.
 From mathcomp Require Import boot algebra reals ereal topology boolp
   classical_sets borel_hierarchy numfun measure lebesgue_measure sequences
   lebesgue_integral hoelder probability lebesgue_stieltjes_measure charge.
+From mathcomp.algebra_tactics Require Import ring.
 From QBS Require Import quasi_borel.
 
 (**md**************************************************************************)
-(* # Probability Spaces on Quasi-Borel Spaces                                *)
+(* # Probability Spaces on Quasi-Borel Spaces                                 *)
 (*                                                                            *)
 (* Following "A Convenient Category for Higher-Order Probability Theory"      *)
-(* Heunen, Kammar, Staton, Yang (LICS 2017), Section 4                       *)
+(* Heunen, Kammar, Staton, Yang (LICS 2017), Section 4                        *)
 (*                                                                            *)
 (* Key constructions:                                                         *)
 (* ```                                                                        *)
-(*   qbs_prob X    == probability triples (alpha, mu) on a qbsType X         *)
+(*   qbs_prob X    == probability triples (alpha, mu) on a qbsType X          *)
 (*   qbs_prob_equiv == equivalence of triples (same pushforward)              *)
 (*   qbs_integral  == integration against a QBS probability                   *)
 (*   qbs_law p     == the law of p, a probability on L X = qbs_meas X         *)
+(*   qbs_integrable X p h == h o alpha is mu-integrable                       *)
+(*   qbs_integrableP      == for sigma_Mx-measurable h: integrable iff the    *)
+(*                           integral of |h| is finite                        *)
+(*   qbs_integrable_abseP, qbs_integrableMr, qbs_integrable_bounded,          *)
+(*   qbs_integrable_sqr, qbs_integrable_sqrB == integrability of |h|, of      *)
+(*                           bounded factors, of bounded functions, of        *)
+(*                           squares                                          *)
+(*   qbs_integral_cst, qbs_integral_le, ge0_qbs_integral_le == integral of a  *)
+(*                           constant and monotonicity of the integral        *)
+(*   qbs_integralE        == the integral is the difference of the integrals  *)
+(*                           of the positive and negative parts               *)
+(*   qbs_integrable_equiv, qbs_variance_equiv == equivalent probabilities     *)
+(*                           agree on integrability and variance              *)
+(*   qbs_variance_affine  == Var(a * h + b) = a^2 * Var(h)                    *)
 (* ```                                                                        *)
 (* The probability monad itself is in qbs_monad.v.                            *)
 (******************************************************************************)
@@ -145,6 +160,21 @@ transitivity (\int[pushforward m2 (k \o a2)]_(y in `[0%E, +oo]%classic) y).
 by rewrite ge0_integral_pushforward ?pre//; exact: emeasurable_itv.
 Qed.
 
+(** Positive and negative parts of a sigma_Mx-measurable function. *)
+Lemma qbs_measurable_funepos X (h : X -> \bar R) :
+  qbs_measurable X h -> qbs_measurable X h^\+.
+Proof.
+move=> mh a ha; move: (mh _ ha) => /measurable_funepos.
+by apply: eq_measurable_fun => r _; rewrite !funeposE.
+Qed.
+
+Lemma qbs_measurable_funeneg X (h : X -> \bar R) :
+  qbs_measurable X h -> qbs_measurable X h^\-.
+Proof.
+move=> mh a ha; move: (mh _ ha) => /measurable_funeneg.
+by apply: eq_measurable_fun => r _; rewrite !funenegE.
+Qed.
+
 (** Integration respects equivalence for sigma_Mx-measurable integrands. *)
 Lemma qbs_integral_equiv (X : qbsType R) (p1 p2 : qbs_prob X)
     (h : X -> \bar R) :
@@ -152,12 +182,8 @@ Lemma qbs_integral_equiv (X : qbsType R) (p1 p2 : qbs_prob X)
   qbs_integral X p1 h = qbs_integral X p2 h.
 Proof.
 move=> mh e; rewrite /qbs_integral integralE [RHS]integralE.
-have mhp : qbs_measurable X h^\+.
-  move=> a ha; move: (mh _ ha) => /measurable_funepos.
-  by apply: eq_measurable_fun => r _; rewrite !funeposE.
-have mhn : qbs_measurable X h^\-.
-  move=> a ha; move: (mh _ ha) => /measurable_funeneg.
-  by apply: eq_measurable_fun => r _; rewrite !funenegE.
+have mhp := qbs_measurable_funepos mh.
+have mhn := qbs_measurable_funeneg mh.
 have ep a r : (fun x0 : mR => h (a x0))^\+ r = h^\+ (a r) by rewrite !funeposE.
 have en a r : (fun x0 : mR => h (a x0))^\- r = h^\- (a r) by rewrite !funenegE.
 under eq_integral do rewrite ep.
@@ -168,6 +194,16 @@ congr (_ - _).
   apply: (ge0_integral_sigma_Mx (k := h^\+)) => //;
     exact: qbs_prob_alpha_random.
 apply: (ge0_integral_sigma_Mx (k := h^\-)) => //; exact: qbs_prob_alpha_random.
+Qed.
+
+(** Splitting the integral into positive and negative parts. *)
+Lemma qbs_integralE X (p : qbs_prob X) (h : X -> \bar R) :
+  qbs_integral X p h = qbs_integral X p h^\+ - qbs_integral X p h^\-.
+Proof.
+rewrite /qbs_integral integralE.
+congr (_ - _).
+- by apply: eq_integral => r _; rewrite /= !funeposE.
+- by apply: eq_integral => r _; rewrite /= !funenegE.
 Qed.
 
 End ge0_integral_sigma_Mx.
@@ -379,6 +415,132 @@ Lemma qbs_integralZl (X : qbsType R) (p : qbs_prob X)
   k%:E * qbs_integral X p f.
 Proof. rewrite /qbs_integrable /qbs_integral => hf; exact: integralZl. Qed.
 
+(** Integrability of constants, and the integral of a constant. *)
+Lemma qbs_integrable_cst (X : qbsType R) (p : qbs_prob X) (c : R) :
+  qbs_integrable X p (fun=> c%:E).
+Proof. exact: finite_measure_integrable_cst. Qed.
+
+Lemma qbs_integral_cst (X : qbsType R) (p : qbs_prob X) (c : \bar R) :
+  qbs_integral X p (fun=> c) = c.
+Proof. by rewrite /qbs_integral integral_cst//= probability_setT mule1. Qed.
+
+(** Integrability only depends on the equivalence class of the probability. *)
+Lemma qbs_integrable_equiv (X : qbsType R) (p1 p2 : qbs_prob X)
+    (h : X -> \bar R) :
+  qbs_measurable X h -> qbs_prob_equiv X p1 p2 ->
+  qbs_integrable X p1 h -> qbs_integrable X p2 h.
+Proof.
+move=> mh e /integrableP[_ fin]; apply/integrableP; split.
+  exact: mh _ (qbs_prob_alpha_random p2).
+have mabs : qbs_measurable X (abse \o h).
+  by move=> a ha; exact: measurableT_comp (mh _ ha).
+move: fin; rewrite -[X in X < _]/(qbs_integral X p1 (abse \o h)).
+by rewrite (qbs_integral_equiv mabs e).
+Qed.
+
+(** A sigma_Mx-measurable function is integrable iff |h| has finite integral. *)
+Lemma qbs_integrableP (X : qbsType R) (p : qbs_prob X) (h : X -> \bar R) :
+  qbs_measurable X h ->
+  qbs_integrable X p h <-> qbs_integral X p (fun x => `|h x|) < +oo.
+Proof.
+move=> mh; split=> [/integrableP[_ //]|fin]; apply/integrableP; split => //.
+exact: mh _ (qbs_prob_alpha_random p).
+Qed.
+
+Lemma qbs_integrable_abse (X : qbsType R) (p : qbs_prob X) (h : X -> \bar R) :
+  qbs_integrable X p h -> qbs_integrable X p (abse \o h).
+Proof. exact: integrable_abse. Qed.
+
+Lemma qbs_integrable_abseP (X : qbsType R) (p : qbs_prob X)
+    (h : X -> \bar R) :
+  qbs_measurable X h ->
+  qbs_integrable X p (abse \o h) <-> qbs_integrable X p h.
+Proof.
+move=> mh; split=> [/integrableP[_ fin]|]; last exact: qbs_integrable_abse.
+apply/integrableP; split; first exact: mh _ (qbs_prob_alpha_random p).
+by move: fin; under eq_integral do rewrite /= abse_id.
+Qed.
+
+(** Multiplication by a bounded measurable factor preserves integrability. *)
+Lemma qbs_integrableMr (X : qbsType R) (p : qbs_prob X) (k : X -> R)
+    (h : X -> \bar R) :
+  measurable_fun setT (k \o qbs_prob_alpha p) ->
+  (exists M, forall x, `|k x| <= M)%R ->
+  qbs_integrable X p h -> qbs_integrable X p (fun x => (k x)%:E * h x).
+Proof.
+move=> mk [M kM] hi; apply: (integrableMr measurableT mk _ hi).
+exists M; split; first exact: num_real.
+by move=> y My x _; exact/(le_trans (kM _))/ltW.
+Qed.
+
+(** The positive part of an integrable function has finite integral, and so
+    has its negative part. *)
+Lemma qbs_integral_funepos_lty (X : qbsType R) (p : qbs_prob X)
+    (h : X -> \bar R) :
+  qbs_integrable X p h -> qbs_integral X p h^\+ < +oo.
+Proof.
+move=> hi; have := integral_funepos_lt_pinfty measurableT hi.
+rewrite /qbs_integral; congr (_ < _) => //.
+by apply: eq_integral => r _; rewrite /= !funeposE.
+Qed.
+
+Lemma qbs_integral_funeneg_fin_num (X : qbsType R) (p : qbs_prob X)
+    (h : X -> \bar R) :
+  qbs_integrable X p h -> qbs_integral X p h^\- \is a fin_num.
+Proof.
+move=> hi; have := integrable_neg_fin_num measurableT hi.
+rewrite /qbs_integral; congr (_ \is a fin_num).
+by apply: eq_integral => r _; rewrite /= !funenegE.
+Qed.
+
+(** Bounded measurable real functions are integrable. *)
+Lemma qbs_integrable_bounded (X : qbsType R) (p : qbs_prob X) (k : X -> R) :
+  qbs_measurable X (fun x => (k x)%:E) -> (exists M, forall x, `|k x| <= M)%R ->
+  qbs_integrable X p (fun x => (k x)%:E).
+Proof.
+move=> mk bd.
+have /measurable_EFinP mka := mk _ (qbs_prob_alpha_random p).
+have := qbs_integrableMr (h := fun=> 1%:E) mka bd (qbs_integrable_cst p 1%R).
+by apply: eq_integrable => // r _ /=; rewrite mule1.
+Qed.
+
+(** Integrability of squares, from square-integrability (membership in L2). *)
+Lemma qbs_integrable_sqr (X : qbsType R) (p : qbs_prob X) (k : X -> R) :
+  k \o qbs_prob_alpha p \in Lfun (qbs_prob_mu p) 2%:E ->
+  qbs_integrable X p (fun x => (k x ^+ 2)%:E).
+Proof. exact: Lfun2_integrable_sqr. Qed.
+
+Lemma qbs_integrable_sqrB (X : qbsType R) (p : qbs_prob X) (k : X -> R)
+    (c : R) :
+  k \o qbs_prob_alpha p \in Lfun (qbs_prob_mu p) 2%:E ->
+  qbs_integrable X p (fun x => ((k x - c) ^+ 2)%:E).
+Proof.
+move=> kL2.
+have k1 := Lfun_subset12 (fin_num_measure (qbs_prob_mu p) _ measurableT) kL2.
+have /Lfun1_integrable ik := k1.
+have isq := Lfun2_integrable_sqr kL2.
+have := integrableD measurableT
+  (integrableB measurableT isq (integrableZl measurableT (2 * c)%R ik))
+  (finite_measure_integrable_cst (qbs_prob_mu p) (c ^+ 2)%R measurableT).
+apply: eq_integrable => // r _ /=.
+rewrite -!EFinD; congr (_%:E); ring.
+Qed.
+
+(** Monotonicity of the integral. *)
+Lemma qbs_integral_le (X : qbsType R) (p : qbs_prob X) (f g : X -> \bar R) :
+  qbs_integrable X p f -> qbs_integrable X p g -> (forall x, f x <= g x) ->
+  qbs_integral X p f <= qbs_integral X p g.
+Proof. by move=> hf hg fg; apply: le_integral => // r _; exact: fg. Qed.
+
+Lemma ge0_qbs_integral_le (X : qbsType R) (p : qbs_prob X) (f g : X -> \bar R) :
+  qbs_measurable X f -> qbs_measurable X g -> (forall x, 0 <= f x) ->
+  (forall x, f x <= g x) -> qbs_integral X p f <= qbs_integral X p g.
+Proof.
+move=> mf mg f0 fg; apply: ge0_le_integral => //.
+- exact: mf _ (qbs_prob_alpha_random p).
+- exact: mg _ (qbs_prob_alpha_random p).
+Qed.
+
 (* 18. Variance formulas *)
 
 Lemma qbs_varianceE (X : qbsType R) (p : qbs_prob X) (h : X -> R) :
@@ -401,6 +563,50 @@ have -> : ((a \o* h)%R \o qbs_prob_alpha p) =
           (a \o* (h \o qbs_prob_alpha p))%R.
   by apply: funext => r.
 exact: varianceZ.
+Qed.
+
+(** The variance as the integral of the squared deviation from the mean. *)
+Lemma qbs_varianceE_integral (X : qbsType R) (p : qbs_prob X) (h : X -> R) :
+  qbs_variance X p h =
+  qbs_integral X p (fun x => ((h x - fine (qbs_expect X p h)) *
+                              (h x - fine (qbs_expect X p h)))%R%:E).
+Proof.
+rewrite /qbs_variance /variance /qbs_expect /qbs_integral !unlock/=.
+by apply: eq_integral.
+Qed.
+
+(** The variance only depends on the equivalence class of the probability. *)
+Lemma qbs_variance_equiv (X : qbsType R) (p1 p2 : qbs_prob X) (h : X -> R) :
+  qbs_measurable X (fun x => (h x)%:E) -> qbs_prob_equiv X p1 p2 ->
+  qbs_variance X p1 h = qbs_variance X p2 h.
+Proof.
+move=> mh e; rewrite !qbs_varianceE_integral.
+have ee : qbs_expect X p1 h = qbs_expect X p2 h := qbs_integral_equiv mh e.
+rewrite ee; apply: qbs_integral_equiv e => a ha.
+have /measurable_EFinP mha := mh _ ha.
+apply/measurable_EFinP/measurable_funM; apply: measurable_funB => //.
+Qed.
+
+(** Shifting by a constant does not change the variance. *)
+Lemma qbs_varianceD_cst_r (X : qbsType R) (p : qbs_prob X) (h : X -> R)
+    (b : R) :
+  h \o qbs_prob_alpha p \in Lfun (qbs_prob_mu p) 2%:E ->
+  qbs_variance X p (fun x => h x + b)%R = qbs_variance X p h.
+Proof. exact: varianceD_cst_r. Qed.
+
+(** Variance of an affine function, Var(a * h + b) = a^2 * Var(h). *)
+Lemma qbs_variance_affine (X : qbsType R) (p : qbs_prob X) (a b : R)
+    (h : X -> R) :
+  h \o qbs_prob_alpha p \in Lfun (qbs_prob_mu p) 2%:E ->
+  qbs_variance X p (fun x => a * h x + b)%R =
+  (a ^+ 2)%:E * qbs_variance X p h.
+Proof.
+move=> hL2.
+have haL2 : (a \o* h)%R \o qbs_prob_alpha p \in Lfun (qbs_prob_mu p) 2%:E.
+  rewrite -[_ \o _]/(a \o* (h \o qbs_prob_alpha p))%R Lfun_scale//.
+  exact: ler1n.
+rewrite -(qbs_varianceZ a hL2) -(@qbs_varianceD_cst_r X p (a \o* h)%R b haL2).
+by congr (qbs_variance X p _); apply: funext => x /=; rewrite mulrC.
 Qed.
 
 (* 19. Markov inequality for QBS *)
