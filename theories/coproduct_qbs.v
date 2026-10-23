@@ -1,4 +1,4 @@
-(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
+(* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
 From mathcomp Require Import boot algebra reals classical_sets boolp
   measurable_structure measurable_function borel_hierarchy
@@ -41,7 +41,6 @@ Import MeasurableR.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-Import boolp.
 
 Local Open Scope classical_set_scope.
 
@@ -51,6 +50,21 @@ Variable R : realType.
 Local Notation mR := (measurableTypeR R).
 
 Implicit Types (X Y : qbsType R).
+
+(** Gluing two random elements along a measurable boolean test. *)
+Lemma qbs_Mx_if (A : qbsType R) (P : mR -> bool) (u v : mR -> A) :
+  measurable_fun setT P -> qbs_Mx u -> qbs_Mx v ->
+  qbs_Mx (fun r => if P r then u r else v r).
+Proof.
+move=> hP hu hv.
+pose Pn (r : mR) : nat := if P r then 0 else 1.
+pose G (i : nat) : mR -> A := if i == 0 then u else v.
+have -> : (fun r => if P r then u r else v r) = fun r => G (Pn r) r.
+  by apply/funext => r; rewrite /G /Pn; case: (P r).
+apply: (@qbs_Mx_glueT R A Pn G).
+  by apply: measurable_fun_ifT => //; exact: measurable_cst.
+by move=> i; rewrite /G; case: ifP.
+Qed.
 
 (** Binary coproduct.
     For QBS X and Y, the coproduct X + Y has carrier (X + Y) (Coq sum).
@@ -99,12 +113,8 @@ Lemma coprodQ_Mx_const (X Y : qbsType R) :
     coprodQ_random X Y (fun _ => x).
 Proof.
 case=> [xl | yr].
-- left; exists (fun _ => xl); split.
-  + exact: qbs_Mx_const.
-  + by [].
-- right; left; exists (fun _ => yr); split.
-  + exact: qbs_Mx_const.
-  + by [].
+- by left; exists (fun _ => xl); split; first exact: qbs_Mx_const.
+- by right; left; exists (fun _ => yr); split; first exact: qbs_Mx_const.
 Qed.
 
 Lemma coprodQ_Mx_glue (X Y : qbsType R) :
@@ -113,108 +123,53 @@ Lemma coprodQ_Mx_glue (X Y : qbsType R) :
     coprodQ_random X Y (fun r => Fi (Q r) r).
 Proof.
 move=> Q Fi hFi.
-have hQ : measurable_fun setT Q := measurable_funPT Q.
-(* We handle the cases based on whether X and Y are inhabited *)
+have hQ := measurable_funPT Q.
 have [Xempty | x0] := pselectT X.
-- (* X is empty: cases 1 and 3 of coprodQ_random are impossible *)
-  (* So all Fi i must factor through inr *)
-  have hFi2 : forall i, exists b : mR -> Y,
-    qbs_Mx b /\ forall r, Fi i r = inr (b r).
-    move=> i; case: (hFi i).
-    + move=> [a [_ _]].
-      by case: (Xempty (a 0%R)).
-    + case=> [[b' [hb hdef]] | [P [a _]]].
-      * by exists b'.
-      * by case: (Xempty (a 0%R)).
-  have [getB hgetB] := choice hFi2.
+- (* X is empty: every Fi i factors through inr *)
+  have /choice[getB hgetB] : forall i, exists b : mR -> Y,
+      qbs_Mx b /\ forall r, Fi i r = inr (b r).
+    move=> i; have [[a _] | [hb | [P [a _]]]] := hFi i.
+    + by case: (Xempty (a 0%R)).
+    + exact: hb.
+    + by case: (Xempty (a 0%R)).
   right; left; exists (fun r => getB (Q r) r); split.
-  + exact: (@qbs_Mx_glueT R Y Q getB hQ
-      (fun i => (hgetB i).1)).
-  + move=> r; exact: (hgetB (Q r)).2.
+  + exact: (@qbs_Mx_glueT R Y Q getB hQ (fun i => (hgetB i).1)).
+  + by move=> r; exact: (hgetB (Q r)).2.
 - have [Yempty | y0] := pselectT Y.
-  + (* Y is empty: all Fi i must factor through inl *)
-    have hFi1 : forall i, exists a : mR -> X,
-      qbs_Mx a /\ forall r, Fi i r = inl (a r).
-      move=> i; case: (hFi i).
-      * move=> [a [ha hdef]]; by exists a.
-      * case=> [[b' [_ _]] | [_ [_ [b' _]]]].
-        -- by case: (Yempty (b' 0%R)).
-        -- by case: (Yempty (b' 0%R)).
-    have [getA hgetA] := choice hFi1.
+  + (* Y is empty: every Fi i factors through inl *)
+    have /choice[getA hgetA] : forall i, exists a : mR -> X,
+        qbs_Mx a /\ forall r, Fi i r = inl (a r).
+      move=> i; have [ha | [[b _] | [P [a [b _]]]]] := hFi i.
+      + exact: ha.
+      + by case: (Yempty (b 0%R)).
+      + by case: (Yempty (b 0%R)).
     left; exists (fun r => getA (Q r) r); split.
-    * exact: (@qbs_Mx_glueT R X Q getA hQ
-        (fun i => (hgetA i).1)).
-    * move=> r; exact: (hgetA (Q r)).2.
-  + (* Both X and Y are inhabited *)
-    (* Normalize each Fi i to case 3 form *)
-    have hFi3 : forall i,
-      exists triple : (mR -> bool) * (mR -> X) * (mR -> Y),
-      measurable_fun setT triple.1.1 /\
-      qbs_Mx triple.1.2 /\
-      qbs_Mx triple.2 /\
-      forall r, Fi i r =
-        if triple.1.1 r then inl (triple.1.2 r)
-        else inr (triple.2 r).
-      move=> i; case: (hFi i).
-      * move=> [a [ha hdef]].
-        (* case 1: pure inl *)
-        exists ((fun _ => true), a, (fun _ => y0)).
-        split; [|split; [|split]] => /=.
-        -- exact: measurable_cst.
-        -- exact: ha.
-        -- exact: qbs_Mx_const.
-        -- by move=> r; rewrite hdef.
-      * case=> [[b' [hb hdef]] |
-          [P [a [b' [hP [ha [hb hdef]]]]]]].
-        (* case 2: pure inr *)
-        -- exists ((fun _ => false), (fun _ => x0), b').
-           split; [|split; [|split]] => /=.
-           ++ exact: measurable_cst.
-           ++ exact: qbs_Mx_const.
-           ++ exact: hb.
-           ++ by move=> r; rewrite hdef.
-        (* case 3: already gluing *)
-        -- exists (P, a, b').
-           split; [|split; [|split]] => //.
-    have [getTriple hgetTriple] := choice hFi3.
-    (* Extract the components *)
-    set Pi := fun i => (getTriple i).1.1.
-    set ai := fun i => (getTriple i).1.2.
-    set bi := fun i => (getTriple i).2.
-    have hPi_meas :
-      forall i, measurable_fun setT (Pi i).
-      move=> i; exact: (hgetTriple i).1.
-    have hai : forall i, qbs_Mx (ai i).
-      move=> i; exact: (hgetTriple i).2.1.
-    have hbi : forall i, qbs_Mx (bi i).
-      move=> i; exact: (hgetTriple i).2.2.1.
-    have hFi_eq : forall i r,
-      Fi i r = if Pi i r then inl (ai i r)
-               else inr (bi i r).
-      move=> i; exact: (hgetTriple i).2.2.2.
-    (* Now construct the result in case 3 *)
+    * exact: (@qbs_Mx_glueT R X Q getA hQ (fun i => (hgetA i).1)).
+    * by move=> r; exact: (hgetA (Q r)).2.
+  + (* both inhabited: normalize each Fi i to the gluing form *)
+    have /choice[t ht] : forall i,
+        exists t : (mR -> bool) * (mR -> X) * (mR -> Y),
+          measurable_fun setT t.1.1 /\ qbs_Mx t.1.2 /\ qbs_Mx t.2 /\
+          forall r, Fi i r = if t.1.1 r then inl (t.1.2 r) else inr (t.2 r).
+      move=> i; have [[a [ha hdef]] | [[b [hb hdef]] | [P [a [b h]]]]] := hFi i.
+      + exists ((fun _ => true), a, (fun _ => y0)) => /=.
+        repeat split; [exact: measurable_cst | exact: ha | exact: qbs_Mx_const |].
+        by move=> r; rewrite hdef.
+      + exists ((fun _ => false), (fun _ => x0), b) => /=.
+        repeat split; [exact: measurable_cst | exact: qbs_Mx_const | exact: hb |].
+        by move=> r; rewrite hdef.
+      + by exists (P, a, b).
     right; right.
-    (* The combined P: P'(r) = Pi(Q(r))(r) *)
-    set P' : mR -> bool := fun r => Pi (Q r) r.
-    (* The combined a: a'(r) = ai(Q(r))(r) *)
-    set a' : mR -> X := fun r => ai (Q r) r.
-    (* The combined b: b'(r) = bi(Q(r))(r) *)
-    set b'' : mR -> Y := fun r => bi (Q r) r.
-    exists P', a', b''; split; [|split; [|split]].
-    * (* P' is measurable *)
-      rewrite /P'.
-      exact: (@measurable_glue R _ _ Q
-        (fun i => Pi i) hQ hPi_meas).
-    * (* a' is in Mx(X) *)
-      rewrite /a'.
-      exact: (@qbs_Mx_glueT R X Q
-        (fun i => ai i) hQ hai).
-    * (* b'' is in Mx(Y) *)
-      rewrite /b''.
-      exact: (@qbs_Mx_glueT R Y Q
-        (fun i => bi i) hQ hbi).
-    * (* extensional equality *)
-      move=> r; rewrite /P' /a' /b'' hFi_eq //.
+    exists (fun r => (t (Q r)).1.1 r), (fun r => (t (Q r)).1.2 r),
+      (fun r => (t (Q r)).2 r).
+    repeat split.
+    * exact: (@measurable_glue R _ _ Q (fun i => (t i).1.1) hQ
+        (fun i => (ht i).1)).
+    * exact: (@qbs_Mx_glueT R X Q (fun i => (t i).1.2) hQ
+        (fun i => (ht i).2.1)).
+    * exact: (@qbs_Mx_glueT R Y Q (fun i => (t i).2) hQ
+        (fun i => (ht i).2.2.1)).
+    * by move=> r; exact: (ht (Q r)).2.2.2.
 Qed.
 
 (** Binary coproduct QBS on (X + Y). *)
@@ -236,14 +191,14 @@ Lemma qbs_morphism_inl (X Y : qbsType R) :
   qbs_morphism (X := X) (Y := coprodQ X Y) (@inl X Y).
 Proof.
 move=> h ha; rewrite /qbs_Mx /=.
-left; exists h; split => //.
+by left; exists h; split.
 Qed.
 
 Lemma qbs_morphism_inr (X Y : qbsType R) :
   qbs_morphism (X := Y) (Y := coprodQ X Y) (@inr X Y).
 Proof.
 move=> h hb; rewrite /qbs_Mx /=.
-right; left; exists h; split => //.
+by right; left; exists h; split.
 Qed.
 
 (** Case analysis morphism.
@@ -269,23 +224,11 @@ case=> [[a [ha hdef]] | [[b' [hb hdef]] | [P [a [b' [hP [ha [hb hdef]]]]]]]].
               g \o b'.
   { apply: funext => r; rewrite /= hdef //. }
   by rewrite heq; exact: hg _ hb.
-- (* gamma is a measurable gluing: use qbs_Mx_glue *)
-  have heq : (fun s => match s with inl x => f x | inr y => g y end) \o gamma =
-              fun r => if P r then f (a r) else g (b' r).
-  { apply: funext => r; rewrite /= hdef; by case: (P r). }
-  rewrite heq.
-  set Pn : mR -> nat := fun r => if P r then 0 else 1.
-  set Gi : nat -> mR -> Z :=
-    fun i => if i == 0 then f \o a else g \o b'.
-  have heq2 : (fun r => if P r then f (a r) else g (b' r)) =
-               (fun r => Gi (Pn r) r).
-  { apply: funext => r; rewrite /Gi /Pn.
-    by case: (P r). }
-  rewrite heq2.
-  apply: (@qbs_Mx_glueT R Z Pn Gi).
-    rewrite /Pn; apply: measurable_fun_ifT => //; exact: measurable_cst.
-  move=> i; rewrite /Gi.
-  by case: (i == 0); [exact: hf _ ha | exact: hg _ hb].
+- (* gamma is a measurable gluing *)
+  have -> : (fun s => match s with inl x => f x | inr y => g y end) \o gamma =
+            fun r => if P r then f (a r) else g (b' r).
+    by apply/funext => r; rewrite /= hdef; case: (P r).
+  exact: qbs_Mx_if hP (hf _ ha) (hg _ hb).
 Qed.
 
 (** Countable coproduct (HKSY Prop. 17).
@@ -508,21 +451,6 @@ Definition qbs_ltr : qbsHomType (prodQ (realQ R) (realQ R)) (boolQ R) :=
 Definition qbs_ltn : qbsHomType (prodQ (natQ R) (natQ R)) (boolQ R) :=
   qbs_hom_of (f := fun p : prodQ (natQ R) (natQ R) => (p.1 < p.2)%N : boolQ R)
     (fun a ha => measurable_fun_ltn ha.1 ha.2).
-
-(** Gluing two random elements along a measurable boolean test. *)
-Lemma qbs_Mx_if (A : qbsType R) (P : mR -> bool) (u v : mR -> A) :
-  measurable_fun setT P -> qbs_Mx u -> qbs_Mx v ->
-  qbs_Mx (fun r => if P r then u r else v r).
-Proof.
-move=> hP hu hv.
-pose Pn (r : mR) : nat := if P r then 0 else 1.
-pose G (i : nat) : mR -> A := if i == 0 then u else v.
-have -> : (fun r => if P r then u r else v r) = fun r => G (Pn r) r.
-  by apply/funext => r; rewrite /G /Pn; case: (P r).
-apply: (@qbs_Mx_glueT R A Pn G).
-  by apply: measurable_fun_ifT => //; exact: measurable_cst.
-by move=> i; rewrite /G; case: ifP.
-Qed.
 
 (** Pointwise application of a random function to a random argument. *)
 Lemma qbs_Mx_app (A B : qbsType R) (h : mR -> expQ A B) (a : mR -> A) :
