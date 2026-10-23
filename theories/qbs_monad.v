@@ -23,7 +23,13 @@ From QBS Require Import quasi_borel standard_borel probability_qbs.
 (*        qbs_bind p f == monadic bind, for f : qbsHomType X (monadP Y)       *)
 (*      monadP_map f p == pushforward of p along f : qbsHomType X Y           *)
 (*        qbs_join pp == monad multiplication monadP (monadP X) -> monadP X   *)
+(*   qbs_strength (w, p) == strength W * monadP X -> monadP (W * X)           *)
+(*         qbs_assoc U W X == associativity (U * W) * X -> U * (W * X)        *)
 (* ```                                                                        *)
+(*                                                                            *)
+(* The strength laws (unit, associativity, return, join) are                  *)
+(* qbs_strength_snd, qbs_strength_assoc, qbs_strength_return and              *)
+(* qbs_strength_join.                                                         *)
 (******************************************************************************)
 
 Import GRing.Theory Num.Def Num.Theory.
@@ -672,6 +678,26 @@ Proof. exact: qbs_prob_eqP. Qed.
 Lemma qbs_strength_snd W X (w : W) (p : monadP X) :
   monadP_map (qbs_snd W X) (qbs_strength (w, p)) = p.
 Proof. by case: p => a mu ha; exact: qbs_prob_eqP. Qed.
+
+Definition qbs_assoc (U W X : qbsType R) :
+    qbsHomType (prodQ (prodQ U W) X) (prodQ U (prodQ W X)) :=
+  qbs_pair (qbs_comp (qbs_fst _ X) (qbs_fst U W))
+    (qbs_pair (qbs_comp (qbs_fst _ X) (qbs_snd U W)) (qbs_snd _ X)).
+
+Lemma qbs_strength_assoc (U W X : qbsType R) (u : U) (w : W) (p : monadP X) :
+  qbs_strength (u, qbs_strength (w, p)) =
+  monadP_map (qbs_assoc U W X) (qbs_strength ((u, w), p)).
+Proof. exact: qbs_prob_eqP. Qed.
+
+Lemma qbs_strength_join W X (w : W) (P : monadP (monadP X)) :
+  qbs_prob_equiv (prodQ W X) (qbs_strength (w, qbs_join P))
+    (qbs_join (monadP_map (qbs_strengthQ W X) (qbs_strength (w, P)))).
+Proof.
+move=> U mU.
+rewrite -[LHS]/(qbs_prob_event _ _ _) -[RHS]/(qbs_prob_event _ _ _).
+rewrite qbs_strength_event /qbs_join !qbs_bind_event//.
+exact: sigma_Mx_section.
+Qed.
 
 End qbs_monad.
 
