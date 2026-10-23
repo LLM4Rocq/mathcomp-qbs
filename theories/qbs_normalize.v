@@ -250,7 +250,7 @@ split => //.
   + by apply: measurable_or; apply: measurable_fun_eqe => //; exact: md.
   + exact: measurableT_comp (measurable_giry_ev mB) mg.
   + apply: emeasurable_funM; first exact: md.
-    apply/measurable_EFinP; apply: measurableT_comp (@measurable_invr R) _.
+    apply/measurable_EFinP; apply: measurableT_comp measurable_invr _.
     exact: measurableT_comp (fine_measurable measurableT) (md _ measurableT).
 - by move=> r; exact: probability_setT.
 Qed.

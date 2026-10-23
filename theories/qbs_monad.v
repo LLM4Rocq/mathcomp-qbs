@@ -143,16 +143,16 @@ Qed.
 Local Lemma measurable_encode r :
   measurable_fun [set: mR] (fun t => encode_RR_mR (r, t)).
 Proof.
-exact: measurableT_comp (@measurable_RR_to_R R) (pair1_measurable _).
+exact: measurableT_comp measurable_RR_to_R (pair1_measurable _).
 Qed.
 
 Local Lemma measurable_decode1 :
-  measurable_fun [set: mR] (fst \o @decode_RR_mR R).
-Proof. exact: measurableT_comp measurable_fst (@measurable_R_to_RR R). Qed.
+  measurable_fun [set: mR] (fst \o decode_RR_mR).
+Proof. exact: measurableT_comp measurable_fst measurable_R_to_RR. Qed.
 
 Local Lemma measurable_decode2 :
-  measurable_fun [set: mR] (snd \o @decode_RR_mR R).
-Proof. exact: measurableT_comp measurable_snd (@measurable_R_to_RR R). Qed.
+  measurable_fun [set: mR] (snd \o decode_RR_mR).
+Proof. exact: measurableT_comp measurable_snd measurable_R_to_RR. Qed.
 
 (** Random elements of a product, read off a single seed through decoding. *)
 Local Lemma qbs_Mx_decode_pair X Y (a : mR -> X) (b : mR -> Y) :
@@ -175,7 +175,7 @@ Let idx (r : mR) : nat := truncn (decode_RR_mR r).1.
 Let snd' (r : mR) : mR := (decode_RR_mR r).2.
 
 Let midx : measurable_fun [set: mR] idx :=
-  measurableT_comp (@measurable_truncn R) measurable_decode1.
+  measurableT_comp measurable_truncn measurable_decode1.
 
 Let msnd : measurable_fun [set: mR] snd' := measurable_decode2.
 
@@ -526,8 +526,8 @@ have be r t : b (e r t) = ((c r).1, a t) by rewrite /b /e encode_RR_mRK.
 exists b, (fun r => giry_map (me r) (g r)); split.
 - exact: qbs_Mx_decode_pair hw ha.
 - apply: measurable_giry_codensity => // B mB.
-  have mC : measurable ((@encode_RR_mR R) @^-1` B).
-    by rewrite -[A in measurable A]setTI; exact: (@measurable_RR_to_R R).
+  have mC : measurable (encode_RR_mR @^-1` B).
+    by rewrite -[A in measurable A]setTI; exact: measurable_RR_to_R.
   have := measurable_giry_xsection mg g1 mC.
   apply: eq_measurable_fun => r _; rewrite /= /pushforward; congr (_ _).
   by apply/seteqP; split => t; rewrite /xsection /= inE.
@@ -615,9 +615,9 @@ Proof.
 move=> mU.
 have hb := qbs_Mx_decode_pair (qbs_prob_alpha_random p)
   (qbs_prob_alpha_random q).
-have := (@measurable_RR_to_R R) measurableT _ (mU _ hb); rewrite setTI.
+have := measurable_RR_to_R measurableT (mU _ hb); rewrite setTI.
 have E : (fun s : mR => (ap (decode_RR_mR s).1, aq (decode_RR_mR s).2) : X * Y)
-    \o (@encode_RR_mR R) = (fun rt : mR * mR => (ap rt.1, aq rt.2) : X * Y).
+    \o encode_RR_mR = (fun rt : mR * mR => (ap rt.1, aq rt.2) : X * Y).
   by apply/funext => rt; rewrite /comp encode_RR_mRK.
 by rewrite -comp_preimage E.
 Qed.

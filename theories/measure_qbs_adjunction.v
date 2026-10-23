@@ -137,7 +137,7 @@ Definition nat_standard_borel : standard_borel_wit nat.
 Proof.
 have hf : (fun n : nat => n%:R : mR) \in mfun.
   by apply: mem_set => _ U _; rewrite setTI.
-have hg : (truncn : mR -> nat) \in mfun := mem_set (@measurable_truncn R).
+have hg : (truncn : mR -> nat) \in mfun := mem_set measurable_truncn.
 exact: {| sb_encode := mfun_Sub hf; sb_decode := mfun_Sub hg;
           sb_encodeK := natrK |}.
 Defined.

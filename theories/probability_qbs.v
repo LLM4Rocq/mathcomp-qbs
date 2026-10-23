@@ -533,3 +533,4 @@ Arguments qbs_expect {R}.
 Arguments qbs_prob_event {R}.
 Arguments qbs_variance {R}.
 Arguments qbs_integrable {R}.
+Arguments measurable_invr {R} _ [Y] _ [i] _.

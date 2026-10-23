@@ -59,7 +59,7 @@ Let mu_p := qbs_prob_mu p.
 Let mu_q := qbs_prob_mu q.
 
 Definition pf_mu (A : set mR) : \bar R :=
-  (mu_p \x mu_q) (@encode_RR_mR R @^-1` A).
+  (mu_p \x mu_q) (encode_RR_mR @^-1` A).
 
 Local Open Scope ereal_scope.
 
@@ -98,7 +98,7 @@ End pair_mu_build.
 Definition qbs_pair_alpha (X Y : qbsType R)
     (p : qbs_prob X) (q : qbs_prob Y) : mR -> X * Y :=
   fun r =>
-    let uv := @decode_RR_mR R r in
+    let uv := decode_RR_mR r in
     (qbs_prob_alpha p uv.1, qbs_prob_alpha q uv.2).
 
 Lemma qbs_pair_alpha_random (X Y : qbsType R)
@@ -107,12 +107,12 @@ Lemma qbs_pair_alpha_random (X Y : qbsType R)
 Proof.
 rewrite /qbs_Mx /=; split.
 - have -> : (fun r => (qbs_pair_alpha p q r).1) =
-    qbs_prob_alpha p \o (fst \o @decode_RR_mR R) by [].
+    qbs_prob_alpha p \o (fst \o decode_RR_mR) by [].
   apply: qbs_Mx_compT; first exact: (qbs_prob_alpha_random p).
   apply: measurableT_comp; first exact: measurable_fst.
   exact: measurable_R_to_RR.
 - have -> : (fun r => (qbs_pair_alpha p q r).2) =
-    qbs_prob_alpha q \o (snd \o @decode_RR_mR R) by [].
+    qbs_prob_alpha q \o (snd \o decode_RR_mR) by [].
   apply: qbs_Mx_compT; first exact: (qbs_prob_alpha_random q).
   apply: measurableT_comp; first exact: measurable_snd.
   exact: measurable_R_to_RR.
@@ -195,15 +195,15 @@ Lemma qbs_prob_pair_integral (X Y : qbsType R) (p : qbs_prob X)
 Proof.
 move=> hint; have /integrableP[mh _] := hint.
 have hg : (fun r => h (qbs_pair_alpha p q r)) =
-    qbs_pair_fun p q h \o @decode_RR_mR R by [].
+    qbs_pair_fun p q h \o decode_RR_mR by [].
 have mg : measurable_fun [set: mR] (fun r => h (qbs_pair_alpha p q r)).
-  by rewrite hg; exact: measurableT_comp mh (@measurable_R_to_RR R).
+  by rewrite hg; exact: measurableT_comp mh measurable_R_to_RR.
 have fg rr :
-    qbs_pair_fun p q h rr = h (qbs_pair_alpha p q (@encode_RR_mR R rr)).
+    qbs_pair_fun p q h rr = h (qbs_pair_alpha p q (encode_RR_mR rr)).
   by rewrite /qbs_pair_alpha encode_RR_mRK.
 rewrite /qbs_integral /=; under [RHS]eq_integral do rewrite fg.
-rewrite -[RHS](@integral_pushforward _ _ _ mR R (@encode_RR_mR R)
-  (@measurable_RR_to_R R) _ setT _ mg _ measurableT) //.
+rewrite -[RHS](@integral_pushforward _ _ _ mR R encode_RR_mR
+  measurable_RR_to_R _ setT _ mg _ measurableT) //.
 rewrite preimage_setT (_ : _ \o _ = qbs_pair_fun p q h)//.
 by apply/funext => rr; rewrite /= -fg.
 Qed.

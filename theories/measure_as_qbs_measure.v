@@ -110,7 +110,7 @@ split => //; first exact: (@measurable_id _ mR setT).
       apply: measurable_and; apply: measurable_fun_ler => //.
       - exact: measurableT_comp measurable_fst measurable_fst.
       - exact: measurableT_comp measurable_snd measurable_fst.
-    apply: measurableT_comp (@measurable_invr R) _.
+    apply: measurableT_comp measurable_invr _.
     by apply: measurable_funB; apply: measurableT_comp.
   have f0 z : (0 <= f z)%E.
     rewrite lee_fin mulr_ge0 ?indicE ?ler0n// /uniform_pdf.

@@ -1061,3 +1061,13 @@ by case: n => [|n]; exact: measurable_itv.
 Qed.
 
 End standard_borel_mR.
+
+Arguments encode_RR {R}.
+Arguments decode_RR {R}.
+Arguments encode_RR_mR {R}.
+Arguments decode_RR_mR {R}.
+Arguments measurable_encode_RR {R} _ [Y] _ [i] _.
+Arguments measurable_decode_RR {R} _ [Y] _ [i] _.
+Arguments measurable_RR_to_R {R} _ [Y] _ [i] _.
+Arguments measurable_R_to_RR {R} _ [Y] _ [i] _.
+Arguments measurable_truncn {R} _ [Y] _ [i] _.
