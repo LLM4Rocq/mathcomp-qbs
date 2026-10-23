@@ -246,26 +246,14 @@ Definition prior : qbs_prob (prodQ (realQ R) (realQ R)) :=
 
 (* The monadic construction of the prior:
    prior_bind = bind(slope_prior, fun s =>
-                  bind(intercept_prior, fun b => return (s, b)))
-   where the inner bind is the strength applied to (s, intercept_prior). *)
-Definition prior_inner :
-    qbsHomType (realQ R) (monadP (prodQ (realQ R) (realQ R))) :=
-  qbs_comp (qbs_pair (qbs_id (realQ R)) (qbs_const (realQ R)
-    (intercept_prior : monadP (realQ R)))) (qbs_strengthQ _ _).
-
+                  bind(intercept_prior, fun b => return (s, b))),
+   i.e. the monadic product of the two priors. *)
 Definition prior_bind : qbs_prob (prodQ (realQ R) (realQ R)) :=
-  qbs_bind slope_prior prior_inner.
+  qbs_pairP (slope_prior : monadP _) (intercept_prior : monadP _).
 
 (** The monadic prior is the product prior. *)
 Lemma prior_bindE : qbs_prob_equiv _ prior_bind prior.
-Proof.
-move=> U mU; rewrite -[LHS]/(qbs_prob_event _ _ _) qbs_bind_event//.
-rewrite /prior /qbs_prob_pair /= /qbs_pair_mu /qbs_pair_mu_build /=.
-rewrite /product_measure1 /=; apply: eq_integral => r _.
-rewrite qbs_strength_event /= /qbs_prob_event /=; congr (_ _).
-rewrite /xsection; apply/seteqP; split => t; rewrite /preimage /= inE /=.
-all: by rewrite /qbs_pair_alpha standard_borel.encode_RR_mRK.
-Qed.
+Proof. exact: qbs_prob_pairE. Qed.
 
 (* 8. Normalizer (norm_qbs) *)
 (* Isabelle's norm_qbs_measure: given a weighted QBS probability, either

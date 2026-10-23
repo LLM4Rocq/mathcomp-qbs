@@ -1,9 +1,9 @@
 (* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
 From mathcomp Require Import boot algebra reals ereal topology classical_sets
-  boolp measure measurable_realfun lebesgue_measure lebesgue_integral
+  boolp numfun measure measurable_realfun lebesgue_measure lebesgue_integral
   lebesgue_stieltjes_measure probability.
-From mathcomp Require Import giry kernel.
+From mathcomp Require Import giry kernel lebesgue_integral_fubini.
 From QBS Require Import quasi_borel standard_borel probability_qbs.
 
 (**md**************************************************************************)
@@ -119,6 +119,15 @@ move=> [a [g [ha mg _ hb]]] mU.
 rewrite (_ : (fun r => _) = (giry_ev ^~ (a @^-1` U)) \o g).
   by apply/funext => r; rewrite /= hb.
 exact: measurableT_comp (measurable_giry_ev (mU _ ha)) mg.
+Qed.
+
+(** Random elements of P(X) are saturated w.r.t. pointwise equivalence. *)
+Lemma monadP_random_equiv X (b1 b2 : mR -> qbs_prob X) :
+  (forall r, qbs_prob_equiv X (b1 r) (b2 r)) ->
+  monadP_random X b1 -> monadP_random X b2.
+Proof.
+move=> e [a [g [ha mg g1 hb]]]; exists a, g; split => // r U mU.
+by rewrite -hb// /qbs_prob_event; apply/esym/e.
 Qed.
 
 Local Lemma monadP_comp X (b : mR -> qbs_prob X) (f : {mfun mR >-> mR}) :
@@ -528,4 +537,132 @@ Lemma qbs_strength_return W X (w : W) (x : X) :
   qbs_strength (w, qbs_return x) = qbs_return (w, x).
 Proof. exact: qbs_prob_eqP. Qed.
 
+(** ** Integration is a morphism (HKSY Sec. V-C) *)
+
+Lemma monadP_random_integral X (b : mR -> qbs_prob X) (h : X -> \bar R) :
+  monadP_random X b -> qbs_measurable X h -> (forall x, 0 <= h x) ->
+  measurable_fun [set: mR] (fun r => qbs_integral X (b r) h).
+Proof.
+move=> [a [g [ha mg _ hb]]] mh h0.
+rewrite (_ : (fun r => _) = (giry_int ^~ (h \o a)) \o g).
+  apply/funext => r /=; rewrite /giry_int /qbs_integral.
+  apply: ge0_integral_sigma_Mx => //; first exact: qbs_prob_alpha_random.
+  by move=> U mU; exact: hb.
+exact: measurableT_comp (measurable_giry_int (mh _ ha) (fun=> h0 _)) mg.
+Qed.
+
+Lemma qbs_integral_morphism X (h : X -> \bar R) :
+  qbs_measurable X h -> (forall x, 0 <= h x) ->
+  qbs_morphism (X := monadP X) (Y := R_qbs R (\bar R))
+    (fun p => qbs_integral X p h).
+Proof. by move=> mh h0 b hb; exact: monadP_random_integral. Qed.
+
+(** ** Internal bind (HKSY Thm. 21): bind is a morphism
+    P(X) * (X => P(Y)) -> P(Y), obtained from the strength and eval. *)
+
+Definition qbs_bind_internal X Y :
+    qbsHomType (prodQ (monadP X) (expQ X (monadP Y))) (monadP Y) :=
+  qbs_bindQ (qbs_comp (qbs_pair (qbs_snd _ _) (qbs_fst _ _))
+    (qbs_strengthQ _ _)) (qbs_eval X (monadP Y)).
+
+Lemma qbs_bind_internalE X Y (p : monadP X) (f : qbsHomType X (monadP Y)) :
+  qbs_prob_equiv Y (qbs_bind_internal X Y (p, f)) (qbs_bind p f).
+Proof.
+move=> U mU.
+rewrite -[LHS]/(qbs_prob_event _ _ _) -[RHS]/(qbs_prob_event _ _ _).
+by rewrite qbs_bindQE !qbs_bind_event.
+Qed.
+
+(** ** Products and commutativity (HKSY Prop. 22) *)
+
+Definition qbs_swap X Y : qbsHomType (prodQ X Y) (prodQ Y X) :=
+  qbs_pair (qbs_snd X Y) (qbs_fst X Y).
+
+(** The monadic product: p >>= (fun x => strength (x, q)). *)
+Definition qbs_pairP X Y (p : monadP X) (q : monadP Y) : monadP (prodQ X Y) :=
+  qbs_bind p (qbs_comp (qbs_pair (qbs_id X) (qbs_const X q)) (qbs_strengthQ X Y)).
+
+Lemma qbs_pairP_event X Y (p : monadP X) (q : monadP Y) (U : set (prodQ X Y)) :
+  sigma_Mx U ->
+  qbs_prob_event _ (qbs_pairP p q) U =
+  \int[qbs_prob_mu p]_r qbs_prob_mu q
+    [set t | U (qbs_prob_alpha p r, qbs_prob_alpha q t)].
+Proof. by move=> mU; rewrite qbs_bind_event. Qed.
+
+Section commutativity.
+Context X Y (p : monadP X) (q : monadP Y).
+
+Let ap := qbs_prob_alpha p.
+Let aq := qbs_prob_alpha q.
+
+(** The set of pairs of seeds landing in U is measurable. *)
+Local Lemma measurable_seeds (U : set (prodQ X Y)) : sigma_Mx U ->
+  measurable [set rt : mR * mR | U (ap rt.1, aq rt.2)].
+Proof.
+move=> mU.
+have hb : qbs_Mx (fun s : mR =>
+    (ap (decode_RR_mR s).1, aq (decode_RR_mR s).2) : prodQ X Y).
+  split.
+  - apply: qbs_Mx_compT (qbs_prob_alpha_random p) _.
+    exact: measurableT_comp measurable_fst (@measurable_R_to_RR R).
+  - apply: qbs_Mx_compT (qbs_prob_alpha_random q) _.
+    exact: measurableT_comp measurable_snd (@measurable_R_to_RR R).
+have := (@measurable_RR_to_R R) measurableT _ (mU _ hb); rewrite setTI.
+have E : (fun s : mR => (ap (decode_RR_mR s).1, aq (decode_RR_mR s).2) : X * Y)
+    \o (@encode_RR_mR R) = (fun rt : mR * mR => (ap rt.1, aq rt.2) : X * Y).
+  by apply/funext => rt; rewrite /comp encode_RR_mRK.
+by rewrite -comp_preimage E.
+Qed.
+
+Lemma qbs_pairP_comm :
+  qbs_prob_equiv (prodQ X Y) (qbs_pairP p q) (monadP_map (qbs_swap Y X) (qbs_pairP q p)).
+Proof.
+move=> U mU.
+rewrite -[LHS]/(qbs_prob_event _ _ _) -[RHS]/(qbs_prob_event _ _ _).
+rewrite monadP_map_event qbs_pairP_event//.
+rewrite (qbs_pairP_event _ _ (sigma_Mx_preimage (qbs_swap Y X) mU)).
+have mA := measurable_seeds mU.
+pose A := [set rt : mR * mR | U (ap rt.1, aq rt.2)].
+pose f (rt : mR * mR) := ((\1_A rt : R)%:E).
+have mf : measurable_fun [set: mR * mR] f.
+  exact/measurable_EFinP/measurable_indic.
+have f0 rt : 0 <= f rt by rewrite lee_fin indicE ler0n.
+transitivity (\int[qbs_prob_mu p]_r \int[qbs_prob_mu q]_t f (r, t)).
+  apply: eq_integral => r _.
+  have mS : measurable [set t | U (ap r, aq t)].
+    have := measurable_xsection r mA; congr measurable.
+    by apply/seteqP; split => t; rewrite /xsection /= inE.
+  by rewrite -[X in qbs_prob_mu q X]setIT -integral_indic.
+rewrite (fubini_tonelli (m1 := qbs_prob_mu p) (m2 := qbs_prob_mu q) f mf f0).
+apply: eq_integral => t _.
+have mS : measurable [set r | (qbs_swap Y X @^-1` U) (aq t, ap r)].
+  have := measurable_ysection t mA; congr measurable.
+  by apply/seteqP; split => r; rewrite /ysection /= inE.
+by rewrite -[X in qbs_prob_mu p X]setIT -integral_indic.
+Qed.
+
+End commutativity.
+
+Lemma qbs_bind_map X Y Z (g : qbsHomType X Y) (p : monadP X)
+    (f : qbsHomType Y (monadP Z)) :
+  qbs_prob_equiv Z (qbs_bind (monadP_map g p) f) (qbs_bind p (qbs_comp g f)).
+Proof.
+move=> U mU.
+rewrite -[LHS]/(qbs_prob_event _ _ _) -[RHS]/(qbs_prob_event _ _ _).
+by rewrite !qbs_bind_event.
+Qed.
+
+(** Commutativity of the probability monad (HKSY Prop. 22(2)). *)
+Lemma qbs_bind_comm X Y Z (p : monadP X) (q : monadP Y)
+    (f : qbsHomType (prodQ X Y) (monadP Z)) :
+  qbs_prob_equiv Z (qbs_bind (qbs_pairP p q) f)
+    (qbs_bind (qbs_pairP q p) (qbs_comp (qbs_swap Y X) f)).
+Proof.
+apply: qbs_prob_equiv_trans (qbs_bind_map _ _ _).
+exact/qbs_bind_equiv_l/qbs_pairP_comm.
+Qed.
+
 End qbs_monad.
+
+Arguments monadP_random {R} X.
+Arguments monadP {R} X.

@@ -127,6 +127,20 @@ Definition qbs_prob_pair (X Y : qbsType R)
 
 Arguments qbs_prob_pair : clear implicits.
 
+(** The encoded product agrees with the monadic product
+    p >>= (fun x => strength (x, q)) of qbs_monad.v. *)
+Lemma qbs_prob_pairE (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y) :
+  qbs_prob_equiv (prodQ X Y) (qbs_pairP (p : monadP X) (q : monadP Y))
+    (qbs_prob_pair X Y p q).
+Proof.
+move=> U mU; rewrite -[LHS]/(qbs_prob_event _ _ _) qbs_pairP_event//.
+rewrite /qbs_prob_pair /= /qbs_pair_mu /qbs_pair_mu_build /=.
+rewrite /product_measure1 /=; apply: eq_integral => r _; congr (_ _).
+rewrite /xsection; apply/seteqP; split => t; rewrite /preimage /= inE /=.
+all: by rewrite /qbs_pair_alpha encode_RR_mRK.
+Qed.
+
+
 (** Pair integration using the product measure on mR * mR.
     Works directly with mu_p \x mu_q on mR * mR for Fubini etc. *)
 
@@ -502,11 +516,9 @@ have hgp_fin := expectation_fin_num (Lfun_subset12 mu_q_fin hg1).
 by rewrite fin_numM.
 Qed.
 
-(** Commutativity of the probability monad (Proposition 22).
-    The two ways of combining P(X) x P(Y) -> P(X x Y) agree:
-    integrating h w.r.t. the product mu_p x mu_q with alphas
-    (alpha_p, alpha_q) equals integrating h(swap) w.r.t. mu_q x mu_p
-    with alphas (alpha_q, alpha_p). Follows from Fubini's theorem. *)
+(** Fubini for the encoded product: integrating h against mu_p x mu_q
+    equals integrating h \o swap against mu_q x mu_p. (Commutativity of
+    the probability monad itself is qbs_pairP_comm in qbs_monad.v.) *)
 
 Lemma qbs_pair_integral_comm (X Y : qbsType R)
   (p : qbs_prob X) (q : qbs_prob Y)

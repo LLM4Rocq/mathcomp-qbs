@@ -23,6 +23,8 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad.
 (* ```                                                                        *)
 (******************************************************************************)
 
+Import MeasurableR.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -32,6 +34,7 @@ Local Open Scope quotient_scope.
 
 Section qbs_quotient.
 Variable R : realType.
+Local Notation mR := (measurableTypeR R).
 Implicit Types (X Y Z : qbsType R).
 
 Section equiv_instances.
@@ -82,6 +85,46 @@ Proof. by apply/qbs_prob_equivP; rewrite reprK. Qed.
 End equiv_instances.
 
 Arguments qbs_quot : clear implicits.
+
+(** ** The quotient is a quasi-Borel space (HKSY Sec. V-D(a)) *)
+
+Section quot_qbs.
+Variable X : qbsType R.
+
+Definition qbs_quot_Mx : set (mR -> qbs_quot X) :=
+  [set b | monadP_random X (fun r => repr (b r))].
+
+Let Mx_comp b (f : {mfun mR >-> mR}) :
+  qbs_quot_Mx b -> qbs_quot_Mx (b \o f).
+Proof. exact: (@qbs_Mx_comp _ (monadP X) _ f). Qed.
+
+Let Mx_const (q : qbs_quot X) : qbs_quot_Mx (fun=> q).
+Proof. exact: (@qbs_Mx_const _ (monadP X) (repr q)). Qed.
+
+Let Mx_glue (P : {mfun mR >-> nat}) (F : nat -> mR -> qbs_quot X) :
+  (forall i, qbs_quot_Mx (F i)) -> qbs_quot_Mx (fun r => F (P r) r).
+Proof.
+by move=> hF; exact: (@qbs_Mx_glue _ (monadP X) P (fun i r => repr (F i r))).
+Qed.
+
+HB.instance Definition _ := @isQBS.Build R (qbs_quot X) qbs_quot_Mx
+  Mx_comp Mx_const Mx_glue.
+
+(** The projection P(X) -> qbs_quot X is a morphism. *)
+Lemma qbs_quot_pi_morphism :
+  qbs_morphism (X := monadP X) (Y := qbs_quot X)
+    (fun p : monadP X => \pi_(qbs_quot X) (p : qbs_prob X)).
+Proof.
+move=> b hb; apply: monadP_random_equiv hb => r.
+exact/qbs_prob_equiv_sym/qbs_prob_equiv_repr.
+Qed.
+
+(** repr : qbs_quot X -> P(X) is a morphism. *)
+Lemma qbs_quot_repr_morphism :
+  qbs_morphism (X := qbs_quot X) (Y := monadP X) (fun q => repr q : monadP X).
+Proof. by []. Qed.
+
+End quot_qbs.
 
 Section lifted_ops.
 Variables (X Y : qbsType R).
