@@ -176,18 +176,6 @@ have [->|p0] := eqVneq p 0; first by rewrite ltxx.
 by rewrite ifT// lte_fin lt0r p0.
 Qed.
 
-(** Functions out of measQ M are qbs_measurable as soon as they are
-    measurable. *)
-Let qbs_measurable_measQ d (M : measurableType d) (h : M -> \bar R) :
-  measurable_fun setT h -> qbs_measurable (@measQ R d M) h.
-Proof. by move=> mh a ha; exact: measurableT_comp mh ha. Qed.
-
-Let sigma_Mx_measQ d (M : measurableType d) (A : set M) :
-  measurable A -> sigma_Mx (X := @measQ R d M) A.
-Proof.
-by move=> mA a ha; have := ha measurableT A mA; rewrite setTI.
-Qed.
-
 Lemma qbs_integral_normal m s (h : R -> \bar R) :
   qbs_measurable (realQ R) h ->
   qbs_integral (realQ R) (qbs_normal_distribution m s) h =
@@ -218,7 +206,7 @@ Lemma qbs_bernoulli_event p (hp0 : 0 <= p) (hp1 : p <= 1)
 Proof.
 have p01 : 0 <= p <= 1 by apply/andP.
 rewrite qbs_prob_event_mk.
-  exact: (@sigma_Mx_measQ _ bool A).
+  exact: (@sigma_Mx_measQ _ _ bool A).
 pose f : {mfun mR >-> bool} := mfun_Sub (mem_set (measurable_ltr p)).
 pose P : probability bool R :=
   distribution (uniform_prob ltr01 : probability mR R) f.

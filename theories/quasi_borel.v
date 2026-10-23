@@ -516,6 +516,14 @@ Qed.
 Lemma sigma_Mx0 (X : qbsType R) : sigma_Mx (X := X) set0.
 Proof. by move=> alpha _; rewrite preimage_set0. Qed.
 
+(** Measurable sets of M are sigma_Mx sets of measQ M. *)
+Lemma sigma_Mx_measQ d (M : measurableType d) (U : set M) :
+  measurable U -> sigma_Mx (X := measQ M) U.
+Proof.
+move=> mU a ha; rewrite -[X in measurable X]setTI.
+exact: ha measurableT U mU.
+Qed.
+
 (** ** The functor L: QBS -> measurable spaces (HKSY Prop. 15) *)
 
 Section qbs_meas.

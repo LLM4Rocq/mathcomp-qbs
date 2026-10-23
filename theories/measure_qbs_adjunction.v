@@ -66,13 +66,6 @@ exact: mU _ (hf _ ha).
 Qed.
 
 (** Counit of L -| R: the identity L (R M) -> M is measurable. *)
-Lemma sigma_Mx_measQ d (M : measurableType d) (U : set M) :
-  measurable U -> sigma_Mx (X := measQ R M) U.
-Proof.
-move=> mU a ha; rewrite -[X in measurable X]setTI.
-exact: ha measurableT U mU.
-Qed.
-
 Lemma adjunction_counit d (M : measurableType d) :
   measurable_fun [set: qbs_meas (measQ R M)] (idfun : _ -> M).
 Proof.
