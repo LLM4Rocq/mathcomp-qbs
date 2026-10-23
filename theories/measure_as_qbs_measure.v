@@ -4,7 +4,8 @@ From mathcomp Require Import boot algebra reals ereal topology
   classical_sets borel_hierarchy numfun measure lebesgue_integral_definition
   lebesgue_stieltjes_measure lebesgue_measure lebesgue_integral probability
   measurable_realfun derive ftc gauss_integral charge boolp.
-From QBS Require Import quasi_borel probability_qbs.
+From mathcomp Require giry.
+From QBS Require Import quasi_borel probability_qbs qbs_monad.
 
 (**md**************************************************************************)
 (* # Embedding Classical Probability into QBS Probability                     *)
@@ -126,15 +127,12 @@ Lemma qbs_normal_morphism (sigma : R) (hsigma : (0 < sigma)%R) :
   @qbs_morphism R (realQ R) (monadP (realQ R))
     (fun mu => qbs_normal_distribution mu sigma hsigma).
 Proof.
-move=> alpha halpha; rewrite /qbs_Mx /= => r.
-exact: @measurable_id _ mR setT.
-Qed.
-
-Lemma qbs_uniform_random :
-  qbs_Mx (fun _ : mR => qbs_uniform).
-Proof.
-rewrite /qbs_Mx /= => r.
-exact: @measurable_id _ mR setT.
+move=> a ha; exists idfun, (fun r => normal_prob (a r) sigma : giry.giry mR R).
+split => //.
+- exact: (@measurable_id _ mR setT).
+- apply: giry.measurable_giry_codensity => // B mB.
+  exact: measurableT_comp (measurable_normal_prob _ mB) ha.
+- by move=> r; exact: probability_setT.
 Qed.
 
 (** Distribution expectation lemmas. *)

@@ -1263,4 +1263,48 @@ Lemma encode_RR_mRK (xy : mR * mR) :
   decode_RR_mR (encode_RR_mR xy) = xy.
 Proof. exact: encode_RRK. Qed.
 
+(** Helper: measurability for functions into nat (discrete sigma-algebra).
+    Every set in nat is measurable, so measurability of g reduces to
+    measurability of singleton preimages. *)
+Local Lemma measurable_fun_nat_discrete d (T : measurableType d)
+    (g : T -> nat) (D : set T) :
+  (forall n : nat, measurable (D `&` g @^-1` [set n])) ->
+  measurable_fun D g.
+Proof.
+move=> hg _ Y _; rewrite /measurable /=.
+suff -> : D `&` g @^-1` Y = \bigcup_(n in setT)
+  (fun n => if asbool (Y n) then D `&` g @^-1` [set n] else set0) n.
+  apply: bigcup_measurable => n _.
+  by case: asboolP => _; [exact: hg | exact: measurable0].
+rewrite eqEsubset; split => [r [hDr hYgr] | r [n _ /=]].
+  exists (g r) => //=.
+  case: asboolP => [_ | hNY].
+    by split => //; rewrite /preimage /=.
+  by exfalso; exact: hNY hYgr.
+case: asboolP => [hYn | _]; last by [].
+move=> [hDr]; rewrite /preimage /= => ->.
+by split => //; exact: hYn.
+Qed.
+
+(** truncn : R -> nat is measurable.
+    Preimages of singletons are intervals:
+    - trunc^{-1}({0}) = (-inf, 1)
+    - trunc^{-1}({n+1}) = [n+1, n+2) *)
+Lemma measurable_truncn :
+  measurable_fun [set: mR] (truncn : mR -> nat).
+Proof.
+apply: measurable_fun_nat_discrete => n; rewrite setTI.
+have -> : (truncn : mR -> nat) @^-1` [set n] =
+    if n is 0%N then [set` `]-oo, 1%:R[] else [set` `[n%:R, n.+1%:R[].
+  apply/seteqP; split => r /=; rewrite /preimage /=.
+  - case: n => [|n] h /=.
+      by rewrite in_itv /= -real_truncn_le_nat ?num_real // h.
+    have r1 : 1 <= r by rewrite -truncn_gt0 h.
+    by rewrite in_itv /= -h truncn_itv // (le_trans ler01 r1).
+  - case: n => [|n] /=; rewrite in_itv /=.
+      by move=> r1; apply/truncn0Pn; rewrite real_ltNge ?num_real in r1.
+    by move=> hr; apply: truncn_def.
+by case: n => [|n]; exact: measurable_itv.
+Qed.
+
 End standard_borel_mR.

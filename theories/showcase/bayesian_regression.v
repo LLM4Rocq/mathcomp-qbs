@@ -5,7 +5,8 @@ From mathcomp Require Import boot algebra reals ereal topology
   lebesgue_integral_fubini lebesgue_stieltjes_measure lebesgue_measure
   probability charge boolp.
 From mathcomp.algebra_tactics Require Import ring.
-From QBS Require Import quasi_borel probability_qbs pair_qbs_measure
+From mathcomp Require giry.
+From QBS Require Import quasi_borel probability_qbs qbs_monad pair_qbs_measure
   measure_as_qbs_measure normal_algebra.
 
 (**md**************************************************************************)
@@ -21,7 +22,7 @@ From QBS Require Import quasi_borel probability_qbs pair_qbs_measure
 (* Key results:                                                               *)
 (* ```                                                                        *)
 (*   prior             == joint prior on (slope, intercept) as product QBS    *)
-(*   prior_bind        == same prior via monadic bind/return                  *)
+(*   prior_bind        == the prior built with qbs_bind and the strength      *)
 (*   norm_qbs          == normalizer: weighted QBS prob -> option density     *)
 (*   program           == full Bayesian program: norm_qbs (fun _ => 1) obs   *)
 (*   obs               == observation likelihood (5 data points)              *)
@@ -172,8 +173,8 @@ Qed.
 
 (* 5. Single-observation likelihood as QBS morphism *)
 
-Definition likelihood_single (obs_x : R) :
-  prodQ (realQ R) (realQ R) -> qbs_prob (realQ R) :=
+Definition likelihood_single_fun (obs_x : R) :
+  prodQ (realQ R) (realQ R) -> monadP (realQ R) :=
   fun params =>
     @mkQBSProb R (realQ R) idfun
       (normal_prob (fst params * obs_x + snd params)%R noise_sigma
@@ -181,24 +182,26 @@ Definition likelihood_single (obs_x : R) :
       (@measurable_id _ mR setT).
 
 Lemma likelihood_single_morphism (obs_x : R) :
-  qbs_morphism
-    (likelihood_single obs_x).
+  qbs_morphism (X := prodQ (realQ R) (realQ R)) (Y := monadP (realQ R))
+    (likelihood_single_fun obs_x).
 Proof.
-move=> alpha halpha; rewrite /qbs_Mx /= => r.
-exact: (@measurable_id _ mR setT).
+move=> a [ha1 ha2].
+exists idfun, (fun r => normal_prob ((a r).1 * obs_x + (a r).2)%R noise_sigma
+  : giry.giry mR R); split => //.
+- exact: (@measurable_id _ mR setT).
+- apply: giry.measurable_giry_codensity => // B mB.
+  apply: measurableT_comp (measurable_normal_prob _ mB) _.
+  by apply: measurable_funD => //; exact: measurable_funM.
+- by move=> r; exact: probability_setT.
 Qed.
 
-Lemma likelihood_single_strong (obs_x : R) :
-  qbs_morphism_strong (prodQ (realQ R) (realQ R)) (realQ R)
-    (likelihood_single obs_x).
-Proof.
-move=> alpha halpha.
-exists idfun.
-exists (fun r => normal_prob (fst (alpha r) * obs_x + snd (alpha r))%R
-                   noise_sigma : probability mR R).
-split; first exact: (@measurable_id _ mR setT).
-by split.
-Qed.
+HB.instance Definition _ (obs_x : R) :=
+  @isQBSMorphism.Build R (prodQ (realQ R) (realQ R)) (monadP (realQ R))
+    (likelihood_single_fun obs_x) (likelihood_single_morphism obs_x).
+
+Definition likelihood_single (obs_x : R) :
+  qbsHomType (prodQ (realQ R) (realQ R)) (monadP (realQ R)) :=
+  likelihood_single_fun obs_x.
 
 (* 6. Predictive distribution via pair integration (Fubini) *)
 
@@ -243,50 +246,26 @@ Definition prior : qbs_prob (prodQ (realQ R) (realQ R)) :=
 
 (* The monadic construction of the prior:
    prior_bind = bind(slope_prior, fun s =>
-                  bind(intercept_prior, fun b =>
-                    return (s, b)))
+                  bind(intercept_prior, fun b => return (s, b)))
+   where the inner bind is the strength applied to (s, intercept_prior). *)
+Definition prior_inner :
+    qbsHomType (realQ R) (monadP (prodQ (realQ R) (realQ R))) :=
+  qbs_comp (qbs_pair (qbs_id (realQ R)) (qbs_const (realQ R)
+    (intercept_prior : monadP (realQ R)))) (qbs_strengthQ _ _).
 
-   We construct this using qbs_bind with explicit diagonal randomness
-   proofs. The inner bind at fixed s produces a QBS probability on
-   (realQ R * realQ R) with alpha r |-> (s, idfun r) = (s, r). *)
-
-(* Diagonal randomness for the inner bind: r |-> (s, idfun r) *)
-Lemma prior_inner_diag (s : realQ R) :
-  qbs_Mx
-    (fun r => qbs_prob_alpha
-      ((fun b => qbs_return (prodQ (realQ R) (realQ R)) (s, b)
-                   (qbs_prob_mu intercept_prior))
-       (qbs_prob_alpha intercept_prior r)) r).
-Proof.
-rewrite /= /qbs_Mx /=; split.
-- exact: (qbs_Mx_const s).
-- exact: (@measurable_id _ mR setT).
-Qed.
-
-Definition prior_inner (s : realQ R) : qbs_prob (prodQ (realQ R) (realQ R)) :=
-  qbs_bind (realQ R) (prodQ (realQ R) (realQ R))
-    intercept_prior
-    (fun b => qbs_return (prodQ (realQ R) (realQ R)) (s, b)
-                (qbs_prob_mu intercept_prior))
-    (prior_inner_diag s).
-
-(* Diagonal randomness for the outer bind *)
-Lemma prior_bind_diag :
-  qbs_Mx
-    (fun r => qbs_prob_alpha
-      (prior_inner (qbs_prob_alpha slope_prior r)) r).
-Proof.
-rewrite /= /qbs_Mx /=; split.
-- exact: (@measurable_id _ mR setT).
-- exact: (@measurable_id _ mR setT).
-Qed.
-
-(* The full monadic prior:
-   prior_bind = bind(slope_prior, fun s =>
-                  bind(intercept_prior, fun b => return (s,b))) *)
 Definition prior_bind : qbs_prob (prodQ (realQ R) (realQ R)) :=
-  qbs_bind (realQ R) (prodQ (realQ R) (realQ R))
-    slope_prior prior_inner prior_bind_diag.
+  qbs_bind slope_prior prior_inner.
+
+(** The monadic prior is the product prior. *)
+Lemma prior_bindE : qbs_prob_equiv _ prior_bind prior.
+Proof.
+move=> U mU; rewrite -[LHS]/(qbs_prob_event _ _ _) qbs_bind_event//.
+rewrite /prior /qbs_prob_pair /= /qbs_pair_mu /qbs_pair_mu_build /=.
+rewrite /product_measure1 /=; apply: eq_integral => r _.
+rewrite qbs_strength_event /= /qbs_prob_event /=; congr (_ _).
+rewrite /xsection; apply/seteqP; split => t; rewrite /preimage /= inE /=.
+all: by rewrite /qbs_pair_alpha standard_borel.encode_RR_mRK.
+Qed.
 
 (* 8. Normalizer (norm_qbs) *)
 (* Isabelle's norm_qbs_measure: given a weighted QBS probability, either

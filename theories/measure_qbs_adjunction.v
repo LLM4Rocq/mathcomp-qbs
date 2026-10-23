@@ -299,78 +299,12 @@ Qed.
 
 Local Open Scope ring_scope.
 
-Local Notation truncnP := archimedean.Num.Theory.truncnP.
-
-(** Helper: measurability for functions into nat (discrete sigma-algebra).
-    Every set in nat is measurable, so measurability of g reduces to
-    measurability of singleton preimages. *)
-Local Lemma measurable_fun_nat_discrete d (T : measurableType d)
-    (g : T -> nat) (D : set T) :
-  (forall n : nat, measurable (D `&` g @^-1` [set n])) ->
-  measurable_fun D g.
-Proof.
-move=> hg _ Y _; rewrite /measurable /=.
-suff -> : D `&` g @^-1` Y = \bigcup_(n in setT)
-  (fun n => if asbool (Y n) then D `&` g @^-1` [set n] else set0) n.
-  apply: bigcup_measurable => n _.
-  by case: asboolP => _; [exact: hg | exact: measurable0].
-rewrite eqEsubset; split => [r [hDr hYgr] | r [n _ /=]].
-  exists (g r) => //=.
-  case: asboolP => [_ | hNY].
-    by split => //; rewrite /preimage /=.
-  by exfalso; exact: hNY hYgr.
-case: asboolP => [hYn | _]; last by [].
-move=> [hDr]; rewrite /preimage /= => ->.
-by split => //; exact: hYn.
-Qed.
-
-(** truncn : R -> nat is measurable.
-    Preimages of singletons are intervals:
-    - trunc^{-1}({0}) = (-inf, 1)
-    - trunc^{-1}({n+1}) = [n+1, n+2) *)
-Local Lemma measurable_truncn :
-  measurable_fun [set: mR] (truncn : mR -> nat).
-Proof.
-apply: measurable_fun_nat_discrete => n; rewrite setTI.
-case: n => [|n].
-- suff -> : ((truncn : mR -> nat) @^-1` [set 0%N] : set mR) =
-            ([set` `]-oo, 1%:R[] : set mR).
-    exact: measurable_itv.
-  rewrite eqEsubset; split => r.
-    rewrite /preimage /= => /eqP htr.
-    rewrite in_itv /=.
-    case: ifPn (truncnP r) => [h0 /andP [_ hr2] | hlt0 /eqP hn0].
-      by rewrite (eqP htr) in hr2.
-    apply: (lt_trans _ ltr01).
-    by rewrite ltNge; exact: hlt0.
-  rewrite /preimage /= in_itv /= => hr1.
-  apply/eqP.
-  case: ifPn (truncnP r) => [h0 /andP [hr1' hr2'] | hlt0 /eqP //].
-  by rewrite truncn_eq //; apply/andP; split.
-- suff -> : ((truncn : mR -> nat) @^-1` [set n.+1] : set mR) =
-            ([set` `[n.+1%:R, n.+2%:R[] : set mR).
-    exact: measurable_itv.
-  rewrite eqEsubset; split => r.
-    rewrite /preimage /= => /eqP htr.
-    rewrite in_itv /=; apply/andP; split.
-    + case: ifPn (truncnP r) => [h0 /andP [hr _] | hlt0 /eqP hn].
-        by rewrite (eqP htr) in hr.
-      by rewrite hn in htr.
-    + case: ifPn (truncnP r) => [h0 /andP [_ hr] | hlt0 /eqP hn].
-        by rewrite (eqP htr) in hr.
-      by rewrite hn in htr.
-  rewrite /preimage /= in_itv /= => /andP [hr1 hr2].
-  apply/eqP; rewrite truncn_eq //.
-    by apply/andP; split.
-  exact: (le_trans (ler0n _ _) hr1).
-Qed.
-
 (** nat is standard Borel: embed via [n%:R], retract via [truncn]. *)
 Lemma nat_standard_borel : standard_borel_wit nat.
 Proof.
 have hf : (fun n : nat => n%:R : mR) \in mfun.
   by apply: mem_set => _ U _; rewrite setTI.
-have hg : (truncn : mR -> nat) \in mfun. exact: mem_set measurable_truncn.
+have hg : (truncn : mR -> nat) \in mfun. exact: mem_set (@measurable_truncn R).
 exact: {| sb_encode := mfun_Sub hf ; sb_decode := mfun_Sub hg ;
            sb_retractK := natrK |}.
 Qed.

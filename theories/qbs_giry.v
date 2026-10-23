@@ -1,37 +1,31 @@
-(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
+(* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
 From mathcomp Require Import boot algebra reals classical_sets boolp
   ereal measurable_structure measurable_function measure measure_function
-  probability_measure borel_hierarchy lebesgue_stieltjes_measure
-  lebesgue_integral lebesgue_measure.
-From QBS Require Import quasi_borel measure_qbs_adjunction probability_qbs.
+  probability_measure lebesgue_stieltjes_measure lebesgue_integral
+  lebesgue_measure measurable_realfun probability.
+From QBS Require Import quasi_borel measure_qbs_adjunction probability_qbs
+  qbs_monad.
 
 (**md**************************************************************************)
-(* # Connection between QBS Probability Monad and Giry Monad                  *)
+(* # QBS probabilities on measurable spaces and probability measures          *)
 (*                                                                            *)
-(* The L functor extends to probability: L(P_QBS(R(M))) -> Giry(M).          *)
-(* For standard Borel spaces, this is an isomorphism.                         *)
-(*                                                                            *)
-(* Following Heunen-Kammar-Staton-Yang (2017), Proposition 22.3:              *)
-(* the functor L extends faithfully from Kleisli(P_QBS) to Kleisli(Giry).    *)
+(* A probability on R(M) induces a probability measure on M (its             *)
+(* distribution). Conversely, given a measurable encode : M -> R with a       *)
+(* measurable left inverse decode, a probability measure on M induces a       *)
+(* probability on R(M).                                                       *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*   qbs_to_giry_mu p == pushforward measure on M from qbs_prob(R(M))        *)
-(*   qbs_to_giry p    == packaged as probability M R                          *)
-(*   giry_to_qbs P    == inverse map using standard Borel encode/decode       *)
-(*   qbs_to_giryK == qbs_to_giry (giry_to_qbs P) = P                  *)
-(*   giry_to_qbsK == giry_to_qbs (qbs_to_giry p) ~ p (equiv)         *)
-(*   qbs_integral_giry   == qbs_integral p f = \int[qbs_to_giry p] f        *)
+(*      qbs_to_giry p == distribution of p : qbs_prob (R_qbs R M) on M        *)
+(* giry_to_qbs me md P == the probability (decode, P o encode^-1) on R(M)     *)
 (* ```                                                                        *)
 (******************************************************************************)
 
-Import GRing.Theory Num.Def Num.Theory measurable_realfun.
 Import MeasurableR.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-Set SsrOldRewriteGoalsOrder.  (* TODO: port to the MathComp 2.6 goal order *)
 
 Local Open Scope classical_set_scope.
 Local Open Scope ereal_scope.
@@ -40,155 +34,68 @@ Section qbs_giry.
 Variable R : realType.
 Local Notation mR := (measurableTypeR R).
 
-(** Forward map: qbs_prob(R(M)) -> probability M R.
-    Given a QBS probability triple (alpha, mu) on R(M), the
-    pushforward mu o alpha^{-1} is a probability on M. *)
-
 Section qbs_to_giry.
 Context d (M : measurableType d).
-Variable (p : qbs_prob (R_qbs R M)).
 
-Let alpha := qbs_prob_alpha p.
-Let mu : probability mR R := qbs_prob_mu p.
+Definition qbs_prob_alpha_mfun (p : qbs_prob (R_qbs R M)) : {mfun mR >-> M} :=
+  mfun_Sub (mem_set (qbs_prob_alpha_random p)).
 
-Let alpha_meas : measurable_fun setT alpha.
-Proof. exact: (qbs_prob_alpha_random p). Qed.
+Definition qbs_to_giry (p : qbs_prob (R_qbs R M)) : probability M R :=
+  distribution (qbs_prob_mu p) (qbs_prob_alpha_mfun p).
 
-Definition qbs_to_giry_mu (A : set M) : \bar R :=
-  mu (alpha @^-1` A).
+Lemma qbs_to_giryE (p : qbs_prob (R_qbs R M)) (A : set M) :
+  qbs_to_giry p A = qbs_prob_event (R_qbs R M) p A.
+Proof. by []. Qed.
 
-Lemma qbs_to_giry_mu0 : qbs_to_giry_mu set0 = 0.
-Proof. by rewrite /qbs_to_giry_mu preimage_set0 measure0. Qed.
+Lemma qbs_integral_giry (p : qbs_prob (R_qbs R M)) (f : M -> \bar R) :
+  measurable_fun [set: M] f ->
+  (qbs_prob_mu p).-integrable [set: mR] (f \o qbs_prob_alpha p) ->
+  qbs_integral (R_qbs R M) p f = \int[qbs_to_giry p]_y f y.
+Proof. by move=> mf intf; rewrite integral_distribution. Qed.
 
-Lemma qbs_to_giry_mu_ge0 A : 0 <= qbs_to_giry_mu A.
+Lemma qbs_prob_equiv_giry (p1 p2 : qbs_prob (R_qbs R M)) (A : set M) :
+  qbs_prob_equiv (R_qbs R M) p1 p2 -> measurable A ->
+  qbs_to_giry p1 A = qbs_to_giry p2 A.
+Proof. by move=> e mA; exact: (e _ (adjunction_counit mA)). Qed.
+
+Lemma qbs_to_giry_return (x : M) (A : set M) :
+  qbs_to_giry (qbs_return (x : R_qbs R M)) A = (\d_x)%R A.
 Proof.
-by apply: measure_ge0; rewrite -[X in measurable X]setTI; exact: alpha_meas.
+by rewrite qbs_to_giryE qbs_return_event diracE; congr ((_ : bool)%:R%:E).
 Qed.
-
-Lemma qbs_to_giry_mu_semi_sigma_additive :
-  semi_sigma_additive qbs_to_giry_mu.
-Proof.
-move=> F mF tF mUF; rewrite /qbs_to_giry_mu preimage_bigcup.
-apply: measure_semi_sigma_additive.
-- by move=> n; rewrite -[X in measurable X]setTI; exact: alpha_meas.
-- apply/trivIsetP => /= i j _ _ ij; rewrite -preimage_setI.
-  by move/trivIsetP : tF => /(_ _ _ _ _ ij) ->//; rewrite preimage_set0.
-- by rewrite -preimage_bigcup -[X in measurable X]setTI; exact: alpha_meas.
-Qed.
-
-HB.instance Definition _ := isMeasure.Build _ _ _
-  qbs_to_giry_mu qbs_to_giry_mu0 qbs_to_giry_mu_ge0
-  qbs_to_giry_mu_semi_sigma_additive.
-
-Lemma qbs_to_giry_mu_setT : qbs_to_giry_mu setT = 1%:E.
-Proof.
-by rewrite /qbs_to_giry_mu preimage_setT probability_setT.
-Qed.
-
-HB.instance Definition _ := Measure_isProbability.Build _ _ _
-  qbs_to_giry_mu qbs_to_giry_mu_setT.
 
 End qbs_to_giry.
 
-(** Forward: QBS probability to Giry probability. *)
-Definition qbs_to_giry d (M : measurableType d)
-    (p : qbs_prob (R_qbs R M)) : probability M R :=
-  qbs_to_giry_mu p.
-
-(** Backward map: probability M R -> qbs_prob(R(M)).
-    Requires standard Borel witnesses: encode : M -> R, decode : R -> M
-    with decode o encode = id.
-    Given P : probability M R, the triple (decode, P o encode^{-1})
-    is a QBS probability on R(M). *)
+Lemma qbs_to_giry_map d1 d2 (M1 : measurableType d1) (M2 : measurableType d2)
+    (f : qbsHomType (R_qbs R M1) (R_qbs R M2))
+    (p : qbs_prob (R_qbs R M1)) (A : set M2) :
+  qbs_to_giry (monadP_map f p : qbs_prob _) A =
+  qbs_to_giry p (f @^-1` A).
+Proof. by []. Qed.
 
 Section giry_to_qbs.
 Context d (M : measurableType d).
-Variables (encode : M -> mR) (decode : mR -> M).
-Hypothesis encode_meas : measurable_fun setT encode.
-Hypothesis decode_meas : measurable_fun setT decode.
-Variable (P : probability M R).
+Variables (encode : {mfun M >-> mR}) (decode : mR -> M).
+Hypothesis decode_meas : measurable_fun [set: mR] decode.
+Hypothesis decode_encode : cancel encode decode.
 
-Let pf_mu (A : set mR) : \bar R := P (encode @^-1` A).
+Definition giry_to_qbs (P : probability M R) : qbs_prob (R_qbs R M) :=
+  @mkQBSProb R (R_qbs R M) decode (distribution P encode) decode_meas.
 
-Let pf_mu0 : pf_mu set0 = 0.
-Proof. by rewrite /pf_mu preimage_set0 measure0. Qed.
-
-Let pf_mu_ge0 A : 0 <= pf_mu A.
+Lemma qbs_to_giryK (P : probability M R) (A : set M) :
+  qbs_to_giry (giry_to_qbs P) A = P A.
 Proof.
-by apply: measure_ge0; rewrite -[X in measurable X]setTI; exact: encode_meas.
+rewrite qbs_to_giryE /qbs_prob_event /= /distribution /pushforward.
+by congr (P _); apply/seteqP; split => x /=; rewrite decode_encode.
 Qed.
 
-Let pf_mu_sigma_additive : semi_sigma_additive pf_mu.
+Lemma giry_to_qbsK (p : qbs_prob (R_qbs R M)) :
+  qbs_prob_equiv (R_qbs R M) (giry_to_qbs (qbs_to_giry p)) p.
 Proof.
-move=> F mF tF mUF; rewrite /pf_mu preimage_bigcup.
-apply: measure_semi_sigma_additive.
-- by move=> n; rewrite -[X in measurable X]setTI; exact: encode_meas.
-- apply/trivIsetP => /= i j _ _ ij; rewrite -preimage_setI.
-  by move/trivIsetP : tF => /(_ _ _ _ _ ij) ->//; rewrite preimage_set0.
-- by rewrite -preimage_bigcup -[X in measurable X]setTI; exact: encode_meas.
+move=> U _; rewrite /= /distribution /pushforward.
+by congr (qbs_prob_mu p _); apply/seteqP; split => r /=; rewrite decode_encode.
 Qed.
-
-HB.instance Definition _ := isMeasure.Build _ _ _
-  pf_mu pf_mu0 pf_mu_ge0 pf_mu_sigma_additive.
-
-Let pf_mu_setT : pf_mu setT = 1%:E.
-Proof. by rewrite /pf_mu preimage_setT probability_setT. Qed.
-
-HB.instance Definition _ := Measure_isProbability.Build _ _ _
-  pf_mu pf_mu_setT.
-
-(** Backward: Giry probability to QBS probability. *)
-Definition giry_to_qbs : qbs_prob (R_qbs R M) :=
-  mkQBSProb decode pf_mu decode_meas.
 
 End giry_to_qbs.
-
-(** Round-trip: qbs_to_giry o giry_to_qbs = id. *)
-Lemma qbs_to_giryK
-    d (M : measurableType d)
-    (encode : M -> mR) (decode : mR -> M)
-    (encode_meas : measurable_fun setT encode)
-    (decode_meas : measurable_fun setT decode)
-    (decode_encode : forall x : M, decode (encode x) = x)
-    (P : probability M R) (A : set M) :
-  qbs_to_giry_mu (giry_to_qbs encode_meas decode_meas P) A = P A.
-Proof.
-rewrite /qbs_to_giry_mu /giry_to_qbs /=.
-congr (P _).
-by apply/seteqP; split => x /=; rewrite decode_encode.
-Qed.
-
-(** Round-trip: giry_to_qbs o qbs_to_giry ~ id. *)
-Lemma giry_to_qbsK
-    d (M : measurableType d)
-    (encode : M -> mR) (decode : mR -> M)
-    (encode_meas : measurable_fun setT encode)
-    (decode_meas : measurable_fun setT decode)
-    (decode_encode : forall x : M, decode (encode x) = x)
-    (p : qbs_prob (R_qbs R M)) :
-  qbs_prob_equiv (R_qbs R M)
-    (giry_to_qbs encode_meas decode_meas (qbs_to_giry p))
-    p.
-Proof.
-move=> U _.
-rewrite /giry_to_qbs /qbs_to_giry_mu /=.
-congr (qbs_prob_mu p _).
-by apply/seteqP; split => r /=; rewrite decode_encode.
-Qed.
-
-(** QBS integral = Lebesgue integral against qbs_to_giry. *)
-Lemma qbs_integral_giry
-    d (M : measurableType d)
-    (p : qbs_prob (R_qbs R M))
-    (f : M -> \bar R)
-    (f_meas : measurable_fun setT f)
-    (f_int : (qbs_prob_mu p).-integrable setT (f \o qbs_prob_alpha p)) :
-  qbs_integral (R_qbs R M) p f = \int[qbs_to_giry p]_y f y.
-Proof.
-rewrite /qbs_integral.
-rewrite -(integral_pushforward (qbs_prob_alpha_random p) f_meas f_int
-  measurableT).
-by congr (integral _ setT f).
-Qed.
 
 End qbs_giry.

@@ -4,7 +4,7 @@ From mathcomp Require Import boot algebra reals ereal topology boolp
   classical_sets normedtype numfun measure lebesgue_integral
   lebesgue_integral_fubini lebesgue_stieltjes_measure probability
   hoelder functions.
-From QBS Require Import quasi_borel probability_qbs standard_borel.
+From QBS Require Import quasi_borel probability_qbs qbs_monad standard_borel.
 
 (**md**************************************************************************)
 (* # Product Measures on QBS Probability Spaces                               *)
@@ -216,16 +216,10 @@ Qed.
 
 (** Independence. *)
 
-Definition qbs_indep (X Y Z : qbsType R)
-  (p : qbs_prob Z)
-  (f : Z -> X) (g : Z -> Y)
-  (hf : qbs_morphism f) (hg : qbs_morphism g) : Prop :=
-  qbs_prob_equiv (prodQ X Y)
-    (monadP_map Z (prodQ X Y) (fun z => (f z, g z))
-       (fun alpha halpha => conj (hf _ halpha) (hg _ halpha)) p)
-    (qbs_prob_pair X Y
-       (monadP_map Z X f hf p)
-       (monadP_map Z Y g hg p)).
+Definition qbs_indep (X Y Z : qbsType R) (p : qbs_prob Z)
+    (f : qbsHomType Z X) (g : qbsHomType Z Y) : Prop :=
+  qbs_prob_equiv (prodQ X Y) (monadP_map (qbs_pair f g) p)
+    (qbs_prob_pair X Y (monadP_map f p) (monadP_map g p)).
 
 Arguments qbs_indep : clear implicits.
 
@@ -651,10 +645,9 @@ Qed.
     [hindep]. *)
 Lemma qbs_integral_indep_factorization (X Y Z : qbsType R)
     (p : qbs_prob Z)
-    (f : Z -> X) (g : Z -> Y)
-    (hf : qbs_morphism f) (hg : qbs_morphism g)
+    (f : qbsHomType Z X) (g : qbsHomType Z Y)
     (phi : X -> R) (psi : Y -> R)
-    (hindep : qbs_indep X Y Z p f g hf hg)
+    (hindep : qbs_indep X Y Z p f g)
     (hmeas : qbs_measurable (prodQ X Y)
        (fun xy : X * Y => (phi xy.1 * psi xy.2)%:E))
     (hintphi : (qbs_prob_mu p).-integrable setT
@@ -669,13 +662,11 @@ Lemma qbs_integral_indep_factorization (X Y Z : qbsType R)
           (phi (f (qbs_prob_alpha p rr.1))
            * psi (g (qbs_prob_alpha p rr.2)))%:E)) :
   qbs_integral Z p (fun z => (phi (f z) * psi (g z))%:E) =
-  qbs_expect X (monadP_map Z X f hf p) phi
-  * qbs_expect Y (monadP_map Z Y g hg p) psi.
+  qbs_expect X (monadP_map f p) phi * qbs_expect Y (monadP_map g p) psi.
 Proof.
-set pf := monadP_map Z X f hf p.
-set pg := monadP_map Z Y g hg p.
-set ppair := monadP_map Z (prodQ X Y) (fun z => (f z, g z))
-  (fun alpha halpha => conj (hf _ halpha) (hg _ halpha)) p.
+set pf := monadP_map f p.
+set pg := monadP_map g p.
+set ppair := monadP_map (qbs_pair f g) p.
 set h := (fun xy : X * Y => (phi xy.1 * psi xy.2)%:E).
 have h_meas_pair : measurable_fun setT
     (h \o qbs_prob_alpha (qbs_prob_pair X Y pf pg)).
