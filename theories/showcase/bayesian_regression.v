@@ -126,6 +126,12 @@ Definition post_s_var : R := 9 * 181 / (29 * 2309).
 Definition post_b_mean (s : R) : R := (900 - 540 * s) / 181.
 Definition post_b_var : R := 9 / 181.
 
+Local Lemma post_s_var_gt0 : 0 < post_s_var.
+Proof. by rewrite /post_s_var divr_gt0 // ?mulr_gt0 // ltr0n. Qed.
+
+Local Lemma post_b_var_gt0 : 0 < post_b_var.
+Proof. by rewrite /post_b_var divr_gt0 // ltr0n. Qed.
+
 Let obs2 (s b : R) : R := obs_fun (lin (s, b)).
 
 Local Lemma expoE s b :
@@ -149,8 +155,7 @@ Local Lemma peakE :
   normal_peak (sqrtr post_s_var) * normal_peak (sqrtr post_b_var) :> R.
 Proof.
 have pi0 : 0 < pi :> R := pi_gt0.
-have vs0 : 0 < post_s_var by rewrite /post_s_var divr_gt0 // ?mulr_gt0 // ltr0n.
-have vb0 : 0 < post_b_var by rewrite /post_b_var divr_gt0 // ltr0n.
+have vs0 := post_s_var_gt0; have vb0 := post_b_var_gt0.
 apply/eqP; rewrite -(@eqrXn2 _ 2) //.
 - by rewrite mulr_ge0 ?exprn_ge0 ?normal_peak_ge0.
 - by rewrite !mulr_ge0 ?normal_peak_ge0 ?invr_ge0 ?mulr_ge0 ?sqrtr_ge0
@@ -159,12 +164,11 @@ have pk2 x : 0 <= x ^+ 2 * pi *+ 2 ->
     normal_peak x ^+ 2 = (x ^+ 2 * pi *+ 2)^-1.
   by move=> x0; rewrite /normal_peak exprVn sqr_sqrtr.
 rewrite !exprMn !pk2 ?mulrn_wge0 ?mulr_ge0 ?sqr_ge0 ?ltW //.
-all: try by rewrite sqrtr_gt0.
-1,2: by rewrite invr_gt0.
+all: try by rewrite ?sqrtr_gt0 ?invr_gt0.
 rewrite !sqr_sqrtr ?ltW //.
 rewrite (exprVn (pi ^+ 2 * _)) exprMn sqr_sqrtr ?mulr_ge0 ?ler0n ?ltW //.
 rewrite /post_s_var /post_b_var.
-move: pi0; generalize (pi : R) => p p0.
+move: pi0; move: (pi : R) => p p0.
 by apply/eqP; field; rewrite lt0r_neq0.
 Qed.
 
@@ -176,29 +180,21 @@ Lemma obs_prior_factor s b :
       normal_pdf (post_b_mean s) (sqrtr post_b_var) b.
 Proof.
 have h3 : (3 : R) != 0 by rewrite pnatr_eq0.
-have vs0 : 0 < post_s_var by rewrite /post_s_var divr_gt0 // ?mulr_gt0 // ltr0n.
-have vb0 : 0 < post_b_var by rewrite /post_b_var divr_gt0 // ltr0n.
-have hvs : sqrtr post_s_var != 0 by rewrite lt0r_neq0 // sqrtr_gt0.
-have hvb : sqrtr post_b_var != 0 by rewrite lt0r_neq0 // sqrtr_gt0.
+have vs0 := post_s_var_gt0; have vb0 := post_b_var_gt0.
+have hvs : sqrtr post_s_var != 0 by rewrite sqrtr_eq0 -ltNge post_s_var_gt0.
+have hvb : sqrtr post_b_var != 0 by rewrite sqrtr_eq0 -ltNge post_b_var_gt0.
 rewrite /obs2 /obs_fun !linE /d /evidence_const !(normal_pdfE _ half_neq0)
   !(normal_pdfE _ h3)
   (normal_pdfE _ hvs) (normal_pdfE _ hvb) /normal_fun !sqr_sqrtr ?ltW //.
-have := expoE s b; have := peakE.
-move: (normal_peak _) => P3; move: (normal_peak 2^-1) => Ph.
-move=> HP /(congr1 expR); rewrite !expRD => HE.
-move: HP HE; set c := 4 * sqrtr 2 / _.
-set q1 := normal_peak (sqrtr post_s_var).
-set q2 := normal_peak (sqrtr post_b_var).
+have HE := congr1 expR (expoE s b); rewrite !expRD in HE.
+move: (peakE); move: (normal_peak _) => P3; move: (normal_peak 2^-1) => Ph.
+move=> HP.
 set e1 := expR (- (s - 0) ^+ 2 / _); set e2 := expR (- (b - 0) ^+ 2 / _).
 set e3 := expR (- (5 / 2 - _) ^+ 2 / _).
 set e4 := expR (- (19 / 5 - _) ^+ 2 / _).
 set e5 := expR (- (9 / 2 - _) ^+ 2 / _).
 set e6 := expR (- (31 / 5 - _) ^+ 2 / _).
 set e7 := expR (- (8 - _) ^+ 2 / _).
-set f0 := expR (- (11 * 11 * _ / _)).
-set f1 := expR (- (s - post_s_mean) ^+ 2 / _).
-set f2 := expR (- (b - post_b_mean s) ^+ 2 / _).
-move=> HP HE.
 transitivity ((P3 ^+ 2 * Ph ^+ 5) * (e1 * e2 * e3 * e4 * e5 * e6 * e7)).
   by ring.
 by rewrite HP HE; ring.
