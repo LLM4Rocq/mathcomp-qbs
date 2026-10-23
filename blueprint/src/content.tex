@@ -931,9 +931,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \end{definition}
 
 \begin{theorem}[List Recursion Is a Morphism]\label{thm:qbs_morphism_list_rec}
-  \rocq{QBS.coproduct_qbs.qbs_morphism_list_rec_ord}
   \rocq{QBS.coproduct_qbs.qbs_morphism_list_rec}
-  \rocq{QBS.coproduct_qbs.qbs_morphism_list_rec_ext}
   \rocq{QBS.coproduct_qbs.list_rec_hom}
   \rocq{QBS.coproduct_qbs.list_rec_homE}
   \rocqok
@@ -1335,28 +1333,6 @@ equalities.
   if $h \circ \alpha$ is integrable against~$\mu$.
 \end{definition}
 
-\begin{lemma}[Integrability Closure]\label{lem:qbs_integrable_closure}
-  \rocq{QBS.probability_qbs.qbs_integrableD}
-  \rocq{QBS.probability_qbs.qbs_integrableB}
-  \rocq{QBS.probability_qbs.qbs_integrableN}
-  \rocq{QBS.probability_qbs.qbs_integrableZl}
-  \rocqok
-  \uses{def:qbs_integrable}
-  QBS integrability is closed under addition, subtraction, negation,
-  and scalar multiplication.
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
-
-\begin{lemma}[Integral Linearity]\label{lem:qbs_integral_linearity}
-  \rocq{QBS.probability_qbs.qbs_integralD}
-  \rocq{QBS.probability_qbs.qbs_integralB}
-  \rocq{QBS.probability_qbs.qbs_integralZl}
-  \rocqok
-  \uses{def:qbs_integral, def:qbs_integrable}
-  QBS integration is linear: additive, subtractive, and homogeneous.
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
-
 \begin{lemma}[Integral Basics]\label{lem:qbs_integral_basics}
   \rocq{QBS.probability_qbs.qbs_integralE}
   \rocq{QBS.probability_qbs.qbs_integrable_cst}
@@ -1370,11 +1346,9 @@ equalities.
 
 \begin{lemma}[Integrability Characterisation]\label{lem:qbs_integrableP}
   \rocq{QBS.probability_qbs.qbs_integrableP}
-  \rocq{QBS.probability_qbs.qbs_integrable_abse}
   \rocq{QBS.probability_qbs.qbs_integrable_abseP}
   \rocq{QBS.probability_qbs.qbs_integrableMr}
   \rocq{QBS.probability_qbs.qbs_integrable_bounded}
-  \rocq{QBS.probability_qbs.qbs_integrable_sqr}
   \rocq{QBS.probability_qbs.qbs_integrable_sqrB}
   \rocqok
   \uses{def:qbs_integrable, def:qbs_integral}
@@ -1436,7 +1410,6 @@ equalities.
 \begin{lemma}[Variance Through Equivalence and Affine Maps]\label{lem:qbs_variance_affine}
   \rocq{QBS.probability_qbs.qbs_varianceE_integral}
   \rocq{QBS.probability_qbs.qbs_variance_equiv}
-  \rocq{QBS.probability_qbs.qbs_varianceD_cst_r}
   \rocq{QBS.probability_qbs.qbs_variance_affine}
   \rocqok
   \uses{def:qbs_variance, def:qbs_integral, def:qbs_prob_equiv, lem:qbs_varianceZ}
