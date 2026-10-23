@@ -886,9 +886,11 @@ Qed.
 (* Top: every map is a random element. *)
 Section qbs_topT_instance.
 Variable T : Type.
-HB.instance Definition _ :=
-  @isQBS.Build R T setT (fun _ _ _ => I) (fun _ => I) (fun _ _ _ => I).
-Definition qbs_topT : qbsType R := T.
+(* The instance lives on an alias, not on T itself. *)
+Definition top_type : Type := T.
+HB.instance Definition _ := @isQBS.Build R top_type setT
+  (fun _ _ _ => I) (fun _ => I) (fun _ _ _ => I).
+Definition qbs_topT : qbsType R := top_type.
 End qbs_topT_instance.
 
 Lemma qbs_topT_ub (T : Type) (Mx : set (mR -> T)) :
@@ -905,7 +907,7 @@ Lemma qbs_botT_lb (T : Type) (Mx : set (mR -> T)) :
 Proof. by move=> [c1 [c2 c3]]; apply: generating_qbs_least c1 c2 c3 _. Qed.
 
 (* The empty QBS is initial. *)
-Definition emptyQ : qbsType R := void.
+Definition emptyQ : qbsType R := qbs_topT void.
 
 Lemma qbs_Mx0P (X : qbsType R) : qbs_Mx (s := X) = set0 <-> (X -> False).
 Proof.
