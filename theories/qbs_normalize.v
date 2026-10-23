@@ -2,8 +2,8 @@
 From HB Require Import structures.
 From mathcomp Require Import boot algebra reals ereal topology classical_sets
   boolp numfun measure measurable_realfun lebesgue_measure lebesgue_integral
-  lebesgue_stieltjes_measure probability.
-From QBS Require Import quasi_borel probability_qbs qbs_monad.
+  lebesgue_stieltjes_measure probability giry.
+From QBS Require Import quasi_borel coproduct_qbs probability_qbs qbs_monad.
 
 (**md**************************************************************************)
 (* # Normalisation of weighted QBS probabilities (HKSY Sec. VI)               *)
@@ -19,6 +19,9 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad.
 (* qbs_normalize_prob p == the normalised probability on X                    *)
 (*      qbs_normalize p == Some (qbs_normalize_prob p) if the evidence is     *)
 (*                         positive and finite, None otherwise                *)
+(*  qbs_normalize_sum p == the same, as an element of P(X) + 1                *)
+(*       qbs_normalizeQ == qbs_normalize_sum as a QBS morphism                *)
+(*                         P(X * R) -> P(X) + 1 (qbs_normalize_morphism)      *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -51,6 +54,9 @@ by have [_] := qbs_prob_alpha_random p.
 Qed.
 
 Definition qbs_evidence p : \bar R := \int[qbs_prob_mu p]_r qbs_weight p r.
+
+Lemma qbs_evidence_ge0 p : 0 <= qbs_evidence p.
+Proof. by apply: integral_ge0 => r _; exact: qbs_weight_ge0. Qed.
 
 Lemma qbs_measurable_weight :
   qbs_measurable (prodQ X (realQ R)) (fun xw => (maxr 0 xw.2)%:E).
@@ -142,6 +148,31 @@ move=> mU b [hb1 hb2]; apply/measurable_EFinP; apply: measurable_funM.
 by apply: measurable_maxr; [exact: measurable_cst|exact: hb2].
 Qed.
 
+Lemma qbs_normalize_event_degen p (U : set X) :
+  ~~ ((0 < qbs_evidence p) && (qbs_evidence p < +oo)) ->
+  qbs_prob_event X (qbs_normalize_prob p) U =
+  qbs_prob_event _ p (fst @^-1` U).
+Proof.
+move=> hev; rewrite /qbs_prob_event /= /mnormalize; case: ifPn => // h.
+exfalso; move: hev h; rewrite -[qbs_evidence p]/(qbs_density p [set: mR]).
+rewrite negb_or => /negP hev /andP[h0 hoo]; apply: hev.
+by rewrite lt0e h0 ltey hoo andbT; exact: (qbs_evidence_ge0 p).
+Qed.
+
+(** Normalisation respects equivalence, degenerate cases included. *)
+Lemma qbs_normalize_prob_equiv p1 p2 : qbs_prob_equiv _ p1 p2 ->
+  qbs_prob_equiv X (qbs_normalize_prob p1) (qbs_normalize_prob p2).
+Proof.
+move=> e U mU.
+rewrite -[LHS]/(qbs_prob_event _ _ _) -[RHS]/(qbs_prob_event _ _ _).
+have [hev|hev] := boolP ((0 < qbs_evidence p1) && (qbs_evidence p1 < +oo)).
+  rewrite !qbs_normalize_event -?(qbs_evidence_equiv e)//; congr (_ * _).
+  apply: ge0_qbs_integral_equiv e; first exact: qbs_measurable_weighted_indic.
+  by move=> xw; rewrite lee_fin mulr_ge0 ?le_max ?lexx ?orbT// indicE ler0n.
+rewrite !qbs_normalize_event_degen -?(qbs_evidence_equiv e)//.
+exact: e _ (sigma_Mx_preimage (qbs_fst X (realQ R)) mU).
+Qed.
+
 (** Normalisation is well defined on equivalence classes. *)
 Lemma qbs_normalize_equiv p1 p2 : qbs_prob_equiv _ p1 p2 ->
   match qbs_normalize p1, qbs_normalize p2 with
@@ -151,11 +182,86 @@ Lemma qbs_normalize_equiv p1 p2 : qbs_prob_equiv _ p1 p2 ->
   end.
 Proof.
 move=> e; rewrite /qbs_normalize -(qbs_evidence_equiv e).
-case: ifPn => // hev U mU.
-rewrite -[LHS]/(qbs_prob_event _ _ _) -[RHS]/(qbs_prob_event _ _ _).
-rewrite !qbs_normalize_event// -?(qbs_evidence_equiv e)//; congr (_ * _).
-apply: ge0_qbs_integral_equiv e; first exact: qbs_measurable_weighted_indic.
-by move=> xw; rewrite lee_fin mulr_ge0 ?le_max ?lexx ?orbT// indicE ler0n.
+by case: ifPn => // _; exact: qbs_normalize_prob_equiv.
 Qed.
+
+Local Lemma measurable_invr : measurable_fun [set: mR] (@GRing.inv R).
+Proof.
+rewrite -(setUv [set (0 : mR)%R]); apply/measurable_funU => //.
+  exact: measurableC.
+split; first exact: measurable_fun_set1.
+apply: open_continuous_measurable_fun.
+  by apply/closed_openC/accessible_closed_set1; exact: hausdorff_accessible.
+by move=> x /[!inE] /eqP x0; exact: normed_module.inv_continuous.
+Qed.
+
+(** Normalisation as a total map into P(X) + 1 (HKSY Sec. VI). *)
+Definition qbs_normalize_sum p : coprodQ (monadP X) (unitQ R) :=
+  if (0 < qbs_evidence p) && (qbs_evidence p < +oo)
+  then inl (qbs_normalize_prob p) else inr tt.
+
+Lemma qbs_normalize_sumE p : qbs_normalize_sum p =
+  if qbs_normalize p is Some q then inl q else inr tt.
+Proof. by rewrite /qbs_normalize_sum /qbs_normalize; case: ifP. Qed.
+
+Lemma qbs_normalize_morphism :
+  qbs_morphism (X := monadP (prodQ X (realQ R)))
+    (Y := coprodQ (monadP X) (unitQ R)) qbs_normalize_sum.
+Proof.
+move=> b hb; have [a [g [ha mg g1 hbe]]] := hb.
+pose pr r : qbs_prob (prodQ X (realQ R)) := mkQBSProb a (giry_prob (g1 r)) ha.
+have epr r : qbs_prob_equiv _ (b r) (pr r) by move=> U mU; exact: hbe.
+pose P r := (0 < qbs_evidence (b r)) && (qbs_evidence (b r) < +oo).
+have mev : measurable_fun [set: mR] (fun r => qbs_evidence (b r)).
+  apply: (qbs_integral_morphism qbs_measurable_weight _ hb).
+  by move=> xw; rewrite lee_fin le_max lexx.
+have mP : measurable_fun [set: mR] P.
+  by apply: measurable_and; exact: measurable_fun_lte.
+have md A : measurable A ->
+    measurable_fun [set: mR] (fun r => qbs_density (pr r) A).
+  move=> mA; pose w t : \bar R := (\1_A t)%:E * (maxr 0 (a t).2)%:E.
+  have mw : measurable_fun [set: mR] w.
+    apply: emeasurable_funM; first exact/measurable_EFinP/measurable_indic.
+    apply/measurable_EFinP; apply: measurable_maxr => //.
+    by have [] := ha.
+  have w0 t : 0 <= w t.
+    by rewrite mule_ge0 ?lee_fin ?indicE ?ler0n ?le_max ?lexx.
+  have -> : (fun r => qbs_density (pr r) A) = (giry_int^~ w) \o g.
+    apply/funext => r; rewrite /qbs_density integral_mkcond /giry_int /=.
+    apply: eq_integral => t _; rewrite /w /functions.patch indicE.
+    by case: (t \in A); rewrite ?mul1e ?mul0e.
+  exact: measurableT_comp (measurable_giry_int mw w0) mg.
+right; right; exists P, (fun r => qbs_normalize_prob (b r)), (fun=> tt).
+split => //; split; last first.
+  split => // r; rewrite /= /qbs_normalize_sum /P; by case: ifP.
+(* By saturation, it suffices to normalise the representative [a, g r]. *)
+apply: (@monadP_random_equiv _ _ (fun r => qbs_normalize_prob (pr r))).
+  by move=> r; apply: qbs_normalize_prob_equiv; exact: qbs_prob_equiv_sym.
+exists (fun t => (a t).1),
+  (fun r => qbs_prob_mu (qbs_normalize_prob (pr r)) : giry mR R).
+split => //.
+- by have [] := ha.
+- apply: measurable_giry_codensity => // B mB; rewrite /= /mnormalize.
+  set c := fun x => (qbs_density (pr x) [set: mR] == 0) ||
+    (qbs_density (pr x) [set: mR] == +oo).
+  have -> : (fun x => (if c x then [eta giry_prob (g1 x)] else
+        fun U : set mR => qbs_density (pr x) U *
+          ((fine (qbs_density (pr x) [set: mR]))^-1)%:E) B) =
+      (fun x => if c x then g x B else qbs_density (pr x) B *
+          ((fine (qbs_density (pr x) [set: mR]))^-1)%:E).
+    by apply/funext => x; case: ifP.
+  apply: measurable_fun_ifT.
+  + by apply: measurable_or; apply: measurable_fun_eqe => //; exact: md.
+  + exact: measurableT_comp (measurable_giry_ev mB) mg.
+  + apply: emeasurable_funM; first exact: md.
+    apply/measurable_EFinP; apply: measurableT_comp measurable_invr _.
+    exact: measurableT_comp (fine_measurable measurableT) (md _ measurableT).
+- by move=> r; exact: probability_setT.
+Qed.
+
+Definition qbs_normalizeQ :
+    qbsHomType (monadP (prodQ X (realQ R))) (coprodQ (monadP X) (unitQ R)) :=
+  HB.pack qbs_normalize_sum
+    (isQBSMorphism.Build R _ _ _ qbs_normalize_morphism).
 
 End qbs_normalize.
