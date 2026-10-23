@@ -16,9 +16,9 @@ From QBS Require Import quasi_borel measure_qbs_adjunction probability_qbs
 (*                                                                            *)
 (* ```                                                                        *)
 (*      qbs_to_giry p == distribution of p : qbs_prob (R_qbs R M) on M        *)
-(* giry_to_qbs encode decode decode_meas P == the probability                 *)
-(*                  (decode, P o encode^-1) on R(M); it returns a             *)
-(*                  qbs_prob, not an element of the Giry monad                *)
+(* giry_to_qbs encode decode P == the probability (decode, P o encode^-1)     *)
+(*                  on R(M); it returns a qbs_prob, not an element of the     *)
+(*                  Giry monad                                                *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -107,25 +107,25 @@ End standard_borel_giry.
 
 Section giry_to_qbs.
 Context d (M : measurableType d).
-Variables (encode : {mfun M >-> mR}) (decode : mR -> M).
-Hypothesis decode_meas : measurable_fun [set: mR] decode.
+Variables (encode : {mfun M >-> mR}) (decode : {mfun mR >-> M}).
 Hypothesis decode_encode : cancel encode decode.
 
 Definition giry_to_qbs (P : probability M R) : qbs_prob (R_qbs R M) :=
-  @mkQBSProb R (R_qbs R M) decode (distribution P encode) decode_meas.
+  @mkQBSProb R (R_qbs R M) decode (distribution P encode)
+    (measurable_funP decode).
 
 Lemma qbs_to_giryK (P : probability M R) (A : set M) :
   qbs_to_giry (giry_to_qbs P) A = P A.
 Proof.
-rewrite qbs_to_giryE /qbs_prob_event /= /distribution /pushforward.
+rewrite qbs_to_giryE /qbs_prob_event /=.
 by congr (P _); apply/seteqP; split => x /=; rewrite decode_encode.
 Qed.
 
 Lemma giry_to_qbsK (p : qbs_prob (R_qbs R M)) :
   qbs_prob_equiv (R_qbs R M) (giry_to_qbs (qbs_to_giry p)) p.
 Proof.
-move=> U _; rewrite /= /distribution /pushforward.
-by congr (qbs_prob_mu p _); apply/seteqP; split => r /=; rewrite decode_encode.
+move=> U _; congr (qbs_prob_mu p _).
+by apply/seteqP; split => r /=; rewrite decode_encode.
 Qed.
 
 End giry_to_qbs.

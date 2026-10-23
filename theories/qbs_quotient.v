@@ -108,8 +108,7 @@ HB.instance Definition _ := @isQBS.Build R (qbs_quot X) qbs_quot_Mx
 
 (** The projection P(X) -> qbs_quot X is a morphism. *)
 Lemma qbs_quot_pi_morphism :
-  qbs_morphism (X := monadP X) (Y := qbs_quot X)
-    (fun p : monadP X => \pi_(qbs_quot X) (p : qbs_prob X)).
+  qbs_morphism (fun p : monadP X => \pi_(qbs_quot X) (p : qbs_prob X)).
 Proof.
 move=> b hb; apply: monadP_random_equiv hb => r.
 exact/qbs_prob_equiv_sym/qbs_prob_equiv_repr.
@@ -172,7 +171,7 @@ Lemma quot_bindA X Y Z (q : qbs_quot X) (f : qbsHomType X (monadP Y))
     (g : qbsHomType Y (monadP Z)) :
   quot_bind (quot_bind q f) g = quot_bind q (qbs_bindQ f g).
 Proof.
-rewrite [quot_bind q f]/quot_bind quot_bindE /quot_bind.
+rewrite [quot_bind q f]/quot_bind quot_bindE.
 exact/qbs_quot_eq/qbs_bindA.
 Qed.
 
