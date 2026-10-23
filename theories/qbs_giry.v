@@ -56,7 +56,7 @@ Proof. by move=> mf intf; rewrite integral_distribution. Qed.
 Lemma qbs_prob_equiv_giry (p1 p2 : qbs_prob (R_qbs R M)) (A : set M) :
   qbs_prob_equiv (R_qbs R M) p1 p2 -> measurable A ->
   qbs_to_giry p1 A = qbs_to_giry p2 A.
-Proof. by move=> e mA; exact: (e _ (adjunction_counit mA)). Qed.
+Proof. by move=> e mA; exact: (e _ (sigma_Mx_measurable mA)). Qed.
 
 Lemma qbs_to_giry_return (x : M) (A : set M) :
   qbs_to_giry (qbs_return (x : R_qbs R M)) A = (\d_x)%R A.

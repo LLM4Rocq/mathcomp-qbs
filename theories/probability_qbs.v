@@ -16,6 +16,7 @@ From QBS Require Import quasi_borel.
 (*   qbs_prob X    == probability triples (alpha, mu) on a qbsType X         *)
 (*   qbs_prob_equiv == equivalence of triples (same pushforward)              *)
 (*   qbs_integral  == integration against a QBS probability                   *)
+(*   qbs_law p     == the law of p, a probability on L X = qbs_meas X         *)
 (* ```                                                                        *)
 (* The probability monad itself is in qbs_monad.v.                            *)
 (******************************************************************************)
@@ -220,6 +221,45 @@ have hma := hm _ (qbs_prob_alpha_random p).
 exact: (integrable_pushforward hma
   (@measurable_id _ (\bar R) setT) hint measurableT).
 Qed.
+
+
+(** ** The law of a QBS probability on L X (HKSY l_X, eq. (3)) *)
+
+Lemma qbs_measurableE (X : qbsType R) (h : X -> \bar R) :
+  qbs_measurable X h <->
+  measurable_fun [set: qbs_meas X] (h : qbs_meas X -> \bar R).
+Proof. exact: (qbs_morphism_measurableP (M := \bar R)). Qed.
+
+Definition qbs_prob_alpha_mfun (X : qbsType R) (p : qbs_prob X) :
+    {mfun mR >-> qbs_meas X} :=
+  mfun_Sub (mem_set (qbs_Mx_measurable (qbs_prob_alpha_random p))).
+
+Definition qbs_law (X : qbsType R) (p : qbs_prob X) :
+    probability (qbs_meas X) R :=
+  distribution (qbs_prob_mu p) (qbs_prob_alpha_mfun p).
+
+Lemma qbs_lawE (X : qbsType R) (p : qbs_prob X) (A : set X) :
+  qbs_law p A = qbs_prob_mu p (qbs_prob_alpha p @^-1` A).
+Proof. by []. Qed.
+
+(** Equivalence of probabilities is equality of their laws. *)
+Lemma qbs_prob_equivE (X : qbsType R) (p1 p2 : qbs_prob X) :
+  qbs_prob_equiv X p1 p2 <->
+  (forall A : set (qbs_meas X), measurable A -> qbs_law p1 A = qbs_law p2 A).
+Proof. by []. Qed.
+
+Lemma ge0_qbs_integral_law (X : qbsType R) (p : qbs_prob X) (h : X -> \bar R) :
+  qbs_measurable X h -> (forall x, (0 <= h x)%E) ->
+  qbs_integral X p h = (\int[qbs_law p]_x h x)%E.
+Proof.
+by move=> /qbs_measurableE mh h0; rewrite ge0_integral_distribution.
+Qed.
+
+Lemma qbs_integral_law (X : qbsType R) (p : qbs_prob X) (h : X -> \bar R) :
+  qbs_measurable X h ->
+  (qbs_prob_mu p).-integrable [set: mR] (h \o qbs_prob_alpha p) ->
+  qbs_integral X p h = (\int[qbs_law p]_x h x)%E.
+Proof. by move=> /qbs_measurableE mh ih; rewrite integral_distribution. Qed.
 
 End qbs_integration.
 

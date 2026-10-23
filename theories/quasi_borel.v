@@ -33,6 +33,7 @@ From mathcomp Require Import boot algebra boolp reals classical_sets
 (*   generating_Mx G == inductive closure of G under the QBS axioms           *)
 (*   map_qbs f hf == image QBS on Y via morphism f : X -> Y                   *)
 (*   sigma_Mx X == the sigma-algebra induced by the random elements of X      *)
+(*   qbs_meas X == L X, the measurable space (X, sigma_Mx X)                  *)
 (*   qbs_leT MxX MxY == order on QBS: set inclusion on random elements        *)
 (*   qbs_supT MxX MxY == join (sup) of two QBS on the same carrier            *)
 (*   qbs_id X == bundled identity morphism X -> X                             *)
@@ -544,6 +545,44 @@ move=> hF alpha halpha.
 rewrite preimage_bigcup.
 apply: bigcup_measurable => i _; exact: hF.
 Qed.
+
+Lemma sigma_Mx_set0 (X : qbsType R) : sigma_Mx (X := X) set0.
+Proof. by move=> alpha _; rewrite preimage_set0. Qed.
+
+(** ** The functor L: QBS -> measurable spaces (HKSY Prop. 15) *)
+
+Section qbs_meas.
+Variable X : qbsType R.
+
+(** L X: the carrier of X with the sigma-algebra sigma_Mx. *)
+Definition qbs_meas : Type := X.
+
+HB.instance Definition _ := gen_eqMixin qbs_meas.
+HB.instance Definition _ := gen_choiceMixin qbs_meas.
+HB.instance Definition _ :=
+  @isMeasurable.Build (sigma_display (@sigma_Mx X)) qbs_meas (@sigma_Mx X)
+    (@sigma_Mx_set0 X) (@sigma_Mx_setC X) (@sigma_Mx_bigcup X).
+
+Lemma qbs_measE (U : set qbs_meas) : measurable U = sigma_Mx (X := X) U.
+Proof. by []. Qed.
+
+(** Random elements are measurable into L X (the unit of L -| R). *)
+Lemma qbs_Mx_measurable (a : mR -> X) :
+  qbs_Mx a -> measurable_fun [set: mR] (a : mR -> qbs_meas).
+Proof. by move=> ha _ U mU; rewrite setTI; exact: mU _ ha. Qed.
+
+(** L -| R: QBS morphisms X -> R M are the measurable maps L X -> M. *)
+Lemma qbs_morphism_measurableP d (M : measurableType d) (f : X -> M) :
+  qbs_morphism (X := X) (Y := R_qbs M) f <->
+  measurable_fun [set: qbs_meas] (f : qbs_meas -> M).
+Proof.
+split=> [hf _ U mU|mf a ha].
+  rewrite setTI qbs_measE => a ha.
+  by have := hf _ ha measurableT U mU; rewrite setTI.
+exact: measurableT_comp mf (qbs_Mx_measurable ha).
+Qed.
+
+End qbs_meas.
 
 (* 8. Comparison Morphisms *)
 (* Standard operations on R, nat, bool that are measurable
