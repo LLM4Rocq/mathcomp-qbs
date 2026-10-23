@@ -150,7 +150,8 @@ move=> mU b [hb1 hb2]; apply/measurable_EFinP; apply: measurable_funM.
 by apply: measurable_maxr; [exact: measurable_cst|exact: hb2].
 Qed.
 
-Lemma qbs_pdensity_preimage (mu : probability mR R) (alpha : mR -> prodQ X (realQ R))
+Lemma qbs_pdensity_preimage (mu : probability mR R)
+    (alpha : mR -> prodQ X (realQ R))
     (ha : qbs_Mx alpha) (U : set X) :
   qbs_pdensity mu ha ((fun r => (alpha r).1) @^-1` U) =
   \int[mu]_r ((\1_U (alpha r).1 : R) * maxr 0 (alpha r).2)%:E.
