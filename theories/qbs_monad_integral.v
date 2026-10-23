@@ -17,10 +17,6 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad.
 (*                             iff h x is finite                              *)
 (*   qbs_integrable_return  == real-valued functions are integrable for       *)
 (*                             qbs_return x                                   *)
-(*   qbs_integral_bind_return, qbs_integrable_bind_return,                    *)
-(*   qbs_variance_bind_return == bind against return . g computes with        *)
-(*                             the pushforward, for integrals, integrability  *)
-(*                             and variance                                   *)
 (*   qbs_integral_bind     == the integral of an integrable function against  *)
 (*                             p >>= f is the integral of the inner integrals *)
 (*   qbs_integral_bind_bounded == same for bounded measurable real functions  *)
@@ -70,38 +66,6 @@ Lemma qbs_integrable_return X (x : X) (f : X -> R) :
   qbs_measurable X (fun y => (f y)%:E) ->
   qbs_integrable X (qbs_return x) (fun y => (f y)%:E).
 Proof. by move=> mf; apply/qbs_integrable_returnP. Qed.
-
-(** ** Bind against a return *)
-
-Section bind_return.
-Context X Y (p : monadP X) (g : qbsHomType X Y).
-
-Local Abbreviation q := (qbs_bind p (qbs_comp g (qbs_returnQ Y))).
-
-Let qe : q = monadP_map g p := esym (monadP_map_bind g p).
-
-Lemma qbs_integral_bind_return (h : Y -> \bar R) :
-  qbs_measurable Y h -> qbs_integral Y q h = qbs_integral X p (h \o g).
-Proof.
-by move=> mh; rewrite qe monadP_map_integral.
-Qed.
-
-Lemma qbs_integrable_bind_return (h : Y -> \bar R) :
-  qbs_measurable Y h -> qbs_integrable Y q h <-> qbs_integrable X p (h \o g).
-Proof.
-move=> mh; rewrite qe /monadP_map; split.
-  by move/(qbs_integrable_mk _ _ mh).
-by move=> hi; apply/(qbs_integrable_mk _ _ mh).
-Qed.
-
-Lemma qbs_variance_bind_return (f : Y -> R) :
-  qbs_measurable Y (fun y => (f y)%:E) ->
-  qbs_variance Y q f = qbs_variance X p (f \o g).
-Proof.
-by move=> mf; rewrite qe /monadP_map qbs_variance_mk//.
-Qed.
-
-End bind_return.
 
 (** ** Bind *)
 

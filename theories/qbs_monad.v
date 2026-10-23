@@ -392,6 +392,16 @@ Lemma monadP_map_integral X Y (f : qbsHomType X Y) p (h : Y -> \bar R) :
   qbs_integral Y (monadP_map f p) h = qbs_integral X p (h \o f).
 Proof. exact: qbs_integral_mk. Qed.
 
+Lemma monadP_map_integrable X Y (f : qbsHomType X Y) p (h : Y -> \bar R) :
+  qbs_measurable Y h ->
+  qbs_integrable Y (monadP_map f p) h <-> qbs_integrable X p (h \o f).
+Proof. exact: qbs_integrable_mk. Qed.
+
+Lemma monadP_map_variance X Y (f : qbsHomType X Y) p (h : Y -> R) :
+  qbs_measurable Y (fun y => (h y)%:E) ->
+  qbs_variance Y (monadP_map f p) h = qbs_variance X p (h \o f).
+Proof. exact: qbs_variance_mk. Qed.
+
 Lemma monadP_map_morphism X Y (f : qbsHomType X Y) :
   qbs_morphism (X := monadP X) (Y := monadP Y) (monadP_map f).
 Proof.

@@ -1561,9 +1561,10 @@ equalities.
 \begin{lemma}[Integrals and Variance through Return]\label{lem:qbs_integrable_return}
   \rocq{QBS.qbs_monad_integral.qbs_integrable_returnP}
   \rocq{QBS.qbs_monad_integral.qbs_integrable_return}
-  \rocq{QBS.qbs_monad_integral.qbs_integral_bind_return}
-  \rocq{QBS.qbs_monad_integral.qbs_integrable_bind_return}
-  \rocq{QBS.qbs_monad_integral.qbs_variance_bind_return}
+  \rocq{QBS.qbs_monad.monadP_map_bind}
+  \rocq{QBS.qbs_monad.monadP_map_integral}
+  \rocq{QBS.qbs_monad.monadP_map_integrable}
+  \rocq{QBS.qbs_monad.monadP_map_variance}
   \rocqok
   \uses{def:qbs_return, def:qbs_bind, def:qbs_integrable, def:qbs_variance}
   Integrability against the Dirac probability, and integrals, integrability and variance of $p \mathbin{>\!\!>\!\!=} (\eta \circ g)$, reduce to the pushforward.
