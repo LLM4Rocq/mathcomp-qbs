@@ -20,7 +20,6 @@ From QBS Require Import measurable_aux quasi_borel standard_borel.
 (*   standard_borel_wit M == witness that M is standard Borel (retract of R)  *)
 (*   R_standard_borel, nat_standard_borel, bool_standard_borel,               *)
 (*   prod_standard_borel, ereal_standard_borel == instances of the witness    *)
-(*   erealQ == QBS on extended reals \bar R via R_qbs                         *)
 (*   Mx_of S == maps measurable for the set system S (R side)                 *)
 (*   sigma_of_Mx_of == Galois connection S <= sigma_of Mx <-> Mx <= Mx_of S   *)
 (* ```                                                                        *)
@@ -77,7 +76,7 @@ Qed.
 Lemma adjunction_counit d (M : measurableType d) :
   measurable_fun [set: qbs_meas (R_qbs R M)] (idfun : _ -> M).
 Proof.
-by move=> _ U mU; rewrite setTI qbs_measE; exact: sigma_Mx_R_qbs.
+by apply/qbs_morphism_measurableP => a ha.
 Qed.
 
 (** R preserves products.
@@ -160,26 +159,27 @@ Definition prod_standard_borel d1 d2
     (sb1 : standard_borel_wit M1) (sb2 : standard_borel_wit M2) :
   standard_borel_wit (M1 * M2)%type.
 Proof.
-move: sb1 sb2 => [f1 g1 hgf1] [f2 g2 hgf2].
-have hf : (fun xy : M1 * M2 => encode_RR (f1 xy.1, f2 xy.2) : mR) \in mfun.
+have hf : (fun xy : M1 * M2 =>
+    encode_RR (sb_encode sb1 xy.1, sb_encode sb2 xy.2) : mR) \in mfun.
   apply: mem_set; apply: measurableT_comp; first exact: measurable_encode_RR.
   apply: measurable_fun_pair.
-    exact: measurableT_comp (measurable_funP f1) measurable_fst.
-  exact: measurableT_comp (measurable_funP f2) measurable_snd.
-have hg : (fun r : mR => (g1 (decode_RR r).1, g2 (decode_RR r).2) :
-    M1 * M2) \in mfun.
+    exact: measurableT_comp (measurable_funP (sb_encode sb1)) measurable_fst.
+  exact: measurableT_comp (measurable_funP (sb_encode sb2)) measurable_snd.
+have hg : (fun r : mR => (sb_decode sb1 (decode_RR r).1,
+    sb_decode sb2 (decode_RR r).2) : M1 * M2) \in mfun.
   apply: mem_set; apply: measurable_fun_pair.
-    apply: measurableT_comp (measurable_funP g1) _.
+    apply: measurableT_comp (measurable_funP (sb_decode sb1)) _.
     apply: measurableT_comp measurable_fst _.
     exact: measurable_decode_RR.
-  apply: measurableT_comp (measurable_funP g2) _.
+  apply: measurableT_comp (measurable_funP (sb_decode sb2)) _.
   apply: measurableT_comp measurable_snd _.
   exact: measurable_decode_RR.
 apply: {| sb_encode := mfun_Sub hf; sb_decode := mfun_Sub hg |}.
 move=> [x1 x2].
-change ((g1 (decode_RR (encode_RR (f1 x1, f2 x2))).1,
-         g2 (decode_RR (encode_RR (f1 x1, f2 x2))).2) = (x1, x2)).
-by rewrite encode_RRK /= hgf1 hgf2.
+change ((sb_decode sb1 (decode_RR (encode_RR (sb_encode sb1 x1,
+    sb_encode sb2 x2))).1, sb_decode sb2 (decode_RR (encode_RR
+    (sb_encode sb1 x1, sb_encode sb2 x2))).2) = (x1, x2)).
+by rewrite encode_RRK /= !sb_encodeK.
 Defined.
 
 (** For standard Borel [M], [sigma_Mx (R_qbs M)] coincides with
@@ -202,9 +202,6 @@ case: sb => f g hgf U; split.
   by rewrite /preimage /= => hgfU; rewrite -(hgf x).
 - exact: sigma_Mx_R_qbs.
 Qed.
-
-(** QBS on the extended reals via [R_qbs]. *)
-Definition erealQ := R_qbs R (\bar R).
 
 Local Lemma measurable_contract_fin :
   measurable_fun [set: mR] (fun r : R => r / (1 + `|r|)).
