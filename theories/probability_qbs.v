@@ -75,6 +75,10 @@ Record qbs_prob (X : qbsType R) := mkQBSProb {
   qbs_prob_mu : probability mR R ;
   qbs_prob_alpha_random : qbs_Mx qbs_prob_alpha }.
 
+(** Classical equality and choice on triples (used by the quotient). *)
+HB.instance Definition _ X := gen_eqMixin (qbs_prob X).
+HB.instance Definition _ X := gen_choiceMixin (qbs_prob X).
+
 (** Equivalence of probability triples: same pushforward measure on
     sigma_Mx sets, i.e. mu1(alpha1^{-1}(U)) = mu2(alpha2^{-1}(U)) for all
     U in sigma_Mx(X). *)

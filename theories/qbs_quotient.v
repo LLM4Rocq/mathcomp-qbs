@@ -61,9 +61,6 @@ Qed.
 Canonical qbs_prob_equiv_canonical :=
   EquivRel qbs_equiv_op qbs_equiv_op_refl qbs_equiv_op_sym qbs_equiv_op_trans.
 
-HB.instance Definition _ := gen_eqMixin (qbs_prob X).
-HB.instance Definition _ := gen_choiceMixin (qbs_prob X).
-
 Definition qbs_quot : Type := {eq_quot qbs_prob_equiv_canonical}.
 
 HB.instance Definition _ := Choice.on qbs_quot.
