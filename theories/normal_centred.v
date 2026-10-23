@@ -90,7 +90,9 @@ by field.
 Qed.
 
 Let normal_pdfxx m s : s != 0 -> normal_pdf m s m = normal_peak s.
-Proof. by move=> s0; rewrite /normal_pdf (negbTE s0) NormalPdf0.normal_pdf0xx. Qed.
+Proof.
+by move=> s0; rewrite /normal_pdf (negbTE s0) NormalPdf0.normal_pdf0xx.
+Qed.
 
 Let continuous_normal_centred m s : s != 0 ->
   continuous (fun x => (x - m) * normal_pdf m s x).
@@ -163,8 +165,7 @@ by rewrite !in_itv/= andbT => /[swap] /le_lt_trans /[apply]; rewrite ltxx.
 Qed.
 
 Lemma integrable_normal_centred m s : s != 0 ->
-  mu.-integrable setT
-    (fun x : R => ((x - m) * normal_pdf m s x)%:E).
+  mu.-integrable setT (fun x => ((x - m) * normal_pdf m s x)%:E).
 Proof.
 move=> s0; have mg := measurable_normal_centred m s s0.
 apply/integrableP; split => //.
@@ -221,6 +222,7 @@ Lemma ge0_integral_normal_prob m s (f : R -> \bar R) :
    \int[mu]_x (f x * (normal_pdf m s x)%:E))%E.
 Proof.
 move=> f0 mf; have nd := normal_prob_dominates m s.
+(* no ge0 version of the change of variables is public upstream *)
 rewrite -(Radon_Nikodym_SigmaFinite.change_of_variables nd)//.
 apply: ae_eq_integral => //.
 - apply: emeasurable_funM => //.
