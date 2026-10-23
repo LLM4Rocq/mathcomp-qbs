@@ -153,10 +153,12 @@ have [Xempty | x0] := pselectT X.
           forall r, Fi i r = if t.1.1 r then inl (t.1.2 r) else inr (t.2 r).
       move=> i; have [[a [ha hdef]] | [[b [hb hdef]] | [P [a [b h]]]]] := hFi i.
       + exists ((fun _ => true), a, (fun _ => y0)) => /=.
-        repeat split; [exact: measurable_cst | exact: ha | exact: qbs_Mx_const |].
+        repeat split;
+          [exact: measurable_cst | exact: ha | exact: qbs_Mx_const |].
         by move=> r; rewrite hdef.
       + exists ((fun _ => false), (fun _ => x0), b) => /=.
-        repeat split; [exact: measurable_cst | exact: qbs_Mx_const | exact: hb |].
+        repeat split;
+          [exact: measurable_cst | exact: qbs_Mx_const | exact: hb |].
         by move=> r; rewrite hdef.
       + by exists (P, a, b).
     right; right.
