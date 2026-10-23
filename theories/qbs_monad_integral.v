@@ -24,7 +24,7 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad.
 (*   qbs_integral_bind     == the integral of an integrable function against  *)
 (*                             p >>= f is the integral of the inner integrals *)
 (*   qbs_integral_bind_bounded == same for bounded measurable real functions  *)
-(*   monadP_random_integral_sgn, qbs_integral_morphism_sgn == signed versions *)
+(*   monadP_random_integral, qbs_integral_morphism == signed versions         *)
 (*                             of the integral being measurable in a random   *)
 (*                             probability, and of p |-> qbs_integral p h     *)
 (*                             being a morphism P(X) -> \bar R                *)
@@ -106,7 +106,7 @@ Context X Y (p : qbs_prob X) (f : qbsHomType X (monadP Y)).
 Let hf : monadP_random Y (f \o qbs_prob_alpha p) :=
   qbs_hom_proof _ (qbs_prob_alpha_random p).
 
-(** Signed version of qbs_bind_integral. *)
+(** Signed version of ge0_qbs_integral_bind. *)
 Lemma qbs_integral_bind (h : Y -> \bar R) :
   qbs_measurable Y h -> qbs_integrable Y (qbs_bind p f) h ->
   qbs_integral Y (qbs_bind p f) h =
@@ -119,13 +119,13 @@ pose B r := qbs_integral Y (f (qbs_prob_alpha p r)) h^\-.
 have A0 r : 0 <= A r by apply: integral_ge0 => x _; exact: funepos_ge0.
 have B0 r : 0 <= B r by apply: integral_ge0 => x _; exact: funeneg_ge0.
 have mA : measurable_fun setT A.
-  exact: monadP_random_integral hf mhp (funepos_ge0 h).
+  exact: ge0_monadP_random_integral hf mhp (funepos_ge0 h).
 have mB : measurable_fun setT B.
-  exact: monadP_random_integral hf mhn (funeneg_ge0 h).
+  exact: ge0_monadP_random_integral hf mhn (funeneg_ge0 h).
 have eA : qbs_integral Y (qbs_bind p f) h^\+ = \int[qbs_prob_mu p]_r A r.
-  exact: qbs_bind_integral mhp (funepos_ge0 h).
+  exact: ge0_qbs_integral_bind mhp (funepos_ge0 h).
 have eB : qbs_integral Y (qbs_bind p f) h^\- = \int[qbs_prob_mu p]_r B r.
-  exact: qbs_bind_integral mhn (funeneg_ge0 h).
+  exact: ge0_qbs_integral_bind mhn (funeneg_ge0 h).
 have iA : (qbs_prob_mu p).-integrable setT A.
   apply/integrableP; split => //.
   under eq_integral do rewrite gee0_abs//.
@@ -153,23 +153,23 @@ move=> mk bd; apply: qbs_integral_bind => //.
 exact: qbs_integrable_bounded.
 Qed.
 
-(** ** Integration is a morphism, signed version of qbs_integral_morphism *)
+(** ** Integration is a morphism, signed version of ge0_qbs_integral_morphism *)
 
-Lemma monadP_random_integral_sgn X (b : mR -> qbs_prob X) (h : X -> \bar R) :
+Lemma monadP_random_integral X (b : mR -> qbs_prob X) (h : X -> \bar R) :
   monadP_random X b -> qbs_measurable X h ->
   measurable_fun [set: mR] (fun r => qbs_integral X (b r) h).
 Proof.
 move=> hb mh; under eq_fun do rewrite qbs_integralE.
 apply: emeasurable_funB.
-- exact: monadP_random_integral hb (qbs_measurable_funepos mh) (funepos_ge0 h).
-- exact: monadP_random_integral hb (qbs_measurable_funeneg mh) (funeneg_ge0 h).
+- exact: ge0_monadP_random_integral hb (qbs_measurable_funepos mh) (funepos_ge0 h).
+- exact: ge0_monadP_random_integral hb (qbs_measurable_funeneg mh) (funeneg_ge0 h).
 Qed.
 
-Lemma qbs_integral_morphism_sgn X (h : X -> \bar R) :
+Lemma qbs_integral_morphism X (h : X -> \bar R) :
   qbs_measurable X h ->
   qbs_morphism (X := monadP X) (Y := R_qbs R (\bar R))
     (fun p => qbs_integral X p h).
-Proof. by move=> mh b hb; exact: monadP_random_integral_sgn. Qed.
+Proof. by move=> mh b hb; exact: monadP_random_integral. Qed.
 
 (** ** Parametric integrals (AFP qbs_prob_integral_morphism) *)
 
@@ -182,7 +182,7 @@ Proof.
 move=> mh a ha.
 pose g := qbs_comp (qbs_pair (qbs_id X) L) (qbs_strengthQ X Y).
 have hs : monadP_random (prodQ X Y) (g \o a) := qbs_hom_proof _ ha.
-exact: monadP_random_integral_sgn hs mh.
+exact: monadP_random_integral hs mh.
 Qed.
 
 Lemma qbs_integral_snd X Y (p : monadP X) (h : prodQ X Y -> \bar R) :

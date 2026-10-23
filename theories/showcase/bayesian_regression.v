@@ -65,7 +65,7 @@ Let half_neq0 : (2^-1 : R) != 0. Proof. by rewrite invr_eq0 pnatr_eq0. Qed.
 Definition nu : monadP RQ := qbs_normal_distribution 0 3.
 
 (** The parameter prior N(0,3) x N(0,3), as a monadic product. *)
-Definition prior2 : monadP W := qbs_pairP nu nu.
+Definition prior2 : monadP W := monadP_pair nu nu.
 
 (** (s, b) |-> (r |-> s * r + b). *)
 Definition lin_uncurried : qbsHomType (prodQ W RQ) RQ :=
@@ -228,14 +228,14 @@ Lemma prior2_integral (h : W -> \bar R) :
   qbs_measurable W h -> (forall x, 0 <= h x) ->
   qbs_integral W prior2 h =
   \int[normal_prob 0 3]_s \int[normal_prob 0 3]_b h (s, b).
-Proof. by move=> mh h0; rewrite qbs_bind_integral. Qed.
+Proof. by move=> mh h0; rewrite ge0_qbs_integral_bind. Qed.
 
 Lemma posterior2_integral (h : W -> \bar R) :
   qbs_measurable W h -> (forall x, 0 <= h x) ->
   qbs_integral W posterior2 h =
   \int[normal_prob post_s_mean (sqrtr post_s_var)]_s
     \int[normal_prob (post_b_mean s) (sqrtr post_b_var)]_b h (s, b).
-Proof. by move=> mh h0; rewrite qbs_bind_integral. Qed.
+Proof. by move=> mh h0; rewrite ge0_qbs_integral_bind. Qed.
 
 (** Helpers. *)
 
@@ -318,7 +318,7 @@ move=> mh h0.
 pose g := qbs_comp (qbs_pair (qbs_id RQ) (qbs_comp m (qbs_normalQ sigma)))
   (qbs_strengthQ RQ RQ).
 have hg := qbs_hom_proof (s := g) idfun (@measurable_id _ mR setT).
-by have := qbs_integral_morphism mh h0 hg.
+by have := ge0_qbs_integral_morphism mh h0 hg.
 Qed.
 
 Local Lemma evidence_const_gt0 : (0 < evidence_const)%R.

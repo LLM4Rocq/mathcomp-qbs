@@ -33,7 +33,7 @@ Unset Printing Implicit Defensive.
 Local Open Scope classical_set_scope.
 Local Open Scope quotient_scope.
 
-Section QbsQuotient.
+Section quotient_monad.
 Variable R : realType.
 Local Notation mR := (measurableTypeR R).
 Implicit Types (X Y Z : qbsType R).
@@ -73,7 +73,7 @@ Lemma qbs_prob_equivP (p1 p2 : qbs_prob X) :
   reflect (qbs_prob_equiv X p1 p2) (p1 == p2 %[mod qbs_quot]).
 Proof. by rewrite eqquotE; exact: asboolP. Qed.
 
-Lemma qbs_quot_eqP (p1 p2 : qbs_prob X) :
+Lemma qbs_quot_eq (p1 p2 : qbs_prob X) :
   qbs_prob_equiv X p1 p2 -> \pi_qbs_quot p1 = \pi_qbs_quot p2.
 Proof.
 by move=> e; apply/eqmodP; exact/asboolP.
@@ -143,12 +143,12 @@ Definition quot_integral (q : qbs_quot X) (h : X -> \bar R) : \bar R :=
 Lemma quot_bindE (p : qbs_prob X) (f : qbsHomType X (monadP Y)) :
   quot_bind (\pi_(qbs_quot X) p) f =
   \pi_(qbs_quot Y) (qbs_bind p f : qbs_prob Y).
-Proof. exact/qbs_quot_eqP/qbs_bind_equiv_l/qbs_prob_equiv_repr. Qed.
+Proof. exact/qbs_quot_eq/qbs_bind_equiv_l/qbs_prob_equiv_repr. Qed.
 
 Lemma quot_mapE (f : qbsHomType X Y) (p : qbs_prob X) :
   quot_map f (\pi_(qbs_quot X) p) =
   \pi_(qbs_quot Y) (monadP_map f p : qbs_prob Y).
-Proof. exact/qbs_quot_eqP/monadP_map_equiv/qbs_prob_equiv_repr. Qed.
+Proof. exact/qbs_quot_eq/monadP_map_equiv/qbs_prob_equiv_repr. Qed.
 
 Lemma ge0_quot_integralE (p : qbs_prob X) (h : X -> \bar R) :
   qbs_measurable X h -> (forall x, (0 <= h x)%E) ->
@@ -163,12 +163,12 @@ End lifted_ops.
 Lemma quot_bind_returnl X Y (x : X) (f : qbsHomType X (monadP Y)) :
   quot_bind (quot_return x) f = \pi_(qbs_quot Y) (f x : qbs_prob Y).
 Proof.
-by rewrite /quot_return quot_bindE; exact/qbs_quot_eqP/qbs_bind_returnl.
+by rewrite /quot_return quot_bindE; exact/qbs_quot_eq/qbs_bind_returnl.
 Qed.
 
 Lemma quot_bind_returnr X (q : qbs_quot X) : quot_bind q (qbs_returnQ X) = q.
 Proof.
-by rewrite -[RHS]reprK /quot_bind; exact/qbs_quot_eqP/qbs_bind_returnr.
+by rewrite -[RHS]reprK /quot_bind; exact/qbs_quot_eq/qbs_bind_returnr.
 Qed.
 
 Lemma quot_bindA X Y Z (q : qbs_quot X) (f : qbsHomType X (monadP Y))
@@ -176,7 +176,7 @@ Lemma quot_bindA X Y Z (q : qbs_quot X) (f : qbsHomType X (monadP Y))
   quot_bind (quot_bind q f) g = quot_bind q (qbs_bindQ f g).
 Proof.
 rewrite [quot_bind q f]/quot_bind quot_bindE /quot_bind.
-exact/qbs_quot_eqP/qbs_bindA.
+exact/qbs_quot_eq/qbs_bindA.
 Qed.
 
 Lemma quot_map_id X (q : qbs_quot X) : quot_map (qbs_id X) q = q.
@@ -189,4 +189,4 @@ Proof.
 by rewrite [quot_map f q]/quot_map quot_mapE /quot_map monadP_map_comp.
 Qed.
 
-End QbsQuotient.
+End quotient_monad.

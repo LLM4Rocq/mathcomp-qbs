@@ -107,8 +107,8 @@ $m\mathbb{R}$ for its Borel measurable space.
 
 \begin{lemma}[Category Laws]\label{lem:qbs_cat_laws}
   \rocq{QBS.quasi_borel.qbs_homeqP}
-  \rocq{QBS.quasi_borel.qbs_comp1}
   \rocq{QBS.quasi_borel.qbs_1comp}
+  \rocq{QBS.quasi_borel.qbs_comp1}
   \rocq{QBS.quasi_borel.qbs_compA}
   \rocqok
   \uses{lem:qbs_morphism_id, lem:qbs_morphism_comp}
@@ -826,8 +826,8 @@ $m\mathbb{R}$ for its Borel measurable space.
 \end{theorem}
 \begin{proof}\rocqok\end{proof}
 
-\begin{lemma}[Uniqueness of Copairing]\label{lem:sigma_case_uniq}
-  \rocq{QBS.coproduct_qbs.sigma_case_uniq}
+\begin{lemma}[Uniqueness of Copairing]\label{lem:sigma_case_eta}
+  \rocq{QBS.coproduct_qbs.sigma_case_eta}
   \rocqok
   \uses{thm:qbs_morphism_sigma_case}
   A map $h$ out of $\coprod_n X_n$ equals the copairing of its
@@ -1060,7 +1060,7 @@ and variance results.
 
 \begin{lemma}[Bind: Events and Integrals]\label{lem:qbs_bind_event}
   \rocq{QBS.qbs_monad.qbs_bind_event}
-  \rocq{QBS.qbs_monad.qbs_bind_integral}
+  \rocq{QBS.qbs_monad.ge0_qbs_integral_bind}
   \rocqok
   \uses{def:qbs_bind, def:qbs_integral, def:qbs_measurable}
   For $U \in \sigma_{M_Y}$,
@@ -1167,8 +1167,8 @@ equalities.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
-\begin{theorem}[Integration Is a Morphism]\label{thm:qbs_integral_morphism}
-  \rocq{QBS.qbs_monad.qbs_integral_morphism}
+\begin{theorem}[Integration Is a Morphism]\label{thm:ge0_qbs_integral_morphism}
+  \rocq{QBS.qbs_monad.ge0_qbs_integral_morphism}
   \rocqok
   \uses{def:qbs_integral, def:qbs_measurable, def:monadP, def:ereal_standard_borel}
   For a QBS-measurable $h : X \to \bar{\mathbb{R}}$ with $h \geq 0$,
@@ -1520,9 +1520,9 @@ equalities.
   $X \times Y \to Y \times X$.
 \end{definition}
 
-\begin{definition}[Monadic Product]\label{def:qbs_pairP}
-  \rocq{QBS.qbs_monad.qbs_pairP}
-  \rocq{QBS.qbs_monad.qbs_pairP_event}
+\begin{definition}[Monadic Product]\label{def:monadP_pair}
+  \rocq{QBS.qbs_monad.monadP_pair}
+  \rocq{QBS.qbs_monad.monadP_pair_event}
   \rocqok
   \uses{def:qbs_bind, def:qbs_strength, def:qbs_swap}
   $p \otimes q = p \mathbin{>\!\!>\!\!=} (\lambda x.\; \mathrm{str}(x, q))$.
@@ -1531,10 +1531,10 @@ equalities.
   U(\alpha_p(r), \alpha_q(t))\}\, d\mu_p(r)$.
 \end{definition}
 
-\begin{theorem}[Commutativity (HKSY Prop.~22(2))]\label{thm:qbs_pairP_comm}
-  \rocq{QBS.qbs_monad.qbs_pairP_comm}
+\begin{theorem}[Commutativity (HKSY Prop.~22(2))]\label{thm:monadP_pair_comm}
+  \rocq{QBS.qbs_monad.monadP_pair_comm}
   \rocqok
-  \uses{def:qbs_pairP, def:monadP_map, def:qbs_swap, def:qbs_prob_equiv, thm:pair_standard_borel}
+  \uses{def:monadP_pair, def:monadP_map, def:qbs_swap, def:qbs_prob_equiv, thm:pair_standard_borel}
   $p \otimes q \sim P(\mathrm{swap})(q \otimes p)$.
   The proof uses Fubini--Tonelli for the product of the two base measures
   and the measurable bijection $\mathbb{R} \cong \mathbb{R} \times
@@ -1545,7 +1545,7 @@ equalities.
 \begin{corollary}[Commutativity of Bind]\label{cor:qbs_bind_comm}
   \rocq{QBS.qbs_monad.qbs_bind_comm}
   \rocqok
-  \uses{thm:qbs_pairP_comm, lem:qbs_bind_map, lem:qbs_bind_equiv_l}
+  \uses{thm:monadP_pair_comm, lem:qbs_bind_map, lem:qbs_bind_equiv_l}
   For $f : X \times Y \to P(Z)$:
   $(p \otimes q) \mathbin{>\!\!>\!\!=} f \sim
   (q \otimes p) \mathbin{>\!\!>\!\!=} (f \circ \mathrm{swap})$.
@@ -1576,12 +1576,12 @@ equalities.
 \end{theorem}
 \begin{proof}\rocqok\end{proof}
 
-\begin{lemma}[Signed and Parametric Integral Morphisms]\label{lem:qbs_integral_morphism_sgn}
-  \rocq{QBS.qbs_monad_integral.qbs_integral_morphism_sgn}
+\begin{lemma}[Signed and Parametric Integral Morphisms]\label{lem:qbs_integral_morphism}
+  \rocq{QBS.qbs_monad_integral.qbs_integral_morphism}
   \rocq{QBS.qbs_monad_integral.qbs_integral_param}
   \rocq{QBS.qbs_monad_integral.qbs_integral_snd}
   \rocqok
-  \uses{thm:qbs_integral_morphism, def:qbs_integral, def:monadP}
+  \uses{thm:ge0_qbs_integral_morphism, def:qbs_integral, def:monadP}
   $p \mapsto \int h \, dp$ is a morphism $P(X) \to R(\bar{\mathbb{R}})$ for any measurable $h$ (not only nonnegative); for a morphism $L : X \to P(Y)$, $x \mapsto \int h(x, \cdot)\, d(L\,x)$ is a morphism (AFP \texttt{qbs\_prob\_integral\_morphism}); and $y \mapsto \int h(\cdot, y)\, dp$ is a morphism.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
@@ -1693,7 +1693,7 @@ evidence is $0$ or infinite.
 
 \begin{lemma}[Quotient Equality]\label{lem:qbs_prob_equivP}
   \rocq{QBS.qbs_quotient.qbs_prob_equivP}
-  \rocq{QBS.qbs_quotient.qbs_quot_eqP}
+  \rocq{QBS.qbs_quotient.qbs_quot_eq}
   \rocq{QBS.qbs_quotient.qbs_prob_equiv_repr}
   \rocqok
   \uses{def:qbs_quot}
@@ -1768,10 +1768,10 @@ evidence is $0$ or infinite.
   integrals reduce to integrals against $\mu_p \otimes \mu_q$.
 \end{definition}
 
-\begin{lemma}[Product Agrees with the Monadic Product]\label{lem:qbs_prob_pairE}
-  \rocq{QBS.pair_qbs_measure.qbs_prob_pairE}
+\begin{lemma}[Product Agrees with the Monadic Product]\label{lem:qbs_prob_pair_equiv}
+  \rocq{QBS.pair_qbs_measure.qbs_prob_pair_equiv}
   \rocqok
-  \uses{def:qbs_prob_pair, def:qbs_pairP, def:qbs_prob_equiv}
+  \uses{def:qbs_prob_pair, def:monadP_pair, def:qbs_prob_equiv}
   The explicit product probability is equivalent to the monadic product:
   $p \otimes q \sim \mathrm{qbs\_prob\_pair}(p, q)$.
 \end{lemma}
@@ -1867,8 +1867,8 @@ evidence is $0$ or infinite.
   r \mapsto f(\alpha_p(r_1)) + g(\alpha_q(r_2)))$.
 \end{definition}
 
-\begin{theorem}[Variance of Independent Sum]\label{thm:qbs_variance_indep_sum}
-  \rocq{QBS.pair_qbs_measure.qbs_variance_indep_sum}
+\begin{theorem}[Variance of Independent Sum]\label{thm:qbs_pair_varianceD}
+  \rocq{QBS.pair_qbs_measure.qbs_pair_varianceD}
   \rocqok
   \uses{def:qbs_pair_variance, lem:expectation_prod}
   If $f \circ \alpha_p$ and $g \circ \alpha_q$ are square-integrable
@@ -2419,7 +2419,7 @@ math-comp algebra-tactics.
   \rocq{QBS.showcase.bayesian_regression.nu}
   \rocq{QBS.showcase.bayesian_regression.prior2}
   \rocqok
-  \uses{def:qbs_normal_distribution, def:qbs_pairP}
+  \uses{def:qbs_normal_distribution, def:monadP_pair}
   $\nu = \mathcal{N}(0, 3)$ and the parameter prior
   $\mathrm{prior2} = \nu \otimes \nu$ on $\mathbb{R} \times \mathbb{R}$,
   a monadic product.

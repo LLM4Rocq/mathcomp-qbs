@@ -8,7 +8,7 @@ From QBS Require Import quasi_borel.
 (**md**************************************************************************)
 (* # Coproducts for Quasi-Borel Spaces                                        *)
 (*                                                                            *)
-(* Binary coproducts, countable coproducts (HKSY Prop. 17), dependent        *)
+(* Binary coproducts, countable coproducts (HKSY Prop. 17), dependent         *)
 (* products, and lists as the countable coproduct of finite powers.           *)
 (*                                                                            *)
 (* ```                                                                        *)
@@ -321,7 +321,7 @@ Proof. by []. Qed.
 
 (** Uniqueness: a map out of the coproduct is determined by its
     restrictions along the injections. *)
-Lemma sigma_case_uniq Z (h : sigmaQ X -> Z) :
+Lemma sigma_case_eta Z (h : sigmaQ X -> Z) :
   h = sigma_case (fun i x => h (existT X i x)).
 Proof. by apply/funext => -[i x]. Qed.
 
@@ -489,7 +489,7 @@ Proof. by []. Qed.
 Lemma qbs_case_inr f g y : qbs_case f g (inr y) = g y.
 Proof. by []. Qed.
 
-Lemma qbs_case_exp_morphism :
+Lemma qbs_morphism_case_exp :
   qbs_morphism (X := prodQ (expQ X Z) (expQ Y Z)) (Y := expQ (coprodQ X Y) Z)
     (fun p => qbs_case (p.1 : qbsHomType X Z) (p.2 : qbsHomType Y Z)).
 Proof.
@@ -515,7 +515,7 @@ Qed.
 
 Definition qbs_case_exp : qbsHomType (prodQ (expQ X Z) (expQ Y Z))
     (expQ (coprodQ X Y) Z) :=
-  qbs_hom_of _ qbs_case_exp_morphism.
+  qbs_hom_of _ qbs_morphism_case_exp.
 
 Lemma qbs_case_expE f g s :
   qbs_case_exp (f, g) s = qbs_case f g s.

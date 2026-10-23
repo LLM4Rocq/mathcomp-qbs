@@ -149,11 +149,11 @@ by move: pf pg; rewrite efg => pf pg; rewrite (Prop_irrelevance pf pg).
 Qed.
 
 (** Category laws. *)
-Lemma qbs_comp1 (X Y : qbsType R) (f : qbsHomType X Y) :
+Lemma qbs_1comp (X Y : qbsType R) (f : qbsHomType X Y) :
   qbs_comp (qbs_id X) f = f.
 Proof. exact/qbs_homeqP. Qed.
 
-Lemma qbs_1comp (X Y : qbsType R) (f : qbsHomType X Y) :
+Lemma qbs_comp1 (X Y : qbsType R) (f : qbsHomType X Y) :
   qbs_comp f (qbs_id Y) = f.
 Proof. exact/qbs_homeqP. Qed.
 

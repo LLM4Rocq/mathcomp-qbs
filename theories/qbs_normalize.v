@@ -114,7 +114,7 @@ Definition qbs_normalize p : option (qbs_prob X) :=
 Lemma qbs_densityT p : qbs_density p [set: mR] = qbs_evidence p.
 Proof. by []. Qed.
 
-Lemma qbs_evidence_gt0_lt_oo p :
+Lemma qbs_evidence_degen p :
   ~~ (0 < qbs_evidence p < +oo) -> qbs_evidence p = 0 \/ qbs_evidence p = +oo.
 Proof.
 have := qbs_evidence_ge0 p; rewrite le_eqVlt => /orP[/eqP<-|ev0]; first by left.
@@ -160,7 +160,7 @@ Lemma qbs_normalize_event_degen p (U : set X) :
   qbs_prob_event X (qbs_normalize_prob p) U =
   qbs_prob_event _ p (fst @^-1` U).
 Proof.
-move=> /qbs_evidence_gt0_lt_oo hev.
+move=> /qbs_evidence_degen hev.
 rewrite /qbs_prob_event /= /mnormalize.
 case: ifPn => // /norP[/eqP h0 /eqP hoo].
 by exfalso; case: hev => hev; [apply: h0 | apply: hoo]; exact: hev.
@@ -209,7 +209,7 @@ pose pr r : qbs_prob (prodQ X (realQ R)) := mkQBSProb a (giry_prob (g1 r)) ha.
 have epr r : qbs_prob_equiv _ (b r) (pr r) by move=> U mU; exact: hbe.
 pose P r := 0 < qbs_evidence (b r) < +oo.
 have mev : measurable_fun [set: mR] (fun r => qbs_evidence (b r)).
-  exact: (qbs_integral_morphism qbs_measurable_weight qbs_pweight_ge0 hb).
+  exact: (ge0_qbs_integral_morphism qbs_measurable_weight qbs_pweight_ge0 hb).
 have mP : measurable_fun [set: mR] P.
   by apply: measurable_and; exact: measurable_fun_lte.
 have md A : measurable A ->

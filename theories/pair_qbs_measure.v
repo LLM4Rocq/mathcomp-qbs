@@ -15,7 +15,8 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad standard_borel.
 (* ```                                                                        *)
 (*   qbs_prob_pair X Y p q == product QBS probability on prodQ X Y, the       *)
 (*                            pushforward of mu_p \x mu_q along R * R -> R;   *)
-(*                            it is equivalent to qbs_pairP (qbs_prob_pairE)  *)
+(*                            it is equivalent to monadP_pair                 *)
+(*                            (qbs_prob_pair_equiv)                           *)
 (*      qbs_pair_alpha p q == the pairing map mR -> X * Y of the two alphas   *)
 (*   qbs_pair_mu_build p q == the probability measure on mR obtained by       *)
 (*                            pushing mu_p \x mu_q through encode_RR          *)
@@ -36,7 +37,7 @@ Unset Printing Implicit Defensive.
 
 Local Open Scope classical_set_scope.
 
-Section PairQbsMeasure.
+Section product_measure.
 Variable R : realType.
 
 Local Notation mR := (measurableTypeR R).
@@ -128,11 +129,11 @@ Arguments qbs_prob_pair : clear implicits.
 
 (** The encoded product agrees with the monadic product
     p >>= (fun x => strength (x, q)) of qbs_monad.v. *)
-Lemma qbs_prob_pairE (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y) :
-  qbs_prob_equiv (prodQ X Y) (qbs_pairP (p : monadP X) (q : monadP Y))
+Lemma qbs_prob_pair_equiv (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y) :
+  qbs_prob_equiv (prodQ X Y) (monadP_pair (p : monadP X) (q : monadP Y))
     (qbs_prob_pair X Y p q).
 Proof.
-move=> U mU; rewrite -[LHS]/(qbs_prob_event _ _ _) qbs_pairP_event//.
+move=> U mU; rewrite -[LHS]/(qbs_prob_event _ _ _) monadP_pair_event//.
 rewrite /qbs_prob_pair /= /qbs_pair_mu_build /=.
 rewrite /product_measure1 /=; apply: eq_integral => r _; congr (_ _).
 rewrite /xsection; apply/seteqP; split => t; rewrite /preimage /= inE /=.
@@ -257,8 +258,8 @@ have mU : sigma_Mx (X := prodQ (realQ R) (realQ R)) (A `*` B).
     by have := hb1 measurableT A mA; rewrite setTI.
   by have := hb2 measurableT B mB; rewrite setTI.
 transitivity (qbs_prob_event _ (monadP_map (qbs_pair f g) p) (A `*` B)) => //.
-rewrite /qbs_prob_event (hind _ mU) -(qbs_prob_pairE _ _ mU).
-rewrite -[LHS]/(qbs_prob_event _ _ _) qbs_pairP_event//=.
+rewrite /qbs_prob_event (hind _ mU) -(qbs_prob_pair_equiv _ _ mU).
+rewrite -[LHS]/(qbs_prob_event _ _ _) monadP_pair_event//=.
 set a := qbs_prob_alpha p.
 have mfA : measurable (a @^-1` (f @^-1` A)).
   have := @qbs_hom_proof _ _ _ f _ (qbs_prob_alpha_random p) measurableT A mA.
@@ -308,7 +309,7 @@ Definition qbs_pair_variance (X Y : qbsType R)
 
 Arguments qbs_pair_variance : clear implicits.
 
-Lemma qbs_variance_indep_sum (X Y : qbsType R)
+Lemma qbs_pair_varianceD (X Y : qbsType R)
     (px : qbs_prob X) (py : qbs_prob Y) (f : X -> R) (g : Y -> R) :
   let mu := (qbs_prob_mu px \x qbs_prob_mu py) in
   (fun rr : mR * mR => f (qbs_prob_alpha px rr.1)) \in Lfun mu 2 ->
@@ -353,7 +354,7 @@ rewrite -/mu EF EG; congr (_ - _ + (_ - _)); rewrite !unlock.
     (h := fun y => ((g (qbs_prob_alpha py y)) ^+ 2)%:E)).
 Qed.
 
-End PairQbsMeasure.
+End product_measure.
 
 Arguments qbs_prob_pair {R X Y}.
 Arguments qbs_pair_fun {R X Y}.

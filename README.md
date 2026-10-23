@@ -78,13 +78,13 @@ This formalization follows:
 - **R is full on standard Borel domains**: `R_qbs_full`,
   `sigma_Mx_standard_borel`
 - **Countable coproducts** (HKSY Prop. 17): `sigmaQ`, `sigma_case`,
-  `sigma_case_uniq`
+  `sigma_case_eta`
 - **Probability monad**: `qbs_return`, `qbs_bind`, laws
   `qbs_bind_returnl`, `qbs_bind_returnr`, `qbs_bindA`; `monadP_map`,
   `qbs_join`, `qbs_strength` with its laws `qbs_strength_snd`,
   `qbs_strength_assoc`, `qbs_strength_return`, `qbs_strength_join`;
   internal bind `qbs_bind_internal`
-  (HKSY Thm. 21); commutativity `qbs_pairP_comm`, `qbs_bind_comm`
+  (HKSY Thm. 21); commutativity `monadP_pair_comm`, `qbs_bind_comm`
   (HKSY Prop. 22(2))
 - **Quotient**: on the quotient type `qbs_quot` the monad laws hold
   as equalities

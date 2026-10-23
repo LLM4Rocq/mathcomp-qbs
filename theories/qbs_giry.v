@@ -9,7 +9,7 @@ From QBS Require Import quasi_borel measure_qbs_adjunction probability_qbs
 (**md**************************************************************************)
 (* # QBS probabilities on measurable spaces and probability measures          *)
 (*                                                                            *)
-(* A probability on R(M) induces a probability measure on M (its             *)
+(* A probability on R(M) induces a probability measure on M (its              *)
 (* distribution). Conversely, given a measurable encode : M -> R with a       *)
 (* measurable left inverse decode, a probability measure on M induces a       *)
 (* probability on R(M).                                                       *)
@@ -31,7 +31,7 @@ Unset Printing Implicit Defensive.
 Local Open Scope classical_set_scope.
 Local Open Scope ereal_scope.
 
-Section QbsGiry.
+Section giry_comparison.
 Variable R : realType.
 Local Notation mR := (measurableTypeR R).
 
@@ -130,4 +130,4 @@ Qed.
 
 End giry_to_qbs.
 
-End QbsGiry.
+End giry_comparison.

@@ -12,7 +12,7 @@ From QBS Require Import quasi_borel standard_borel.
 (* The R functor (R_qbs, quasi_borel.v) sends a measurable space to its QBS   *)
 (* of measurable functions; the L functor (qbs_meas, quasi_borel.v) sends a   *)
 (* QBS to its carrier with the sigma-algebra sigma_Mx. L -| R is              *)
-(* qbs_morphism_measurableP (HKSY Prop. 15(1)). This file adds L on          *)
+(* qbs_morphism_measurableP (HKSY Prop. 15(1)). This file adds L on           *)
 (* morphisms, the counit, standard Borel spaces, and fullness of R on         *)
 (* standard Borel spaces (HKSY Prop. 15(2)).                                  *)
 (*                                                                            *)
@@ -107,11 +107,11 @@ Record standard_borel_wit d
     (M : measurableType d) := StandardBorelWit {
   sb_encode : {mfun M >-> mR};
   sb_decode : {mfun mR >-> M};
-  sb_retractK : cancel sb_encode sb_decode
+  sb_encodeK : cancel sb_encode sb_decode
 }.
 Arguments sb_encode {d M}.
 Arguments sb_decode {d M}.
-Arguments sb_retractK {d M}.
+Arguments sb_encodeK {d M}.
 
 (* R itself is standard Borel (via the identity) *)
 Definition R_standard_borel : standard_borel_wit mR.
@@ -139,7 +139,7 @@ have hf : (fun n : nat => n%:R : mR) \in mfun.
   by apply: mem_set => _ U _; rewrite setTI.
 have hg : (truncn : mR -> nat) \in mfun := mem_set (@measurable_truncn R).
 exact: {| sb_encode := mfun_Sub hf; sb_decode := mfun_Sub hg;
-          sb_retractK := natrK |}.
+          sb_encodeK := natrK |}.
 Defined.
 
 (** bool is standard Borel: embed via [b%:R], decode via [0 < r]. *)
@@ -291,7 +291,7 @@ have hc : (contract (R := R) : \bar R -> mR) \in mfun :=
 have he : (expand (R := R) : mR -> \bar R) \in mfun :=
   mem_set measurable_expand.
 exact: {| sb_encode := mfun_Sub hc; sb_decode := mfun_Sub he;
-          sb_retractK := contractK (R := R) |}.
+          sb_encodeK := contractK (R := R) |}.
 Defined.
 
 (** Order adjunction on a fixed carrier T (AFP rl_order_adjunction).

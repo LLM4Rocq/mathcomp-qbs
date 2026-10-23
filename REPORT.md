@@ -176,7 +176,7 @@ Lemma qbs_homeqP (X Y : qbsType R) (f g : qbsHomType X Y) :
 
 | Name | Statement |
 |------|-----------|
-| `qbs_comp1` / `qbs_1comp` | Identity is a left / right unit for `qbs_comp` (stated as `qbs_comp (qbs_id X) f = f` and `qbs_comp f (qbs_id Y) = f`) |
+| `qbs_1comp` / `qbs_comp1` | Identity is a left / right unit for `qbs_comp` (stated as `qbs_comp (qbs_id X) f = f` and `qbs_comp f (qbs_id Y) = f`) |
 | `qbs_compA` | `qbs_comp f (qbs_comp g h) = qbs_comp (qbs_comp f g) h` |
 
 These establish that QBS spaces form a category, with equalities between bundled morphisms (not just pointwise equalities).
@@ -394,7 +394,7 @@ Record standard_borel_wit d
     (M : measurableType d) := StandardBorelWit {
   sb_encode : {mfun M >-> mR} ;
   sb_decode : {mfun mR >-> M} ;
-  sb_retractK : cancel sb_encode sb_decode
+  sb_encodeK : cancel sb_encode sb_decode
 }.
 ```
 
@@ -572,7 +572,7 @@ Lemma qbs_morphism_sigma_case Z (f : forall i, qbsHomType (X i) Z) :
 Lemma sigma_caseE Z (f : forall i, X i -> Z) i (x : X i) :
   sigma_case f (existT X i x) = f i x.
 
-Lemma sigma_case_uniq Z (h : sigmaQ X -> Z) :
+Lemma sigma_case_eta Z (h : sigmaQ X -> Z) :
   h = sigma_case (fun i x => h (existT X i x)).
 ```
 
@@ -878,7 +878,7 @@ For `p : qbs_prob X` and a *bundled morphism* `f : qbsHomType X (monadP Y)`, bin
 Definition qbs_bind : monadP Y :=
   @mkQBSProb R Y bind_a (giry_prob bind_mu1) (rep_random bind_rep).
 
-Lemma qbs_bind_integral (h : Y -> \bar R) :
+Lemma ge0_qbs_integral_bind (h : Y -> \bar R) :
   qbs_measurable Y h -> (forall y, 0 <= h y) ->
   qbs_integral Y qbs_bind h =
   \int[qbs_prob_mu p]_r qbs_integral Y (f (qbs_prob_alpha p r)) h.
@@ -940,7 +940,7 @@ Definition monadP_map X Y (f : qbsHomType X Y) (p : monadP X) :
 | `monadP_map_id` | `monadP_map (qbs_id X) p = p` (propositional equality) |
 | `monadP_map_comp` | `monadP_map (qbs_comp f g) p = monadP_map g (monadP_map f p)` (propositional equality) |
 | `monadP_map_bind` | Map is bind with `return \o f`, up to equivalence |
-| `qbs_prob_eqP` | Two triples with equal `alpha` and `mu` are equal |
+| `qbs_prob_ext` | Two triples with equal `alpha` and `mu` are equal |
 | `qbs_bind_map` | `bind (map g p) f ~ bind p (g ; f)` |
 
 ### 2.12 Congruence
@@ -1012,7 +1012,7 @@ The proof that strength is a morphism uses `measurable_giry_xsection` (measurabi
 Integrating a fixed nonnegative measurable function is a morphism from `P(X)` into the QBS of extended reals (HKSY Sec. V-C):
 
 ```
-Lemma qbs_integral_morphism X (h : X -> \bar R) :
+Lemma ge0_qbs_integral_morphism X (h : X -> \bar R) :
   qbs_measurable X h -> (forall x, 0 <= h x) ->
   qbs_morphism (X := monadP X) (Y := R_qbs R (\bar R))
     (fun p => qbs_integral X p h).
@@ -1038,7 +1038,7 @@ Lemma qbs_integral_bind (h : Y -> \bar R) :
   qbs_integral Y (qbs_bind p f) h =
   \int[qbs_prob_mu p]_r qbs_integral Y (f (qbs_prob_alpha p r)) h.
 
-Lemma qbs_integral_morphism_sgn X (h : X -> \bar R) :
+Lemma qbs_integral_morphism X (h : X -> \bar R) :
   qbs_measurable X h ->
   qbs_morphism (X := monadP X) (Y := R_qbs R (\bar R))
     (fun p => qbs_integral X p h).
@@ -1062,12 +1062,12 @@ The monadic product of `p : monadP X` and `q : monadP Y` is bind followed by str
 Definition qbs_swap X Y : qbsHomType (prodQ X Y) (prodQ Y X) :=
   qbs_pair (qbs_snd X Y) (qbs_fst X Y).
 
-Definition qbs_pairP X Y (p : monadP X) (q : monadP Y) : monadP (prodQ X Y) :=
+Definition monadP_pair X Y (p : monadP X) (q : monadP Y) : monadP (prodQ X Y) :=
   qbs_bind p (qbs_comp (qbs_pair (qbs_id X) (qbs_const X q)) (qbs_strengthQ X Y)).
 
-Lemma qbs_pairP_event X Y (p : monadP X) (q : monadP Y) (U : set (prodQ X Y)) :
+Lemma monadP_pair_event X Y (p : monadP X) (q : monadP Y) (U : set (prodQ X Y)) :
   sigma_Mx U ->
-  qbs_prob_event _ (qbs_pairP p q) U =
+  qbs_prob_event _ (monadP_pair p q) U =
   \int[qbs_prob_mu p]_r qbs_prob_mu q
     [set t | U (qbs_prob_alpha p r, qbs_prob_alpha q t)].
 ```
@@ -1075,13 +1075,13 @@ Lemma qbs_pairP_event X Y (p : monadP X) (q : monadP Y) (U : set (prodQ X Y)) :
 Commutativity says that the order of drawing does not matter. It is proved from Fubini-Tonelli on the seeds, once the set of pairs of seeds landing in `U` is known to be measurable (`measurable_seeds`):
 
 ```
-Lemma qbs_pairP_comm :
-  qbs_prob_equiv (prodQ X Y) (qbs_pairP p q) (monadP_map (qbs_swap Y X) (qbs_pairP q p)).
+Lemma monadP_pair_comm :
+  qbs_prob_equiv (prodQ X Y) (monadP_pair p q) (monadP_map (qbs_swap Y X) (monadP_pair q p)).
 
 Lemma qbs_bind_comm X Y Z (p : monadP X) (q : monadP Y)
     (f : qbsHomType (prodQ X Y) (monadP Z)) :
-  qbs_prob_equiv Z (qbs_bind (qbs_pairP p q) f)
-    (qbs_bind (qbs_pairP q p) (qbs_comp (qbs_swap Y X) f)).
+  qbs_prob_equiv Z (qbs_bind (monadP_pair p q) f)
+    (qbs_bind (monadP_pair q p) (qbs_comp (qbs_swap Y X) f)).
 ```
 
 ### 2.17 Normalisation (HKSY Sec. VI)
@@ -1166,7 +1166,7 @@ Definition qbs_quot : Type := {eq_quot qbs_prob_equiv_canonical}.
 | Name | Statement |
 |------|-----------|
 | `qbs_prob_equivP` | `reflect (qbs_prob_equiv X p1 p2) (p1 == p2 %[mod qbs_quot])` |
-| `qbs_quot_eqP` | Equivalent triples have equal classes |
+| `qbs_quot_eq` | Equivalent triples have equal classes |
 | `qbs_prob_equiv_repr` | The representative of a class is equivalent to the triple |
 
 The quotient is itself a QBS (HKSY Sec. V-D(a)): its random elements are the maps whose representatives are random in `P(X)`. The projection `qbs_quot_pi_morphism` and `qbs_quot_repr_morphism` are morphisms.
@@ -1228,8 +1228,8 @@ Definition qbs_prob_pair (X Y : qbsType R)
 This agrees with the monadic product of Section 2.16:
 
 ```
-Lemma qbs_prob_pairE (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y) :
-  qbs_prob_equiv (prodQ X Y) (qbs_pairP (p : monadP X) (q : monadP Y))
+Lemma qbs_prob_pair_equiv (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y) :
+  qbs_prob_equiv (prodQ X Y) (monadP_pair (p : monadP X) (q : monadP Y))
     (qbs_prob_pair X Y p q).
 ```
 
@@ -1296,7 +1296,7 @@ Definition qbs_pair_variance (X Y : qbsType R)
       (f (qbs_prob_alpha px rr.1) + g (qbs_prob_alpha py rr.2))%R).
 ```
 
-The main theorem `qbs_variance_indep_sum` states `Var(f(x) + g(y)) = Var_px(f) + Var_py(g)` on the product measure, assuming only that `f o alpha_px` and `g o alpha_py` are in `L2` (on the marginals and on the product); the integrability conditions follow from these:
+The main theorem `qbs_pair_varianceD` states `Var(f(x) + g(y)) = Var_px(f) + Var_py(g)` on the product measure, assuming only that `f o alpha_px` and `g o alpha_py` are in `L2` (on the marginals and on the product); the integrability conditions follow from these:
 
 ```
   qbs_pair_variance X Y px py f g =
@@ -1445,7 +1445,7 @@ Following HKSY Sec. VI and the Isabelle AFP development (Bayesian_Linear_Regress
 
 ```
 Definition nu : monadP RQ := qbs_normal_distribution 0 3.
-Definition prior2 : monadP W := qbs_pairP nu nu.
+Definition prior2 : monadP W := monadP_pair nu nu.
 
 Definition lin : qbsHomType W F := qbs_curry_morph lin_uncurried.
 Lemma linE (s b r : R) : lin (s, b) r = s * r + b.
@@ -1784,7 +1784,7 @@ quasi_borel.v
 | Evidence | Explicit closed form C | `wprior_evidence` (evidence = `C`) |
 | Monad strength, join | Not formalized | `qbs_strength*` (snd, assoc, return, join), `qbs_join*` lemmas |
 | Internal bind (HKSY Thm. 21) | Not formalized | `qbs_bind_internal` |
-| Commutativity (HKSY Prop. 22(2)) | Not formalized | `qbs_pairP_comm`, `qbs_bind_comm` |
+| Commutativity (HKSY Prop. 22(2)) | Not formalized | `monadP_pair_comm`, `qbs_bind_comm` |
 | Fubini on QBS | Not formalized | `qbs_pair_integral_iterated` + marginals |
 | Independence | Not formalized | `qbs_indep`, `qbs_indep_rect`, `qbs_integral_indep_factorization` |
 | QBS↔Giry bridge | Not formalized | `qbs_to_giry` / `giry_to_qbs`, `qbs_to_giry_bind` |
@@ -1847,7 +1847,7 @@ documented in the source files and in this report, not hidden:
 
 4. **`standard_borel_wit` is a retract-of-R witness**, not the classical
    Polish-space characterization. It matches HKSY Prop. 5, but it is
-   packaged as data (`sb_encode`, `sb_decode`, `sb_retractK`) rather than
+   packaged as data (`sb_encode`, `sb_decode`, `sb_encodeK`) rather than
    as a predicate.
 
 5. **`qbs_normalize` returns `option`** and returns `None` when
