@@ -37,7 +37,7 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad qbs_normalize
 (* ```                                                                        *)
 (*                                                                            *)
 (* Main results: wprior_evidence (the evidence is the closed-form constant    *)
-(* evidence_const) and program_posterior (program = Some posterior).        *)
+(* evidence_const) and program_posterior (program = Some posterior).          *)
 (******************************************************************************)
 
 Import Order.TTheory GRing.Theory Num.Def Num.Theory.
