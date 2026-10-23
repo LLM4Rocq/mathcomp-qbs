@@ -26,7 +26,6 @@ Import MeasurableR.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-Set SsrOldRewriteGoalsOrder.  (* TODO: port to the MathComp 2.6 goal order *)
 Import boolp.
 
 Local Open Scope classical_set_scope.

@@ -25,7 +25,6 @@ From QBS Require Import quasi_borel standard_borel.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-Set SsrOldRewriteGoalsOrder.  (* TODO: port to the MathComp 2.6 goal order *)
 Import order.Order.TTheory GRing.Theory Num.Def Num.Theory constructive_ereal.
 Import MeasurableR.
 Import boolp.
@@ -288,29 +287,21 @@ have -> : (fun r : R =>
   - by rewrite h1.
   - case: ifPn => h1; [|by rewrite h2].
     by have := le_trans (le_trans h1 h2) (lerN10 R); rewrite ler10.
-  - by rewrite ifF; [rewrite ifF // lt_geF // ltNge // ltW|exact: lt_geF h2].
+  - by rewrite !ifF ?(lt_geF h1) ?(lt_geF h2).
 apply: measurableU; [apply: measurableU|].
 - apply: measurableI.
   + suff -> : [set r : R | (1 <= r)] = [set r : R | r \in `[1, +oo[].
       exact: measurable_itv.
     by rewrite eqEsubset; split => r /=; rewrite in_itv /= andbT.
-  + rewrite (_ : (fun=> +oo%E) @^-1` U =
-      if asbool (U +oo%E) then setT else set0).
-    * by case: asboolP => _;
-        [exact: measurableT | exact: measurable0].
-    * by rewrite /preimage; apply: funext => r /=;
-         apply: propext; case: asboolP.
+  + by rewrite functions.preimage_cst; case: ifPn => _;
+      [exact: measurableT | exact: measurable0].
 - apply: measurableI.
   + suff -> : [set r : R | (r <= -1)] =
               [set r : R | r \in `]-oo, (-1)]].
       exact: measurable_itv.
     by rewrite eqEsubset; split => r /=; rewrite in_itv /=.
-  + rewrite (_ : (fun=> -oo%E) @^-1` U =
-      if asbool (U -oo%E) then setT else set0).
-    * by case: asboolP => _;
-         [exact: measurableT | exact: measurable0].
-    * by rewrite /preimage; apply: funext => r /=;
-         apply: propext; case: asboolP.
+  + by rewrite functions.preimage_cst; case: ifPn => _;
+      [exact: measurableT | exact: measurable0].
 - have h : measurable_fun ([set` `](-1), 1[] : set mR)
       (EFin \o (fun r : R => r / (1 - `|r|))).
     apply/measurable_EFinP.

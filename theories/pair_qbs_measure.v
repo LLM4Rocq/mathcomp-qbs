@@ -26,7 +26,6 @@ Import MeasurableR.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-Set SsrOldRewriteGoalsOrder.  (* TODO: port to the MathComp 2.6 goal order *)
 Import boolp.
 
 Local Open Scope classical_set_scope.
@@ -202,7 +201,7 @@ rewrite qbs_pair_integral_iterated //.
 rewrite /qbs_integral /=.
 apply: eq_integral => x _ /=.
 rewrite -(cstE _ (h (qbs_prob_alpha p x))).
-rewrite integral_cst; last exact: measurableT.
+rewrite integral_cst; first exact: measurableT.
 have h1 := @probability_setT _ _ _ (qbs_prob_mu q).
 by rewrite [X in _ * X]h1 mule1.
 Qed.
@@ -223,7 +222,7 @@ transitivity (\int[qbs_prob_mu q]_y fubini_G (qbs_prob_mu p) f y).
 apply: eq_integral => y _.
 rewrite /fubini_G /f /qbs_pair_fun /=.
 rewrite -(cstE _ (h (qbs_prob_alpha q y))).
-rewrite integral_cst; last exact: measurableT.
+rewrite integral_cst; first exact: measurableT.
 have h1 := @probability_setT _ _ _ (qbs_prob_mu p).
 by rewrite [X in _ * X]h1 mule1.
 Qed.
@@ -364,7 +363,7 @@ transitivity (\int[mu1]_x fubini_F mu2 f x).
 apply: eq_integral => x _.
 rewrite /fubini_F /f /=.
 rewrite -(cstE _ (h x)%:E).
-rewrite integral_cst; last exact: measurableT.
+rewrite integral_cst; first exact: measurableT.
 have h1 := @probability_setT _ _ _ mu2.
 by rewrite [X in _ * X]h1 mule1.
 Qed.
@@ -386,7 +385,7 @@ transitivity (\int[mu2]_y fubini_G mu1 f y).
 apply: eq_integral => y _.
 rewrite /fubini_G /f /=.
 rewrite -(cstE _ (h y)%:E).
-rewrite integral_cst; last exact: measurableT.
+rewrite integral_cst; first exact: measurableT.
 have h1 := @probability_setT _ _ _ mu1.
 by rewrite [X in _ * X]h1 mule1.
 Qed.
@@ -414,7 +413,7 @@ unlock; congr (_ - _).
   apply: eq_integral => x _.
   rewrite /fubini_F /f /=.
   rewrite -(cstE _ (h x * h x)%:E).
-  rewrite integral_cst; last exact: measurableT.
+  rewrite integral_cst; first exact: measurableT.
   have h1 := @probability_setT _ _ _ mu2.
   by rewrite [X in _ * X]h1 mule1.
 - by rewrite (expectation_prod_fst hint1).
@@ -443,7 +442,7 @@ unlock; congr (_ - _).
   apply: eq_integral => y _.
   rewrite /fubini_G /f /=.
   rewrite -(cstE _ (h y * h y)%:E).
-  rewrite integral_cst; last exact: measurableT.
+  rewrite integral_cst; first exact: measurableT.
   have h1 := @probability_setT _ _ _ mu1.
   by rewrite [X in _ * X]h1 mule1.
 - by rewrite (expectation_prod_snd hint1).
@@ -628,8 +627,6 @@ have hm_enc : measurable_fun [set: mR * mR] (@encode_RR_mR R).
   exact: measurable_RR_to_R.
 rewrite -[RHS](@integral_pushforward _ _ _ mR R
   (@encode_RR_mR R) hm_enc mu_pq setT g _ _ measurableT).
-- (* Measures are extensionally equal *)
-  by [].
 - (* Measurability of g *)
   by move/integrableP : hint_g => [].
 - (* Integrability of g o encode_RR *)
@@ -641,6 +638,8 @@ rewrite -[RHS](@integral_pushforward _ _ _ mR R
     [congr (qbs_prob_alpha p) | congr (qbs_prob_alpha q)];
     exact: (congr1 fst (encode_RR_mRK rr))
         || exact: (congr1 snd (encode_RR_mRK rr)).
+- (* Measures are extensionally equal *)
+  by [].
 Qed.
 
 (** Integration against the [qbs_prob_pair] product equals the
@@ -672,7 +671,6 @@ have hm_enc : measurable_fun [set: mR * mR] (@encode_RR_mR R).
   exact: measurable_RR_to_R.
 rewrite -[RHS](@integral_pushforward _ _ _ mR R
   (@encode_RR_mR R) hm_enc mu_pq setT g _ _ measurableT).
-- by [].
 - by move/integrableP : hint_g => [].
 - rewrite preimage_setT.
   suff -> : g \o @encode_RR_mR R = qbs_pair_fun p q h by exact: hint.
@@ -682,6 +680,7 @@ rewrite -[RHS](@integral_pushforward _ _ _ mR R
     [congr (qbs_prob_alpha p) | congr (qbs_prob_alpha q)];
     exact: (congr1 fst (encode_RR_mRK rr))
         || exact: (congr1 snd (encode_RR_mRK rr)).
+- by [].
 Qed.
 
 (** Genuine independence factorization (using the [qbs_indep]

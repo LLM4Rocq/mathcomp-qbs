@@ -17,7 +17,7 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad.
 (*   qbs_normal_distribution mu sigma == Normal(mu, sigma) as QBS probability *)
 (*   qbs_bernoulli p == Bernoulli(p) as QBS probability on boolQ             *)
 (*   qbs_uniform == Uniform[0,1] as QBS probability on realQ                 *)
-(*   qbs_expect_normal == E[Normal(mu,sigma)] = mu, assuming odd_zero        *)
+(*   qbs_expect_normal == E[Normal(mu,sigma)] = mu (assumes centred moment 0) *)
 (*                        (requires integrability hypotheses)                *)
 (* ```                                                                        *)
 (******************************************************************************)
@@ -28,7 +28,6 @@ Import MeasurableR.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-Set SsrOldRewriteGoalsOrder.  (* TODO: port to the MathComp 2.6 goal order *)
 Import boolp order.Order.POrderTheory.
 
 Local Open Scope classical_set_scope.
@@ -95,17 +94,16 @@ Lemma qbs_expect_bernoulli (p : R) (hp0 : 0 <= p) (hp1 : p <= 1) :
   qbs_expect (boolQ R) (qbs_bernoulli p hp0 hp1) (fun b : bool => b%:R) = p%:E.
 Proof.
 rewrite /qbs_expect /qbs_integral /=.
-rewrite integral_uniform//; last first.
-  by move=> x; rewrite lee_fin.
-  apply: measurableT_comp => //=.
-  apply: measurableT_comp => //=.
+rewrite integral_uniform//.
+- apply: measurableT_comp => //=; apply: measurableT_comp => //=.
   exact: measurable_fun_ltr (@measurable_id _ mR setT)
     (@measurable_cst _ _ mR mR setT p).
+- by move=> x; rewrite lee_fin.
 rewrite subr0 invr1 mul1e.
 rewrite (_ : (fun x : mR => _) =
-  (fun x => (indic [set r : mR | r < p] x)%:E)); last first.
+  (fun x => (indic [set r : mR | r < p] x)%:E)).
   by apply: funext => x /=; rewrite indicE mem_setE.
-rewrite integral_indic //=; last first.
+rewrite integral_indic //=.
   have -> : [set r : mR | r < p] = [set` `]-oo, p[%R].
     by apply/seteqP; split => x /=; rewrite in_itv /=.
   exact: measurable_itv.
@@ -131,12 +129,11 @@ Proof.
 rewrite /qbs_expect /qbs_integral /=.
 rewrite integralE /=.
 rewrite (@integral_uniform _ 0 1 ltr01 [eta funepos.body (@EFin R)]);
-  [|exact: measurable_funepos|by move=> x; exact: funepos_ge0].
+  [exact: measurable_funepos|by move=> x; exact: funepos_ge0|].
 rewrite (@integral_uniform _ 0 1 ltr01 [eta funeneg.body (@EFin R)]);
-  [|exact: measurable_funeneg|by move=> x; exact: funeneg_ge0].
+  [exact: measurable_funeneg|by move=> x; exact: funeneg_ge0|].
 rewrite subr0 invr1 mul1e mul1e -integralE /=.
 rewrite (@continuous_FTC2 _ idfun (fun x => x ^+ 2 / 2) 0 1 ltr01).
-- by rewrite expr0n /= mul0r oppr0 adde0 expr1n mul1r.
 - by apply: (@continuous_subspaceT _ _ _ idfun) => x /=; exact: cvg_id.
 - split.
   + move=> x hx.
@@ -154,45 +151,47 @@ rewrite (@continuous_FTC2 _ idfun (fun x => x ^+ 2 / 2) 0 1 ltr01).
     by apply: funext => x; rewrite hornerZ hornerXn mulrC.
 - move=> x hx /=.
   rewrite derive1E deriveM;
-    [|exact: exprn_derivable|exact: derivable_cst].
+    [exact: exprn_derivable|exact: derivable_cst|].
   rewrite derive_cst GRing.scaler0 GRing.add0r.
   rewrite (@derive_val _ _ _ _ _ _ _
     (is_deriveX 2 (is_derive_id x 1))) /=.
   by rewrite expr1 /GRing.scale /= mulr1 mulrA mulVf ?mul1r // pnatr_eq0.
+- by rewrite expr0n /= mul0r oppr0 adde0 expr1n mul1r.
 Qed.
 
-(** E[Normal(mu,sigma)] = mu, conditional on the hypothesis odd_zero that
-    the centred first moment vanishes; odd_zero is not proved here. *)
+(** E[Normal(mu,sigma)] = mu, conditional on the hypothesis centred_moment0
+    that the centred first moment \int (x - mu) * pdf(x) dx vanishes (true:
+    (x - mu) * pdf is odd around mu), which is not proved here. *)
 Lemma qbs_expect_normal (mu sigma : R) (hsigma : 0 < sigma)
   (id_int : (\int[normal_prob mu sigma]_x `|x%:E| < +oo)%E)
-  (odd_int : lebesgue_measure.-integrable setT
+  (centred_int : lebesgue_measure.-integrable setT
     (fun x => ((x - mu) * normal_pdf mu sigma x)%:E))
-  (odd_zero : (\int[lebesgue_measure]_x
+  (centred_moment0 : (\int[lebesgue_measure]_x
     ((x - mu) * normal_pdf mu sigma x)%:E = 0 :> \bar R)%E) :
   qbs_expect (realQ R) (qbs_normal_distribution mu sigma)
     (fun x => x) = mu%:E.
 Proof.
 rewrite /qbs_expect /qbs_integral /=.
-rewrite integral_normal_prob//=; last by apply/integrableP; split.
+rewrite integral_normal_prob//=; first by apply/integrableP; split.
 under eq_integral do rewrite -EFinM.
 (* Split x * pdf = mu * pdf + (x - mu) * pdf *)
 rewrite (_ : (fun x => (x * normal_pdf mu sigma x)%:E) =
   (fun x => (mu * normal_pdf mu sigma x +
-             (x - mu) * normal_pdf mu sigma x)%:E)); last first.
+             (x - mu) * normal_pdf mu sigma x)%:E)).
   by apply: funext => x /=; rewrite -mulrDl addrC subrK.
 under eq_integral do rewrite EFinD.
 have hint1 : lebesgue_measure.-integrable setT
     (fun x => (mu * normal_pdf mu sigma x)%:E).
   rewrite (_ : (fun x => (mu * _)%:E) =
-    (fun x => mu%:E * (normal_pdf mu sigma x)%:E)%E); last first.
+    (fun x => mu%:E * (normal_pdf mu sigma x)%:E)%E).
     by apply: funext => x; rewrite EFinM.
   exact: (integrableZl measurableT mu (integrable_normal_pdf mu sigma)).
-rewrite (integralD measurableT hint1 odd_int).
+rewrite (integralD measurableT hint1 centred_int).
 rewrite (_ : (fun x => (mu * normal_pdf mu sigma x)%:E) =
-  (fun x => mu%:E * (normal_pdf mu sigma x)%:E)%E); last first.
+  (fun x => mu%:E * (normal_pdf mu sigma x)%:E)%E).
   by apply: funext => x; rewrite EFinM.
-rewrite integralZl//=; last exact: integrable_normal_pdf.
-by rewrite integral_normal_pdf -EFinM mulr1 odd_zero adde0.
+rewrite integralZl//=; first exact: integrable_normal_pdf.
+by rewrite integral_normal_pdf -EFinM mulr1 centred_moment0 adde0.
 Qed.
 
 End distribution_expectations.

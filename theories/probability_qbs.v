@@ -27,7 +27,6 @@ Import GRing.Theory Num.Def Num.Theory
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-Set SsrOldRewriteGoalsOrder.  (* TODO: port to the MathComp 2.6 goal order *)
 
 Import MeasurableR.
 
@@ -262,9 +261,9 @@ Proof.
 move=> mh; rewrite /qbs_integral integralE [RHS]integralE.
 have /qbs_measurableE mh' := mh.
 congr (_ - _)%E.
-- rewrite ge0_integral_distribution//; last exact: measurable_funepos mh'.
+- rewrite ge0_integral_distribution//; first exact: measurable_funepos mh'.
   by apply: eq_integral => r _; rewrite /= !funeposE.
-- rewrite ge0_integral_distribution//; last exact: measurable_funeneg mh'.
+- rewrite ge0_integral_distribution//; first exact: measurable_funeneg mh'.
   by apply: eq_integral => r _; rewrite /= !funenegE.
 Qed.
 
@@ -291,7 +290,7 @@ Lemma qbs_expectE (X : qbsType R) (p : qbs_prob X)
     (f : {mfun qbs_meas X >-> R}) :
   qbs_expect X p f = ('E_(qbs_law p)[f])%E.
 Proof.
-rewrite /qbs_expect qbs_integral_law; first by rewrite unlock.
+rewrite /qbs_expect qbs_integral_law ?unlock//.
 apply/qbs_measurableE; exact/measurable_EFinP/measurable_funPT.
 Qed.
 
