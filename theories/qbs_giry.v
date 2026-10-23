@@ -85,7 +85,7 @@ Context d (M : measurableType d) (sb : standard_borel_wit R M).
 Lemma qbs_to_giry_equiv (p1 p2 : qbs_prob (measQ R M)) :
   (forall A, measurable A -> qbs_to_giry p1 A = qbs_to_giry p2 A) ->
   qbs_prob_equiv (measQ R M) p1 p2.
-Proof. by move=> e U /(sigma_Mx_standard_borelP sb U); exact: e. Qed.
+Proof. by move=> e U /(sigma_Mx_standard_borelP sb U)/e. Qed.
 
 (** L preserves bind: the distribution of p >>= f is the Giry bind of the
     distribution of p with the distributions of f. *)
@@ -111,21 +111,21 @@ Variables (encode : {mfun M >-> mR}) (decode : {mfun mR >-> M}).
 Hypothesis decode_encode : cancel encode decode.
 
 Definition giry_to_qbs (P : probability M R) : qbs_prob (measQ R M) :=
-  @mkQBSProb R (measQ R M) decode (distribution P encode)
+  mkQBSProb decode (distribution P encode)
     (measurable_funP decode).
 
 Lemma qbs_to_giryK (P : probability M R) (A : set M) :
   qbs_to_giry (giry_to_qbs P) A = P A.
 Proof.
 rewrite qbs_to_giryE /qbs_prob_event /=.
-by congr (P _); apply/seteqP; split => x /=; rewrite decode_encode.
+by congr (P _); apply/seteqP; split=> x /=; rewrite decode_encode.
 Qed.
 
 Lemma giry_to_qbsK (p : qbs_prob (measQ R M)) :
   qbs_prob_equiv (measQ R M) (giry_to_qbs (qbs_to_giry p)) p.
 Proof.
 move=> U _; congr (qbs_prob_mu p _).
-by apply/seteqP; split => r /=; rewrite decode_encode.
+by apply/seteqP; split=> r /=; rewrite decode_encode.
 Qed.
 
 End giry_to_qbs.
