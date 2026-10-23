@@ -144,15 +144,17 @@ Definition qbs_normalQ s : qbsHomType (realQ R) (monadP (realQ R)) :=
 
 Section distribution_expectations.
 
+Let lt_itv p : [set r : mR | r < p] = [set` `]-oo, p[%R].
+Proof. by apply/seteqP; split => x /=; rewrite in_itv/=. Qed.
+
+Let measurable_lt p : measurable [set r : mR | r < p].
+Proof. by rewrite lt_itv; exact: measurable_itv. Qed.
+
 (** The mass of [0,1]-uniform below p is p. *)
-Lemma uniform_prob_lt (p : R) : 0 <= p <= 1 ->
-  uniform_prob ltr01 [set r : mR | (r < p)] = p%:E.
+Lemma uniform_prob_lt p : 0 <= p <= 1 ->
+  uniform_prob ltr01 [set r : mR | r < p] = p%:E.
 Proof.
-move=> /andP[hp0 hp1].
-have mE : measurable [set r : mR | (r < p)].
-  have -> : [set r : mR | r < p] = [set` `]-oo, p[%R].
-    by apply/seteqP; split => x /=; rewrite in_itv /=.
-  exact: measurable_itv.
+move=> /andP[hp0 hp1]; have mE := measurable_lt p.
 rewrite -[X in uniform_prob _ X]setIT -integral_indic//.
 rewrite integral_uniform//.
 - exact/measurable_EFinP/measurable_indic.
@@ -167,10 +169,8 @@ have -> : [set r : mR | r < p] `&` `[0, 1] = [set` `[0%R, p[%R].
     exact: (le_trans (ltW xp) hp1).
 rewrite -/(lebesgue_measure _).
 rewrite lebesgue_measure_itv /= oppr0 adde0.
-case: (lerP p 0) => [p0|p0].
-- have -> : p = 0 by apply: le_anti; rewrite hp0 p0.
-  by rewrite ltxx.
-- by rewrite ifT // lte_fin.
+have [->|p0] := eqVneq p 0; first by rewrite ltxx.
+by rewrite ifT// lte_fin lt0r p0.
 Qed.
 
 (** E[Bernoulli(p)] = p. *)
@@ -182,9 +182,6 @@ have -> : (fun x : mR => ((((x < p)%R : bool)%:R : R))%:E) =
     (fun x => (\1_[set r : mR | r < p] x)%:E).
   by apply: funext => x /=; rewrite indicE mem_setE.
 rewrite integral_indic//= ?setIT ?uniform_prob_lt ?hp0//.
-have -> : [set r : mR | r < p] = [set` `]-oo, p[%R].
-  by apply/seteqP; split => x /=; rewrite in_itv /=.
-exact: measurable_itv.
 Qed.
 
 (** The law of qbs_bernoulli is the Bernoulli probability of
@@ -201,7 +198,7 @@ pose P : probability bool R :=
 suff: P =1 bernoulli_prob p by exact.
 apply: eq_bernoulli => //.
 rewrite /P /distribution /= /pushforward.
-have -> : f @^-1` [set true] = [set r : mR | (r < p)].
+have -> : f @^-1` [set true] = [set r : mR | r < p].
   by apply/seteqP; split => r /=.
 exact: uniform_prob_lt.
 Qed.
