@@ -1,8 +1,7 @@
 (* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
-From mathcomp Require Import boot algebra reals ereal topology boolp
-  classical_sets normedtype numfun measure lebesgue_integral
-  lebesgue_integral_fubini lebesgue_stieltjes_measure probability
+From mathcomp Require Import boot algebra reals ereal boolp classical_sets
+  numfun measure lebesgue_integral lebesgue_stieltjes_measure probability
   hoelder functions.
 From QBS Require Import quasi_borel probability_qbs qbs_monad standard_borel.
 
@@ -17,22 +16,27 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad standard_borel.
 (*   qbs_prob_pair X Y p q == product QBS probability on prodQ X Y, the       *)
 (*                            pushforward of mu_p \x mu_q along R * R -> R;   *)
 (*                            it is equivalent to qbs_pairP (qbs_prob_pairE)  *)
+(*      qbs_pair_alpha p q == the pairing map mR -> X * Y of the two alphas   *)
+(*   qbs_pair_mu_build p q == the probability measure on mR obtained by       *)
+(*                            pushing mu_p \x mu_q through encode_RR          *)
+(*     qbs_pair_fun p q h == h composed with the two alphas, on mR * mR       *)
+(*   integral_prod_{fst,snd,mul} == integrals of h rr.1, h rr.2, h1 rr.1 *    *)
+(*                            h2 rr.2 against a product of probabilities      *)
 (*   qbs_indep X Y Z p f g == independence of f and g under p                 *)
 (*   qbs_pair_variance X Y px py f g == variance of f(x) + g(y) on product    *)
 (* ```                                                                        *)
 (******************************************************************************)
 
-Import GRing.Theory Num.Def Num.Theory measurable_realfun.
+Import Num.Theory measurable_realfun.
 Import MeasurableR.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-Import boolp.
 
 Local Open Scope classical_set_scope.
 
-Section pair_qbs_measure.
+Section PairQbsMeasure.
 Variable R : realType.
 
 Local Notation mR := (measurableTypeR R).
@@ -42,11 +46,9 @@ Implicit Types (X Y : qbsType R).
 (** Product of QBS probability spaces.
     Given p : qbs_prob X and q : qbs_prob Y, construct
     qbs_prob (prodQ X Y) with alpha pairing the two alphas and
-    measure being the product measure. *)
-
-(* The product probability measure on R.
-   Uses R ≅ R×R (from standard_borel.v): push mu_p × mu_q through
-   encode_RR to obtain a probability measure on mR. *)
+    measure being the product measure. The measure lives on R: using
+    R ~ R x R (standard_borel.v), mu_p \x mu_q is pushed through
+    encode_RR to obtain a probability measure on mR. *)
 
 Section pair_mu_build.
 Variables (X Y : qbsType R).
@@ -55,7 +57,7 @@ Variables (p : qbs_prob X) (q : qbs_prob Y).
 Let mu_p := qbs_prob_mu p.
 Let mu_q := qbs_prob_mu q.
 
-Let pf_mu (A : set mR) : \bar R :=
+Definition pf_mu (A : set mR) : \bar R :=
   (mu_p \x mu_q) (@encode_RR_mR R @^-1` A).
 
 Local Open Scope ereal_scope.
@@ -87,20 +89,16 @@ Proof. by rewrite /pf_mu preimage_setT probability_setT. Qed.
 HB.instance Definition _ := Measure_isProbability.Build _ _ _
   pf_mu pf_mu_setT.
 
+(** Product measure on mR for the QBS product. *)
 Definition qbs_pair_mu_build : probability mR R := pf_mu.
 
 End pair_mu_build.
 
 Definition qbs_pair_alpha (X Y : qbsType R)
-  (p : qbs_prob X) (q : qbs_prob Y) : mR -> X * Y :=
+    (p : qbs_prob X) (q : qbs_prob Y) : mR -> X * Y :=
   fun r =>
     let uv := @decode_RR_mR R r in
     (qbs_prob_alpha p uv.1, qbs_prob_alpha q uv.2).
-
-(** Product measure on mR for the QBS product. *)
-Definition qbs_pair_mu (X Y : qbsType R)
-  (p : qbs_prob X) (q : qbs_prob Y) : probability mR R :=
-  qbs_pair_mu_build p q.
 
 Lemma qbs_pair_alpha_random (X Y : qbsType R)
   (p : qbs_prob X) (q : qbs_prob Y) :
@@ -123,7 +121,7 @@ Definition qbs_prob_pair (X Y : qbsType R)
   (p : qbs_prob X) (q : qbs_prob Y) : qbs_prob (prodQ X Y) :=
   @mkQBSProb R (prodQ X Y)
     (qbs_pair_alpha p q)
-    (qbs_pair_mu p q)
+    (qbs_pair_mu_build p q)
     (qbs_pair_alpha_random p q).
 
 Arguments qbs_prob_pair : clear implicits.
@@ -135,7 +133,7 @@ Lemma qbs_prob_pairE (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y) :
     (qbs_prob_pair X Y p q).
 Proof.
 move=> U mU; rewrite -[LHS]/(qbs_prob_event _ _ _) qbs_pairP_event//.
-rewrite /qbs_prob_pair /= /qbs_pair_mu /qbs_pair_mu_build /=.
+rewrite /qbs_prob_pair /= /qbs_pair_mu_build /=.
 rewrite /product_measure1 /=; apply: eq_integral => r _; congr (_ _).
 rewrite /xsection; apply/seteqP; split => t; rewrite /preimage /= inE /=.
 all: by rewrite /qbs_pair_alpha encode_RR_mRK.
@@ -312,7 +310,7 @@ Arguments qbs_pair_variance : clear implicits.
 
 Lemma qbs_variance_indep_sum (X Y : qbsType R)
     (px : qbs_prob X) (py : qbs_prob Y) (f : X -> R) (g : Y -> R) :
-  let mu := (qbs_prob_mu px \x qbs_prob_mu py)%E in
+  let mu := (qbs_prob_mu px \x qbs_prob_mu py) in
   (fun rr : mR * mR => f (qbs_prob_alpha px rr.1)) \in Lfun mu 2 ->
   (fun rr : mR * mR => g (qbs_prob_alpha py rr.2)) \in Lfun mu 2 ->
   f \o qbs_prob_alpha px \in Lfun (qbs_prob_mu px) 2 ->
@@ -331,31 +329,31 @@ have L1 h : h \in Lfun mu 2 -> mu.-integrable setT (EFin \o h).
 have L1m (m : probability mR R) h : h \in Lfun m 2 ->
     m.-integrable setT (EFin \o h).
   by move=> /(Lfun_subset12 (fin1 m)) /Lfun1_integrable.
-have EF : 'E_mu[F] = 'E_(qbs_prob_mu px)[f \o qbs_prob_alpha px].
+have EF : 'E_mu[F] = 'E_(qbs_prob_mu px)[(f \o qbs_prob_alpha px)].
   rewrite !unlock; exact: (integral_prod_fst
     (h := fun x => (f (qbs_prob_alpha px x))%:E) (L1 _ hF2)).
-have EG : 'E_mu[G] = 'E_(qbs_prob_mu py)[g \o qbs_prob_alpha py].
+have EG : 'E_mu[G] = 'E_(qbs_prob_mu py)[(g \o qbs_prob_alpha py)].
   rewrite !unlock; exact: (integral_prod_snd
     (h := fun y => (g (qbs_prob_alpha py y))%:E) (L1 _ hG2)).
 rewrite /qbs_pair_variance -[fun rr => _]/(F \+ G)%R varianceD//.
-rewrite covarianceE; last first.
-all: try by [exact: (Lfun2_mul_Lfun1 hF2 hG2)|exact: (Lfun_subset12 mu_fin)].
+rewrite covarianceE ?(Lfun2_mul_Lfun1 hF2 hG2) ?(Lfun_subset12 mu_fin)//.
 have -> : 'E_mu[(F \* G)%R] = 'E_mu[F] * 'E_mu[G].
   rewrite EF EG !unlock.
   apply: (integral_prod_mul (h1 := f \o qbs_prob_alpha px)
     (h2 := g \o qbs_prob_alpha py)); [exact: L1m|exact: L1m|].
   by apply/Lfun1_integrable; exact: Lfun2_mul_Lfun1.
-rewrite subee ?mule0 ?adde0; last first.
-  rewrite /qbs_variance !varianceE ?(Lfun_subset12 (fin1 _))//.
-  rewrite -/mu EF EG; congr (_ - _ + (_ - _)); rewrite !unlock.
-  - exact: (integral_prod_fst (Lfun2_integrable_sqr hF2)
-      (h := fun x => ((f (qbs_prob_alpha px x)) ^+ 2)%:E)).
-  - exact: (integral_prod_snd (Lfun2_integrable_sqr hG2)
-      (h := fun y => ((g (qbs_prob_alpha py y)) ^+ 2)%:E)).
-by rewrite fin_numM ?expectation_fin_num ?(Lfun_subset12 mu_fin).
+have EFG : 'E_mu[F] * 'E_mu[G] \is a fin_num.
+  by rewrite fin_numM ?expectation_fin_num ?(Lfun_subset12 mu_fin).
+rewrite subee// mule0 adde0.
+rewrite /qbs_variance !varianceE ?(Lfun_subset12 (fin1 _))//.
+rewrite -/mu EF EG; congr (_ - _ + (_ - _)); rewrite !unlock.
+- exact: (integral_prod_fst (Lfun2_integrable_sqr hF2)
+    (h := fun x => ((f (qbs_prob_alpha px x)) ^+ 2)%:E)).
+- exact: (integral_prod_snd (Lfun2_integrable_sqr hG2)
+    (h := fun y => ((g (qbs_prob_alpha py y)) ^+ 2)%:E)).
 Qed.
 
-End pair_qbs_measure.
+End PairQbsMeasure.
 
 Arguments qbs_prob_pair {R X Y}.
 Arguments qbs_pair_fun {R X Y}.
