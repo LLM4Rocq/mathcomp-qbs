@@ -1,856 +1,426 @@
-(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
+(* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
-From mathcomp Require Import boot algebra reals ereal topology
-  classical_sets normedtype numfun measure lebesgue_integral
-  lebesgue_integral_fubini lebesgue_stieltjes_measure lebesgue_measure
-  probability charge boolp.
+From mathcomp Require Import boot algebra reals ereal topology classical_sets
+  normedtype sequences numfun measure measurable_realfun lebesgue_measure
+  lebesgue_integral probability exp trigo boolp.
 From mathcomp.algebra_tactics Require Import ring.
 From mathcomp Require giry.
-From QBS Require Import quasi_borel probability_qbs qbs_monad pair_qbs_measure
-  measure_as_qbs_measure normal_algebra.
+From QBS Require Import quasi_borel probability_qbs qbs_monad qbs_normalize
+  measure_as_qbs_measure.
 
 (**md**************************************************************************)
-(* # Bayesian Linear Regression                                               *)
+(* # Bayesian linear regression (HKSY Sec. VI, Isabelle AFP example)          *)
 (*                                                                            *)
-(* Following the Isabelle AFP development (Bayesian_Linear_Regression.thy)    *)
-(* by Hirata, Minamide, Sato.                                                 *)
+(* Model: y = s * x + b + noise, noise ~ N(0, 1/2), s, b ~ N(0, 3).           *)
+(* Data: (1, 2.5), (2, 3.8), (3, 4.5), (4, 6.2), (5, 8.0).                    *)
+(* The prior is a probability on the function space R => R, the program is    *)
+(* norm (P(id, obs) prior), and the posterior is computed in closed form.     *)
 (*                                                                            *)
-(* Model: y = slope * x + intercept + noise, noise ~ N(0, 1/2)              *)
-(* Prior: slope, intercept ~ iid N(0, 3)                                      *)
-(* Data: (1,2.5), (2,3.8), (3,4.5), (4,6.2), (5,8.0)                       *)
-(*                                                                            *)
-(* Key results:                                                               *)
 (* ```                                                                        *)
-(*   prior             == joint prior on (slope, intercept) as product QBS    *)
-(*   prior_bind        == the prior built with qbs_bind and the strength      *)
-(*   norm_qbs          == normalizer: weighted QBS prob -> option density     *)
-(*   program           == full Bayesian program: norm_qbs (fun _ => 1) obs   *)
-(*   obs               == observation likelihood (5 data points)              *)
-(*   evidence          == normalizing constant Z                              *)
-(*   posterior_density  == E_post[g] = E_prior[g*obs] / Z                    *)
-(*   posterior_density_total == posterior integrates to 1                     *)
-(*   program_succeeds  == program returns Some when evidence is good          *)
-(*   evidence_value    == evidence = phase2_const (explicit constant)         *)
-(*   evidence_pos      == 0 < evidence /\ evidence < +oo                     *)
-(*   program_integrates_to_1 == program integrates to 1 (unconditional)      *)
+(*     lin (s, b) == the function r |-> s * r + b, as a morphism into R => R  *)
+(*          prior == the prior on R => R, pushforward of N(0,3) x N(0,3)      *)
+(*          obs f == likelihood of the data for the regression function f     *)
+(*        program == norm (P(id, obs) prior) : option (qbs_prob (R => R))     *)
+(*      posterior == explicit Gaussian posterior on R => R                    *)
 (* ```                                                                        *)
+(*                                                                            *)
+(* Main results: wprior_evidence (the evidence is the closed-form constant    *)
+(* C) and program_posterior (program = Some q with q equivalent to the        *)
+(* posterior).                                                                *)
 (******************************************************************************)
 
-Import GRing.Theory Num.Def Num.Theory measurable_realfun.
+Import order.Order.TTheory GRing.Theory Num.Def Num.Theory.
 Import MeasurableR.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-Set SsrOldRewriteGoalsOrder.  (* TODO: port to the MathComp 2.6 goal order *)
-Import boolp order.Order.POrderTheory.
 
 Local Open Scope classical_set_scope.
+Local Open Scope ring_scope.
 
-(** Part II: Bayesian regression example. *)
-
-Section bayesian_regression.
+Section regression.
 Variable R : realType.
 Local Notation mR := (measurableTypeR R).
-Local Open Scope ring_scope.
+Local Notation RQ := (realQ R).
+Local Notation W := (prodQ RQ RQ).
+Local Notation F := (expQ RQ RQ).
+
+(** ** Model *)
+
+Let three_gt0 : (0 : R) < 3. Proof. by rewrite ltr0n. Qed.
+Let half_neq0 : (2^-1 : R) != 0. Proof. by rewrite invr_eq0 pnatr_eq0. Qed.
+
+Definition nu : monadP RQ := qbs_normal_distribution 0 3.
+
+(** The parameter prior N(0,3) x N(0,3), as a monadic product. *)
+Definition prior2 : monadP W := qbs_pairP nu nu.
+
+(** (s, b) |-> (r |-> s * r + b). *)
+Definition lin_uncurried : qbsHomType (prodQ W RQ) RQ :=
+  qbs_comp (qbs_pair
+    (qbs_comp (qbs_pair (qbs_comp (qbs_fst W RQ) (qbs_fst RQ RQ))
+      (qbs_snd W RQ)) (qbs_mul R))
+    (qbs_comp (qbs_fst W RQ) (qbs_snd RQ RQ))) (qbs_add R).
+
+Definition lin : qbsHomType W F := qbs_curry_morph lin_uncurried.
+
+Lemma linE (s b r : R) : lin (s, b) r = s * r + b.
+Proof. by []. Qed.
+
+(** The prior on functions (HKSY eq. (5)). *)
+Definition prior : monadP F := monadP_map lin prior2.
+
+Let d (m x : R) : R := normal_pdf m (2^-1) x.
+
+(** Likelihood of the data for a regression function f. *)
+Definition obs_fun (f : F) : R :=
+  d (f 1) (5 / 2) * d (f 2) (19 / 5) * d (f 3) (9 / 2) *
+  d (f 4) (31 / 5) * d (f 5) 8.
+
+Let measurable_d (y : R) : measurable_fun [set: mR] (fun m : mR => d m y).
+Proof.
+have -> : (fun m => d m y) = normal_pdf y (2^-1).
+  by apply/funext => m; rewrite /d normal_pdf_sym.
+exact: measurable_normal_pdf.
+Qed.
+
+Lemma obs_morphism : qbs_morphism (X := F) (Y := RQ) obs_fun.
+Proof.
+move=> a ha.
+have mev (c : R) : measurable_fun [set: mR] (fun r => (a r : RQ -> RQ) c).
+  apply: (ha (fun r => (r, c))); split; first exact: measurable_id.
+  exact: measurable_cst.
+by repeat apply: measurable_funM;
+  apply: measurableT_comp (measurable_d _) (mev _).
+Qed.
+
+Definition obs : qbsHomType F RQ :=
+  HB.pack obs_fun (isQBSMorphism.Build R F RQ _ obs_morphism).
+
+(** The weighted prior P(id, obs)(prior) and the program. *)
+Definition wprior : monadP (prodQ F RQ) :=
+  monadP_map (qbs_pair (qbs_id F) obs) prior.
+
+Definition program : option (qbs_prob F) := qbs_normalize wprior.
+
+(** ** The posterior in closed form *)
+
+Definition C : R :=
+  4 * Num.sqrt 2 / (pi ^+ 2 * Num.sqrt (29 * 2309 * pi)) *
+  expR (- (11 * 11 * (138 * 100 + 41) / (25 * 29 * 2309))).
+Definition post_s_mean : R := 8 * 9 * 7 * 19 * 47 / (5 * 29 * 2309).
+Definition post_s_var : R := 9 * 181 / (29 * 2309).
+Definition post_b_mean (s : R) : R := (900 - 540 * s) / 181.
+Definition post_b_var : R := 9 / 181.
+
+Let obs2 (s b : R) : R := obs_fun (lin (s, b)).
+
+Let expo_eq s b :
+  - (s - 0) ^+ 2 / (3 ^+ 2 *+ 2) + - (b - 0) ^+ 2 / (3 ^+ 2 *+ 2) +
+  - (5 / 2 - (s * 1 + b)) ^+ 2 / (2^-1 ^+ 2 *+ 2) +
+  - (19 / 5 - (s * 2 + b)) ^+ 2 / (2^-1 ^+ 2 *+ 2) +
+  - (9 / 2 - (s * 3 + b)) ^+ 2 / (2^-1 ^+ 2 *+ 2) +
+  - (31 / 5 - (s * 4 + b)) ^+ 2 / (2^-1 ^+ 2 *+ 2) +
+  - (8 - (s * 5 + b)) ^+ 2 / (2^-1 ^+ 2 *+ 2) =
+  - (11 * 11 * (138 * 100 + 41) / (25 * 29 * 2309)) +
+  - (s - post_s_mean) ^+ 2 / (post_s_var *+ 2) +
+  - (b - post_b_mean s) ^+ 2 / (post_b_var *+ 2) :> R.
+Proof.
+rewrite /post_s_mean /post_b_mean /post_s_var /post_b_var.
+by field.
+Qed.
+
+Let peak_eq :
+  normal_peak 3 ^+ 2 * normal_peak 2^-1 ^+ 5 =
+  4 * sqrtr 2 / (pi ^+ 2 * sqrtr (29 * 2309 * pi)) *
+  normal_peak (sqrtr post_s_var) * normal_peak (sqrtr post_b_var) :> R.
+Proof.
+have pi0 : 0 < pi :> R := pi_gt0.
+have vs0 : 0 < post_s_var by rewrite /post_s_var divr_gt0 // ?mulr_gt0 // ltr0n.
+have vb0 : 0 < post_b_var by rewrite /post_b_var divr_gt0 // ltr0n.
+apply/eqP; rewrite -(@eqrXn2 _ 2) //.
+- by rewrite mulr_ge0 ?exprn_ge0 ?normal_peak_ge0.
+- by rewrite !mulr_ge0 ?normal_peak_ge0 ?invr_ge0 ?mulr_ge0 ?sqrtr_ge0
+    ?exprn_ge0 ?ltW.
+have pk2 x : 0 <= x ^+ 2 * pi *+ 2 ->
+    normal_peak x ^+ 2 = (x ^+ 2 * pi *+ 2)^-1.
+  by move=> x0; rewrite /normal_peak exprVn sqr_sqrtr.
+rewrite !exprMn !pk2 ?mulrn_wge0 ?mulr_ge0 ?sqr_ge0 ?ltW //.
+all: try by rewrite sqrtr_gt0.
+1,2: by rewrite invr_gt0.
+rewrite !sqr_sqrtr ?ltW //.
+rewrite (exprVn (pi ^+ 2 * _)) exprMn sqr_sqrtr ?mulr_ge0 ?ler0n ?ltW //.
+rewrite /post_s_var /post_b_var.
+move: pi0; generalize (pi : R) => p p0.
+by apply/eqP; field; rewrite lt0r_neq0.
+Qed.
+
+(** Completing the square: prior times likelihood is C times the
+    posterior density. *)
+Lemma obs_prior_factor s b :
+  normal_pdf 0 3 s * normal_pdf 0 3 b * obs2 s b =
+  C * normal_pdf post_s_mean (Num.sqrt post_s_var) s *
+      normal_pdf (post_b_mean s) (Num.sqrt post_b_var) b.
+Proof.
+have h3 : (3 : R) != 0 by rewrite pnatr_eq0.
+have vs0 : 0 < post_s_var by rewrite /post_s_var divr_gt0 // ?mulr_gt0 // ltr0n.
+have vb0 : 0 < post_b_var by rewrite /post_b_var divr_gt0 // ltr0n.
+have hvs : sqrtr post_s_var != 0 by rewrite lt0r_neq0 // sqrtr_gt0.
+have hvb : sqrtr post_b_var != 0 by rewrite lt0r_neq0 // sqrtr_gt0.
+rewrite /obs2 /obs_fun !linE /d /C !(normal_pdfE _ half_neq0)
+  !(normal_pdfE _ h3)
+  (normal_pdfE _ hvs) (normal_pdfE _ hvb) /normal_fun !sqr_sqrtr ?ltW //.
+have := expo_eq s b; have := peak_eq.
+move: (normal_peak _) => P3; move: (normal_peak 2^-1) => Ph.
+move=> HP /(congr1 expR); rewrite !expRD => HE.
+move: HP HE; set c := 4 * sqrtr 2 / _.
+set q1 := normal_peak (sqrtr post_s_var).
+set q2 := normal_peak (sqrtr post_b_var).
+set e1 := expR (- (s - 0) ^+ 2 / _); set e2 := expR (- (b - 0) ^+ 2 / _).
+set e3 := expR (- (5 / 2 - _) ^+ 2 / _).
+set e4 := expR (- (19 / 5 - _) ^+ 2 / _).
+set e5 := expR (- (9 / 2 - _) ^+ 2 / _).
+set e6 := expR (- (31 / 5 - _) ^+ 2 / _).
+set e7 := expR (- (8 - _) ^+ 2 / _).
+set f0 := expR (- (11 * 11 * _ / _)).
+set f1 := expR (- (s - post_s_mean) ^+ 2 / _).
+set f2 := expR (- (b - post_b_mean s) ^+ 2 / _).
+move=> HP HE.
+transitivity ((P3 ^+ 2 * Ph ^+ 5) * (e1 * e2 * e3 * e4 * e5 * e6 * e7)).
+  by ring.
+by rewrite HP HE; ring.
+Qed.
+
+(** The posterior: s ~ N(post_s_mean, sqrt post_s_var), and given s,
+    b ~ N(post_b_mean s, sqrt post_b_var); pushed to functions by lin. *)
+Lemma post_b_mean_morphism : qbs_morphism (X := RQ) (Y := RQ) post_b_mean.
+Proof.
+move=> a ha; apply: measurable_funM => //; apply: measurable_funB => //.
+exact: measurable_funM.
+Qed.
+
+Definition post_b_meanQ : qbsHomType RQ RQ :=
+  HB.pack post_b_mean (isQBSMorphism.Build R RQ RQ _ post_b_mean_morphism).
+
+Definition posterior2 : monadP W :=
+  qbs_bind
+    (qbs_normal_distribution post_s_mean (Num.sqrt post_s_var) : monadP _)
+    (qbs_comp (qbs_pair (qbs_id RQ)
+      (qbs_comp post_b_meanQ (qbs_normalQ (Num.sqrt post_b_var))))
+      (qbs_strengthQ RQ RQ)).
+
+Definition posterior : monadP F := monadP_map lin posterior2.
+
+(** ** Integrals against the prior and the posterior *)
+
 Local Open Scope ereal_scope.
 
-(* Model parameters (matching Isabelle AFP) *)
+Lemma prior2_integral (h : W -> \bar R) :
+  qbs_measurable W h -> (forall x, 0 <= h x) ->
+  qbs_integral W prior2 h =
+  \int[normal_prob 0 3]_s \int[normal_prob 0 3]_b h (s, b).
+Proof. by move=> mh h0; rewrite qbs_bind_integral. Qed.
 
-Let prior_sigma : R := 3%:R.     (* N(0,3) prior *)
-Let noise_sigma : R := 2%:R^-1.  (* sigma = 1/2 noise *)
+Lemma posterior2_integral (h : W -> \bar R) :
+  qbs_measurable W h -> (forall x, 0 <= h x) ->
+  qbs_integral W posterior2 h =
+  \int[normal_prob post_s_mean (Num.sqrt post_s_var)]_s
+    \int[normal_prob (post_b_mean s) (Num.sqrt post_b_var)]_b h (s, b).
+Proof. by move=> mh h0; rewrite qbs_bind_integral. Qed.
 
-(* 1. Prior distributions *)
+(** Helpers. *)
 
-Lemma prior_sigma_gt0 : (0 < prior_sigma)%R.
-Proof. by rewrite /prior_sigma ltr0n. Qed.
+Let K : R := normal_peak 2^-1 ^+ 5.
 
-(* Prior on slope: Normal(0, 3) *)
-Definition slope_prior : qbs_prob (realQ R) :=
-  @qbs_normal_distribution R (0 : R) prior_sigma prior_sigma_gt0.
+Local Lemma obs2_ge0 s b : (0 <= obs2 s b)%R.
+Proof. by rewrite /obs2 /obs_fun /d !mulr_ge0 ?normal_pdf_ge0. Qed.
 
-(* Prior on intercept: Normal(0, 3) *)
-Definition intercept_prior : qbs_prob (realQ R) :=
-  @qbs_normal_distribution R (0 : R) prior_sigma prior_sigma_gt0.
-
-(* 2. Likelihood function (matching Isabelle's d and obs) *)
-
-(* d mu x = normal_pdf mu (1/2) x *)
-Definition d (mu x : R) : R := normal_pdf mu noise_sigma x.
-
-Lemma d_ge0 (mu x : R) : (0 <= d mu x)%R.
-Proof. exact: normal_pdf_ge0. Qed.
-
-(** Observation likelihood: product of 5 normal densities
-    at the data points (1,2.5),...,(5,8.0). *)
-(* obs(s,b) = d(s*1+b, 2.5) * d(s*2+b, 3.8) * d(s*3+b, 4.5) *
-              d(s*4+b, 6.2) * d(s*5+b, 8.0) *)
-Definition obs (params : realQ R * realQ R) : R :=
-  let s := fst params in
-  let b := snd params in
-  (d (s * 1 + b) (5%:R / 2%:R) *       (* d(f(1), 2.5) *)
-   d (s * 2%:R + b) (19%:R / 5%:R) *   (* d(f(2), 3.8) *)
-   d (s * 3%:R + b) (9%:R / 2%:R) *    (* d(f(3), 4.5) *)
-   d (s * 4%:R + b) (31%:R / 5%:R) *   (* d(f(4), 6.2) *)
-   d (s * 5%:R + b) 8%:R)%R.           (* d(f(5), 8.0) *)
-
-Lemma obs_ge0 (params : realQ R * realQ R) : (0 <= obs params)%R.
+Local Lemma obs2_ub s b : (obs2 s b <= K)%R.
 Proof.
-rewrite /obs.
-do 4! (apply: mulr_ge0; last exact: d_ge0).
-exact: d_ge0.
+rewrite /obs2 /obs_fun /d /K !exprS expr0 mulr1.
+have ub (x m : R) : (normal_pdf m 2^-1 x <= normal_peak 2^-1)%R.
+  exact: normal_pdf_ub half_neq0.
+have g0 (x m : R) : (0 <= normal_pdf m 2^-1 x)%R by exact: normal_pdf_ge0.
+by rewrite -!mulrA; repeat apply: ler_pM;
+  rewrite ?mulr_ge0 ?g0 ?ub ?normal_peak_ge0.
 Qed.
 
-(** Marginal likelihood (normalizing constant Z). *)
-(* Z = integral of obs over the prior.
-   In the Isabelle development, this is computed explicitly as
-   C = (4*sqrt(2)/(pi^2*sqrt(66961*pi))) * exp(-1674761/1674025)
-   via iterative application of normal_pdf_times. *)
+Let obs2Q : qbsHomType W RQ := qbs_comp lin obs.
 
-Definition evidence : \bar R :=
-  qbs_pair_integral slope_prior intercept_prior
-    (fun params => (obs params)%:E).
-
-Lemma evidence_ge0 : 0 <= evidence.
+Local Lemma measurable_obs2 : qbs_measurable W (fun sb => (obs2 sb.1 sb.2)%:E).
 Proof.
-rewrite /evidence /qbs_pair_integral.
-apply: integral_ge0 => rr _.
-rewrite lee_fin; exact: obs_ge0.
+by move=> b hb; apply/measurable_EFinP; have := qbs_hom_proof (s := obs2Q) _ hb.
 Qed.
 
-(* Fubini decomposition of the evidence *)
-Lemma evidence_eq
-  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
-    setT (qbs_pair_fun slope_prior intercept_prior
-      (fun params => (obs params)%:E))) :
-  evidence =
-  qbs_integral _ slope_prior (fun s =>
-    qbs_integral _ intercept_prior (fun b =>
-      (obs (s, b))%:E)).
-Proof. rewrite /evidence; exact: qbs_pair_integral_iterated. Qed.
-
-(** Unnormalized posterior: E_post[g] = E_prior[g * obs] / Z. *)
-(* This corresponds to Isabelle's program_result_measure:
-     posterior = density(prior)(obs / C) *)
-
-Definition posterior_density (g : realQ R * realQ R -> \bar R) : \bar R :=
-  qbs_pair_integral slope_prior intercept_prior
-    (fun params => g params * (obs params)%:E)
-   / evidence.
-
-(* The posterior integrates to 1 when evidence is finite and positive.
-   This corresponds to Isabelle's program_result: the normalization
-   succeeds (returns Inl, not error Inr). *)
-Lemma posterior_density_total
-  (hev_pos : 0 < evidence)
-  (hev_fin : evidence < +oo) :
-  posterior_density (fun _ => 1) = 1.
+Local Lemma measurable_bounded (m s : R) (f : mR -> \bar R) (M : R) :
+  measurable_fun [set: mR] f -> (forall x, 0 <= f x <= M%:E) ->
+  \int[normal_prob m s]_x f x =
+  \int[lebesgue_measure]_x (f x * (normal_pdf m s x)%:E).
 Proof.
-rewrite /posterior_density.
-have -> : (fun params : realQ R * realQ R => 1 * (obs params)%:E) =
-          (fun params => (obs params)%:E).
-  by apply: funext => p; rewrite mul1e.
-rewrite -/(evidence).
-apply: divee.
-- by rewrite gt0_fin_numE.
-- by move: hev_pos; rewrite lt0e => /andP[].
+move=> mf fM; apply: integral_normal_prob => //.
+apply: emeasurable_bounded_integrable => //.
+- by move=> x; have /andP[] := fM x.
+- by exists M => x; have /andP[] := fM x.
 Qed.
 
-(* Fubini decomposition of the posterior *)
-Lemma posterior_density_eq (g : realQ R * realQ R -> \bar R)
-  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
-    setT (qbs_pair_fun slope_prior intercept_prior
-      (fun params => g params * (obs params)%:E))) :
-  posterior_density g =
-  qbs_integral _ slope_prior (fun s =>
-    qbs_integral _ intercept_prior (fun b =>
-      g (s, b) * (obs (s, b))%:E))
-   / evidence.
+(** s |-> \int[N(m s, sigma)]_b h (s, b) is measurable. *)
+Local Lemma measurable_inner (m : qbsHomType RQ RQ) (sigma : R)
+    (h : W -> \bar R) :
+  qbs_measurable W h -> (forall x, 0 <= h x) ->
+  measurable_fun [set: mR]
+    (fun s : mR => \int[normal_prob (m s) sigma]_b h (s, b)).
 Proof.
-rewrite /posterior_density; congr (_ / _).
-exact: qbs_pair_integral_iterated.
+move=> mh h0.
+pose g := qbs_comp (qbs_pair (qbs_id RQ) (qbs_comp m (qbs_normalQ sigma)))
+  (qbs_strengthQ RQ RQ).
+have hg := @qbs_hom_proof _ _ _ g idfun (@measurable_id _ mR setT).
+by have := qbs_integral_morphism mh h0 hg.
 Qed.
 
-(* 5. Single-observation likelihood as QBS morphism *)
-
-Definition likelihood_single_fun (obs_x : R) :
-  prodQ (realQ R) (realQ R) -> monadP (realQ R) :=
-  fun params =>
-    @mkQBSProb R (realQ R) idfun
-      (normal_prob (fst params * obs_x + snd params)%R noise_sigma
-        : probability mR R)
-      (@measurable_id _ mR setT).
-
-Lemma likelihood_single_morphism (obs_x : R) :
-  qbs_morphism (X := prodQ (realQ R) (realQ R)) (Y := monadP (realQ R))
-    (likelihood_single_fun obs_x).
+Local Lemma C_gt0 : (0 < C)%R.
 Proof.
-move=> a [ha1 ha2].
-exists idfun, (fun r => normal_prob ((a r).1 * obs_x + (a r).2)%R noise_sigma
-  : giry.giry mR R); split => //.
-- exact: (@measurable_id _ mR setT).
-- apply: giry.measurable_giry_codensity => // B mB.
-  apply: measurableT_comp (measurable_normal_prob _ mB) _.
-  by apply: measurable_funD => //; exact: measurable_funM.
-- by move=> r; exact: probability_setT.
+rewrite /C mulr_gt0 ?expR_gt0// divr_gt0 ?mulr_gt0 ?sqrtr_gt0 ?exprn_gt0
+  ?pi_gt0 ?ltr0n.
+all: by rewrite ?mulr_gt0 ?ltr0n ?pi_gt0.
 Qed.
 
-HB.instance Definition _ (obs_x : R) :=
-  @isQBSMorphism.Build R (prodQ (realQ R) (realQ R)) (monadP (realQ R))
-    (likelihood_single_fun obs_x) (likelihood_single_morphism obs_x).
+Local Lemma C_ge0 : (0 <= C)%R. Proof. exact/ltW/C_gt0. Qed.
 
-Definition likelihood_single (obs_x : R) :
-  qbsHomType (prodQ (realQ R) (realQ R)) (monadP (realQ R)) :=
-  likelihood_single_fun obs_x.
-
-(* 6. Predictive distribution via pair integration (Fubini) *)
-
-Definition predictive_integral (obs_x : R) (h : realQ R -> \bar R) : \bar R :=
-  qbs_pair_integral slope_prior intercept_prior
-    (fun params => qbs_integral _ (likelihood_single obs_x params) h).
-
-Lemma predictive_marginal (obs_x : R) (h : realQ R -> \bar R)
-  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
-    setT (qbs_pair_fun slope_prior intercept_prior
-      (fun params => qbs_integral _ (likelihood_single obs_x params) h))) :
-  predictive_integral obs_x h =
-  qbs_integral _ slope_prior (fun s =>
-    qbs_integral _ intercept_prior (fun b =>
-      qbs_integral _ (likelihood_single obs_x (s, b)) h)).
-Proof. rewrite /predictive_integral; exact: qbs_pair_integral_iterated. Qed.
-
-(* 7. Monadic prior on the parameter space *)
-(* Isabelle's prior: do { s <- nu; b <- nu; return (fun r => s*r+b) }
-
-   In Isabelle, the prior is a probability on the function space
-   expQ R (realQ R) (realQ R), built by sampling slope s and intercept b
-   from the standard Gaussian (nu), then returning the function r |-> s*r+b.
-
-   Constructing this directly on expQ requires packaging
-   (fun r => s*r+b) as a qbsHomType, i.e., proving that for each (s,b),
-   the map r |-> s*r+b is a QBS morphism. While this is straightforward
-   (it is a measurable hence QBS-morphic function), the monadic bind on
-   expQ also requires the strong morphism condition for the return map
-   (s,b) |-> (fun r => s*r+b) : prodQ (realQ R) (realQ R) -> expQ ...
-
-   Instead, we provide the equivalent pair-based formulation: the prior
-   is a QBS probability on prodQ (realQ R) (realQ R) representing the
-   joint distribution of (slope, intercept). This is isomorphic to the
-   function-space version via the bijection (s,b) <-> (fun r => s*r+b).
-
-   The pair formulation is standard in Bayesian computation and matches
-   how the posterior is already defined above. *)
-
-Definition prior : qbs_prob (prodQ (realQ R) (realQ R)) :=
-  qbs_prob_pair slope_prior intercept_prior.
-
-(* The monadic construction of the prior:
-   prior_bind = bind(slope_prior, fun s =>
-                  bind(intercept_prior, fun b => return (s, b))),
-   i.e. the monadic product of the two priors. *)
-Definition prior_bind : qbs_prob (prodQ (realQ R) (realQ R)) :=
-  qbs_pairP (slope_prior : monadP _) (intercept_prior : monadP _).
-
-(** The monadic prior is the product prior. *)
-Lemma prior_bindE : qbs_prob_equiv _ prior_bind prior.
-Proof. exact: qbs_prob_pairE. Qed.
-
-(* 8. Normalizer (norm_qbs) *)
-(* Isabelle's norm_qbs_measure: given a weighted QBS probability, either
-   return the normalized probability (when evidence is positive and finite)
-   or signal an error. We model the error case with option.
-
-   norm_qbs g obs_fn computes the evidence
-     ev = integral of obs_fn over the joint prior
-   and if 0 < ev < +oo, returns Some (fun p => g(p) * obs_fn(p) / ev),
-   otherwise returns None (corresponding to Isabelle's Inr error). *)
-
-Definition norm_qbs
-    (g : realQ R * realQ R -> \bar R)
-    (obs_fn : realQ R * realQ R -> R)
-    : option (realQ R * realQ R -> \bar R) :=
-  let ev := qbs_pair_integral slope_prior intercept_prior
-              (fun p => (obs_fn p)%:E) in
-  if (0 < ev) && (ev < +oo) then
-    Some (fun p => g p * (obs_fn p)%:E / ev)
-  else None.
-
-(* The normalizer returns Some when evidence is positive and finite *)
-Lemma norm_qbs_some (g : realQ R * realQ R -> \bar R)
-  (obs_fn : realQ R * realQ R -> R)
-  (hev_pos : 0 < qbs_pair_integral slope_prior intercept_prior
-               (fun p => (obs_fn p)%:E))
-  (hev_fin : qbs_pair_integral slope_prior intercept_prior
-               (fun p => (obs_fn p)%:E) < +oo) :
-  norm_qbs g obs_fn =
-  Some (fun p => g p * (obs_fn p)%:E /
-          qbs_pair_integral slope_prior intercept_prior
-            (fun p => (obs_fn p)%:E)).
+Local Lemma factor_inner (h : W -> \bar R) (s : R) :
+  qbs_measurable W h -> (forall x, 0 <= h x <= 1) ->
+  (\int[normal_prob 0 3]_b (h (s, b) * (obs2 s b)%:E)) * (normal_pdf 0 3 s)%:E =
+  (C * normal_pdf post_s_mean (Num.sqrt post_s_var) s)%:E *
+  \int[normal_prob (post_b_mean s) (Num.sqrt post_b_var)]_b h (s, b).
 Proof.
-rewrite /norm_qbs.
-case: ifPn => // /negP.
-move/negP; rewrite negb_and => /orP[/negP|/negP]; contradiction.
+move=> mh h01.
+have hs : qbs_Mx (s := W) (fun b : mR => (s, b)).
+  by split; [exact: measurable_cst|exact: measurable_id].
+have mhb : measurable_fun [set: mR] (fun b => h (s, b)) := mh _ hs.
+have mob : measurable_fun [set: mR] (fun b => obs2 s b) :=
+  qbs_hom_proof (s := obs2Q) _ hs.
+have h0 x : 0 <= h x by have /andP[] := h01 x.
+have h1 x : h x <= 1 by have /andP[] := h01 x.
+have mho : measurable_fun [set: mR] (fun b => h (s, b) * (obs2 s b)%:E).
+  by apply: emeasurable_funM => //; exact/measurable_EFinP.
+have bho b : 0 <= h (s, b) * (obs2 s b)%:E <= K%:E.
+  rewrite mule_ge0 ?lee_fin ?obs2_ge0//=.
+  by rewrite -[K%:E]mul1e lee_pmul ?lee_fin ?obs2_ge0 ?obs2_ub.
+rewrite (measurable_bounded _ _ mho bho).
+rewrite [X in _ = _ * X](measurable_bounded _ _ mhb (fun b => h01 (s, b))).
+have mf1 : measurable_fun [set: mR]
+    (fun x => h (s, x) * (obs2 s x)%:E * (normal_pdf 0 3 x)%:E).
+  apply: emeasurable_funM.
+    by apply: emeasurable_funM => //; exact/measurable_EFinP.
+  by apply/measurable_EFinP; exact: measurable_normal_pdf.
+have mf2 : measurable_fun [set: mR] (fun x =>
+    h (s, x) * (normal_pdf (post_b_mean s) (sqrtr post_b_var) x)%:E).
+  apply: emeasurable_funM => //.
+  by apply/measurable_EFinP; exact: measurable_normal_pdf.
+have C0 := C_ge0.
+have nn1 x : [set: mR] x ->
+    0 <= h (s, x) * (obs2 s x)%:E * (normal_pdf 0 3 x)%:E.
+  by move=> _; rewrite !mule_ge0 ?lee_fin ?normal_pdf_ge0 ?obs2_ge0.
+have nn2 x : [set: mR] x ->
+    0 <= h (s, x) * (normal_pdf (post_b_mean s) (sqrtr post_b_var) x)%:E.
+  by move=> _; rewrite !mule_ge0 ?lee_fin ?normal_pdf_ge0.
+rewrite -(ge0_integralZr _ measurableT mf1 nn1);
+  try by rewrite lee_fin normal_pdf_ge0.
+rewrite -(ge0_integralZl _ measurableT mf2 nn2);
+  try by rewrite lee_fin mulr_ge0 ?normal_pdf_ge0.
+apply: eq_integral => b _; have e := obs_prior_factor s b.
+rewrite -!muleA -!EFinM [RHS]muleCA -EFinM; congr (h (s, b) * _%:E).
+by rewrite -e; ring.
 Qed.
 
-(* The normalizer returns None when evidence is zero or infinite *)
-Lemma norm_qbs_none (g : realQ R * realQ R -> \bar R)
-  (obs_fn : realQ R * realQ R -> R)
-  (hev : ~ ((0 < qbs_pair_integral slope_prior intercept_prior
-                 (fun p => (obs_fn p)%:E)) /\
-             (qbs_pair_integral slope_prior intercept_prior
-                 (fun p => (obs_fn p)%:E) < +oo))) :
-  norm_qbs g obs_fn = None.
+Lemma factor_integral (h : W -> \bar R) :
+  qbs_measurable W h -> (forall x, 0 <= h x <= 1) ->
+  \int[normal_prob 0 3]_s \int[normal_prob 0 3]_b (h (s, b) * (obs2 s b)%:E) =
+  C%:E * \int[normal_prob post_s_mean (Num.sqrt post_s_var)]_s
+    \int[normal_prob (post_b_mean s) (Num.sqrt post_b_var)]_b h (s, b).
 Proof.
-rewrite /norm_qbs.
-case: ifPn => // /andP[h1 h2].
-by exfalso; apply: hev.
+move=> mh h01; have h0 x : 0 <= h x by have /andP[] := h01 x.
+pose ho (sb : W) := h sb * (obs2 sb.1 sb.2)%:E.
+have mho : qbs_measurable W ho.
+  by move=> b hb; apply: emeasurable_funM; [exact: mh|exact: measurable_obs2].
+have ho0 x : 0 <= ho x by rewrite /ho mule_ge0 ?lee_fin ?obs2_ge0.
+have mG := measurable_inner (@qbs_const _ RQ RQ 0%R) 3 mho ho0.
+have mJ := measurable_inner post_b_meanQ (Num.sqrt post_b_var) mh h0.
+have bnd (m sg : R) (f : mR -> \bar R) (M : R) : measurable_fun [set: mR] f ->
+    (forall x, 0 <= f x <= M%:E) ->
+    0 <= \int[normal_prob m sg]_x f x <= M%:E.
+  move=> mf fM; apply/andP; split.
+    by apply: integral_ge0 => x _; case/andP: (fM x).
+  rewrite (@le_trans _ _ (\int[normal_prob m sg]_x M%:E))//.
+    by apply: ge0_le_integral => // x _; case/andP: (fM x).
+  by rewrite integral_cst //= probability_setT mule1.
+have hs s : qbs_Mx (s := W) (fun b : mR => (s, b)).
+  by split; [exact: measurable_cst|exact: measurable_id].
+have bG s : 0 <= \int[normal_prob 0 3]_b ho (s, b) <= K%:E.
+  apply: bnd => [|b]; first exact: mho _ (hs s).
+  by rewrite ho0 /ho -[K%:E]mul1e lee_pmul ?lee_fin ?obs2_ge0 ?obs2_ub//;
+    case/andP: (h01 (s, b)).
+have bJ s : 0 <= \int[normal_prob (post_b_mean s) (Num.sqrt post_b_var)]_b
+    h (s, b) <= 1%:E.
+  by apply: bnd => //; exact: mh _ (hs s).
+rewrite -[LHS]/(\int[normal_prob 0 3]_s \int[normal_prob 0 3]_b ho (s, b)).
+rewrite (measurable_bounded _ _ mG bG) (measurable_bounded _ _ mJ bJ).
+rewrite -ge0_integralZl//.
+- apply: emeasurable_funM => //.
+  by apply/measurable_EFinP; exact: measurable_normal_pdf.
+- by move=> x _; rewrite mule_ge0 ?lee_fin ?normal_pdf_ge0//; case/andP: (bJ x).
+- exact: C_ge0.
+- apply: eq_integral => s _.
+  by rewrite (factor_inner s mh h01) muleCA -EFinM muleC.
 Qed.
 
-(** Full Bayesian program: normalize prior by obs. *)
-(* Isabelle's program:
-     program = norm_qbs_measure (pushforward prior
-                 (fun f => (f, obs f)))
-   In our pair formulation, the pushforward through
-   (fun f => (f, obs f)) is just the observation function
-   obs applied to the prior parameters.
-   So program = norm_qbs (fun _ => 1) obs. *)
-
-Definition program : option (realQ R * realQ R -> \bar R) :=
-  norm_qbs (fun _ => 1) obs.
-
-(* When evidence is positive and finite, the program succeeds *)
-Lemma program_succeeds
-  (hev_pos : 0 < evidence)
-  (hev_fin : evidence < +oo) :
-  program = Some (fun p => 1 * (obs p)%:E / evidence).
+Lemma wprior_evidence : qbs_evidence wprior = C%:E.
 Proof.
-rewrite /program /norm_qbs -/(evidence).
-case: ifPn => // /negP.
-move/negP; rewrite negb_and => /orP[/negP|/negP]; contradiction.
+rewrite -[LHS]/(qbs_integral W prior2 (fun sb => (maxr 0 (obs2 sb.1 sb.2))%:E)).
+have -> : (fun sb : W => (maxr 0 (obs2 sb.1 sb.2))%:E) =
+    (fun sb => 1 * (obs2 sb.1 sb.2)%:E).
+  by apply/funext => sb; rewrite mul1e max_r ?obs2_ge0.
+have I1 (m sg : R) : \int[normal_prob m sg]_x (fun=> 1 : \bar R) x = 1.
+  by rewrite integral_cst //= probability_setT mule1.
+rewrite prior2_integral.
+- by move=> b hb; apply: emeasurable_funM => //; exact: measurable_obs2.
+- by move=> sb; rewrite mul1e lee_fin obs2_ge0.
+rewrite (factor_integral (h := fun=> 1)).
+- by move=> ? ?; exact: measurable_cst.
+- by move=> _; rewrite lee01 lexx.
+by under eq_integral do rewrite I1; rewrite I1 mule1.
 Qed.
 
-(** Phase 1 integration: integrate out the intercept b. *)
-(* The evidence integral decomposes via Fubini as:
-     evidence = ∫[N(0,3)]_s ∫[N(0,3)]_b obs(s,b)
+(** ** Main theorem: the program normalises to the closed-form posterior *)
 
-   Phase 1 evaluates the inner integral ∫[N(0,3)]_b obs(s,b) for
-   fixed s.  The key steps are:
-
-   (a) Convert to Lebesgue integral with density via integral_normal_prob:
-         ∫[N(0,3)]_b obs(s,b) = ∫[leb]_b obs(s,b) * N(0,3,b)
-
-   (b) Rewrite obs(s,b) * N(0,3,b) using the algebraic identities
-       obs_rewrite + phase1_combine5 (from normal_algebra.v):
-         N(0,3,b) * obs_factors(s,b) = scalar_of_s(s) * N(mu5(s), sigma5, b)
-
-   (c) Factor out scalar_of_s(s) via ge0_integralZl_EFin:
-         = scalar_of_s(s) * ∫[leb]_b N(mu5(s), sigma5, b)
-
-   (d) Evaluate the remaining integral via integral_normal_pdf:
-         ∫[leb]_b N(mu5(s), sigma5, b) = 1
-
-   Result: ∫[N(0,3)]_b obs(s,b) = scalar_of_s(s).
-
-   The scalar_of_s function is the product of 5 gaussian_prod_scalar
-   factors, each of the form normal_peak(S_k) * normal_fun(mu_k, S_k, m'_k),
-   arising from the iterative combination of the prior N(0,3) with each
-   data-point factor via normal_pdf_times.                                 *)
-
-(* The Phase 1 scalar: product of 5 gaussian_prod_scalar terms.
-   Each factor is normal_peak(sqrt(sigma_k^2 + sigma'^2)) *
-   normal_fun(mu_k, sqrt(sigma_k^2 + sigma'^2), m'_k).
-   This matches the scalar part of phase1_combine5 from normal_algebra.v.
-   The gaussian_prod_scalar definition is:
-     gaussian_prod_scalar m m' s s' :=
-       normal_peak(sqrt(s^2+s'^2)) *
-       normal_fun(m, sqrt(s^2+s'^2), m') *)
-Definition scalar_of_s (s : R) : R :=
-  (* Step 0->1: N(0,3) * N(5/2-s, 1/2) *)
-  (normal_peak (sqrtr (3%:R ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
-   normal_fun 0 (sqrtr (3%:R ^+ 2 + (2%:R^-1 : R) ^+ 2)) (5%:R / 2%:R - s)) *
-  (* Step 1->2: result * N(19/5-2s, 1/2) *)
-  (normal_peak (sqrtr (sqrtr (9%:R / 37%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
-   normal_fun ((90%:R - 36%:R * s) / 37%:R)
-     (sqrtr (sqrtr (9%:R / 37%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2))
-     (19%:R / 5%:R - 2%:R * s)) *
-  (* Step 2->3: result * N(9/2-3s, 1/2) *)
-  (normal_peak (sqrtr (sqrtr (9%:R / 73%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
-   normal_fun ((1134%:R - 540%:R * s) / 365%:R)
-     (sqrtr (sqrtr (9%:R / 73%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2))
-     (9%:R / 2%:R - 3%:R * s)) *
-  (* Step 3->4: result * N(31/5-4s, 1/2) *)
-  (normal_peak (sqrtr (sqrtr (9%:R / 109%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
-   normal_fun ((1944%:R - 1080%:R * s) / 545%:R)
-     (sqrtr (sqrtr (9%:R / 109%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2))
-     (31%:R / 5%:R - 4%:R * s)) *
-  (* Step 4->5: result * N(8-5s, 1/2) *)
-  (normal_peak (sqrtr (sqrtr (9%:R / 145%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
-   normal_fun ((612%:R - 360%:R * s) / 145%:R)
-     (sqrtr (sqrtr (9%:R / 145%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2))
-     (8%:R - 5%:R * s)).
-
-Lemma scalar_of_s_ge0 (s : R) : (0 <= scalar_of_s s)%R.
+Theorem program_posterior :
+  exists q, program = Some q /\ qbs_prob_equiv F q posterior.
 Proof.
-rewrite /scalar_of_s.
-apply: mulr_ge0; last first.
-  by apply: mulr_ge0; [exact: normal_peak_ge0|
-     exact: normal_fun_ge0].
-apply: mulr_ge0; last first.
-  by apply: mulr_ge0; [exact: normal_peak_ge0|
-     exact: normal_fun_ge0].
-apply: mulr_ge0; last first.
-  by apply: mulr_ge0; [exact: normal_peak_ge0|
-     exact: normal_fun_ge0].
-apply: mulr_ge0; last first.
-  by apply: mulr_ge0; [exact: normal_peak_ge0|
-     exact: normal_fun_ge0].
-by apply: mulr_ge0; [exact: normal_peak_ge0 | exact: normal_fun_ge0].
+have ev : 0 < qbs_evidence wprior < +oo.
+  by rewrite wprior_evidence ltry lte_fin C_gt0.
+rewrite /program /qbs_normalize ev; eexists; split; first reflexivity.
+move=> U mU; pose V := lin @^-1` U.
+have mV : sigma_Mx V := sigma_Mx_preimage lin mU.
+pose h (sb : W) : \bar R := (\1_V sb)%:E.
+have mh : qbs_measurable W h.
+  by move=> b hb; apply/measurable_EFinP/measurable_indic; exact: mV.
+have h01 x : 0 <= h x <= 1.
+  by rewrite /h indicE; case: (_ \in _); rewrite ?lee01 ?lexx.
+rewrite -[LHS]/(qbs_prob_event _ _ _) qbs_normalize_event// wprior_evidence.
+rewrite -[RHS]/(qbs_prob_event W posterior2 V).
+have -> : qbs_prob_event W posterior2 V = qbs_integral W posterior2 h.
+  rewrite /qbs_prob_event -[X in qbs_prob_mu _ X]setIT -integral_indic//.
+  exact: mV _ (qbs_prob_alpha_random _).
+have -> : qbs_integral (prodQ F RQ) wprior
+    (fun xw : prodQ F RQ => (\1_U xw.1 * maxr 0 xw.2)%:E) =
+    qbs_integral W prior2 (fun sb => h sb * (obs2 sb.1 sb.2)%:E).
+  by apply: eq_integral => r _; rewrite /h max_r ?obs2_ge0// EFinM.
+rewrite prior2_integral.
+- by move=> b hb; apply: emeasurable_funM; [exact: mh|exact: measurable_obs2].
+- by move=> x; rewrite mule_ge0 ?lee_fin ?obs2_ge0//; case/andP: (h01 x).
+rewrite factor_integral// posterior2_integral//;
+  try by move=> x; case/andP: (h01 x).
+by rewrite /= muleAC -EFinM divff ?gt_eqF ?C_gt0// mul1e.
 Qed.
 
-(* Intermediate parameters after all 5 Phase 1 combination steps *)
-Let phase1_mu5 (s : R) : R := (900%:R - 540%:R * s) / 181%:R.
-Let phase1_sigma5 : R := sqrtr (9%:R / 181%:R).
-
-(* Phase 1 integration: integrating obs(s,b) against the intercept
-   prior N(0,3) yields the scalar_of_s(s). The algebraic identity
-   (obs_rewrite + phase1_combine5) is imported from normal_algebra.v.
-
-   Remaining hypotheses:
-   - obs_meas: Measurability of obs as a function of b at fixed s.
-   - obs_int: Integrability of |obs(s,b)| against N(0,3). *)
-Lemma phase1_integration (s : R)
-  (obs_meas : measurable_fun [set: mR]
-    (fun b : mR => (obs (s, b))%:E :> \bar R))
-  (obs_int : (\int[normal_prob 0 prior_sigma]_b
-    `|(obs (s, b))%:E| < +oo)%E)
-  :
-  \int[normal_prob (0 : R) prior_sigma]_b (obs (s, b))%:E =
-  (scalar_of_s s)%:E.
-Proof.
-rewrite integral_normal_prob //; last by apply/integrableP; split.
-under eq_integral do rewrite -EFinM.
-have step1 : forall x : R, (obs (s, x) * normal_pdf 0 prior_sigma x =
-  scalar_of_s s * normal_pdf (phase1_mu5 s) phase1_sigma5 x)%R.
-  move=> x; rewrite mulrC /obs /d /prior_sigma /noise_sigma.
-  rewrite (obs_rewrite s x) !mulrA.
-  exact: (phase1_combine5 s x).
-under eq_integral do rewrite step1.
-under eq_integral do rewrite EFinM.
-rewrite ge0_integralZl_EFin //.
-- rewrite integral_normal_pdf mule1 //.
-- move=> x _; rewrite lee_fin; exact: normal_pdf_ge0.
-- apply/measurableT_comp => //; exact: measurable_normal_pdf.
-- exact: scalar_of_s_ge0.
-Qed.
-
-(** Phase 2 integration: integrate out the slope s. *)
-
-(* scalar_of_s is the product of 5 gaussian_prod_scalar terms *)
-Lemma scalar_of_s_eq (s : R) :
-  scalar_of_s s =
-  (gaussian_prod_scalar 0 (5%:R / 2%:R - s) 3%:R (2%:R^-1) *
-  gaussian_prod_scalar ((90%:R - 36%:R * s) / 37%:R)
-                       (19%:R / 5%:R - 2%:R * s)
-                       (sqrtr (9%:R / 37%:R)) (2%:R^-1) *
-  gaussian_prod_scalar ((1134%:R - 540%:R * s) / 365%:R)
-                       (9%:R / 2%:R - 3%:R * s)
-                       (sqrtr (9%:R / 73%:R)) (2%:R^-1) *
-  gaussian_prod_scalar ((1944%:R - 1080%:R * s) / 545%:R)
-                       (31%:R / 5%:R - 4%:R * s)
-                       (sqrtr (9%:R / 109%:R)) (2%:R^-1) *
-  gaussian_prod_scalar ((612%:R - 360%:R * s) / 145%:R)
-                       (8%:R - 5%:R * s)
-                       (sqrtr (9%:R / 145%:R)) (2%:R^-1))%R.
-Proof. by rewrite /scalar_of_s /gaussian_prod_scalar. Qed.
-
-(* Bridge: scalar_of_s(s) * N(0,3,s) =
-   phase2_const * N(final_mu, final_sigma, s) *)
-Lemma scalar_of_s_mul_pdf (s : R) :
-  (scalar_of_s s * normal_pdf 0 prior_sigma s =
-   phase2_const R * normal_pdf (phase2_final_mu R) (phase2_final_sigma R) s)%R.
-Proof.
-rewrite (scalar_of_s_eq s).
-pose proof (phase2_combine5 s) as h.
-rewrite /prior_sigma -h; ring.
-Qed.
-
-(* Phase 2 integration: integrating scalar_of_s(s) against the slope
-   prior N(0,3) yields the constant phase2_const.
-   This mirrors phase1_integration but for the s variable. *)
-Lemma phase2_integration
-  (sos_meas : measurable_fun [set: mR]
-    (fun s : mR => (scalar_of_s s)%:E :> \bar R))
-  (sos_int : (\int[normal_prob 0 prior_sigma]_s
-    `|(scalar_of_s s)%:E| < +oo)%E) :
-  \int[normal_prob (0 : R) prior_sigma]_s (scalar_of_s s)%:E =
-  (phase2_const R)%:E.
-Proof.
-rewrite integral_normal_prob //; last by apply/integrableP; split.
-under eq_integral do rewrite -EFinM.
-under eq_integral do rewrite scalar_of_s_mul_pdf.
-under eq_integral do rewrite EFinM.
-rewrite ge0_integralZl_EFin //.
-- rewrite integral_normal_pdf ?mule1 //; exact: phase2_final_sigma_neq0.
-- move=> x _; rewrite lee_fin; exact: normal_pdf_ge0.
-- apply/measurableT_comp => //; exact: measurable_normal_pdf.
-- have := phase2_const_gt0 R; rewrite lt0r => /andP[_]; done.
-Qed.
-
-(** Evidence value and unconditional program result. *)
-
-(** Evidence equals phase2_const (explicit closed form). *)
-Theorem evidence_value
-  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
-    setT (qbs_pair_fun slope_prior intercept_prior
-      (fun params => (obs params)%:E)))
-  (obs_meas : forall s, measurable_fun [set: mR]
-    (fun b : mR => (obs (s, b))%:E :> \bar R))
-  (obs_int : forall s, (\int[normal_prob 0 prior_sigma]_b
-    `|(obs (s, b))%:E| < +oo)%E)
-  (sos_meas : measurable_fun [set: mR]
-    (fun s : mR => (scalar_of_s s)%:E :> \bar R))
-  (sos_int : (\int[normal_prob 0 prior_sigma]_s
-    `|(scalar_of_s s)%:E| < +oo)%E) :
-  evidence = (phase2_const R)%:E.
-Proof.
-rewrite (evidence_eq hint) /qbs_integral /=.
-(* Rewrite inner integral using phase1_integration *)
-have inner_eq : forall x : R,
-  \int[normal_prob 0 prior_sigma]_b (obs (x, b))%:E = (scalar_of_s x)%:E.
-  move=> x; apply: phase1_integration;
-    [exact: (obs_meas x)|exact: (obs_int x)].
-under eq_integral do rewrite inner_eq.
-exact: phase2_integration.
-Qed.
-
-(* The evidence is positive and finite, given the measure-theoretic
-   hypotheses. This follows from evidence = phase2_const > 0. *)
-Lemma evidence_pos
-  (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
-    setT (qbs_pair_fun slope_prior intercept_prior
-      (fun params => (obs params)%:E)))
-  (obs_meas : forall s, measurable_fun [set: mR]
-    (fun b : mR => (obs (s, b))%:E :> \bar R))
-  (obs_int : forall s, (\int[normal_prob 0 prior_sigma]_b
-    `|(obs (s, b))%:E| < +oo)%E)
-  (sos_meas : measurable_fun [set: mR]
-    (fun s : mR => (scalar_of_s s)%:E :> \bar R))
-  (sos_int : (\int[normal_prob 0 prior_sigma]_s
-    `|(scalar_of_s s)%:E| < +oo)%E) :
-  0 < evidence /\ evidence < +oo.
-Proof.
-rewrite (evidence_value hint obs_meas obs_int sos_meas sos_int).
-split.
-- by rewrite lte_fin; exact: phase2_const_gt0.
-- by rewrite ltey.
-Qed.
-
-(** Discharging the measure-theoretic hypotheses. *)
-
-Lemma noise_sigma_neq0 : (noise_sigma != 0)%R.
-Proof. by rewrite /noise_sigma invr_eq0 pnatr_eq0. Qed.
-
-Lemma d_le_peak (mu x : R) : (d mu x <= normal_peak noise_sigma)%R.
-Proof. rewrite /d; apply: normal_pdf_ub; exact: noise_sigma_neq0. Qed.
-
-Lemma obs_ub (s b : R) : (obs (s, b) <= normal_peak noise_sigma ^+5)%R.
-Proof.
-have hle : forall mu x : R, (d mu x <= normal_peak noise_sigma)%R := d_le_peak.
-have hge : forall mu x : R, (0 <= d mu x)%R := d_ge0.
-rewrite /obs /= exprSr exprSr exprSr exprSr expr1.
-apply: ler_pM; [| |  |exact: hle];
-  first by repeat (apply: mulr_ge0); exact: hge.
-  by exact: hge.
-apply: ler_pM; [| |  |exact: hle];
-  first by repeat (apply: mulr_ge0); exact: hge.
-  by exact: hge.
-apply: ler_pM; [| |  |exact: hle];
-  first by repeat (apply: mulr_ge0); exact: hge.
-  by exact: hge.
-apply: ler_pM; [exact: hge|exact: hge|exact: hle|exact: hle].
-Qed.
-
-Lemma obs_meas_proof : forall s, measurable_fun [set: mR]
-  (fun b : mR => (obs (s, b))%:E :> \bar R).
-Proof.
-move=> s; apply/measurable_EFinP; rewrite /obs /d /=.
-suff -> : (fun b : mR =>
-  (normal_pdf ((s * 1)%R + b)%R noise_sigma (5%:R / 2%:R) *
-  normal_pdf ((s * 2%:R)%R + b)%R noise_sigma (19%:R / 5%:R) *
-  normal_pdf ((s * 3%:R)%R + b)%R noise_sigma (9%:R / 2%:R) *
-  normal_pdf ((s * 4%:R)%R + b)%R noise_sigma (31%:R / 5%:R) *
-  normal_pdf ((s * 5%:R)%R + b)%R noise_sigma 8%:R)%R) =
-  (fun b : mR => (normal_pdf (5%:R / 2%:R - 1 * s) noise_sigma b *
-  normal_pdf (19%:R / 5%:R - 2%:R * s) noise_sigma b *
-  normal_pdf (9%:R / 2%:R - 3%:R * s) noise_sigma b *
-  normal_pdf (31%:R / 5%:R - 4%:R * s) noise_sigma b *
-  normal_pdf (8%:R - 5%:R * s) noise_sigma b)%R).
-  apply: measurable_funM; last exact: (measurable_normal_pdf _ _).
-  apply: measurable_funM; last exact: (measurable_normal_pdf _ _).
-  apply: measurable_funM; last exact: (measurable_normal_pdf _ _).
-  apply: measurable_funM; last exact: (measurable_normal_pdf _ _).
-  exact: (measurable_normal_pdf _ _).
-apply: funext => b.
-by rewrite !(normal_pdf_recenter _ s _ b noise_sigma_neq0).
-Qed.
-
-Lemma obs_int_proof : forall s,
-  (\int[normal_prob 0 prior_sigma]_b `|(obs (s, b))%:E| < +oo)%E.
-Proof.
-move=> s; have /integrableP[_ //] : (normal_prob 0 prior_sigma).-integrable setT
-  (EFin \o (fun b => obs (s, b))).
-have hbd : [bounded (fun b : mR => obs (s, b)) b | b in [set: mR]].
-  rewrite /bounded_near.
-  exists (normal_peak noise_sigma ^+ 5)%R; split; first by rewrite num_real.
-  move=> M hM b _ /=.
-  rewrite ger0_norm; last exact: (obs_ge0 (s, b)).
-  exact: (le_trans
-            (obs_ub s b)
-            (ltW hM)).
-apply: measurable_bounded_integrable.
-- exact: measurableT.
-- suff: ((normal_prob 0 prior_sigma : probability _ _) setT < +oo)%E by [].
-  by rewrite probability_setT; exact: ltey.
-- by move: (obs_meas_proof s) => /measurable_EFinP.
-- exact: hbd.
-Qed.
-
-(* Helper: each d factor is measurable on the product (s,b) space.
-   Strategy: rewrite d = peak * expR(polynomial(s,b)) and decompose. *)
-Let d_pair_meas_tac : forall k yk : R,
-  measurable_fun [set: mR * mR]
-    (fun rr : mR * mR => normal_peak noise_sigma *
-      normal_fun ((rr.1 * k)%R + rr.2)%R noise_sigma yk)%R.
-Proof.
-move=> k yk.
-apply: measurable_funM; [exact: measurable_cst|].
-rewrite /normal_fun.
-apply: measurableT_comp; first exact: measurable_expR.
-apply: measurable_funM; [|exact: measurable_cst].
-apply: measurable_funN.
-apply: (measurableT_comp (exprn_measurable 2)).
-apply: measurable_funB; [exact: measurable_cst|].
-apply: measurable_funD; [|exact: measurable_snd].
-apply: measurable_funM; [|exact: measurable_cst]; exact: measurable_fst.
-Qed.
-
-Lemma obs_product_integrable :
-  (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
-    setT (qbs_pair_fun slope_prior intercept_prior
-      (fun params => (obs params)%:E)).
-Proof.
-have hfin :
-  (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior)
-    [set: _] < +oo.
-  rewrite (_ : [set: _] = setT `*` setT); last by rewrite setXTT.
-  by rewrite product_measure1E //= probability_setT mule1; exact: ltey.
-rewrite /qbs_pair_fun /=.
-apply: (@measurable_bounded_integrable _ _ _ _ _ setT).
-- exact: measurableT.
-- exact: hfin.
-- rewrite /obs /d /=.
-  have hns := noise_sigma_neq0.
-  have -> : (fun rr : mR * mR =>
-    (normal_pdf ((rr.1 * 1)%R + rr.2)%R noise_sigma (5%:R / 2%:R) *
-     normal_pdf ((rr.1 * 2%:R)%R + rr.2)%R noise_sigma (19%:R / 5%:R) *
-     normal_pdf ((rr.1 * 3%:R)%R + rr.2)%R noise_sigma (9%:R / 2%:R) *
-     normal_pdf ((rr.1 * 4%:R)%R + rr.2)%R noise_sigma (31%:R / 5%:R) *
-     normal_pdf ((rr.1 * 5%:R)%R + rr.2)%R noise_sigma 8%:R)%R) =
-    (fun rr : mR * mR =>
-    (normal_peak noise_sigma *
-       normal_fun ((rr.1 * 1)%R + rr.2)%R
-         noise_sigma (5%:R / 2%:R) *
-    (normal_peak noise_sigma *
-       normal_fun ((rr.1 * 2%:R)%R + rr.2)%R
-         noise_sigma (19%:R / 5%:R)) *
-    (normal_peak noise_sigma *
-       normal_fun ((rr.1 * 3%:R)%R + rr.2)%R
-         noise_sigma (9%:R / 2%:R)) *
-    (normal_peak noise_sigma *
-       normal_fun ((rr.1 * 4%:R)%R + rr.2)%R
-         noise_sigma (31%:R / 5%:R)) *
-    (normal_peak noise_sigma *
-       normal_fun ((rr.1 * 5%:R)%R + rr.2)%R
-         noise_sigma 8%:R))%R).
-    by apply: funext => -[s b] /=; rewrite !(normal_pdfE _ hns).
-  apply: measurable_funM; last exact: (d_pair_meas_tac 5%:R 8%:R).
-  apply: measurable_funM; last exact: (d_pair_meas_tac 4%:R (31%:R / 5%:R)).
-  apply: measurable_funM; last exact: (d_pair_meas_tac 3%:R (9%:R / 2%:R)).
-  apply: measurable_funM; last exact: (d_pair_meas_tac 2%:R (19%:R / 5%:R)).
-  exact: (d_pair_meas_tac 1 (5%:R / 2%:R)).
-- rewrite /bounded_near.
-  exists (normal_peak noise_sigma ^+ 5)%R; split; first by rewrite num_real.
-  move=> M hM -[s' b'] _ /=.
-  rewrite ger0_norm ?obs_ge0 //.
-  exact: (le_trans
-            (obs_ub s' b')
-            (ltW hM)).
-Qed.
-
-Lemma sos_meas_proof : measurable_fun [set: mR]
-  (fun s : mR => (scalar_of_s s)%:E :> \bar R).
-Proof.
-apply/measurable_EFinP.
-rewrite /scalar_of_s.
-apply: measurable_funM.
-apply: measurable_funM.
-apply: measurable_funM.
-apply: measurable_funM.
-(* Factor 1: normal_peak * normal_fun 0 _ (5/2 - s) *)
-- apply: measurable_funM; first exact: measurable_cst.
-  rewrite /normal_fun.
-  apply: measurableT_comp; first exact: measurable_expR.
-  apply: measurable_funM; [|exact: measurable_cst].
-  apply: measurable_funN.
-  apply: (measurableT_comp (exprn_measurable 2)).
-  apply: measurable_funD;
-    [apply: measurable_funB; [exact: measurable_cst|exact: measurable_id]|
-     exact: measurable_cst].
-(* Factor 2: normal_peak * normal_fun ((90-36s)/37) _ (19/5-2s) *)
-- apply: measurable_funM; [exact: measurable_cst|].
-  rewrite /normal_fun.
-  apply: measurableT_comp; first exact: measurable_expR.
-  apply: measurable_funM; last exact: measurable_cst.
-  apply: measurable_funN.
-  apply: (measurableT_comp (exprn_measurable 2)).
-  apply: measurable_funB.
-  + apply: measurable_funB; [exact: measurable_cst|].
-    apply: measurable_funM; [exact: measurable_cst|exact: measurable_id].
-  + apply: measurable_funM; last exact: measurable_cst.
-    apply: measurable_funB; [exact: measurable_cst|].
-    apply: measurable_funM; [exact: measurable_cst|exact: measurable_id].
-(* Factors 3-5: same structure *)
-all: apply: measurable_funM; [exact: measurable_cst|].
-all: rewrite /normal_fun.
-all: apply: measurableT_comp; first exact: measurable_expR.
-all: apply: measurable_funM; last exact: measurable_cst.
-all: apply: measurable_funN.
-all: apply: (measurableT_comp (exprn_measurable 2)).
-all: apply: measurable_funB.
-all: try (apply: measurable_funB; [exact: measurable_cst|];
-          apply: measurable_funM; [exact: measurable_cst|exact: measurable_id]).
-all: try (apply: measurable_funM; last exact: measurable_cst;
-          apply: measurable_funB; [exact: measurable_cst|];
-          apply: measurable_funM; [exact: measurable_cst|exact: measurable_id]).
-Qed.
-
-Lemma sos_int_proof :
-  (\int[normal_prob 0 prior_sigma]_s `|(scalar_of_s s)%:E| < +oo)%E.
-Proof.
-have nf_le1 : forall m sigma x : R, (normal_fun m sigma x <= 1)%R.
-  move=> m sigma x; rewrite /normal_fun exp.expR_le1.
-  apply: mulr_le0_ge0; first by rewrite oppr_le0; exact: sqr_ge0.
-  by rewrite invr_ge0 mulr2n addr_ge0 // sqr_ge0.
-set M := (normal_peak (sqrtr (3%:R ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
-   normal_peak (sqrtr (sqrtr (9%:R / 37%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
-   normal_peak (sqrtr (sqrtr (9%:R / 73%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
-   normal_peak (sqrtr (sqrtr (9%:R / 109%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2)) *
-   normal_peak (sqrtr (sqrtr (9%:R / 145%:R) ^+ 2 + (2%:R^-1 : R) ^+ 2)))%R.
-suff sos_ub : forall s : R, (scalar_of_s s <= M)%R.
-  have /integrableP[_ //] : (normal_prob 0 prior_sigma).-integrable setT
-    (EFin \o scalar_of_s).
-  apply: (@measurable_bounded_integrable _ _ _ _ _ setT).
-  - exact: measurableT.
-  - suff: ((normal_prob 0 prior_sigma : probability _ _) setT < +oo)%E by [].
-    by rewrite probability_setT; exact: ltey.
-  - by move: sos_meas_proof => /measurable_EFinP.
-  - rewrite /bounded_near.
-    exists M; split; first by rewrite num_real.
-    move=> M' hM' s _ /=.
-    rewrite ger0_norm ?scalar_of_s_ge0 //.
-    exact: (le_trans
-              (sos_ub s)
-              (ltW hM')).
-move=> s'; rewrite /scalar_of_s /M.
-have le1 := nf_le1; have pk := @normal_peak_ge0 R; have nf := @normal_fun_ge0 R.
-have hge : forall a b c : R, (0 <= normal_peak a * normal_fun b a c)%R.
-  by move=> a b c; exact: (mulr_ge0 (pk _) (nf _ _ _)).
-have hle : forall a b c : R,
-  (normal_peak a * normal_fun b a c <= normal_peak a)%R.
-  move=> a b c; rewrite -[X in (_ <= X)%R]mulr1.
-  by apply: ler_pM.
-apply: ler_pM; [| |  |exact: hle].
-apply: mulr_ge0; [|exact: hge].
-apply: mulr_ge0; [|exact: hge].
-apply: mulr_ge0; [exact: hge|exact: hge].
-exact: hge.
-apply: ler_pM; [| |  |exact: hle].
-apply: mulr_ge0; [|exact: hge].
-apply: mulr_ge0; [exact: hge|exact: hge].
-exact: hge.
-apply: ler_pM; [| |  |exact: hle].
-apply: mulr_ge0; [exact: hge|exact: hge].
-exact: hge.
-apply: ler_pM; [exact: hge|exact: hge|exact: hle|exact: hle].
-Qed.
-
-(** Program succeeds and integrates to 1
-    (all measure-theoretic side conditions discharged). *)
-Theorem program_integrates_to_1 :
-  exists density,
-    program = Some density /\
-    posterior_density (fun _ => 1) = 1.
-Proof.
-have [hev_pos hev_fin] :=
-  evidence_pos obs_product_integrable obs_meas_proof
-    obs_int_proof sos_meas_proof sos_int_proof.
-exists (fun p => 1 * (obs p)%:E / evidence); split.
-- rewrite /program /norm_qbs -/(evidence).
-  case: ifPn => // /negP.
-  move/negP; rewrite negb_and => /orP[/negP|/negP]; contradiction.
-- exact: posterior_density_total.
-Qed.
-
-(** Posterior expectation formula:
-    E_post[g] = E_prior[g * obs/Z]. *)
-(* The standard Bayesian update expressed as density reweighting:
-   computing the posterior expectation of g equals the prior
-   expectation of g weighted by the normalized likelihood obs/Z. *)
-
-Lemma posterior_measure_characterization
-    (g : realQ R * realQ R -> \bar R)
-    (hint : (qbs_prob_mu slope_prior \x qbs_prob_mu intercept_prior).-integrable
-      setT (qbs_pair_fun slope_prior intercept_prior
-        (fun params => g params * (obs params)%:E)))
-    (obs_meas : forall s, measurable_fun [set: mR]
-      (fun b : mR => (obs (s, b))%:E :> \bar R))
-    (obs_int : forall s, (\int[normal_prob 0 prior_sigma]_b
-      `|(obs (s, b))%:E| < +oo)%E)
-    (sos_meas : measurable_fun [set: mR]
-      (fun s : mR => (scalar_of_s s)%:E :> \bar R))
-    (sos_int : (\int[normal_prob 0 prior_sigma]_s
-      `|(scalar_of_s s)%:E| < +oo)%E) :
-  posterior_density g =
-  qbs_pair_integral slope_prior intercept_prior
-    (fun params => g params * ((obs params)%:E / evidence)).
-Proof.
-rewrite /posterior_density.
-have hev := evidence_value obs_product_integrable obs_meas obs_int
-              sos_meas sos_int.
-rewrite hev.
-have hc_neq0 : (phase2_const R != 0)%R by exact: lt0r_neq0 (phase2_const_gt0 R).
-(* Goal: (∫ g*obs%:E) / c%:E = ∫ g * (obs%:E / c%:E)
-   Strategy: rewrite the RHS integrand to (g*obs%:E) * (c^{-1})%:E,
-   factor out (c^{-1})%:E via integralZr, and use commutativity. *)
-rewrite /qbs_pair_integral /=.
-(* Rewrite the RHS integrand function *)
-have -> : (fun rr =>
-  g (qbs_prob_alpha slope_prior rr.1, qbs_prob_alpha intercept_prior rr.2) *
-  ((obs (qbs_prob_alpha slope_prior rr.1,
-         qbs_prob_alpha intercept_prior rr.2))%:E /
-   (phase2_const R)%:E)) =
-  (fun rr =>
-  (g (qbs_prob_alpha slope_prior rr.1, qbs_prob_alpha intercept_prior rr.2) *
-   (obs (qbs_prob_alpha slope_prior rr.1,
-         qbs_prob_alpha intercept_prior rr.2))%:E) * ((phase2_const R)^-1)%:E).
-  apply: funext => rr /=.
-  by rewrite inver (negbTE hc_neq0) muleA.
-(* Now the goal is (∫ f) / c%:E = ∫ (f * (c^{-1})%:E) *)
-(* Rewrite the LHS:
-   (∫ f) / c%:E = (∫ f) * c%:E^{-1} = (∫ f) * (c^{-1})%:E *)
-rewrite inver (negbTE hc_neq0).
-(* Now: (∫ f) * (c^{-1})%:E = ∫ (f * (c^{-1})%:E) *)
-by rewrite integralZr.
-Qed.
-
-End bayesian_regression.
+End regression.

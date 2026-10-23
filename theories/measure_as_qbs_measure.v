@@ -17,7 +17,7 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad.
 (*   qbs_normal_distribution mu sigma == Normal(mu, sigma) as QBS probability *)
 (*   qbs_bernoulli p == Bernoulli(p) as QBS probability on boolQ             *)
 (*   qbs_uniform == Uniform[0,1] as QBS probability on realQ                 *)
-(*   qbs_expect_normal == E[Normal(mu,sigma)] = mu                           *)
+(*   qbs_expect_normal == E[Normal(mu,sigma)] = mu, assuming odd_zero        *)
 (*                        (requires integrability hypotheses)                *)
 (* ```                                                                        *)
 (******************************************************************************)
@@ -43,8 +43,7 @@ Implicit Types (p mu sigma : R).
 (** Standard distributions as QBS probabilities. *)
 
 (** Normal distribution as QBS probability. *)
-Definition qbs_normal_distribution
-  (mu sigma : R) (hsigma : (0 < sigma)%R) : qbs_prob (realQ R) :=
+Definition qbs_normal_distribution (mu sigma : R) : qbs_prob (realQ R) :=
   @mkQBSProb R (realQ R) idfun
     (normal_prob mu sigma : probability mR R)
     (@measurable_id _ mR setT).
@@ -69,9 +68,9 @@ Definition qbs_uniform : qbs_prob (realQ R) :=
     (@measurable_id _ mR setT).
 
 
-Lemma qbs_normal_morphism (sigma : R) (hsigma : (0 < sigma)%R) :
+Lemma qbs_normal_morphism (sigma : R) :
   @qbs_morphism R (realQ R) (monadP (realQ R))
-    (fun mu => qbs_normal_distribution mu sigma hsigma).
+    (fun mu => qbs_normal_distribution mu sigma).
 Proof.
 move=> a ha; exists idfun, (fun r => normal_prob (a r) sigma : giry.giry mR R).
 split => //.
@@ -80,6 +79,11 @@ split => //.
   exact: measurableT_comp (measurable_normal_prob _ mB) ha.
 - by move=> r; exact: probability_setT.
 Qed.
+
+(** mu |-> N(mu, sigma) as a bundled morphism R -> P(R). *)
+Definition qbs_normalQ (sigma : R) : qbsHomType (realQ R) (monadP (realQ R)) :=
+  HB.pack (fun mu : realQ R => qbs_normal_distribution mu sigma : monadP _)
+    (isQBSMorphism.Build R _ _ _ (qbs_normal_morphism sigma)).
 
 (** Distribution expectation lemmas. *)
 
@@ -157,15 +161,15 @@ rewrite (@continuous_FTC2 _ idfun (fun x => x ^+ 2 / 2) 0 1 ltr01).
   by rewrite expr1 /GRing.scale /= mulr1 mulrA mulVf ?mul1r // pnatr_eq0.
 Qed.
 
-(** E[Normal(mu,sigma)] = mu
-    (requires integrability hypotheses). *)
+(** E[Normal(mu,sigma)] = mu, conditional on the hypothesis odd_zero that
+    the centred first moment vanishes; odd_zero is not proved here. *)
 Lemma qbs_expect_normal (mu sigma : R) (hsigma : 0 < sigma)
   (id_int : (\int[normal_prob mu sigma]_x `|x%:E| < +oo)%E)
   (odd_int : lebesgue_measure.-integrable setT
     (fun x => ((x - mu) * normal_pdf mu sigma x)%:E))
   (odd_zero : (\int[lebesgue_measure]_x
     ((x - mu) * normal_pdf mu sigma x)%:E = 0 :> \bar R)%E) :
-  qbs_expect (realQ R) (qbs_normal_distribution mu sigma hsigma)
+  qbs_expect (realQ R) (qbs_normal_distribution mu sigma)
     (fun x => x) = mu%:E.
 Proof.
 rewrite /qbs_expect /qbs_integral /=.
@@ -194,3 +198,5 @@ Qed.
 End distribution_expectations.
 
 End measure_as_qbs.
+
+Arguments qbs_normal_distribution {R}.
