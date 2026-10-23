@@ -54,8 +54,8 @@ Throughout, HKSY refers to the LICS 2017 paper above; "Prop. n" and "Thm. n" ref
   - [1.19 Dependent Products (Pi Type)](#119-dependent-products-pi-type)
   - [1.20 List Type](#120-list-type)
 - [Part II: Probability Monad and Integration](#part-ii-probability-monad-and-integration)
-  - [2.1 QBS Probability Triple](#21-qbs-probability-triple)
-  - [2.2 Equivalence of Probability Triples](#22-equivalence-of-probability-triples)
+  - [2.1 QBS Probability Pair](#21-qbs-probability-pair)
+  - [2.2 Equivalence of Probability Pairs](#22-equivalence-of-probability-pairs)
   - [2.3 Integration](#23-integration)
   - [2.4 The Law of a QBS Probability (HKSY eq. (3))](#24-the-law-of-a-qbs-probability-hksy-eq-3)
   - [2.5 Expectation, Events and Variance](#25-expectation-events-and-variance)
@@ -645,7 +645,7 @@ Lemma qbs_morphism_list_rec (W : qbsType R) (b : qbsHomType W Y)
 
 Source files: `theories/probability_qbs.v` (511 lines, 35 Qed), `theories/qbs_monad.v` (724 lines, 61 Qed), `theories/qbs_monad_integral.v` (203 lines, 11 Qed), `theories/qbs_normalize.v` (271 lines, 20 Qed), `theories/qbs_quotient.v` (188 lines, 19 Qed), `theories/pair_qbs_measure.v` (353 lines, 16 Qed), `theories/qbs_giry.v` (133 lines, 9 Qed), `theories/normal_centred.v` (300 lines, 16 Qed), `theories/measure_as_qbs_measure.v` (269 lines, 12 Qed), `theories/showcase/bayesian_regression.v` (456 lines, 29 Qed).
 
-### 2.1 QBS Probability Triple
+### 2.1 QBS Probability Pair
 
 **File:** `theories/probability_qbs.v`
 
@@ -656,9 +656,9 @@ Record qbs_prob (X : qbsType R) := mkQBSProb {
   qbs_prob_alpha_random : qbs_Mx (s := X) qbs_prob_alpha }.
 ```
 
-A probability on a QBS `X` is a triple `(alpha, mu, proof)` where `alpha : mR -> X` is a random element and `mu` is a probability measure on `mR`. The pushforward `alpha_*(mu)` gives the induced distribution on X.
+A probability on a QBS `X` is a pair `(alpha, mu)` where `alpha : mR -> X` is a random element (the record also stores the proof that `alpha` is in `qbs_Mx`) and `mu` is a probability measure on `mR`. The pushforward `alpha_*(mu)` gives the induced distribution on X.
 
-### 2.2 Equivalence of Probability Triples
+### 2.2 Equivalence of Probability Pairs
 
 **File:** `theories/probability_qbs.v`
 
@@ -670,7 +670,7 @@ Definition qbs_prob_equiv (X : qbsType R) (p1 p2 : qbs_prob X) : Prop :=
     qbs_prob_mu p2 (qbs_prob_alpha p2 @^-1` U).
 ```
 
-Two triples are equivalent iff they induce the same pushforward measure on X (measured against the induced sigma-algebra `sigma_Mx`).
+Two pairs are equivalent iff they induce the same pushforward measure on X (measured against the induced sigma-algebra `sigma_Mx`).
 
 | Name | Statement |
 |------|-----------|
@@ -940,7 +940,7 @@ Definition monadP_map X Y (f : qbsHomType X Y) (p : monadP X) :
 | `monadP_map_id` | `monadP_map (qbs_id X) p = p` (propositional equality) |
 | `monadP_map_comp` | `monadP_map (qbs_comp f g) p = monadP_map g (monadP_map f p)` (propositional equality) |
 | `monadP_map_bind` | Map is bind with `return \o f`, up to equivalence |
-| `qbs_prob_ext` | Two triples with equal `alpha` and `mu` are equal |
+| `qbs_prob_ext` | Two pairs with equal `alpha` and `mu` are equal |
 | `qbs_bind_map` | `bind (map g p) f ~ bind p (g ; f)` |
 
 ### 2.12 Congruence
@@ -998,7 +998,7 @@ Definition qbs_strength W X (wp : W * monadP X) : monadP (prodQ W X) :=
 | `qbs_strength_return` | `qbs_strength (w, qbs_return x) = qbs_return (w, x)` |
 | `qbs_strength_natural` | Naturality in both arguments |
 | `qbs_strength_snd` | `monadP_map (qbs_snd W X) (qbs_strength (w, p)) = p` |
-| `qbs_strength_assoc` | `qbs_strength (u, qbs_strength (w, p)) = monadP_map (qbs_assoc U W X) (qbs_strength ((u, w), p))` (equality of triples) |
+| `qbs_strength_assoc` | `qbs_strength (u, qbs_strength (w, p)) = monadP_map (qbs_assoc U W X) (qbs_strength ((u, w), p))` (equality of pairs) |
 | `qbs_strength_join` | `qbs_prob_equiv _ (qbs_strength (w, qbs_join P)) (qbs_join (monadP_map (qbs_strengthQ W X) (qbs_strength (w, P))))` |
 
 Here `qbs_assoc U W X : qbsHomType (prodQ (prodQ U W) X) (prodQ U (prodQ W X))` is the associator. With `qbs_strength_snd`, `qbs_strength_assoc`, `qbs_strength_return` and `qbs_strength_join`, the laws of a strong monad are complete.
@@ -1170,8 +1170,8 @@ Definition qbs_quot : Type := {eq_quot qbs_prob_equiv_rel}.
 | Name | Statement |
 |------|-----------|
 | `qbs_prob_equivP` | `reflect (qbs_prob_equiv X p1 p2) (p1 == p2 %[mod qbs_quot])` |
-| `qbs_quot_eq` | Equivalent triples have equal classes |
-| `qbs_prob_equiv_repr` | The representative of a class is equivalent to the triple |
+| `qbs_quot_eq` | Equivalent pairs have equal classes |
+| `qbs_prob_equiv_repr` | The representative of a class is equivalent to the pair |
 
 The quotient is itself a QBS (HKSY Sec. V-D(a)): its random elements are the maps whose representatives are random in `P(X)`. The projection `qbs_quot_pi_morphism` and `qbs_quot_repr_morphism` are morphisms.
 
@@ -1202,7 +1202,7 @@ Lemma quot_map_comp X Y Z (f : qbsHomType X Y) (g : qbsHomType Y Z)
   quot_map (qbs_comp f g) q = quot_map g (quot_map f q).
 ```
 
-The computation lemmas `quot_bindE` and `quot_mapE` relate the lifted operations to the triple-level ones on `\pi p`, and `ge0_quot_integralE` does the same for integration.
+The computation lemmas `quot_bindE` and `quot_mapE` relate the lifted operations to the pair-level ones on `\pi p`, and `ge0_quot_integralE` does the same for integration.
 
 ### 2.19 Product Measures and Fubini
 
@@ -1498,7 +1498,7 @@ The theorem says that the program succeeds (the evidence is positive and finite,
 
 Source file: `theories/standard_borel.v` (1,031 lines, 59 Qed).
 
-This file constructs a measurable retraction of R × R onto R: a measurable `encode_RR : R × R -> R` with a measurable left inverse `decode_RR`. This is exactly what the characterisation of standard Borel spaces as retracts of R (HKSY Prop. 5) needs, and it shows that the product of standard Borel spaces is standard Borel. `encode_RR` is not surjective (binary expansions ending in infinitely many 1s are missed), so this is a retraction, not an isomorphism. The construction composes three layers: (1) a bijection R ↔ (0,1) via arctangent, (2) a map (0,1)² -> (0,1) by binary digit interleaving with a left inverse, and (3) the composed encode/decode pair. The retraction is used by `qbs_monad.v` (gluing of random elements of P(X)) and `pair_qbs_measure.v` (product probability triples), and by `prod_standard_borel` in `measure_qbs_adjunction.v`.
+This file constructs a measurable retraction of R × R onto R: a measurable `encode_RR : R × R -> R` with a measurable left inverse `decode_RR`. This is exactly what the characterisation of standard Borel spaces as retracts of R (HKSY Prop. 5) needs, and it shows that the product of standard Borel spaces is standard Borel. `encode_RR` is not surjective (binary expansions ending in infinitely many 1s are missed), so this is a retraction, not an isomorphism. The construction composes three layers: (1) a bijection R ↔ (0,1) via arctangent, (2) a map (0,1)² -> (0,1) by binary digit interleaving with a left inverse, and (3) the composed encode/decode pair. The retraction is used by `qbs_monad.v` (gluing of random elements of P(X)) and `pair_qbs_measure.v` (product probability pairs), and by `prod_standard_borel` in `measure_qbs_adjunction.v`.
 
 ### 3.1 Standard Borel: R to (0,1) Bijection
 
@@ -1775,7 +1775,7 @@ measurable_aux.v (standalone measurability lemmas, no QBS imports)
 | Feature | Isabelle AFP | This development |
 |---------|-------------|------------------|
 | QBS axioms | Locale-based | HB mixin/structure |
-| Probability monad | Quotient type | Triples with equivalence `qbs_prob_equiv`, plus `qbs_quot` quotient with laws as equalities |
+| Probability monad | Quotient type | Pairs with equivalence `qbs_prob_equiv`, plus `qbs_quot` quotient with laws as equalities |
 | Cartesian closure | Present | `qbs_curryK`, `qbs_uncurryK`, `qbs_curry_morph_uniq` |
 | L -| R adjunction | Present | `qbs_morphism_measurableP` (L as a `measurableType`) |
 | Countable coproducts / lists | Present | `sigmaQ` / `sigma_case` / `listQ`, `qbs_cons`, `list_rec`, `qbs_morphism_list_rec` (AFP `rec_list_morphism`) |
@@ -1828,12 +1828,13 @@ The 415 proofs are 410 `Qed` and 5 `Defined` (the standard Borel witnesses in `m
 The formalization is honest about its scope. These limitations are
 documented in the source files and in this report, not hidden:
 
-1. **Monad laws are stated up to equivalence on triples.** On `qbs_prob X`
+1. **Monad laws are stated up to equivalence on pairs.** On `qbs_prob X`
    the three laws (`qbs_bind_returnl`, `qbs_bind_returnr`, `qbs_bindA`) hold
    up to `qbs_prob_equiv`, not propositional equality. They are equalities
    on the quotient `qbs_quot X` (`quot_bind_returnl`, `quot_bind_returnr`,
    `quot_bindA`), but `monadP X` itself is not quotiented, so its QBS
-   structure is on triples.
+   structure is on pairs, and the rest of the development (strength,
+   normaliser, integration) is stated on `monadP`.
 
 2. **`qbs_pair_integral_iterated` is iterated integration on a
    specific product measure**, not full Fubini. It works for the

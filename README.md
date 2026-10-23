@@ -50,11 +50,11 @@ This formalization follows:
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `probability_qbs.v` | 511 | 35 | Probability triples, equivalence, integration and integrability, law, expectation, variance |
+| `probability_qbs.v` | 511 | 35 | Probability pairs, equivalence, integration and integrability, law, expectation, variance |
 | `qbs_monad.v` | 724 | 61 | The HKSY probability monad: return, bind, laws, map, join, strength and its laws, commutativity |
 | `qbs_normalize.v` | 271 | 20 | Normalisation of weighted probabilities (HKSY Sec. VI), as a morphism P(X × R) → P(X) + 1 |
 | `qbs_monad_integral.v` | 203 | 11 | Integrals, integrability and variance through return and bind |
-| `qbs_quotient.v` | 188 | 19 | Quotient of probability triples; monad laws as equalities |
+| `qbs_quotient.v` | 188 | 19 | Quotient of probability pairs; monad laws as equalities |
 | `qbs_giry.v` | 133 | 9 | Comparison with the Giry monad |
 | `pair_qbs_measure.v` | 353 | 16 | Concrete product via R ≅ R × R, Fubini, independence, variance of independent sums |
 | `normal_centred.v` | 300 | 16 | Centred first moment and mean of the normal law (`integral_normal_mean`), change of variables for `normal_prob` |
@@ -114,8 +114,13 @@ This formalization follows:
 
 ## Limitations
 
-- **Monad laws hold up to `qbs_prob_equiv`** on the raw triples
-  (`monadP`); they are equalities on the quotient `qbs_quot`.
+- **Probabilities are raw pairs.** `monadP X` is carried by the pairs
+  (α, μ) rather than by their equivalence classes as in HKSY, so the
+  monad laws hold up to `qbs_prob_equiv` (same distribution on X). The
+  quotient `qbs_quot X` (`qbs_quotient.v`) is a QBS on which return,
+  bind and map satisfy the laws as equalities, but the rest of the
+  development (strength, normaliser, integration) is stated on
+  `monadP`.
 
 - **Standard Borel** is defined via the existence of an
   encode/decode pair, not via the classical Polish-space

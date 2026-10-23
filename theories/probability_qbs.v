@@ -15,8 +15,8 @@ From QBS Require Import measurable_aux quasi_borel.
 (*                                                                            *)
 (* Key constructions:                                                         *)
 (* ```                                                                        *)
-(*   qbs_prob X    == probability triples (alpha, mu) on a qbsType X          *)
-(*   qbs_prob_equiv == equivalence of triples (same pushforward)              *)
+(*   qbs_prob X    == probability pairs (alpha, mu) on a qbsType X            *)
+(*   qbs_prob_equiv == equivalence of pairs (same pushforward)                *)
 (*   qbs_integral  == integration against a QBS probability                   *)
 (*   qbs_law p     == the law of p, a probability on L X = qbs_meas X         *)
 (*   qbs_integrable X p h == h o alpha is mu-integrable                       *)
@@ -57,18 +57,18 @@ Local Abbreviation mR := (measurableTypeR R).
 
 Implicit Types X : qbsType R.
 
-(** Probability triple on a QBS: a random element alpha : R -> X (in Mx) and
+(** Probability pair on a QBS: a random element alpha : R -> X (in Mx) and
     a base probability measure mu on R. *)
 Record qbs_prob (X : qbsType R) := mkQBSProb {
   qbs_prob_alpha : mR -> X ;
   qbs_prob_mu : probability mR R ;
   qbs_prob_alpha_random : qbs_Mx qbs_prob_alpha }.
 
-(** Classical equality and choice on triples (used by the quotient). *)
+(** Classical equality and choice on pairs (used by the quotient). *)
 HB.instance Definition _ X := gen_eqMixin (qbs_prob X).
 HB.instance Definition _ X := gen_choiceMixin (qbs_prob X).
 
-(** Equivalence of probability triples: same pushforward measure on
+(** Equivalence of probability pairs: same pushforward measure on
     sigma_Mx sets, i.e. mu1(alpha1^{-1}(U)) = mu2(alpha2^{-1}(U)) for all
     U in sigma_Mx(X). *)
 Definition qbs_prob_equiv X (p1 p2 : qbs_prob X) : Prop :=

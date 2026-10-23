@@ -957,23 +957,23 @@ We prove the monad laws, the strength, internal bind and commutativity
 and the quotient by equivalence, and establish independence
 and variance results.
 
-\section{QBS Probability Triple}\label{sec:prob_triple}
+\section{QBS Probability Pair}\label{sec:prob_pair}
 
 \begin{definition}[QBS Probability]\label{def:qbs_prob}
   \rocq{QBS.probability_qbs.qbs_prob}
   \rocqok
   \uses{def:isQBS}
-  A \emph{QBS probability} on~$X$ is a triple $(\alpha, \mu, \mathrm{proof})$
+  A \emph{QBS probability} on~$X$ is a pair $(\alpha, \mu)$
   where $\alpha \in M_X$ is a random element and $\mu$ is a probability
   measure on $\mathbb{R}$.
   The pushforward $\alpha_*(\mu)$ is the induced distribution on~$X$.
 \end{definition}
 
-\begin{definition}[Equivalence of Triples]\label{def:qbs_prob_equiv}
+\begin{definition}[Equivalence of Pairs]\label{def:qbs_prob_equiv}
   \rocq{QBS.probability_qbs.qbs_prob_equiv}
   \rocqok
   \uses{def:qbs_prob, def:sigma_Mx}
-  Two triples $(\alpha_1, \mu_1) \sim (\alpha_2, \mu_2)$ iff they
+  Two pairs $(\alpha_1, \mu_1) \sim (\alpha_2, \mu_2)$ iff they
   induce the same pushforward on $\sigma_{M_X}$:
   $\mu_1(\alpha_1^{-1}(U)) = \mu_2(\alpha_2^{-1}(U))$ for all
   $U \in \sigma_{M_X}$.
@@ -1257,7 +1257,7 @@ equalities.
   \rocqok
   \uses{def:monadP_map}
   $P(\mathrm{id})(p) = p$ and $P(g \circ f)(p) = P(g)(P(f)(p))$,
-  as \emph{equalities} of triples.
+  as \emph{equalities} of pairs.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -1482,7 +1482,7 @@ equalities.
   \rocq{QBS.qbs_monad.qbs_strength_snd}
   \rocqok
   \uses{def:qbs_strength, def:qbs_return, def:monadP_map}
-  As \emph{equalities} of triples:
+  As \emph{equalities} of pairs:
   $\mathrm{str}(w, \eta(x)) = \eta((w, x))$;
   $\mathrm{str}(f(w), P(g)(p)) = P(f \times g)(\mathrm{str}(w, p))$
   (naturality); and $P(\pi_2)(\mathrm{str}(w, p)) = p$.
@@ -1495,7 +1495,7 @@ equalities.
   \rocq{QBS.qbs_monad.qbs_strength_join}
   \rocqok
   \uses{def:qbs_strength, def:qbs_join, def:monadP_map, lem:qbs_strength_laws, def:qbs_prob_equiv}
-  With $\alpha : (U \times W) \times X \to U \times (W \times X)$ the reassociation, $\mathrm{str}(u, \mathrm{str}(w, p)) = P(\alpha)(\mathrm{str}((u,w), p))$ (equality of triples), and $\mathrm{str}(w, \mu(P)) \sim \mu(P(\mathrm{str})(\mathrm{str}(w, P)))$ (equivalence of triples). Together with Lemma~\ref{lem:qbs_strength_laws} this gives the complete set of strength laws.
+  With $\alpha : (U \times W) \times X \to U \times (W \times X)$ the reassociation, $\mathrm{str}(u, \mathrm{str}(w, p)) = P(\alpha)(\mathrm{str}((u,w), p))$ (equality of pairs), and $\mathrm{str}(w, \mu(P)) \sim \mu(P(\mathrm{str})(\mathrm{str}(w, P)))$ (equivalence of pairs). Together with Lemma~\ref{lem:qbs_strength_laws} this gives the complete set of strength laws.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -1736,7 +1736,7 @@ evidence is $0$ or infinite.
   \rocqok
   \uses{def:quot_ops, lem:qbs_prob_equivP, lem:qbs_bind_equiv_l, lem:qbs_integral_equiv}
   The lifted operations computed on any representative agree with the
-  operations on triples:
+  operations on pairs:
   $\mathrm{bind}(\pi(p), f) = \pi(p \mathbin{>\!\!>\!\!=} f)$,
   $\mathrm{map}\, f\, \pi(p) = \pi(P(f)(p))$, and, for QBS-measurable
   $h \geq 0$, $\int_{\pi(p)} h = \int_p h$.
