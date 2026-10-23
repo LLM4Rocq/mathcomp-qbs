@@ -18,7 +18,7 @@ programming semantics.
 
 ## Overview
 
-**411 proofs, 0 Admitted, 0 custom axioms, 7,402 lines across 14 files.**
+**412 proofs, 0 Admitted, 0 custom axioms, 7,455 lines across 14 files.**
 
 > **Note**: A higher-order PPL with denotational semantics in QBS
 > (`ppl_qbs.v`, `ppl_kernel.v`, `showcase/ppl_examples.v`) is
@@ -107,7 +107,8 @@ This formalization follows:
 - **Integration**: `qbs_integrableP`, `qbs_integral_le`,
   `qbs_variance_affine`, signed `qbs_integral_bind`
 - **Distributions**: `qbs_expect_bernoulli`, `qbs_bernoulli_law`,
-  `qbs_expect_interval_uniform`, `qbs_expect_normal`
+  `qbs_expect_interval_uniform`, `qbs_expect_normal`, and Uniform as a
+  morphism on intervals `qbs_uniformQ : intervalQ -> P(R)`
 - **Bayesian regression**: `program_posterior` (the program normalises
   to an explicit Gaussian posterior on functions R => R),
   `wprior_evidence` (closed-form evidence)

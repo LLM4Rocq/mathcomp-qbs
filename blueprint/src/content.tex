@@ -2043,6 +2043,18 @@ probability measure on a standard Borel space is \texttt{giry\_to\_qbs}
   $\mathrm{Uniform}(a,b)$ as a QBS probability on \texttt{realQ}; \texttt{qbs\_uniform} is the instance on $[0,1]$.
 \end{definition}
 
+\begin{lemma}[Uniform as a Morphism on Intervals]\label{lem:qbs_uniform_of_morphism}
+  \rocq{QBS.measure_as_qbs_measure.qbs_uniform_of_morphism}
+  \rocqok
+  \uses{def:qbs_interval_uniform, def:monadP}
+  On the subspace $\{(a,b) \mid a < b\}$ of $\mathbb{R} \times \mathbb{R}$,
+  $(a,b) \mapsto \mathrm{Uniform}(a,b)$ is a QBS morphism into $P(\mathbb{R})$.
+\end{lemma}
+\begin{proof}\rocqok
+  Measurability in the endpoints of $\int \mathbb{1}_B(x)\,
+  \mathrm{pdf}_{a,b}(x)\,dx$ (Fubini--Tonelli).
+\end{proof}
+
 \begin{lemma}[Integral and Expectation of Uniform$(a,b)$]\label{lem:qbs_expect_interval_uniform}
   \rocq{QBS.measure_as_qbs_measure.ge0_qbs_integral_interval_uniform}
   \rocq{QBS.measure_as_qbs_measure.qbs_expect_interval_uniform}
