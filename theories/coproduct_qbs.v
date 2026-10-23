@@ -96,9 +96,8 @@ case=> [[a [ha hdef]] | [[b [hb hdef]] | [P [a [b [hP [ha [hb hdef]]]]]]]].
 - right; left; exists (b \o f); split; first exact: qbs_Mx_comp hb.
   by move=> r; rewrite /= hdef.
 - right; right; exists (P \o f), (a \o f), (b \o f).
-  do !split; [|exact: qbs_Mx_comp ha|exact: qbs_Mx_comp hb|].
-    exact: measurableT_comp hP (measurable_funPT f).
-  by move=> r; rewrite /= hdef.
+  by do ![split]; [exact: measurableT_comp hP (measurable_funPT f)|
+    exact: qbs_Mx_comp ha|exact: qbs_Mx_comp hb|move=> r; rewrite /= hdef].
 Qed.
 
 Let coprod_const (x : X + Y) : coprod_random (fun _ => x).
@@ -108,32 +107,31 @@ case: x => [xl | yr].
 - by right; left; exists (fun _ => yr); split; first exact: qbs_Mx_const.
 Qed.
 
+(* Gluing countably many random elements that all factor through [inj]. *)
+Let coprod_glue_side (S : qbsType R) (inj : S -> X + Y)
+    (Q : {mfun mR >-> nat}) (Fi : nat -> mR -> X + Y) :
+  (forall i, exists a : mR -> S, qbs_Mx a /\ forall r, Fi i r = inj (a r)) ->
+  exists a : mR -> S, qbs_Mx a /\ forall r, Fi (Q r) r = inj (a r).
+Proof.
+move=> /choice[g hg]; exists (fun r => g (Q r) r); split.
+  exact: qbs_Mx_glueT (measurable_funPT Q) (fun i => (hg i).1).
+by move=> r; exact: (hg (Q r)).2.
+Qed.
+
 Let coprod_glue (Q : {mfun mR >-> nat}) (Fi : nat -> mR -> X + Y) :
   (forall i, coprod_random (Fi i)) -> coprod_random (fun r => Fi (Q r) r).
 Proof.
 move=> hFi; have hQ := measurable_funPT Q.
 have [Xempty | x0] := pselectT X.
 - (* X is empty: every Fi i factors through inr *)
-  have /choice[getB hgetB] : forall i, exists b : mR -> Y,
-      qbs_Mx b /\ forall r, Fi i r = inr (b r).
-    move=> i; have [[a _] | [hb | [P [a _]]]] := hFi i.
-    + by case: (Xempty (a 0%R)).
-    + exact: hb.
-    + by case: (Xempty (a 0%R)).
-  right; left; exists (fun r => getB (Q r) r); split.
-  + exact: qbs_Mx_glueT hQ (fun i => (hgetB i).1).
-  + by move=> r; exact: (hgetB (Q r)).2.
+  right; left; apply: (coprod_glue_side (inj := @inr X Y)) => i.
+  by case: (hFi i) => [[a _]|[hb|[P [a _]]]]; [|exact: hb|];
+    case: (Xempty (a 0%R)).
 - have [Yempty | y0] := pselectT Y.
   + (* Y is empty: every Fi i factors through inl *)
-    have /choice[getA hgetA] : forall i, exists a : mR -> X,
-        qbs_Mx a /\ forall r, Fi i r = inl (a r).
-      move=> i; have [ha | [[b _] | [P [a [b _]]]]] := hFi i.
-      + exact: ha.
-      + by case: (Yempty (b 0%R)).
-      + by case: (Yempty (b 0%R)).
-    left; exists (fun r => getA (Q r) r); split.
-    * exact: qbs_Mx_glueT hQ (fun i => (hgetA i).1).
-    * by move=> r; exact: (hgetA (Q r)).2.
+    left; apply: (coprod_glue_side (inj := @inl X Y)) => i.
+    by case: (hFi i) => [ha|[[b _]|[P [a [b _]]]]]; [exact: ha|..];
+      case: (Yempty (b 0%R)).
   + (* both inhabited: normalize each Fi i to the gluing form *)
     have /choice[t ht] : forall i,
         exists t : (mR -> bool) * (mR -> X) * (mR -> Y),
@@ -141,18 +139,16 @@ have [Xempty | x0] := pselectT X.
           forall r, Fi i r = if t.1.1 r then inl (t.1.2 r) else inr (t.2 r).
       move=> i; have [[a [ha hdef]] | [[b [hb hdef]] | [P [a [b h]]]]] := hFi i.
       + exists ((fun _ => true), a, (fun _ => y0)) => /=.
-        repeat split;
-          [exact: measurable_cst | exact: ha | exact: qbs_Mx_const |].
-        by move=> r; rewrite hdef.
+        by do ![split]; [exact: measurable_cst|exact: ha|exact: qbs_Mx_const|
+          by move=> r; rewrite hdef].
       + exists ((fun _ => false), (fun _ => x0), b) => /=.
-        repeat split;
-          [exact: measurable_cst | exact: qbs_Mx_const | exact: hb |].
-        by move=> r; rewrite hdef.
+        by do ![split]; [exact: measurable_cst|exact: qbs_Mx_const|exact: hb|
+          by move=> r; rewrite hdef].
       + by exists (P, a, b).
     right; right.
     exists (fun r => (t (Q r)).1.1 r), (fun r => (t (Q r)).1.2 r),
       (fun r => (t (Q r)).2 r).
-    repeat split.
+    do ![split].
     * exact: measurable_glue hQ (fun i => (ht i).1).
     * exact: qbs_Mx_glueT hQ (fun i => (ht i).2.1).
     * exact: qbs_Mx_glueT hQ (fun i => (ht i).2.2.1).
@@ -411,7 +407,7 @@ Definition qbs_ltr : qbsHomType (prodQ (realQ R) (realQ R)) (boolQ R) :=
     (fun a ha => measurable_fun_ltr ha.1 ha.2).
 
 Definition qbs_ltn : qbsHomType (prodQ (natQ R) (natQ R)) (boolQ R) :=
-  qbs_hom_of (fun p : prodQ (natQ R) (natQ R) => (p.1 < p.2)%N : boolQ R)
+  qbs_hom_of (fun p : prodQ (natQ R) (natQ R) => (p.1 < p.2) : boolQ R)
     (fun a ha => measurable_fun_ltn ha.1 ha.2).
 
 (** Pointwise application of a random function to a random argument. *)
@@ -606,7 +602,7 @@ Lemma qbs_morphism_cons :
   qbs_morphism (X := prodQ X (listQ X)) (Y := listQ X) list_cons.
 Proof.
 move=> a [hx [mi hl]]; split.
-  exact: measurable_fun_addn (measurable_cst 1%N) mi.
+  exact: measurable_fun_addn (measurable_cst 1) mi.
 move=> i [r0 /= <-].
 have [c hc e] := hl _ (ex_intro _ r0 erefl).
 exists (fun r => ord_cons (a r).1 (c r)).
