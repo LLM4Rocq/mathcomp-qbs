@@ -31,7 +31,6 @@ From mathcomp.algebra_tactics Require Import ring.
 (*   bin_partial_sum d n == sum of the first n terms of the binary expansion  *)
 (*                          given digit sequence d                            *)
 (*   bin_sum d == limit of the partial sums (full binary expansion value)     *)
-(*   bin_digits x == the digit sequence of x (i.e., bin_digit x)              *)
 (* ```                                                                        *)
 (*                                                                            *)
 (* ## Digit interleaving                                                      *)
@@ -62,7 +61,7 @@ From mathcomp.algebra_tactics Require Import ring.
 (*   psiK    == cancel psi phi on (0,1)                                       *)
 (*   measurable_phi == phi is measurable on R                                 *)
 (*   measurable_psi_setT == psi is measurable on R                            *)
-(*   bin_digits_reconstruction == bin_sum (bin_digits x) = x for [0,1)        *)
+(*   bin_digits_reconstruction == bin_sum (bin_digit x) = x for [0,1)        *)
 (*   pair_to_unitK == unit_to_pair (pair_to_unit (x,y)) = (x,y)               *)
 (*                    (unconditional on [0,1)^2)                              *)
 (*   unit_to_pairK == pair_to_unit (unit_to_pair r) = r                       *)
@@ -102,10 +101,10 @@ Variable R : realType.
 Implicit Types x y : R.
 
 (** phi : R -> (0,1) via atan *)
-Definition phi (x : R) : R := atan x / pi + 1 / 2.
+Definition phi x : R := atan x / pi + 1 / 2.
 
 (** psi : (0,1) -> R via tan *)
-Definition psi (y : R) : R := tan (pi * (y - 1 / 2)).
+Definition psi y : R := tan (pi * (y - 1 / 2)).
 
 (** phi lands in (0,1) *)
 Lemma phi_gt0 x : 0 < phi x.
@@ -158,7 +157,7 @@ Qed.
 
 (** psi is measurable on R: it is tan, and tan = sin * cos^-1 where inv is
     a pointwise limit of continuous functions. *)
-Let inv_cvg_approx (x : R) :
+Let inv_cvg_approx x :
   (fun n : nat => x / (x * x + n.+1%:R^-1)) @ \oo --> x^-1.
 Proof.
 case: (eqVneq x 0) => [->|hx0].
@@ -188,7 +187,7 @@ apply: measurable_funM.
   apply: continuous_measurable_fun; exact: continuous_sin.
 apply: measurableT_comp; last first.
   apply: continuous_measurable_fun; exact: continuous_cos.
-apply: (@measurable_fun_cvg _ _ _ _ (fun n (x : R) =>
+apply: (@measurable_fun_cvg _ _ _ _ (fun n x =>
   x * (x * x + n.+1%:R^-1)^-1)).
 - move=> m; apply: continuous_measurable_fun => y.
   rewrite /continuous_at.
@@ -234,10 +233,7 @@ Definition bin_partial_sum (d : nat -> bool) (n : nat) : R :=
 
 (* Limit of partial sums = full binary expansion *)
 Definition bin_sum (d : nat -> bool) : R :=
-  limn (fun n => bin_partial_sum d n : R^o).
-
-(* Extract all digits of x *)
-Definition bin_digits (x : R) : nat -> bool := bin_digit x.
+  limn (bin_partial_sum d).
 
 (* The doubling-and-testing step, and the remainder after n steps *)
 Definition bin_step (y : R) : R := if 2^-1 <= y then y *+ 2 - 1 else y *+ 2.
@@ -347,7 +343,7 @@ by exact: half_expn_ge0.
 Qed.
 
 Lemma bin_partial_sum_nd (d : nat -> bool) :
-  nondecreasing_seq (fun n => bin_partial_sum d n : R^o).
+  nondecreasing_seq (bin_partial_sum d).
 Proof.
 apply/nondecreasing_seqP => n.
 rewrite /bin_partial_sum big_ord_recr /=.
@@ -358,7 +354,7 @@ by exact: half_expn_ge0.
 Qed.
 
 Lemma is_cvg_bin_partial_sum (d : nat -> bool) :
-  cvgn (fun n => bin_partial_sum d n : R^o).
+  cvgn (bin_partial_sum d).
 Proof.
 apply: nondecreasing_is_cvgn.
   exact: bin_partial_sum_nd.
@@ -390,20 +386,20 @@ Section pairing_reconstruction.
 (******************************************************************************)
 
 Definition pair_to_unit (xy : R * R) : R :=
-  bin_sum (interleave (bin_digits xy.1) (bin_digits xy.2)).
+  bin_sum (interleave (bin_digit xy.1) (bin_digit xy.2)).
 
 Definition unit_to_pair (r : R) : R * R :=
-  (bin_sum (deinterleave_even (bin_digits r)),
-   bin_sum (deinterleave_odd (bin_digits r))).
+  (bin_sum (deinterleave_even (bin_digit r)),
+   bin_sum (deinterleave_odd (bin_digit r))).
 
 (******************************************************************************)
-(* Reconstruction: bin_sum (bin_digits x) = x for x in [0,1)                 *)
+(* Reconstruction: bin_sum (bin_digit x) = x for x in [0,1)                 *)
 (******************************************************************************)
 
 Lemma bin_digits_reconstruction (x : R) :
-  0 <= x < 1 -> bin_sum (bin_digits x) = x.
+  0 <= x < 1 -> bin_sum (bin_digit x) = x.
 Proof.
-move=> hx; rewrite /bin_sum /bin_digits.
+move=> hx; rewrite /bin_sum.
 suff hcvg : (fun n => bin_partial_sum (bin_digit x) n : R^o) n
               @[n --> \oo] --> x.
   exact: (cvg_lim _ hcvg).
@@ -463,7 +459,7 @@ Section round_trips.
 (*                                                                            *)
 (* 2. unit_to_pairK: pair_to_unit (unit_to_pair r) = r                        *)
 (*    This requires no_trailing_ones on the deinterleaved subsequences.       *)
-(*    The full binary expansion bin_digits(r) has no trailing ones for        *)
+(*    The full binary expansion bin_digit(r) has no trailing ones for        *)
 (*    r in [0,1) (proved in bin_digits_no_trailing_ones), but this does NOT   *)
 (*    imply that the deinterleaved even/odd subsequences lack trailing ones.  *)
 (*    Example: r with digits 1,0,1,0,... has no trailing ones, but            *)
@@ -476,7 +472,7 @@ Section round_trips.
 (******************************************************************************)
 
 (* Round-trip: these follow from bin_digits_reconstruction combined with
-   the fact that bin_digits (bin_sum d) =1 d for digit sequences arising
+   the fact that bin_digit (bin_sum d) =1 d for digit sequences arising
    from reals in [0,1). The latter is essentially uniqueness of binary
    expansions for non-dyadic rationals. *)
 
@@ -495,22 +491,22 @@ Qed.
 Definition no_trailing_ones (d : nat -> bool) : Prop :=
   forall N : nat, exists n, (N <= n)%N /\ d n = false.
 
-(* bin_digits x has no trailing ones for x in [0,1).
+(* bin_digit x has no trailing ones for x in [0,1).
    Proof: if all digits from N onward are 1, then the remainder
    at position N would satisfy rem(N+k) = 2^k*(rem N - 1) + 1,
    which goes to -infinity since rem N < 1, contradicting rem >= 0. *)
 Lemma bin_digits_no_trailing_ones (x : R) :
-  0 <= x < 1 -> no_trailing_ones (bin_digits x).
+  0 <= x < 1 -> no_trailing_ones (bin_digit x).
 Proof.
-move=> hx N; rewrite /bin_digits.
+move=> hx N.
 have hrem n := elimT andP (bin_rem_itv n hx).
 suff : exists n, (N <= n)%N /\ ~~ (2^-1 <= bin_rem x n).
   move=> [n [hn hlt]]; exists n; split=> //.
   by rewrite bin_digit_rem; apply/negbTE.
-apply: contrapT => hnex.
+apply: contrapT => /forallNP hnex.
 have hall n : (N <= n)%N -> 2^-1 <= bin_rem x n.
   move=> hn; apply: contrapT => hlt.
-  by apply: hnex; exists n; split => //; apply/negP.
+  by apply: (hnex n); split => //; apply/negP.
 have hstep_eq n : (N <= n)%N ->
     1 - bin_rem x n.+1 = (1 - bin_rem x n) *+ 2.
   move=> hn; rewrite bin_remS /bin_step (hall n hn) /=.
@@ -578,7 +574,7 @@ rewrite geom_half_sum; apply: lerD => //.
 by rewrite lerBlDr -{1}[1]addr0 lerD2l; exact: half_expn_ge0.
 Qed.
 
-(* The converse of reconstruction: bin_digits (bin_sum d) =1 d
+(* The converse of reconstruction: bin_digit (bin_sum d) =1 d
    for canonical digit sequences (no trailing ones).
 
    This is the uniqueness of binary expansions: there is only one
@@ -595,7 +591,7 @@ have hrel : forall n : nat,
   rewrite /= mulr_suml; apply: eq_bigr => i _.
   by rewrite /bump leq0n /= exprSr mulrA.
 rewrite /bin_sum.
-have hcvg1 : cvgn (fun n => bin_partial_sum d n : R^o).
+have hcvg1 : cvgn (bin_partial_sum d).
   exact: is_cvg_bin_partial_sum.
 have hcvg2 : cvgn (fun n => bin_partial_sum (d \o succn) n : R^o).
   exact: is_cvg_bin_partial_sum.
@@ -634,11 +630,11 @@ exists m.-1; split.
 Qed.
 
 Lemma bin_digits_bin_sum (d : nat -> bool) :
-  no_trailing_ones d -> bin_digits (bin_sum d) =1 d.
+  no_trailing_ones d -> bin_digit (bin_sum d) =1 d.
 Proof.
 move=> hnt n.
 elim: n d hnt => [|n IHn] dd hnt.
-- rewrite /bin_digits /= bin_sum_shift.
+- rewrite /= bin_sum_shift.
   case hd0 : (dd 0%N) => /=.
   + rewrite mul1r; apply/idP.
     have hge0 : 0 <= bin_sum (dd \o succn) * 2^-1.
@@ -647,7 +643,7 @@ elim: n d hnt => [|n IHn] dd hnt.
   + rewrite mul0r add0r; apply: lt_geF.
     rewrite ltr_pdivrMr ?ltr0n // mulVf ?pnatr_eq0 //.
     exact: bin_sum_no_trailing_lt1 (no_trailing_ones_shift hnt).
-- rewrite /bin_digits /=.
+- rewrite /=.
   have hnt' := no_trailing_ones_shift hnt.
   have hstep : (if 2^-1 <= bin_sum dd then bin_sum dd *+ 2 - 1
                 else bin_sum dd *+ 2) = bin_sum (dd \o succn).
@@ -678,18 +674,18 @@ Qed.
    hypotheses) is required. See the comment block above for details. *)
 Lemma unit_to_pairK (r : R) :
   0 <= r < 1 ->
-  no_trailing_ones (deinterleave_even (bin_digits r)) ->
-  no_trailing_ones (deinterleave_odd (bin_digits r)) ->
+  no_trailing_ones (deinterleave_even (bin_digit r)) ->
+  no_trailing_ones (deinterleave_odd (bin_digit r)) ->
   pair_to_unit (unit_to_pair r) = r.
 Proof.
 move=> hr hnte hnto.
-set de := deinterleave_even (bin_digits r).
-set do_ := deinterleave_odd (bin_digits r).
+set de := deinterleave_even (bin_digit r).
+set do_ := deinterleave_odd (bin_digit r).
 have hconv_de := bin_digits_bin_sum hnte.
 have hconv_do := bin_digits_bin_sum hnto.
 rewrite /pair_to_unit /unit_to_pair /= -/de -/do_.
-have heq : interleave (bin_digits (bin_sum de)) (bin_digits (bin_sum do_))
-    =1 bin_digits r.
+have heq : interleave (bin_digit (bin_sum de)) (bin_digit (bin_sum do_))
+    =1 bin_digit r.
   move=> n; rewrite /interleave (hconv_de n./2) (hconv_do n./2).
   exact: interleave_deinterleaveK.
 rewrite (bin_sum_ext heq).
@@ -704,20 +700,20 @@ Lemma pair_to_unitK (xy : R * R) :
   unit_to_pair (pair_to_unit xy) = xy.
 Proof.
 move=> hx hy.
-set d1 := bin_digits xy.1.
-set d2 := bin_digits xy.2.
+set d1 := bin_digit xy.1.
+set d2 := bin_digit xy.2.
 have hnt1 := bin_digits_no_trailing_ones hx.
 have hnt2 := bin_digits_no_trailing_ones hy.
 have hnt12 := interleave_no_trailing_ones hnt1 hnt2.
 have hconv := bin_digits_bin_sum hnt12.
 rewrite /unit_to_pair /pair_to_unit -/d1 -/d2.
 apply: injective_projections; rewrite /=.
-- have h1 : deinterleave_even (bin_digits (bin_sum (interleave d1 d2))) =1 d1.
+- have h1 : deinterleave_even (bin_digit (bin_sum (interleave d1 d2))) =1 d1.
     move=> n; rewrite /deinterleave_even (hconv (n.*2)%N).
     exact: deinterleave_interleaveK_even.
   rewrite (bin_sum_ext h1).
   by rewrite /d1 bin_digits_reconstruction.
-- have h2 : deinterleave_odd (bin_digits (bin_sum (interleave d1 d2))) =1 d2.
+- have h2 : deinterleave_odd (bin_digit (bin_sum (interleave d1 d2))) =1 d2.
     move=> n; rewrite /deinterleave_odd (hconv (n.*2.+1)%N).
     exact: deinterleave_interleaveK_odd.
   rewrite (bin_sum_ext h2).
@@ -762,9 +758,9 @@ Qed.
 
 Lemma measurable_interleave_digit (m : nat) :
   measurable_fun [set: R * R]
-    (fun xy : R * R => interleave (bin_digits xy.1) (bin_digits xy.2) m : bool).
+    (fun xy : R * R => interleave (bin_digit xy.1) (bin_digit xy.2) m : bool).
 Proof.
-rewrite /interleave /bin_digits.
+rewrite /interleave.
 case: (boolP (odd m)) => hodd /=.
 - exact: (measurableT_comp (measurable_bin_digit m./2) measurable_snd).
 - exact: (measurableT_comp (measurable_bin_digit m./2) measurable_fst).
@@ -772,17 +768,17 @@ Qed.
 
 Lemma measurable_deinterleave_even_digit (m : nat) :
   measurable_fun [set: R]
-    (fun x : R => deinterleave_even (bin_digits x) m : bool).
+    (fun x : R => deinterleave_even (bin_digit x) m : bool).
 Proof.
-rewrite /deinterleave_even /bin_digits.
+rewrite /deinterleave_even.
 exact: measurable_bin_digit.
 Qed.
 
 Lemma measurable_deinterleave_odd_digit (m : nat) :
   measurable_fun [set: R]
-    (fun x : R => deinterleave_odd (bin_digits x) m : bool).
+    (fun x : R => deinterleave_odd (bin_digit x) m : bool).
 Proof.
-rewrite /deinterleave_odd /bin_digits.
+rewrite /deinterleave_odd.
 exact: measurable_bin_digit.
 Qed.
 
@@ -818,21 +814,21 @@ Lemma measurable_pair_to_unit :
   measurable_fun [set: R * R] pair_to_unit.
 Proof.
 apply: (measurable_bin_sum
-  (dig := fun xy => interleave (bin_digits xy.1) (bin_digits xy.2))).
+  (dig := fun xy => interleave (bin_digit xy.1) (bin_digit xy.2))).
 exact: measurable_interleave_digit.
 Qed.
 
 Lemma measurable_unit_to_pair_fst :
   measurable_fun [set: R] (fun r => (unit_to_pair r).1).
 Proof.
-apply: (measurable_bin_sum (dig := fun x => deinterleave_even (bin_digits x))).
+apply: (measurable_bin_sum (dig := fun x => deinterleave_even (bin_digit x))).
 exact: measurable_deinterleave_even_digit.
 Qed.
 
 Lemma measurable_unit_to_pair_snd :
   measurable_fun [set: R] (fun r => (unit_to_pair r).2).
 Proof.
-apply: (measurable_bin_sum (dig := fun x => deinterleave_odd (bin_digits x))).
+apply: (measurable_bin_sum (dig := fun x => deinterleave_odd (bin_digit x))).
 exact: measurable_deinterleave_odd_digit.
 Qed.
 
@@ -877,12 +873,12 @@ Qed.
 
 (** phi x has at least one true binary digit (since phi x > 0) *)
 Lemma phi_has_true_digit (x : R) :
-  exists k, bin_digits (phi x) k = true.
+  exists k, bin_digit (phi x) k = true.
 Proof.
-apply: contrapT => hnone.
-have hd0 : bin_digits (phi x) =1 (fun _ => false).
-  by move=> k; apply/negbTE/negP => hk; apply: hnone; exists k.
-have hsum0 : bin_sum (bin_digits (phi x)) = 0.
+apply: contrapT => /forallNP hnone.
+have hd0 : bin_digit (phi x) =1 (fun _ => false).
+  by move=> k; apply/negbTE/negP; exact: hnone.
+have hsum0 : bin_sum (bin_digit (phi x)) = 0.
   apply: le_anti; rewrite bin_sum_ge0 andbT (bin_sum_ext hd0).
   apply: limr_le; first exact: is_cvg_bin_partial_sum.
   apply: nearW => n; rewrite /bin_partial_sum big1 ?lexx // => i _.
@@ -934,7 +930,7 @@ Qed.
 
    This direction requires:
    1. no_trailing_ones on the deinterleaved even/odd subsequences of
-      bin_digits(phi(r)) -- needed for unit_to_pairK
+      bin_digit(phi(r)) -- needed for unit_to_pairK
    2. The components (unit_to_pair(phi r)).1 and .2 must be in (0,1)
       (strictly positive) -- needed for psiK (cancel psi phi)
 
@@ -942,8 +938,8 @@ Qed.
    each contain at least one true digit, which holds generically
    (the set of exceptions is countable, hence measure-zero). *)
 Theorem decode_RRK (r : R)
-  (hnt_even : no_trailing_ones (deinterleave_even (bin_digits (phi r))))
-  (hnt_odd : no_trailing_ones (deinterleave_odd (bin_digits (phi r))))
+  (hnt_even : no_trailing_ones (deinterleave_even (bin_digit (phi r))))
+  (hnt_odd : no_trailing_ones (deinterleave_odd (bin_digit (phi r))))
   (hu1_pos : 0 < (unit_to_pair (phi r)).1)
   (hu2_pos : 0 < (unit_to_pair (phi r)).2) :
   encode_RR (decode_RR r) = r.
