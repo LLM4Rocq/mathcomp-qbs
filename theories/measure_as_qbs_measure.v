@@ -1,9 +1,8 @@
 (* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
 From mathcomp Require Import boot algebra reals ereal topology normedtype
-  classical_sets borel_hierarchy numfun measure lebesgue_integral_definition
-  lebesgue_stieltjes_measure lebesgue_measure lebesgue_integral probability
-  measurable_realfun derive ftc gauss_integral charge boolp.
+  classical_sets numfun measure lebesgue_measure lebesgue_integral probability
+  measurable_realfun derive ftc boolp.
 From mathcomp Require giry.
 From mathcomp.algebra_tactics Require Import ring.
 From QBS Require Import quasi_borel probability_qbs qbs_monad normal_centred.
@@ -30,14 +29,14 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad normal_centred.
 (* ```                                                                        *)
 (******************************************************************************)
 
-Import GRing.Theory Num.Def Num.Theory.
-Import MeasurableR.
-
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-Import boolp order.Order.POrderTheory.
 
+Import order.Order.POrderTheory GRing.Theory Num.Def Num.Theory.
+Import MeasurableR.
+
+Local Open Scope ring_scope.
 Local Open Scope classical_set_scope.
 
 Section measure_as_qbs.
@@ -144,7 +143,6 @@ Definition qbs_normalQ s : qbsHomType (realQ R) (monadP (realQ R)) :=
 (** Distribution expectation lemmas. *)
 
 Section distribution_expectations.
-Local Open Scope ring_scope.
 
 (** The mass of [0,1]-uniform below p is p. *)
 Lemma uniform_prob_lt (p : R) : 0 <= p <= 1 ->
