@@ -947,59 +947,74 @@ $m\mathbb{R}$ for its Borel measurable space.
 
 This chapter develops the QBS probability monad $P(X)$: the type of
 probability distributions on a QBS~$X$, following HKSY Sections~IV--V.
-A probability is a pair of a random element and a probability measure on
-$\mathbb{R}$, taken up to equivalence; the random elements of $P(X)$ are
-the families $r \mapsto [\alpha, g(r)]$ with $g : \mathbb{R} \to
-\mathrm{Giry}(\mathbb{R})$ measurable, and bind is the Giry bind of
-math-comp analysis.
-We prove the monad laws, the strength, internal bind and commutativity
-(HKSY Thm.~21 and Prop.~22), develop integration, normalisation
-and the quotient by equivalence, and establish independence
-and variance results.
+A probability is represented by a pair of a random element and a
+probability measure on $\mathbb{R}$; two pairs represent the same
+probability when they induce the same measure on $\sigma_{M_X}$, and the
+probabilities are the \emph{quotient} of the pairs by this equivalence
+(as the almost-everywhere classes of math-comp analysis). The random
+elements of $P(X)$ are the families $r \mapsto [\alpha, g(r)]$ with
+$g : \mathbb{R} \to \mathrm{Giry}(\mathbb{R})$ measurable, and bind is the
+Giry bind of math-comp analysis.
+Because probabilities are classes, the monad, strength and commutativity
+laws are \emph{equalities}.
+We prove them (HKSY Thm.~21 and Prop.~22), develop integration and
+normalisation, and establish independence and variance results.
+The Isabelle development obtains the same effect with a
+\texttt{quotient\_type} of triples $(X, \alpha, \mu)$, since HOL has no
+dependent types; here the space $X$ is a type parameter and the quotient
+is of pairs.
 
-\section{QBS Probability Pair}\label{sec:prob_pair}
+\section{QBS Probabilities}\label{sec:prob_pair}
+
+\begin{definition}[Representatives and Equivalence]\label{def:qbs_prob_equiv}
+  \rocq{QBS.probability_qbs.qbs_preprob}
+  \rocq{QBS.probability_qbs.preprob_equiv}
+  \rocqok
+  \uses{def:isQBS, def:sigma_Mx}
+  A \emph{representative} of a probability on~$X$ is a pair
+  $(\alpha, \mu)$ where $\alpha \in M_X$ is a random element and $\mu$ is a
+  probability measure on $\mathbb{R}$. Two representatives
+  $(\alpha_1, \mu_1) \sim (\alpha_2, \mu_2)$ iff they
+  induce the same pushforward on $\sigma_{M_X}$:
+  $\mu_1(\alpha_1^{-1}(U)) = \mu_2(\alpha_2^{-1}(U))$ for all
+  $U \in \sigma_{M_X}$. This is an equivalence relation.
+\end{definition}
 
 \begin{definition}[QBS Probability]\label{def:qbs_prob}
   \rocq{QBS.probability_qbs.qbs_prob}
-  \rocqok
-  \uses{def:isQBS}
-  A \emph{QBS probability} on~$X$ is a pair $(\alpha, \mu)$
-  where $\alpha \in M_X$ is a random element and $\mu$ is a probability
-  measure on $\mathbb{R}$.
-  The pushforward $\alpha_*(\mu)$ is the induced distribution on~$X$.
-\end{definition}
-
-\begin{definition}[Equivalence of Pairs]\label{def:qbs_prob_equiv}
-  \rocq{QBS.probability_qbs.qbs_prob_equiv}
-  \rocqok
-  \uses{def:qbs_prob, def:sigma_Mx}
-  Two pairs $(\alpha_1, \mu_1) \sim (\alpha_2, \mu_2)$ iff they
-  induce the same pushforward on $\sigma_{M_X}$:
-  $\mu_1(\alpha_1^{-1}(U)) = \mu_2(\alpha_2^{-1}(U))$ for all
-  $U \in \sigma_{M_X}$.
-\end{definition}
-
-\begin{lemma}[Equivalence Is an Equivalence Relation]\label{lem:qbs_prob_equiv_rel}
-  \rocq{QBS.probability_qbs.qbs_prob_equivxx}
-  \rocq{QBS.probability_qbs.qbs_prob_equiv_sym}
-  \rocq{QBS.probability_qbs.qbs_prob_equiv_trans}
+  \rocq{QBS.probability_qbs.qbs_prob_alpha}
+  \rocq{QBS.probability_qbs.qbs_prob_mu}
+  \rocq{QBS.probability_qbs.mkQBSProb}
   \rocqok
   \uses{def:qbs_prob_equiv}
-  $\sim$ is reflexive, symmetric, and transitive.
+  A \emph{QBS probability} on~$X$ is an equivalence class $[\alpha, \mu]$ of
+  representatives: \texttt{qbs\_prob X} is the quotient of the representatives
+  by~$\sim$, built with the math-comp generic quotient
+  (\texttt{\{eq\_quot\ ...\}}), after the almost-everywhere quotient of
+  \texttt{hoelder.v}. \texttt{mkQBSProb} sends $(\alpha, \mu)$ to its class,
+  and \texttt{qbs\_prob\_alpha}, \texttt{qbs\_prob\_mu} read a chosen
+  representative of a class. The pushforward $\alpha_*(\mu)$ is the induced
+  distribution on~$X$. Below, $p = (\alpha, \mu)$ stands for a
+  representative of~$p$; the statements about events and about integrals of
+  QBS-measurable functions do not depend on this choice.
+\end{definition}
+
+\begin{lemma}[Equality of Probabilities]\label{lem:qbs_prob_eqP}
+  \rocq{QBS.probability_qbs.qbs_prob_eqP}
+  \rocq{QBS.probability_qbs.qbs_prob_event_mk}
+  \rocq{QBS.probability_qbs.qbs_probK}
+  \rocqok
+  \uses{def:qbs_prob, def:qbs_prob_event}
+  $p_1 = p_2$ iff $\Pr_{p_1}[U] = \Pr_{p_2}[U]$ for all
+  $U \in \sigma_{M_X}$. On a class $[\alpha, \mu]$ the event probability is
+  computed on the pair: $\Pr_{[\alpha, \mu]}[U] = \mu(\alpha^{-1}(U))$ for
+  $U \in \sigma_{M_X}$; and every probability is the class of its
+  representative.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
 
 \section{The Probability Monad $P(X)$}\label{sec:monadP}
-
-\begin{lemma}[Equivalence via Events]\label{lem:qbs_prob_equivP_events}
-  \rocq{QBS.qbs_monad.qbs_prob_equivP}
-  \rocqok
-  \uses{def:qbs_prob_equiv}
-  $p_1 \sim p_2$ iff $\Pr_{p_1}[U] = \Pr_{p_2}[U]$ for all $U \in \sigma_{M_X}$
-  (a view on the definition of equivalence).
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Event Probability Is Measurable]\label{lem:qbs_measurable_event}
   \rocq{QBS.qbs_monad.qbs_measurable_event}
@@ -1013,7 +1028,7 @@ and variance results.
 \begin{definition}[Representation of a Family of Probabilities]\label{def:qbs_prob_rep}
   \rocq{QBS.qbs_monad.qbs_prob_rep}
   \rocqok
-  \uses{def:qbs_prob, def:qbs_prob_equiv}
+  \uses{def:qbs_prob}
   A family $b : \mathbb{R} \to \mathrm{qbs\_prob}(X)$ is \emph{represented}
   by a random element $a \in M_X$ and a measurable map
   $g : \mathbb{R} \to \mathrm{Giry}(\mathbb{R})$ with every $g(r)$ of
@@ -1023,15 +1038,16 @@ and variance results.
 
 \begin{definition}[Probability Monad QBS]\label{def:monadP}
   \rocq{QBS.qbs_monad.monadP_random}
+  \rocq{QBS.qbs_monad.monadP_random_event}
   \rocq{QBS.qbs_monad.monadP}
   \rocqok
   \uses{def:isQBS, def:qbs_prob, def:qbs_prob_rep}
   The probability monad $P(X)$ is the QBS whose carrier is
   \texttt{qbs\_prob X} and whose random elements are the families
   $b : \mathbb{R} \to P(X)$ admitting a representation $(a, g)$
-  (HKSY: $r \mapsto [\alpha, g(r)]$). The three QBS axioms hold; in
-  particular random elements are saturated for $\sim$
-  (\texttt{monadP\_random\_equiv}).
+  (HKSY: $r \mapsto [\alpha, g(r)]$). The three QBS axioms hold; the
+  probability of a $\sigma_{M_X}$ event is a measurable function of $r$
+  along a random family (\texttt{monadP\_random\_event}).
 \end{definition}
 
 
@@ -1041,7 +1057,7 @@ and variance results.
   \rocq{QBS.qbs_monad.qbs_return}
   \rocqok
   \uses{def:qbs_prob}
-  $\eta(x) = (\lambda r.\; x,\; \delta_0)$, the constant random element
+  $\eta(x) = [\lambda r.\; x,\; \delta_0]$, the constant random element
   with the Dirac measure at~$0$.
 \end{definition}
 
@@ -1049,7 +1065,7 @@ and variance results.
   \rocq{QBS.qbs_monad.qbs_return_event}
   \rocqok
   \uses{def:qbs_return}
-  $\Pr_{\eta(x)}[U] = 1$ if $x \in U$ and $0$ otherwise.
+  For $U \in \sigma_{M_X}$, $\Pr_{\eta(x)}[U] = 1$ if $x \in U$ and $0$ otherwise.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -1069,10 +1085,10 @@ and variance results.
   \rocq{QBS.qbs_monad.qbs_bindQ}
   \rocqok
   \uses{def:qbs_prob, def:qbs_morphism, def:monadP}
-  Given $p = (\alpha, \mu)$ on~$X$ and a QBS morphism
+  Given $p = (\alpha, \mu)$ on~$X$ (any representative) and a QBS morphism
   $f : X \to P(Y)$, the family $f \circ \alpha$ is random in $P(Y)$, so by
   choice it has a representation $(a, g)$ as above. The bind
-  $p \mathbin{>\!\!>\!\!=} f$ is $(a,\; \mathrm{giry\_bind}(\mu, g))$,
+  $p \mathbin{>\!\!>\!\!=} f$ is $[a,\; \mathrm{giry\_bind}(\mu, g)]$,
   the Giry bind of math-comp analysis. The bundled
   \texttt{qbs\_bindQ} composes two Kleisli morphisms
   $f : X \to P(Y)$, $g : Y \to P(Z)$.
@@ -1085,11 +1101,11 @@ and variance results.
   \uses{def:qbs_bind, def:qbs_integral, def:qbs_measurable}
   For $U \in \sigma_{M_Y}$,
   $\Pr_{p \mathbin{>\!\!>\!\!=} f}[U] =
-  \int_\mu \Pr_{f(\alpha(r))}[U]\, d\mu(r)$.
+  \int_p \Pr_{f(x)}[U]\, dp(x)$.
   For QBS-measurable $h : Y \to \bar{\mathbb{R}}$ with $h \geq 0$,
   \[
     \int_{p \mathbin{>\!\!>\!\!=} f} h
-    = \int_\mu \Bigl(\int_{f(\alpha(r))} h\Bigr)\, d\mu(r).
+    = \int_p \Bigl(\int_{f(x)} h\Bigr)\, dp(x).
   \]
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
@@ -1110,33 +1126,43 @@ and variance results.
 \begin{theorem}[Left Unit]\label{thm:qbs_bind_returnl}
   \rocq{QBS.qbs_monad.qbs_bind_returnl}
   \rocqok
-  \uses{def:qbs_return, def:qbs_bind, def:qbs_prob_equiv, lem:qbs_return_event}
-  $\eta(x) \mathbin{>\!\!>\!\!=} f \sim f(x)$ (up to
-  \texttt{qbs\_prob\_equiv}).
+  \uses{def:qbs_return, def:qbs_bind, lem:qbs_prob_eqP, lem:qbs_return_event, lem:qbs_return_integral}
+  $\eta(x) \mathbin{>\!\!>\!\!=} f = f(x)$.
 \end{theorem}
 \begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Right Unit]\label{thm:qbs_bind_returnr}
   \rocq{QBS.qbs_monad.qbs_bind_returnr}
   \rocqok
-  \uses{def:qbs_return, def:qbs_bind, def:qbs_prob_equiv, lem:qbs_return_event}
-  $m \mathbin{>\!\!>\!\!=} \eta \sim m$ (up to \texttt{qbs\_prob\_equiv}).
+  \uses{def:qbs_return, def:qbs_bind, lem:qbs_prob_eqP, lem:qbs_return_event, lem:qbs_prob_event_integral}
+  $m \mathbin{>\!\!>\!\!=} \eta = m$.
 \end{theorem}
 \begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Associativity]\label{thm:qbs_bindA}
   \rocq{QBS.qbs_monad.qbs_bindA}
   \rocqok
-  \uses{def:qbs_bind, def:qbs_prob_equiv, lem:qbs_bind_event}
-  $(m \mathbin{>\!\!>\!\!=} f) \mathbin{>\!\!>\!\!=} g \sim
-  m \mathbin{>\!\!>\!\!=} (\lambda x.\; f(x) \mathbin{>\!\!>\!\!=} g)$
-  (up to \texttt{qbs\_prob\_equiv}), where the right-hand continuation is
-  the Kleisli composite \texttt{qbs\_bindQ}.
+  \uses{def:qbs_bind, lem:qbs_prob_eqP, lem:qbs_bind_event}
+  $(m \mathbin{>\!\!>\!\!=} f) \mathbin{>\!\!>\!\!=} g =
+  m \mathbin{>\!\!>\!\!=} (\lambda x.\; f(x) \mathbin{>\!\!>\!\!=} g)$,
+  where the right-hand continuation is the Kleisli composite
+  \texttt{qbs\_bindQ}.
 \end{theorem}
 \begin{proof}\rocqok\end{proof}
 
-On the quotient by $\sim$ (Section~\ref{sec:quotient}) these laws hold as
-equalities.
+\begin{lemma}[Bind Respects Pointwise Equal Continuations]\label{lem:eq_qbs_bind}
+  \rocq{QBS.qbs_monad.eq_qbs_bind}
+  \rocqok
+  \uses{def:qbs_bind, lem:qbs_prob_eqP, lem:qbs_bind_event}
+  If $f(x) = g(x)$ for all~$x$ then
+  $p \mathbin{>\!\!>\!\!=} f = p \mathbin{>\!\!>\!\!=} g$.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+All three laws are proved with Lemma~\ref{lem:qbs_prob_eqP} from the
+computation rules for events (Lemmas~\ref{lem:qbs_return_event}
+and~\ref{lem:qbs_bind_event}); no congruence lemma is needed, since
+probabilities are classes.
 
 
 \section{Integration}\label{sec:integration}
@@ -1147,8 +1173,9 @@ equalities.
   \uses{def:qbs_prob}
   For $p = (\alpha, \mu)$ on~$X$ and $h : X \to \bar{\mathbb{R}}$,
   \[
-    \int_p h \;=\; \int_\mu h(\alpha(r))\, d\mu(r).
+    \int_p h \;=\; \int_\mu h(\alpha(r))\, d\mu(r),
   \]
+  computed on the chosen representative of~$p$.
 \end{definition}
 
 \begin{definition}[QBS Measurability]\label{def:qbs_measurable}
@@ -1170,12 +1197,26 @@ equalities.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
-\begin{lemma}[Integration Respects Equivalence]\label{lem:qbs_integral_equiv}
-  \rocq{QBS.probability_qbs.qbs_integral_equiv}
+\begin{lemma}[Integration Depends Only on the Class]\label{lem:integral_sigma_Mx}
+  \rocq{QBS.probability_qbs.ge0_integral_sigma_Mx}
+  \rocq{QBS.probability_qbs.integral_sigma_Mx}
+  \rocq{QBS.probability_qbs.qbs_integral_mk}
   \rocqok
   \uses{def:qbs_integral, def:qbs_prob_equiv, def:qbs_measurable}
-  If $p_1 \sim p_2$ and $h$ is QBS measurable, then
-  $\int_{p_1} h = \int_{p_2} h$.
+  If $(\alpha_1, \mu_1) \sim (\alpha_2, \mu_2)$ and $h$ is QBS measurable,
+  then $\int_{\mu_1} h(\alpha_1(r))\, d\mu_1 =
+  \int_{\mu_2} h(\alpha_2(r))\, d\mu_2$ (the nonnegative case
+  \texttt{ge0\_integral\_sigma\_Mx} is the core). In particular
+  $\int_{[\alpha, \mu]} h = \int_\mu h(\alpha(r))\, d\mu(r)$ for every pair
+  $(\alpha, \mu)$.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Event Probability as an Integral]\label{lem:qbs_prob_event_integral}
+  \rocq{QBS.qbs_monad.qbs_prob_event_integral}
+  \rocqok
+  \uses{def:qbs_integral, def:qbs_prob_event}
+  For $U \in \sigma_{M_X}$, $\Pr_p[U] = \int_p \mathbf{1}_U$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -1183,17 +1224,20 @@ equalities.
   \rocq{QBS.qbs_monad.qbs_return_integral}
   \rocqok
   \uses{def:qbs_integral, def:qbs_return}
-  $\int_{\eta(x)} h = h(x)$.
+  For QBS-measurable~$h$, $\int_{\eta(x)} h = h(x)$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Integration Is a Morphism]\label{thm:ge0_qbs_integral_morphism}
   \rocq{QBS.qbs_monad.ge0_qbs_integral_morphism}
+  \rocq{QBS.qbs_monad.ge0_qbs_measurable_integral}
   \rocqok
   \uses{def:qbs_integral, def:qbs_measurable, def:monadP, def:ereal_standard_borel}
   For a QBS-measurable $h : X \to \bar{\mathbb{R}}$ with $h \geq 0$,
   $p \mapsto \int_p h$ is a QBS morphism
-  $P(X) \to R(\bar{\mathbb{R}})$ (HKSY Sec.~V-C).
+  $P(X) \to R(\bar{\mathbb{R}})$ (HKSY Sec.~V-C). Consequently, for a
+  morphism $f : X \to P(Y)$ and QBS-measurable $h \geq 0$ on~$Y$,
+  $x \mapsto \int_{f(x)} h$ is QBS measurable.
 \end{theorem}
 \begin{proof}\rocqok\end{proof}
 
@@ -1210,11 +1254,11 @@ equalities.
   $\mathrm{law}_p(A) = \mu(\alpha^{-1}(A))$.
 \end{definition}
 
-\begin{lemma}[Equivalence Is Equality of Laws]\label{lem:qbs_prob_equivE}
-  \rocq{QBS.probability_qbs.qbs_prob_equiv_lawP}
+\begin{lemma}[Probabilities Are Determined by Their Laws]\label{lem:qbs_prob_eq_lawP}
+  \rocq{QBS.probability_qbs.qbs_prob_eq_lawP}
   \rocqok
-  \uses{def:qbs_law, def:qbs_prob_equiv}
-  $p_1 \sim p_2$ iff $\mathrm{law}_{p_1}(A) = \mathrm{law}_{p_2}(A)$ for
+  \uses{def:qbs_law, lem:qbs_prob_eqP}
+  $p_1 = p_2$ iff $\mathrm{law}_{p_1}(A) = \mathrm{law}_{p_2}(A)$ for
   all measurable $A \subseteq L(X)$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
@@ -1240,7 +1284,8 @@ equalities.
   \uses{def:qbs_prob, def:qbs_morphism}
   For a QBS morphism $f : X \to Y$, the functorial map
   $P(f) : P(X) \to P(Y)$ sends $(\alpha, \mu)$ to
-  $(f \circ \alpha, \mu)$; thus $\Pr_{P(f)(p)}[U] = \Pr_p[f^{-1}(U)]$.
+  $[f \circ \alpha, \mu]$; thus $\Pr_{P(f)(p)}[U] = \Pr_p[f^{-1}(U)]$
+  for $U \in \sigma_{M_Y}$.
 \end{definition}
 
 \begin{lemma}[Map Is a Morphism]\label{lem:monadP_map_morph}
@@ -1257,36 +1302,23 @@ equalities.
   \rocqok
   \uses{def:monadP_map}
   $P(\mathrm{id})(p) = p$ and $P(g \circ f)(p) = P(g)(P(f)(p))$,
-  as \emph{equalities} of pairs.
+  as \emph{equalities}.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Map as Bind]\label{lem:monadP_map_bind}
   \rocq{QBS.qbs_monad.monadP_map_bind}
   \rocqok
-  \uses{def:monadP_map, def:qbs_bind, def:qbs_return, def:qbs_prob_equiv}
-  $P(f)(p) \sim p \mathbin{>\!\!>\!\!=} (\eta \circ f)$.
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
-
-\begin{lemma}[Bind and Map Respect Equivalence]\label{lem:qbs_bind_equiv_l}
-  \rocq{QBS.qbs_monad.qbs_bind_equiv_l}
-  \rocq{QBS.qbs_monad.qbs_bind_equiv_r}
-  \rocq{QBS.qbs_monad.monadP_map_equiv}
-  \rocqok
-  \uses{def:qbs_bind, def:monadP_map, def:qbs_prob_equiv}
-  If $p_1 \sim p_2$, then $p_1 \mathbin{>\!\!>\!\!=} f \sim
-  p_2 \mathbin{>\!\!>\!\!=} f$ and $P(f)(p_1) \sim P(f)(p_2)$.
-  If $f(x) \sim g(x)$ for all~$x$, then
-  $p \mathbin{>\!\!>\!\!=} f \sim p \mathbin{>\!\!>\!\!=} g$.
+  \uses{def:monadP_map, def:qbs_bind, def:qbs_return, lem:qbs_prob_eqP}
+  $P(f)(p) = p \mathbin{>\!\!>\!\!=} (\eta \circ f)$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Bind and Map]\label{lem:qbs_bind_map}
   \rocq{QBS.qbs_monad.qbs_bind_map}
   \rocqok
-  \uses{def:qbs_bind, def:monadP_map, def:qbs_prob_equiv}
-  $P(g)(p) \mathbin{>\!\!>\!\!=} f \sim p \mathbin{>\!\!>\!\!=} (f \circ g)$.
+  \uses{def:qbs_bind, def:monadP_map, lem:qbs_prob_eqP}
+  $P(g)(p) \mathbin{>\!\!>\!\!=} f = p \mathbin{>\!\!>\!\!=} (f \circ g)$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -1340,10 +1372,10 @@ equalities.
   \rocq{QBS.probability_qbs.qbs_integralE}
   \rocq{QBS.probability_qbs.qbs_integrable_cst}
   \rocq{QBS.probability_qbs.qbs_integral_cst}
-  \rocq{QBS.probability_qbs.qbs_integrable_equiv}
+  \rocq{QBS.probability_qbs.qbs_integrable_mk}
   \rocqok
-  \uses{def:qbs_integral, def:qbs_integrable, def:qbs_prob_equiv}
-  The integral is the difference of the integrals of the positive and negative parts; constants are integrable with integral the constant; integrability is invariant under equivalence.
+  \uses{def:qbs_integral, def:qbs_integrable, lem:integral_sigma_Mx}
+  The integral is the difference of the integrals of the positive and negative parts; constants are integrable with integral the constant; for QBS-measurable $h$, $h$ is integrable against $[\alpha, \mu]$ iff $h \circ \alpha$ is $\mu$-integrable.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -1355,7 +1387,7 @@ equalities.
   \rocq{QBS.probability_qbs.qbs_integrable_sqrB}
   \rocqok
   \uses{def:qbs_integrable, def:qbs_integral}
-  For measurable $h$, $h$ is integrable iff $\int |h| < \infty$, iff $|h|$ is integrable; integrability is stable under bounded multipliers; bounded measurable and $L^2$-squared real functions are integrable.
+  For measurable $h$, $h$ is integrable iff $\int |h| < \infty$, iff $|h|$ is integrable; integrability is stable under bounded QBS-measurable multipliers; bounded QBS-measurable and $L^2$-squared real functions are integrable.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -1394,8 +1426,8 @@ equalities.
   \rocqok
   \uses{def:qbs_prob_event, def:qbs_integral}
   Let $\varepsilon > 0$ and $f : \mathbb{R} \to \mathbb{R}$ measurable,
-  nonnegative on $[0,\infty)$ and nondecreasing there. If $h \circ \alpha$
-  is measurable, then
+  nonnegative on $[0,\infty)$ and nondecreasing there. If $h$ is
+  QBS measurable, then
   $f(\varepsilon) \cdot \Pr_p[\varepsilon \leq |h(x)|]
   \leq \int_p f(|h(x)|)$.
 \end{lemma}
@@ -1405,18 +1437,18 @@ equalities.
   \rocq{QBS.probability_qbs.qbs_chebyshev}
   \rocqok
   \uses{def:qbs_variance, def:qbs_expect}
-  For $\varepsilon > 0$ and $h \circ \alpha$ measurable:
+  For $\varepsilon > 0$ and $h$ QBS measurable:
   $\mu\{r \mid |h(\alpha(r)) - \mathbb{E}_p[h]| \geq \varepsilon\}
   \leq \varepsilon^{-2}\, \mathrm{Var}_p[h]$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
-\begin{lemma}[Variance Through Equivalence and Affine Maps]\label{lem:qbs_variance_affine}
+\begin{lemma}[Variance Through Representatives and Affine Maps]\label{lem:qbs_variance_affine}
   \rocq{QBS.probability_qbs.qbs_varianceE_integral}
-  \rocq{QBS.probability_qbs.qbs_variance_equiv}
+  \rocq{QBS.probability_qbs.qbs_variance_mk}
   \rocq{QBS.probability_qbs.qbs_variance_affine}
   \rocqok
-  \uses{def:qbs_variance, def:qbs_integral, def:qbs_prob_equiv, lem:qbs_varianceZ}
-  Variance is the integral of the squared centred function and respects equivalence; $\mathrm{Var}(h + b) = \mathrm{Var}(h)$ and $\mathrm{Var}(a h + b) = a^2 \mathrm{Var}(h)$ for $h \in L^2$.
+  \uses{def:qbs_variance, def:qbs_integral, lem:integral_sigma_Mx, lem:qbs_varianceZ}
+  Variance is the integral of the squared centred function; for QBS-measurable $h$ it is computed on any pair, $\mathrm{Var}_{[\alpha, \mu]}[h] = \mathrm{variance}(\mu, h \circ \alpha)$; and $\mathrm{Var}(h + b) = \mathrm{Var}(h)$ and $\mathrm{Var}(a h + b) = a^2 \mathrm{Var}(h)$ for $h \in L^2$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -1445,10 +1477,10 @@ equalities.
   \rocq{QBS.qbs_monad.qbs_join_map_return}
   \rocq{QBS.qbs_monad.qbs_join_assoc}
   \rocqok
-  \uses{def:qbs_join, def:monadP_map, def:qbs_return, def:qbs_prob_equiv, thm:qbs_bind_returnl, thm:qbs_bind_returnr, thm:qbs_bindA, lem:qbs_bind_map}
-  Up to $\sim$: $\mathrm{join}(\eta(p)) \sim p$,
-  $\mathrm{join}(P(\eta)(p)) \sim p$, and
-  $\mathrm{join}(\mathrm{join}(\mathcal{P})) \sim
+  \uses{def:qbs_join, def:monadP_map, def:qbs_return, thm:qbs_bind_returnl, thm:qbs_bind_returnr, thm:qbs_bindA, lem:eq_qbs_bind, lem:qbs_bind_map}
+  $\mathrm{join}(\eta(p)) = p$,
+  $\mathrm{join}(P(\eta)(p)) = p$, and
+  $\mathrm{join}(\mathrm{join}(\mathcal{P})) =
   \mathrm{join}(P(\mathrm{join})(\mathcal{P}))$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
@@ -1459,12 +1491,14 @@ equalities.
 \begin{definition}[Tensorial Strength]\label{def:qbs_strength}
   \rocq{QBS.qbs_monad.qbs_strength}
   \rocq{QBS.qbs_monad.qbs_strength_event}
+  \rocq{QBS.qbs_monad.qbs_strength_integral}
   \rocqok
   \uses{def:qbs_prob, def:prodQ, lem:qbs_Mx_pair_cstl}
-  $\mathrm{str}(w, p) = (\lambda r.\; (w, \alpha_p(r)),\; \mu_p)$,
+  $\mathrm{str}(w, p) = [\lambda r.\; (w, \alpha_p(r)),\; \mu_p]$,
   pairing a constant $w : W$ with a probability~$p$ on~$X$.
   Its event probabilities are $\Pr_{\mathrm{str}(w,p)}[U] =
-  \Pr_p[\{x \mid (w,x) \in U\}]$.
+  \Pr_p[\{x \mid (w,x) \in U\}]$ for $U \in \sigma_{M_{W \times X}}$,
+  and $\int_{\mathrm{str}(w,p)} h = \int_p h(w, \cdot)$ for QBS-measurable~$h$.
 \end{definition}
 
 \begin{lemma}[Strength Is a Morphism]\label{lem:qbs_strength_morphism}
@@ -1482,7 +1516,7 @@ equalities.
   \rocq{QBS.qbs_monad.qbs_strength_snd}
   \rocqok
   \uses{def:qbs_strength, def:qbs_return, def:monadP_map}
-  As \emph{equalities} of pairs:
+  As \emph{equalities}:
   $\mathrm{str}(w, \eta(x)) = \eta((w, x))$;
   $\mathrm{str}(f(w), P(g)(p)) = P(f \times g)(\mathrm{str}(w, p))$
   (naturality); and $P(\pi_2)(\mathrm{str}(w, p)) = p$.
@@ -1494,20 +1528,20 @@ equalities.
   \rocq{QBS.qbs_monad.qbs_strength_assoc}
   \rocq{QBS.qbs_monad.qbs_strength_join}
   \rocqok
-  \uses{def:qbs_strength, def:qbs_join, def:monadP_map, lem:qbs_strength_laws, def:qbs_prob_equiv}
-  With $\alpha : (U \times W) \times X \to U \times (W \times X)$ the reassociation, $\mathrm{str}(u, \mathrm{str}(w, p)) = P(\alpha)(\mathrm{str}((u,w), p))$ (equality of pairs), and $\mathrm{str}(w, \mu(P)) \sim \mu(P(\mathrm{str})(\mathrm{str}(w, P)))$ (equivalence of pairs). Together with Lemma~\ref{lem:qbs_strength_laws} this gives the complete set of strength laws.
+  \uses{def:qbs_strength, def:qbs_join, def:monadP_map, lem:qbs_strength_laws, lem:qbs_prob_eqP}
+  With $\alpha : (U \times W) \times X \to U \times (W \times X)$ the reassociation, $\mathrm{str}(u, \mathrm{str}(w, p)) = P(\alpha)(\mathrm{str}((u,w), p))$ and $\mathrm{str}(w, \mu(P)) = \mu(P(\mathrm{str})(\mathrm{str}(w, P)))$. Together with Lemma~\ref{lem:qbs_strength_laws} this gives the complete set of strength laws.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Internal Bind (HKSY Thm.~21)]\label{thm:qbs_bind_internal}
   \rocq{QBS.qbs_monad.qbs_bind_internal}
-  \rocq{QBS.qbs_monad.qbs_bind_internal_equiv}
+  \rocq{QBS.qbs_monad.qbs_bind_internalE}
   \rocqok
   \uses{def:qbs_bind, def:qbs_strength, lem:qbs_strength_morphism, thm:qbs_morphism_eval, def:expQ, lem:qbs_bind_morphism}
   Bind is itself a QBS morphism
   $P(X) \times (X \Rightarrow P(Y)) \to P(Y)$, obtained by composing the
   strength, the Kleisli bind and evaluation, and it agrees with the
-  external bind: $\mathrm{bind}_{\mathrm{int}}(p, f) \sim
+  external bind: $\mathrm{bind}_{\mathrm{int}}(p, f) =
   p \mathbin{>\!\!>\!\!=} f$.
 \end{theorem}
 \begin{proof}\rocqok\end{proof}
@@ -1537,8 +1571,8 @@ equalities.
 \begin{theorem}[Commutativity (HKSY Prop.~22(2))]\label{thm:monadP_pair_comm}
   \rocq{QBS.qbs_monad.monadP_pair_comm}
   \rocqok
-  \uses{def:monadP_pair, def:monadP_map, def:qbs_swap, def:qbs_prob_equiv, thm:pair_standard_borel}
-  $p \otimes q \sim P(\mathrm{swap})(q \otimes p)$.
+  \uses{def:monadP_pair, def:monadP_map, def:qbs_swap, lem:qbs_prob_eqP, thm:pair_standard_borel}
+  $p \otimes q = P(\mathrm{swap})(q \otimes p)$.
   The proof uses Fubini--Tonelli for the product of the two base measures
   and the measurable bijection $\mathbb{R} \cong \mathbb{R} \times
   \mathbb{R}$ to show that the relevant set of seed pairs is measurable.
@@ -1548,9 +1582,9 @@ equalities.
 \begin{corollary}[Commutativity of Bind]\label{cor:qbs_bind_comm}
   \rocq{QBS.qbs_monad.qbs_bind_comm}
   \rocqok
-  \uses{thm:monadP_pair_comm, lem:qbs_bind_map, lem:qbs_bind_equiv_l}
+  \uses{thm:monadP_pair_comm, lem:qbs_bind_map}
   For $f : X \times Y \to P(Z)$:
-  $(p \otimes q) \mathbin{>\!\!>\!\!=} f \sim
+  $(p \otimes q) \mathbin{>\!\!>\!\!=} f =
   (q \otimes p) \mathbin{>\!\!>\!\!=} (f \circ \mathrm{swap})$.
 \end{corollary}
 \begin{proof}\rocqok\end{proof}
@@ -1576,7 +1610,7 @@ equalities.
   \rocq{QBS.qbs_monad_integral.qbs_integral_bind_bounded}
   \rocqok
   \uses{def:qbs_bind, def:qbs_integral, def:qbs_integrable}
-  For an integrable measurable $h$, $\int h \, d(p \mathbin{>\!\!>\!\!=} f) = \int_r \left(\int h \, d f(\alpha(r))\right) d\mu$; the same holds for bounded measurable real $h$.
+  For an integrable measurable $h$, $\int h \, d(p \mathbin{>\!\!>\!\!=} f) = \int_p \left(\int h \, d f(x)\right) dp(x)$; the same holds for bounded measurable real $h$.
 \end{theorem}
 \begin{proof}\rocqok\end{proof}
 
@@ -1598,37 +1632,36 @@ $p : P(X \times \mathbb{R})$ into a probability on~$X$, failing when the
 evidence is $0$ or infinite.
 
 \begin{definition}[Weight and Evidence]\label{def:qbs_evidence}
-  \rocq{QBS.qbs_normalize.qbs_weight}
+  \rocq{QBS.qbs_normalize.qbs_pweight}
+  \rocq{QBS.qbs_normalize.qbs_pweight_ge0}
   \rocq{QBS.qbs_normalize.qbs_evidence}
   \rocqok
-  \uses{def:qbs_prob, def:prodQ}
-  For $p = (\alpha, \mu)$ on $X \times \mathbb{R}$ write
-  $w(r) = \max(0, \mathrm{snd}(\alpha(r)))$. The \emph{evidence} is
-  $Z_p = \int w \, d\mu$.
+  \uses{def:qbs_prob, def:prodQ, def:qbs_integral}
+  The \emph{weight} of $(x, t) \in X \times \mathbb{R}$ is
+  $w(x, t) = \max(0, t)$, as an extended real. For $p$ on
+  $X \times \mathbb{R}$ the \emph{evidence} is $Z_p = \int_p w$, that is
+  $\int w(\alpha(r))\, d\mu$ for any representative $(\alpha, \mu)$.
 \end{definition}
-
-\begin{lemma}[Evidence Respects Equivalence]\label{lem:qbs_evidence_equiv}
-  \rocq{QBS.qbs_normalize.qbs_evidence_equiv}
-  \rocqok
-  \uses{def:qbs_evidence, def:qbs_prob_equiv}
-  If $p_1 \sim p_2$ then $Z_{p_1} = Z_{p_2}$.
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
 
 \begin{definition}[Density Measure]\label{def:qbs_density}
   \rocq{QBS.qbs_normalize.qbs_density}
+  \rocq{QBS.qbs_normalize.qbs_pdensity}
+  \rocq{QBS.qbs_normalize.qbs_pdensityT}
   \rocqok
   \uses{def:qbs_evidence}
-  $\nu_p(A) = \int_A w \, d\mu$, a measure on $\mathbb{R}$ with total mass
-  $Z_p$ (\texttt{qbs\_densityT}).
+  For a pair $(\alpha, \mu)$ on $X \times \mathbb{R}$,
+  $\nu(A) = \int_A w(\alpha(r))\, d\mu(r)$, a measure on $\mathbb{R}$ with
+  total mass $\int w(\alpha(r))\, d\mu$ (\texttt{qbs\_pdensityT});
+  \texttt{qbs\_density} is its instance on the representative of a
+  probability~$p$, with total mass $Z_p$ (\texttt{qbs\_densityT}).
 \end{definition}
 
 \begin{definition}[Normalized Probability]\label{def:qbs_normalize_prob}
   \rocq{QBS.qbs_normalize.qbs_normalize_prob}
   \rocqok
   \uses{def:qbs_density, def:qbs_prob}
-  The probability $q : P(X)$ with $\alpha_q(r) = \mathrm{fst}(\alpha_p(r))$
-  and base measure the math-comp analysis normalisation
+  The probability $q : P(X)$ represented by $\alpha_q(r) = \mathrm{fst}(\alpha_p(r))$
+  and the base measure obtained by the math-comp analysis normalisation
   \texttt{mnormalize} of $\nu_p$ with respect to~$\mu_p$.
 \end{definition}
 
@@ -1642,34 +1675,24 @@ evidence is $0$ or infinite.
 
 \begin{lemma}[Normalized Event Probability]\label{lem:qbs_normalize_event}
   \rocq{QBS.qbs_normalize.qbs_normalize_event}
-  \rocq{QBS.qbs_normalize.qbs_pweight}
-  \rocq{QBS.qbs_normalize.qbs_pweight_ge0}
   \rocq{QBS.qbs_normalize.qbs_evidence_degen}
   \rocqok
   \uses{def:qbs_normalize_prob, def:qbs_integral}
-  If $0 < Z_p < +\infty$, then for every $U \subseteq X$ (\texttt{qbs\_pweight} is the weight $\max(0,w)$ as an extended real; \texttt{qbs\_evidence\_degen} says the evidence is $0$ or $+\infty$ otherwise),
+  If $0 < Z_p < +\infty$, then for every $U \in \sigma_{M_X}$ (\texttt{qbs\_evidence\_degen} says the evidence is $0$ or $+\infty$ otherwise),
   $\Pr_{\mathrm{norm}(p)}[U] =
   \Bigl(\int_p (x, w) \mapsto \mathbf{1}_U(x) \cdot \max(0, w)\Bigr)
   \cdot Z_p^{-1}$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
-\begin{lemma}[Normalisation Respects Equivalence]\label{lem:qbs_normalize_equiv}
-  \rocq{QBS.qbs_normalize.qbs_normalize_equiv}
-  \rocqok
-  \uses{lem:qbs_normalize_event, lem:qbs_evidence_equiv, def:qbs_normalize}
-  If $p_1 \sim p_2$ then either both normalisations fail, or both succeed
-  with equivalent results; the mixed case is excluded.
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
-
-\begin{lemma}[Normalisation: Degenerate Case and Equivalence]\label{lem:qbs_normalize_prob_equiv}
+\begin{lemma}[Normalisation: Degenerate Case and Events on a Pair]\label{lem:qbs_normalize_prob_event_mk}
   \rocq{QBS.qbs_normalize.qbs_evidence_ge0}
   \rocq{QBS.qbs_normalize.qbs_normalize_event_degen}
-  \rocq{QBS.qbs_normalize.qbs_normalize_prob_equiv}
+  \rocq{QBS.qbs_normalize.qbs_pdensity_preimage}
+  \rocq{QBS.qbs_normalize.qbs_normalize_prob_event_mk}
   \rocqok
-  \uses{lem:qbs_normalize_event, lem:qbs_evidence_equiv, def:qbs_normalize_prob}
-  When the evidence is zero or infinite the normalised probability of $U$ is $p(\pi_1^{-1} U)$; in all cases $p_1 \sim p_2$ implies $\mathrm{norm}(p_1) \sim \mathrm{norm}(p_2)$.
+  \uses{lem:qbs_normalize_event, lem:integral_sigma_Mx, def:qbs_normalize_prob}
+  When the evidence is zero or infinite the normalised probability of $U \in \sigma_{M_X}$ is $\Pr_p[\pi_1^{-1} U]$. For the probability $[\alpha, \mu]$ given by a pair, $\Pr_{\mathrm{norm}([\alpha, \mu])}[U] = \mathrm{mnormalize}(\nu, \mu)((\pi_1 \circ \alpha)^{-1}(U))$, degenerate cases included. Since probabilities are classes, normalisation is well defined and no separate invariance lemma is needed.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -1679,81 +1702,8 @@ evidence is $0$ or infinite.
   \rocq{QBS.qbs_normalize.qbs_normalize_morphism}
   \rocq{QBS.qbs_normalize.qbs_normalizeQ}
   \rocqok
-  \uses{def:qbs_normalize, lem:qbs_normalize_prob_equiv, def:monadP, def:coprodQ, def:unitQ, def:qbs_morphism}
+  \uses{def:qbs_normalize, lem:qbs_normalize_prob_event_mk, def:monadP, def:coprodQ, def:unitQ, def:qbs_morphism}
   The total normaliser $P(X \times \mathbb{R}) \to P(X) + 1$ (sending degenerate cases to the unit summand) is a QBS morphism, bundled as \texttt{qbs\_normalizeQ} (AFP \texttt{norm\_qbs\_measure\_morphism}).
-\end{theorem}
-\begin{proof}\rocqok\end{proof}
-
-
-\section{Quotient of QBS Probabilities}\label{sec:quotient}
-
-\begin{definition}[Quotient Type]\label{def:qbs_quot}
-  \rocq{QBS.qbs_quotient.qbs_equiv_op}
-  \rocq{QBS.qbs_quotient.qbs_quot}
-  \rocqok
-  \uses{def:qbs_prob, def:qbs_prob_equiv, lem:qbs_prob_equiv_rel}
-  \texttt{qbs\_quot X} is the quotient of \texttt{qbs\_prob X} by
-  \texttt{qbs\_prob\_equiv}, built with the math-comp generic quotient
-  (\texttt{\{eq\_quot\ ...\}}), after the almost-everywhere quotient of
-  \texttt{hoelder.v}.
-\end{definition}
-
-\begin{lemma}[Quotient Equality]\label{lem:qbs_prob_equivP}
-  \rocq{QBS.qbs_quotient.qbs_prob_equivP}
-  \rocq{QBS.qbs_quotient.qbs_quot_eq}
-  \rocq{QBS.qbs_quotient.qbs_prob_equiv_repr}
-  \rocqok
-  \uses{def:qbs_quot}
-  $\pi(p_1) = \pi(p_2)$ iff $p_1 \sim p_2$, and $\mathrm{repr}(\pi(p)) \sim p$.
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
-
-\begin{definition}[Quotient Is a QBS]\label{def:qbs_quot_Mx}
-  \rocq{QBS.qbs_quotient.qbs_quot_Mx}
-  \rocq{QBS.qbs_quotient.qbs_quot_pi_morphism}
-  \rocq{QBS.qbs_quotient.qbs_quot_repr_morphism}
-  \rocqok
-  \uses{def:qbs_quot, def:monadP}
-  \texttt{qbs\_quot X} is a QBS (HKSY Sec.~V-D(a)): $b$ is random iff
-  $r \mapsto \mathrm{repr}(b(r))$ is random in $P(X)$. The projection
-  $P(X) \to \texttt{qbs\_quot X}$ and \texttt{repr} are QBS morphisms.
-\end{definition}
-
-\begin{definition}[Quotient Operations]\label{def:quot_ops}
-  \rocq{QBS.qbs_quotient.quot_return}
-  \rocq{QBS.qbs_quotient.quot_bind}
-  \rocq{QBS.qbs_quotient.quot_map}
-  \rocq{QBS.qbs_quotient.quot_integral}
-  \rocqok
-  \uses{def:qbs_quot, def:qbs_return, def:qbs_bind, def:qbs_integral, def:monadP_map}
-  Return, bind, map and integration lifted to the quotient via
-  representatives.
-\end{definition}
-
-\begin{lemma}[Quotient Well-Definedness]\label{lem:quot_well_defined}
-  \rocq{QBS.qbs_quotient.quot_bindE}
-  \rocq{QBS.qbs_quotient.quot_mapE}
-  \rocq{QBS.qbs_quotient.ge0_quot_integralE}
-  \rocqok
-  \uses{def:quot_ops, lem:qbs_prob_equivP, lem:qbs_bind_equiv_l, lem:qbs_integral_equiv}
-  The lifted operations computed on any representative agree with the
-  operations on pairs:
-  $\mathrm{bind}(\pi(p), f) = \pi(p \mathbin{>\!\!>\!\!=} f)$,
-  $\mathrm{map}\, f\, \pi(p) = \pi(P(f)(p))$, and, for QBS-measurable
-  $h \geq 0$, $\int_{\pi(p)} h = \int_p h$.
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
-
-\begin{theorem}[Quotient Monad Laws]\label{thm:quot_monad_laws}
-  \rocq{QBS.qbs_quotient.quot_bind_returnl}
-  \rocq{QBS.qbs_quotient.quot_bind_returnr}
-  \rocq{QBS.qbs_quotient.quot_bindA}
-  \rocq{QBS.qbs_quotient.quot_map_id}
-  \rocq{QBS.qbs_quotient.quot_map_comp}
-  \rocqok
-  \uses{def:quot_ops, lem:quot_well_defined, thm:qbs_bind_returnl, thm:qbs_bind_returnr, thm:qbs_bindA}
-  On the quotient the monad laws hold as \emph{equalities}: left unit,
-  right unit and associativity of bind, and functoriality of map.
 \end{theorem}
 \begin{proof}\rocqok\end{proof}
 
@@ -1771,16 +1721,18 @@ evidence is $0$ or infinite.
   $\mathbb{R}\times\mathbb{R} \to \mathbb{R}$ and random element
   $r \mapsto (\alpha_p(d_1(r)), \alpha_q(d_2(r)))$, where
   $(d_1, d_2)$ is the decoding $\mathbb{R} \to \mathbb{R}\times\mathbb{R}$.
-  It is a concrete representative of the monadic product, through which
-  integrals reduce to integrals against $\mu_p \otimes \mu_q$.
+  It is equal to the monadic product (Lemma~\ref{lem:qbs_prob_pairE}),
+  through which integrals reduce to integrals against
+  $\mu_p \otimes \mu_q$.
 \end{definition}
 
-\begin{lemma}[Product Agrees with the Monadic Product]\label{lem:qbs_prob_pair_equiv}
-  \rocq{QBS.pair_qbs_measure.qbs_prob_pair_equiv}
+\begin{lemma}[Product Agrees with the Monadic Product]\label{lem:qbs_prob_pairE}
+  \rocq{QBS.pair_qbs_measure.qbs_prob_pair_event}
+  \rocq{QBS.pair_qbs_measure.qbs_prob_pairE}
   \rocqok
-  \uses{def:qbs_prob_pair, def:monadP_pair, def:qbs_prob_equiv}
-  The explicit product probability is equivalent to the monadic product:
-  $p \otimes q \sim \mathrm{qbs\_prob\_pair}(p, q)$.
+  \uses{def:qbs_prob_pair, def:monadP_pair, lem:qbs_prob_eqP}
+  The explicit product probability is the monadic product:
+  $p \otimes q = \mathrm{qbs\_prob\_pair}(p, q)$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -1797,15 +1749,18 @@ evidence is $0$ or infinite.
 \end{lemma}
 \begin{proof}\rocqok Fubini.\end{proof}
 
-\begin{theorem}[Fubini for the Product Probability]\label{thm:qbs_pair_integral_iterated}
-  \rocq{QBS.pair_qbs_measure.qbs_prob_pair_integral}
-  \rocq{QBS.pair_qbs_measure.qbs_prob_pair_iterated}
+\begin{theorem}[Fubini for the Monadic Product]\label{thm:qbs_pair_integral_iterated}
+  \rocq{QBS.pair_qbs_measure.monadP_pair_integrable}
+  \rocq{QBS.pair_qbs_measure.monadP_pair_integral}
+  \rocq{QBS.pair_qbs_measure.monadP_pair_iterated}
   \rocqok
-  \uses{def:qbs_prob_pair, def:qbs_integral}
-  If $(r_1, r_2) \mapsto h(\alpha_p(r_1), \alpha_q(r_2))$ is integrable
-  for $\mu_p \otimes \mu_q$, then $\int_{\mathrm{qbs\_prob\_pair}(p,q)} h$
-  is the integral of that function against $\mu_p \otimes \mu_q$, and
-  equals the iterated integral $\int_p \int_q h(x, y)$.
+  \uses{def:qbs_prob_pair, def:monadP_pair, lem:qbs_prob_pairE, def:qbs_integral, def:qbs_integrable}
+  For a QBS-measurable $h$ on $X \times Y$, $h$ is integrable against
+  $p \otimes q$ iff $(r_1, r_2) \mapsto h(\alpha_p(r_1), \alpha_q(r_2))$ is
+  integrable for $\mu_p \otimes \mu_q$; in that case
+  $\int_{p \otimes q} h$ is the integral of that function against
+  $\mu_p \otimes \mu_q$, and equals the iterated integral
+  $\int_p \int_q h(x, y)$.
 \end{theorem}
 \begin{proof}
   \rocqok
@@ -1814,12 +1769,12 @@ evidence is $0$ or infinite.
 \end{proof}
 
 \begin{lemma}[Product Factorization]\label{lem:qbs_pair_integral_factorization}
-  \rocq{QBS.pair_qbs_measure.qbs_prob_pair_mul}
+  \rocq{QBS.pair_qbs_measure.monadP_pair_mul}
   \rocqok
   \uses{thm:qbs_pair_integral_iterated, lem:expectation_prod, def:qbs_expect}
-  $\int_{\mathrm{qbs\_prob\_pair}(p,q)} f(x) \cdot g(y)
-  = \mathbb{E}_p[f] \cdot \mathbb{E}_q[g]$ for integrable $f$, $g$
-  and $f \cdot g$.
+  $\int_{p \otimes q} f(x) \cdot g(y)
+  = \mathbb{E}_p[f] \cdot \mathbb{E}_q[g]$ for $f$, $g$ and $f(x) \cdot g(y)$
+  integrable, and $f(x) \cdot g(y)$ QBS measurable.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -1829,9 +1784,9 @@ evidence is $0$ or infinite.
 \begin{definition}[QBS Independence]\label{def:qbs_indep}
   \rocq{QBS.pair_qbs_measure.qbs_indep}
   \rocqok
-  \uses{def:qbs_prob_equiv, def:monadP_map, def:qbs_prob_pair}
+  \uses{def:monadP_map, def:monadP_pair}
   Random variables $f : Z \to X$ and $g : Z \to Y$ are \emph{independent}
-  under~$p$ if the joint distribution $(f, g)_*(p)$ is equivalent to the
+  under~$p$ if the joint distribution $(f, g)_*(p)$ is equal to the
   product $f_*(p) \otimes g_*(p)$.
 \end{definition}
 
@@ -1848,17 +1803,18 @@ evidence is $0$ or infinite.
 \begin{lemma}[Independence Factorization]\label{lem:qbs_integral_indep_factorization}
   \rocq{QBS.pair_qbs_measure.qbs_integral_indepM}
   \rocqok
-  \uses{def:qbs_indep, lem:qbs_pair_integral_factorization, def:qbs_expect, def:qbs_prob_equiv, def:monadP_map}
+  \uses{def:qbs_indep, lem:qbs_pair_integral_factorization, def:qbs_expect, def:monadP_map}
   For random variables $f : Z \to X$ and $g : Z \to Y$ independent
-  under $p$, and real-valued test functions $\phi$, $\psi$ (with the
-  integrability hypotheses of the Rocq statement):
+  under $p$, and QBS-measurable real-valued test functions $\phi$, $\psi$
+  such that $\phi \circ f$, $\psi \circ g$ and their product are
+  integrable under~$p$:
   \[
     \mathbb{E}_p\bigl[\phi(f(z)) \cdot \psi(g(z))\bigr]
     = \mathbb{E}_{f_*(p)}[\phi] \cdot \mathbb{E}_{g_*(p)}[\psi].
   \]
 \end{lemma}
 \begin{proof}\rocqok
-  Rewrite the integral along the equivalence given by independence,
+  Rewrite the integral along the equality given by independence,
   then apply the product factorization.
 \end{proof}
 
@@ -1937,6 +1893,15 @@ probability measure on a standard Borel space is \texttt{giry\_to\_qbs}
   For fixed $\sigma$, $\mu \mapsto \mathcal{N}(\mu, \sigma)$ is a QBS
   morphism $\mathtt{realQ} \to P(\mathtt{realQ})$ (bundled as
   \texttt{qbs\_normalQ}).
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
+
+\begin{lemma}[Integral Against the Normal Distribution]\label{lem:qbs_integral_normal}
+  \rocq{QBS.measure_as_qbs_measure.qbs_integral_normal}
+  \rocqok
+  \uses{def:qbs_normal_distribution, def:qbs_integral, def:qbs_measurable}
+  For QBS-measurable $h$ on $\mathtt{realQ}$,
+  $\int_{\mathcal{N}(\mu, \sigma)} h = \int_{\mathrm{normal\_prob}\;\mu\;\sigma} h$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -2062,32 +2027,23 @@ probability measure on a standard Borel space is \texttt{giry\_to\_qbs}
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
-\begin{lemma}[Equivalence Gives Equal Distributions]\label{lem:qbs_prob_equiv_giry}
-  \rocq{QBS.qbs_giry.qbs_prob_equiv_giry}
-  \rocqok
-  \uses{def:qbs_to_giry, def:qbs_prob_equiv, lem:sigma_Mx_R_qbs}
-  If $p_1 \sim p_2$ on $R(M)$ then $\mathrm{qbs\_to\_giry}(p_1)(A) =
-  \mathrm{qbs\_to\_giry}(p_2)(A)$ for every measurable~$A$.
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
-
 \begin{lemma}[Return and Map]\label{lem:qbs_to_giry_return}
   \rocq{QBS.qbs_giry.qbs_to_giry_return}
   \rocq{QBS.qbs_giry.qbs_to_giry_map}
   \rocqok
   \uses{def:qbs_to_giry, def:qbs_return, def:monadP_map}
-  $\mathrm{qbs\_to\_giry}(\eta(x)) = \delta_x$ and
+  For measurable $A$, $\mathrm{qbs\_to\_giry}(\eta(x))(A) = \delta_x(A)$ and
   $\mathrm{qbs\_to\_giry}(P(f)(p))(A) = \mathrm{qbs\_to\_giry}(p)(f^{-1}(A))$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Distributions Determine Probabilities (HKSY Prop.~22(3))]\label{thm:qbs_to_giry_inj}
-  \rocq{QBS.qbs_giry.qbs_to_giry_equiv}
+  \rocq{QBS.qbs_giry.qbs_to_giry_inj}
   \rocqok
-  \uses{def:qbs_to_giry, def:qbs_prob_equiv, def:standard_borel_wit, lem:sigma_Mx_standard_borel}
+  \uses{def:qbs_to_giry, lem:qbs_prob_eqP, def:standard_borel_wit, lem:sigma_Mx_standard_borel}
   If $M$ has a standard Borel witness and two probabilities $p_1, p_2$ on
   $R(M)$ have the same distribution on all measurable sets, then
-  $p_1 \sim p_2$.
+  $p_1 = p_2$.
 \end{theorem}
 \begin{proof}\rocqok\end{proof}
 
@@ -2119,16 +2075,16 @@ probability measure on a standard Borel space is \texttt{giry\_to\_qbs}
   \rocq{QBS.qbs_giry.qbs_to_giryK}
   \rocqok
   \uses{def:qbs_to_giry, def:giry_to_qbs}
-  $\mathrm{qbs\_to\_giry}(\mathrm{giry\_to\_qbs}(P))(A) = P(A)$.
+  $\mathrm{qbs\_to\_giry}(\mathrm{giry\_to\_qbs}(P))(A) = P(A)$ for
+  measurable~$A$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Round-Trip (QBS direction)]\label{lem:giry_to_qbsK}
   \rocq{QBS.qbs_giry.giry_to_qbsK}
   \rocqok
-  \uses{def:qbs_to_giry, def:giry_to_qbs, def:qbs_prob_equiv}
-  $\mathrm{giry\_to\_qbs}(\mathrm{qbs\_to\_giry}(p)) \sim p$
-  (up to equivalence).
+  \uses{def:qbs_to_giry, def:giry_to_qbs, lem:qbs_prob_eqP}
+  $\mathrm{giry\_to\_qbs}(\mathrm{qbs\_to\_giry}(p)) = p$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -2590,15 +2546,16 @@ math-comp algebra-tactics.
 \begin{theorem}[Main Theorem: the Program Computes the Posterior]\label{thm:program_posterior}
   \rocq{QBS.showcase.bayesian_regression.program_posterior}
   \rocqok
-  \uses{def:program, def:posterior, thm:wprior_evidence, lem:qbs_normalize_event, lem:factor_integral, lem:prior_posterior_integral, def:qbs_prob_equiv}
-  There exists a probability $q$ on $\mathbb{R} \Rightarrow \mathbb{R}$
-  such that $\mathrm{program} = \mathrm{Some}(q)$ and
-  $q \sim \mathrm{posterior}$ (up to \texttt{qbs\_prob\_equiv}).
+  \uses{def:program, def:posterior, thm:wprior_evidence, lem:qbs_normalize_event, lem:factor_integral, lem:prior_posterior_integral, lem:qbs_prob_eqP}
+  $\mathrm{program} = \mathrm{Some}(\mathrm{posterior})$: the program
+  succeeds and the resulting probability on
+  $\mathbb{R} \Rightarrow \mathbb{R}$ is the explicit Gaussian posterior.
 \end{theorem}
 \begin{proof}
   \rocqok
   \uses{thm:wprior_evidence, lem:qbs_normalize_event, lem:factor_integral}
-  By Theorem~\ref{thm:wprior_evidence} the normaliser succeeds. For
+  By Theorem~\ref{thm:wprior_evidence} the normaliser succeeds. By
+  Lemma~\ref{lem:qbs_prob_eqP} it suffices to compare events: for
   $U \in \sigma_{M_{\mathbb{R} \Rightarrow \mathbb{R}}}$ apply the event
   formula for the normalised probability to $h = \mathbf{1}_{\mathrm{lin}^{-1}U}$,
   rewrite via Lemma~\ref{lem:factor_integral}, and cancel the evidence~$C$.

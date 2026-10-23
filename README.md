@@ -15,7 +15,7 @@ programming semantics.
 
 ## Overview
 
-**415 proofs, 0 Admitted, 0 custom axioms, 6,438 lines across 15 files.**
+**402 proofs, 0 Admitted, 0 custom axioms, 6,370 lines across 14 files.**
 
 > **Note**: A higher-order PPL with denotational semantics in QBS
 > (`ppl_qbs.v`, `ppl_kernel.v`, `showcase/ppl_examples.v`, ...) is
@@ -41,8 +41,8 @@ This formalization follows:
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
 | `measurable_aux.v` | 81 | 3 | Auxiliary measurability lemmas: `measurable_invr`, `measurable_fun_nat_discrete`, `measurable_truncn` |
-| `quasi_borel.v` | 879 | 61 | HB structure, morphisms, products, exponentials, cartesian closure, the L functor (`qbs_meas`) and L ⊣ R, lattice of QBS structures, empty QBS |
-| `measure_qbs_adjunction.v` | 318 | 20 | Counit of L ⊣ R, standard Borel spaces, R is full on standard Borel domains, order adjunction |
+| `quasi_borel.v` | 887 | 62 | HB structure, morphisms, products, exponentials, cartesian closure, the L functor (`qbs_meas`) and L ⊣ R, lattice of QBS structures, empty QBS |
+| `measure_qbs_adjunction.v` | 311 | 19 | Counit of L ⊣ R, standard Borel spaces, R is full on standard Borel domains, order adjunction |
 | `coproduct_qbs.v` | 721 | 44 | Binary and countable coproducts (HKSY Prop. 17), dependent products, lists with cons and recursion, concrete morphisms |
 | `standard_borel.v` | 1,031 | 59 | R ≅ (0,1) via atan, digit interleaving, R ≅ R × R |
 
@@ -50,21 +50,20 @@ This formalization follows:
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `probability_qbs.v` | 511 | 35 | Probability pairs, equivalence, integration and integrability, law, expectation, variance |
-| `qbs_monad.v` | 724 | 61 | The HKSY probability monad: return, bind, laws, map, join, strength and its laws, commutativity |
-| `qbs_normalize.v` | 271 | 20 | Normalisation of weighted probabilities (HKSY Sec. VI), as a morphism P(X × R) → P(X) + 1 |
-| `qbs_monad_integral.v` | 203 | 11 | Integrals, integrability and variance through return and bind |
-| `qbs_quotient.v` | 188 | 19 | Quotient of probability pairs; monad laws as equalities |
-| `qbs_giry.v` | 133 | 9 | Comparison with the Giry monad |
-| `pair_qbs_measure.v` | 353 | 16 | Concrete product via R ≅ R × R, Fubini, independence, variance of independent sums |
+| `probability_qbs.v` | 594 | 42 | Probabilities as the quotient of pairs (alpha, mu), equality on `sigma_Mx` events, integration and integrability, law, expectation, variance |
+| `qbs_monad.v` | 715 | 61 | The HKSY probability monad: return, bind, laws (as equalities), map, join, strength and its laws, commutativity |
+| `qbs_normalize.v` | 279 | 18 | Normalisation of weighted probabilities (HKSY Sec. VI), as a morphism P(X × R) → P(X) + 1 |
+| `qbs_monad_integral.v` | 171 | 8 | Integrals, integrability and variance through return and bind |
+| `qbs_giry.v` | 135 | 8 | Comparison with the Giry monad |
+| `pair_qbs_measure.v` | 389 | 20 | Concrete product via R ≅ R × R, Fubini, independence, variance of independent sums |
 | `normal_centred.v` | 300 | 16 | Centred first moment and mean of the normal law (`integral_normal_mean`), change of variables for `normal_prob` |
-| `measure_as_qbs_measure.v` | 269 | 12 | Normal, Bernoulli and uniform (on any [a, b]) distributions, their expectations, Bernoulli event probabilities |
+| `measure_as_qbs_measure.v` | 282 | 13 | Normal, Bernoulli and uniform (on any [a, b]) distributions, their expectations, Bernoulli event probabilities |
 
 ### Showcase
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `showcase/bayesian_regression.v` | 456 | 29 | Bayesian linear regression (HKSY Sec. VI) with closed-form posterior |
+| `showcase/bayesian_regression.v` | 474 | 29 | Bayesian linear regression (HKSY Sec. VI) with closed-form posterior |
 
 ## Key results
 
@@ -77,24 +76,25 @@ This formalization follows:
   `sigma_Mx_standard_borelP`
 - **Countable coproducts** (HKSY Prop. 17): `sigmaQ`, `sigma_case`,
   `sigma_case_eta`
-- **Probability monad**: `qbs_return`, `qbs_bind`, laws
-  `qbs_bind_returnl`, `qbs_bind_returnr`, `qbs_bindA`; `monadP_map`,
+- **Probability monad**: `qbs_prob X` is the quotient of the pairs
+  (alpha, mu) by `preprob_equiv` (`qbs_prob_eqP`: equality iff equal
+  on `sigma_Mx` sets); `qbs_return`, `qbs_bind`, monad laws as
+  equalities `qbs_bind_returnl`, `qbs_bind_returnr`, `qbs_bindA`;
+  `monadP_map`,
   `qbs_join`, `qbs_strength` with its laws `qbs_strength_snd`,
   `qbs_strength_assoc`, `qbs_strength_return`, `qbs_strength_join`;
   internal bind `qbs_bind_internal`
   (HKSY Thm. 21); commutativity `monadP_pair_comm`, `qbs_bind_comm`
   (HKSY Prop. 22(2))
-- **Quotient**: on the quotient type `qbs_quot` the monad laws hold
-  as equalities
 - **QBS ↔ Giry**: `qbs_to_giry`, `qbs_integral_giry`, and on standard
-  Borel spaces `qbs_to_giry_equiv`, `qbs_to_giry_bind`
+  Borel spaces `qbs_to_giry_inj`, `qbs_to_giry_bind`
 - **Integration**: `qbs_integral_law`, `qbs_expectE` (expectation is
   `'E` on the law)
 - **Independence**: `qbs_indep_rect` (product rule),
   `qbs_integral_indepM` (E[fg] = E[f]E[g])
 - **R ≅ R × R**: `pair_standard_borel`, `encode_RRK`
 - **Normaliser**: `qbs_normalize`, `qbs_normalize_event`,
-  `qbs_normalize_equiv`; as a morphism into P(X) + 1:
+  `qbs_normalize_prob_event_mk`; as a morphism into P(X) + 1:
   `qbs_normalize_morphism`, `qbs_normalizeQ`
 - **Lists**: `qbs_nil`, `qbs_cons`, recursion `list_rec` as a morphism
   (`qbs_morphism_list_rec`, internal `list_rec_hom`), bijection with
@@ -108,19 +108,11 @@ This formalization follows:
   `qbs_expect_interval_uniform`, `qbs_expect_normal` (via
   `integral_normal_mean`), and Uniform as a
   morphism on intervals `qbs_uniformQ : intervalQ -> P(R)`
-- **Bayesian regression**: `program_posterior` (the program normalises
-  to an explicit Gaussian posterior on functions R => R),
-  `wprior_evidence` (closed-form evidence)
+- **Bayesian regression**: `program_posterior` (`program = Some posterior`:
+  the program normalises to an explicit Gaussian posterior on functions
+  R => R), `wprior_evidence` (closed-form evidence)
 
 ## Limitations
-
-- **Probabilities are raw pairs.** `monadP X` is carried by the pairs
-  (α, μ) rather than by their equivalence classes as in HKSY, so the
-  monad laws hold up to `qbs_prob_equiv` (same distribution on X). The
-  quotient `qbs_quot X` (`qbs_quotient.v`) is a QBS on which return,
-  bind and map satisfy the laws as equalities, but the rest of the
-  development (strength, normaliser, integration) is stated on
-  `monadP`.
 
 - **Standard Borel** is defined via the existence of an
   encode/decode pair, not via the classical Polish-space

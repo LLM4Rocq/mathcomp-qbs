@@ -3,8 +3,8 @@
 **Project:** QBS -- Quasi-Borel Spaces in Rocq
 **Repository:** https://github.com/LLM4Rocq/mathcomp-qbs
 **Date:** 2026-10-23
-**Status:** 415 proofs (410 Qed + 5 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 6,438 across 15 files
+**Status:** 402 proofs (397 Qed + 5 Defined), **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** 6,370 across 14 files
 
 > **Note**: The higher-order PPL development (`ppl_qbs.v`,
 > `ppl_kernel.v`, `showcase/ppl_examples.v`) is on the `ppl`
@@ -54,30 +54,28 @@ Throughout, HKSY refers to the LICS 2017 paper above; "Prop. n" and "Thm. n" ref
   - [1.19 Dependent Products (Pi Type)](#119-dependent-products-pi-type)
   - [1.20 List Type](#120-list-type)
 - [Part II: Probability Monad and Integration](#part-ii-probability-monad-and-integration)
-  - [2.1 QBS Probability Pair](#21-qbs-probability-pair)
-  - [2.2 Equivalence of Probability Pairs](#22-equivalence-of-probability-pairs)
+  - [2.1 Representatives and the Quotient](#21-representatives-and-the-quotient)
+  - [2.2 Equality of Probabilities](#22-equality-of-probabilities)
   - [2.3 Integration](#23-integration)
   - [2.4 The Law of a QBS Probability (HKSY eq. (3))](#24-the-law-of-a-qbs-probability-hksy-eq-3)
-  - [2.5 Expectation, Events and Variance](#25-expectation-events-and-variance)
+  - [2.5 Expectation and Variance](#25-expectation-and-variance)
   - [2.6 Integrability, Integral Arithmetic and Probability Inequalities](#26-integrability-integral-arithmetic-and-probability-inequalities)
   - [2.7 The Probability Monad P(X)](#27-the-probability-monad-px)
   - [2.8 Return](#28-return)
   - [2.9 Bind](#29-bind)
   - [2.10 Monad Laws](#210-monad-laws)
   - [2.11 Functorial Map](#211-functorial-map)
-  - [2.12 Congruence](#212-congruence)
-  - [2.13 Monad Join](#213-monad-join)
-  - [2.14 Monad Strength](#214-monad-strength)
-  - [2.15 Integration as a Morphism and Internal Bind (HKSY Thm. 21)](#215-integration-as-a-morphism-and-internal-bind-hksy-thm-21)
-  - [2.16 Monadic Product and Commutativity (HKSY Prop. 22(2))](#216-monadic-product-and-commutativity-hksy-prop-222)
-  - [2.17 Normalisation (HKSY Sec. VI)](#217-normalisation-hksy-sec-vi)
-  - [2.18 Quotient Type for QBS Probability](#218-quotient-type-for-qbs-probability)
-  - [2.19 Product Measures and Fubini](#219-product-measures-and-fubini)
-  - [2.20 Independence](#220-independence)
-  - [2.21 Variance of Independent Sums](#221-variance-of-independent-sums)
-  - [2.22 Comparison with the Giry Monad (HKSY Prop. 22(3), 23)](#222-comparison-with-the-giry-monad-hksy-prop-223-23)
-  - [2.23 Standard Distributions](#223-standard-distributions)
-  - [2.24 Bayesian Linear Regression](#224-bayesian-linear-regression)
+  - [2.12 Monad Join](#212-monad-join)
+  - [2.13 Monad Strength](#213-monad-strength)
+  - [2.14 Integration as a Morphism and Internal Bind (HKSY Thm. 21)](#214-integration-as-a-morphism-and-internal-bind-hksy-thm-21)
+  - [2.15 Monadic Product and Commutativity (HKSY Prop. 22(2))](#215-monadic-product-and-commutativity-hksy-prop-222)
+  - [2.16 Normalisation (HKSY Sec. VI)](#216-normalisation-hksy-sec-vi)
+  - [2.17 Product Measures and Fubini](#217-product-measures-and-fubini)
+  - [2.18 Independence](#218-independence)
+  - [2.19 Variance of Independent Sums](#219-variance-of-independent-sums)
+  - [2.20 Comparison with the Giry Monad (HKSY Prop. 22(3), 23)](#220-comparison-with-the-giry-monad-hksy-prop-223-23)
+  - [2.21 Standard Distributions](#221-standard-distributions)
+  - [2.22 Bayesian Linear Regression](#222-bayesian-linear-regression)
 - [Part III: Standard Borel Spaces (R × R as a Retract of R)](#part-iii-standard-borel-spaces-r--r-as-a-retract-of-r)
   - [3.1 Standard Borel: R to (0,1) Bijection](#31-standard-borel-r-to-01-bijection)
   - [3.2 Binary Digit Machinery](#32-binary-digit-machinery)
@@ -98,7 +96,7 @@ Throughout, HKSY refers to the LICS 2017 paper above; "Prop. n" and "Thm. n" ref
 
 ## Part I: Core QBS Theory
 
-Source files: `theories/measurable_aux.v` (81 lines, 3 Qed), `theories/quasi_borel.v` (879 lines, 61 Qed), `theories/measure_qbs_adjunction.v` (318 lines, 20 Qed + 5 Defined), `theories/coproduct_qbs.v` (721 lines, 44 Qed).
+Source files: `theories/measurable_aux.v` (81 lines, 3 Qed), `theories/quasi_borel.v` (887 lines, 62 Qed), `theories/measure_qbs_adjunction.v` (311 lines, 14 Qed + 5 Defined), `theories/coproduct_qbs.v` (721 lines, 44 Qed).
 
 ### 1.1 The isQBS Mixin and QBSpace Structure
 
@@ -643,40 +641,76 @@ Lemma qbs_morphism_list_rec (W : qbsType R) (b : qbsHomType W Y)
 
 ## Part II: Probability Monad and Integration
 
-Source files: `theories/probability_qbs.v` (511 lines, 35 Qed), `theories/qbs_monad.v` (724 lines, 61 Qed), `theories/qbs_monad_integral.v` (203 lines, 11 Qed), `theories/qbs_normalize.v` (271 lines, 20 Qed), `theories/qbs_quotient.v` (188 lines, 19 Qed), `theories/pair_qbs_measure.v` (353 lines, 16 Qed), `theories/qbs_giry.v` (133 lines, 9 Qed), `theories/normal_centred.v` (300 lines, 16 Qed), `theories/measure_as_qbs_measure.v` (269 lines, 12 Qed), `theories/showcase/bayesian_regression.v` (456 lines, 29 Qed).
+Source files: `theories/probability_qbs.v` (594 lines, 42 Qed), `theories/qbs_monad.v` (715 lines, 61 Qed), `theories/qbs_monad_integral.v` (171 lines, 8 Qed), `theories/qbs_normalize.v` (279 lines, 18 Qed), `theories/pair_qbs_measure.v` (389 lines, 20 Qed), `theories/qbs_giry.v` (135 lines, 8 Qed), `theories/normal_centred.v` (300 lines, 16 Qed), `theories/measure_as_qbs_measure.v` (282 lines, 13 Qed), `theories/showcase/bayesian_regression.v` (474 lines, 29 Qed).
 
-### 2.1 QBS Probability Pair
-
-**File:** `theories/probability_qbs.v`
-
-```
-Record qbs_prob (X : qbsType R) := mkQBSProb {
-  qbs_prob_alpha : mR -> X ;
-  qbs_prob_mu : probability mR R ;
-  qbs_prob_alpha_random : qbs_Mx (s := X) qbs_prob_alpha }.
-```
-
-A probability on a QBS `X` is a pair `(alpha, mu)` where `alpha : mR -> X` is a random element (the record also stores the proof that `alpha` is in `qbs_Mx`) and `mu` is a probability measure on `mR`. The pushforward `alpha_*(mu)` gives the induced distribution on X.
-
-### 2.2 Equivalence of Probability Pairs
+### 2.1 Representatives and the Quotient
 
 **File:** `theories/probability_qbs.v`
 
+A probability on a QBS `X` is represented by a pair `(alpha, mu)`: a random element `alpha : mR -> X` (the record also stores the proof that `alpha` is in `qbs_Mx`) and a probability measure `mu` on `mR`. The pushforward `alpha_*(mu)` gives the induced distribution on X.
+
 ```
-Definition qbs_prob_equiv (X : qbsType R) (p1 p2 : qbs_prob X) : Prop :=
-  forall (U : set X),
-    @sigma_Mx R X U ->
-    qbs_prob_mu p1 (qbs_prob_alpha p1 @^-1` U) =
-    qbs_prob_mu p2 (qbs_prob_alpha p2 @^-1` U).
+Record qbs_preprob X := QBSPreProb {
+  preprob_alpha : mR -> X ;
+  preprob_mu : probability mR R ;
+  preprob_alpha_random : qbs_Mx preprob_alpha }.
 ```
 
-Two pairs are equivalent iff they induce the same pushforward measure on X (measured against the induced sigma-algebra `sigma_Mx`).
+Two representatives are equivalent iff they induce the same measure on `sigma_Mx` sets (the sigma-algebra induced by the random elements):
 
-| Name | Statement |
-|------|-----------|
-| `qbs_prob_equivxx` | Reflexivity |
-| `qbs_prob_equiv_sym` | Symmetry |
-| `qbs_prob_equiv_trans` | Transitivity |
+```
+Definition preprob_equiv X (p1 p2 : qbs_preprob X) : Prop :=
+  forall U, sigma_Mx U ->
+    preprob_mu p1 (preprob_alpha p1 @^-1` U) =
+    preprob_mu p2 (preprob_alpha p2 @^-1` U).
+```
+
+This is an equivalence relation (`preprob_equiv_rel`), and the probabilities on `X` are the *quotient* of the representatives by it, built with mathcomp's `generic_quotient`, as the almost-everywhere classes of `hoelder.v` (and as in the Lean QBS library):
+
+```
+Definition qbs_prob X : Type := {eq_quot (@preprob_equiv_rel X)}.
+
+Definition qbs_prob_alpha X (p : qbs_prob X) : mR -> X :=
+  preprob_alpha (repr p).
+Definition qbs_prob_mu X (p : qbs_prob X) : probability mR R :=
+  preprob_mu (repr p).
+
+Definition mkQBSProb X (alpha : mR -> X) (mu : probability mR R)
+    (halpha : qbs_Mx alpha) : qbs_prob X :=
+  \pi_(qbs_prob X) (QBSPreProb mu halpha).
+```
+
+`qbs_prob_alpha p` and `qbs_prob_mu p` read a chosen representative of the class `p` (`repr p`), and `mkQBSProb alpha mu ha` is the class of a pair. Everything defined from them (events, integrals of `qbs_measurable` functions) does not depend on the choice of representative (Sections 2.2 and 2.3). As in the Isabelle development, where HOL has no dependent types, the probabilities are a quotient; the difference is that the space `X` is a type parameter here, so the quotient is of pairs rather than of triples `(X, alpha, mu)`.
+
+### 2.2 Equality of Probabilities
+
+**File:** `theories/probability_qbs.v`
+
+The probability of an event is computed on a representative:
+
+```
+Definition qbs_prob_event (X : qbsType R) (p : qbs_prob X)
+  (U : set X) : \bar R :=
+  qbs_prob_mu p (qbs_prob_alpha p @^-1` U).
+```
+
+On a class given by a pair, it is computed on the pair, and two probabilities are equal iff they agree on `sigma_Mx` sets:
+
+```
+Lemma qbs_prob_event_mk (X : qbsType R) (alpha : mR -> X)
+    (mu : probability mR R) (halpha : qbs_Mx alpha) (U : set X) :
+  sigma_Mx U ->
+  qbs_prob_event X (mkQBSProb mu halpha) U = mu (alpha @^-1` U).
+
+Lemma qbs_prob_eqP (X : qbsType R) (p1 p2 : qbs_prob X) :
+  p1 = p2 <->
+  forall U, sigma_Mx U -> qbs_prob_event X p1 U = qbs_prob_event X p2 U.
+
+Lemma qbs_probK (X : qbsType R) (p : qbs_prob X) :
+  mkQBSProb (qbs_prob_mu p) (qbs_prob_alpha_random p) = p.
+```
+
+`qbs_prob_eqP` is the tool for all the equalities below: a law between probabilities is proved by comparing the probabilities of `sigma_Mx` events.
 
 ### 2.3 Integration
 
@@ -694,16 +728,24 @@ Definition qbs_measurable (X : qbsType R) (h : X -> \bar R) : Prop :=
     measurable_fun setT (fun r => h (alpha r)).
 ```
 
-A function `h` is `qbs_measurable` iff it is measurable on every random element; `qbs_measurable_sigma_Mx` shows that preimages of measurable sets are `sigma_Mx` sets. Integration respects equivalence for measurable integrands:
+A function `h` is `qbs_measurable` iff it is measurable on every random element; `qbs_measurable_sigma_Mx` shows that preimages of measurable sets are `sigma_Mx` sets, and `qbs_measurable_measQ` and `qbs_measurable_comp` give measurable functions on `measQ M` and compositions with morphisms. The integral of a `qbs_measurable` function only depends on the measure of `sigma_Mx` sets, hence on the equivalence class of a representative:
 
 ```
-Lemma qbs_integral_equiv (X : qbsType R) (p1 p2 : qbs_prob X)
-    (h : X -> \bar R) :
-  qbs_measurable X h -> qbs_prob_equiv X p1 p2 ->
-  qbs_integral X p1 h = qbs_integral X p2 h.
+Lemma integral_sigma_Mx (X : Type) (a1 a2 : mR -> X)
+    (m1 m2 : {measure set mR -> \bar R}%R) (k : X -> \bar R) :
+  qbs_Mx a1 -> qbs_Mx a2 ->
+  (forall U, sigma_Mx U -> m1 (a1 @^-1` U) = m2 (a2 @^-1` U)) ->
+  qbs_measurable X k -> \int[m1]_r k (a1 r) = \int[m2]_r k (a2 r).
 ```
 
-(The nonnegative core is `ge0_integral_sigma_Mx`.)
+(The nonnegative core is `ge0_integral_sigma_Mx`.) In particular integration against the class of a pair is integration against the pair:
+
+```
+Lemma qbs_integral_mk (X : qbsType R) (alpha : mR -> X)
+    (mu : probability mR R) (halpha : qbs_Mx alpha) (h : X -> \bar R) :
+  qbs_measurable X h ->
+  qbs_integral X (mkQBSProb mu halpha) h = (\int[mu]_r h (alpha r))%E.
+```
 
 ### 2.4 The Law of a QBS Probability (HKSY eq. (3))
 
@@ -721,19 +763,19 @@ Definition qbs_law (X : qbsType R) (p : qbs_prob X) :
   distribution (qbs_prob_mu p) (qbs_prob_alpha_mfun p).
 
 Lemma qbs_lawE (X : qbsType R) (p : qbs_prob X) (A : set X) :
-  qbs_law p A = qbs_prob_mu p (qbs_prob_alpha p @^-1` A).
+  qbs_law p A = qbs_prob_event X p A.
 
-Lemma qbs_prob_equiv_lawP (X : qbsType R) (p1 p2 : qbs_prob X) :
-  qbs_prob_equiv X p1 p2 <->
+Lemma qbs_prob_eq_lawP (X : qbsType R) (p1 p2 : qbs_prob X) :
+  p1 = p2 <->
   (forall A : set (qbs_meas X), measurable A -> qbs_law p1 A = qbs_law p2 A).
 
 Lemma qbs_integral_law (X : qbsType R) (p : qbs_prob X) (h : X -> \bar R) :
   qbs_measurable X h -> qbs_integral X p h = (\int[qbs_law p]_x h x)%E.
 ```
 
-Equivalence of probabilities is thus equality of laws, and QBS integration is Lebesgue integration against the law (`ge0_qbs_integral_law` is the nonnegative version).
+Equality of probabilities is thus equality of laws, and QBS integration is Lebesgue integration against the law (`ge0_qbs_integral_law` is the nonnegative version).
 
-### 2.5 Expectation, Events and Variance
+### 2.5 Expectation and Variance
 
 **File:** `theories/probability_qbs.v`
 
@@ -741,10 +783,6 @@ Equivalence of probabilities is thus equality of laws, and QBS integration is Le
 Definition qbs_expect (X : qbsType R) (p : qbs_prob X)
   (h : X -> R) : \bar R :=
   qbs_integral X p (fun x => (h x)%:E).
-
-Definition qbs_prob_event (X : qbsType R) (p : qbs_prob X)
-  (U : set X) : \bar R :=
-  qbs_prob_mu p (qbs_prob_alpha p @^-1` U).
 
 Definition qbs_variance (X : qbsType R) (p : qbs_prob X)
   (f : X -> R) : \bar R :=
@@ -759,7 +797,7 @@ Lemma qbs_expectE (X : qbsType R) (p : qbs_prob X)
   qbs_expect X p f = ('E_(qbs_law p)[f])%E.
 ```
 
-The variance is the integral of the squared centred function and respects equivalence:
+The variance is the integral of the squared centred function, and for `qbs_measurable` functions it is computed on any pair:
 
 ```
 Lemma qbs_varianceE_integral (X : qbsType R) (p : qbs_prob X) (h : X -> R) :
@@ -767,9 +805,10 @@ Lemma qbs_varianceE_integral (X : qbsType R) (p : qbs_prob X) (h : X -> R) :
   qbs_integral X p (fun x => ((h x - fine (qbs_expect X p h)) *
                               (h x - fine (qbs_expect X p h)))%R%:E).
 
-Lemma qbs_variance_equiv (X : qbsType R) (p1 p2 : qbs_prob X) (h : X -> R) :
-  qbs_measurable X (fun x => (h x)%:E) -> qbs_prob_equiv X p1 p2 ->
-  qbs_variance X p1 h = qbs_variance X p2 h.
+Lemma qbs_variance_mk (X : qbsType R) (alpha : mR -> X)
+    (mu : probability mR R) (halpha : qbs_Mx alpha) (h : X -> R) :
+  qbs_measurable X (fun x => (h x)%:E) ->
+  qbs_variance X (mkQBSProb mu halpha) h = variance mu (h \o alpha).
 ```
 
 ### 2.6 Integrability, Integral Arithmetic and Probability Inequalities
@@ -790,21 +829,21 @@ Definition qbs_integrable (X : qbsType R) (p : qbs_prob X)
 | `qbs_integralE` | `qbs_integral X p h = qbs_integral X p h^\+ - qbs_integral X p h^\-` |
 | `qbs_integral_funeneg_lty` | If `h` is integrable then the integral of its negative part is `< +oo` |
 | `qbs_integrable_cst`, `qbs_integral_cst` | Constants are integrable; `qbs_integral X p (fun=> c) = c` |
-| `qbs_integrable_equiv` | Integrability depends only on the equivalence class |
+| `qbs_integrable_mk` | For measurable `h`: `qbs_integrable X (mkQBSProb mu halpha) h <-> mu.-integrable setT (h \o alpha)` |
 | `qbs_integrableP` | For measurable `h`: `qbs_integrable X p h <-> qbs_integral X p (fun x => `|h x|) < +oo` |
 | `qbs_integrable_abseP` | Integrability of `h` and of `abse \o h` coincide (for measurable `h`) |
-| `qbs_integrableMr` | Integrability is stable under bounded multipliers |
-| `qbs_integrable_bounded` | Bounded measurable real functions are integrable |
+| `qbs_integrableMr` | Integrability is stable under bounded `qbs_measurable` multipliers |
+| `qbs_integrable_bounded` | Bounded `qbs_measurable` real functions are integrable |
 | `qbs_integrable_sqrB` | Squares of `k - c` for `k` in `Lfun 2` are integrable |
 | `qbs_integral_le` | Monotonicity for integrable functions: `f <= g` pointwise implies `qbs_integral X p f <= qbs_integral X p g` |
 | `ge0_qbs_integral_le` | The same for nonnegative measurable functions |
 
-The Markov and Chebyshev inequalities are lifted to QBS probabilities. `qbs_rv` builds a `{RV (qbs_prob_mu p) >-> R}` from a measurable composition.
+The Markov and Chebyshev inequalities are lifted to QBS probabilities, with the hypothesis that `h` is `qbs_measurable`. `qbs_rv` builds a `{RV (qbs_prob_mu p) >-> R}` from a measurable composition.
 
 ```
 Lemma qbs_markov (X : qbsType R) (p : qbs_prob X)
     (h : X -> R) (f : R -> R) (eps : R)
-    (hm : measurable_fun setT (h \o qbs_prob_alpha p))
+    (hm : qbs_measurable X (fun x => (h x)%:E))
     (heps : (0 < eps)%R)
     (hmf : measurable_fun [set: R] f)
     (hf0 : forall r, (0 <= r)%R -> (0 <= f r)%R)
@@ -814,7 +853,7 @@ Lemma qbs_markov (X : qbsType R) (p : qbs_prob X)
 
 Lemma qbs_chebyshev (X : qbsType R) (p : qbs_prob X)
     (h : X -> R) (eps : R)
-    (hm : measurable_fun setT (h \o qbs_prob_alpha p))
+    (hm : qbs_measurable X (fun x => (h x)%:E))
     (heps : (0 < eps)%R) :
   qbs_prob_event X p [set x | (eps <= `|h x - fine (qbs_expect X p h)|)%R] <=
   (eps ^- 2)%:E * qbs_variance X p h.
@@ -840,11 +879,11 @@ Definition monadP_random X : set (mR -> qbs_prob X) :=
 
 Definition monadP X : Type := qbs_prob X.
 HB.instance Definition _ X :=
-  @isQBS.Build R (monadP X) (monadP_random X)
-    (@monadP_comp X) (@monadP_const X) (@monadP_glue X).
+  isQBS.Build R (monadP X) (@monadP_comp X) (@monadP_const X)
+    (@monadP_glue X).
 ```
 
-Here `G := giry mR R`, and `qbs_prob_rep b a g` says that `b r` is represented by `[a, g r]` for every `r`. Random elements are saturated with respect to pointwise equivalence (`monadP_random_equiv`), and `monadP_random_event` shows that the probability of a `sigma_Mx` event is measurable in `r`; for a morphism `f : X -> monadP Y` this is `qbs_measurable_event` (`x |-> qbs_prob_event Y (f x) U` is QBS-measurable). The view `qbs_prob_equivP` (in `qbs_monad.v`) restates `qbs_prob_equiv` as equality of event probabilities on all `sigma_Mx` events. The glue axiom (`monadP_glue`) decodes the selector with the retraction `encode_RR_mR`/`decode_RR_mR` from `standard_borel.v`.
+Here `G := giry mR R`, and `qbs_prob_rep b a g` says that `b r` is represented by `[a, g r]` for every `r`. Since probabilities are classes, no saturation of random elements with respect to equivalence is needed. `monadP_random_event` shows that the probability of a `sigma_Mx` event is measurable in `r`; for a morphism `f : X -> monadP Y` this is `qbs_measurable_event` (`x |-> qbs_prob_event Y (f x) U` is QBS-measurable). The glue axiom (`monadP_glue`) decodes the selector with the retraction `encode_RR_mR`/`decode_RR_mR` from `standard_borel.v`.
 
 The file also defines a small helper `giry_prob m m1`, the probability measure `m : giry T R` given a proof `m1` that `m` has total mass 1, with `giry_bindE` and `giry_bind_setT` for the Giry bind.
 
@@ -854,15 +893,15 @@ The file also defines a small helper `giry_prob m m1`, the probability measure `
 
 ```
 Definition qbs_return X (x : X) : monadP X :=
-  @mkQBSProb R X (fun=> x) (\d_(0 : mR))%R (qbs_Mx_const x).
+  mkQBSProb (fun=> x) (\d_(0 : mR))%R (qbs_Mx_const x).
 
-Lemma qbs_return_event X (x : X) (U : set X) :
+Lemma qbs_return_event X (x : X) (U : set X) : sigma_Mx U ->
   qbs_prob_event X (qbs_return x) U = (x \in U)%:R%:E.
 
 Lemma qbs_return_morphism X : qbs_morphism (X := X) (Y := monadP X)
   (@qbs_return X).
 
-Lemma qbs_return_integral X (x : X) (h : X -> \bar R) :
+Lemma qbs_return_integral X (x : X) (h : X -> \bar R) : qbs_measurable X h ->
   qbs_integral X (qbs_return x) h = h x.
 ```
 
@@ -872,20 +911,20 @@ Lemma qbs_return_integral X (x : X) (h : X -> \bar R) :
 
 **File:** `theories/qbs_monad.v`
 
-For `p : qbs_prob X` and a *bundled morphism* `f : qbsHomType X (monadP Y)`, bind is defined without any side condition: `f \o alpha_p` is random in `P(Y)`, so it has a representation `[a, g]`, and the bound measure is the Giry bind of `mu_p` with `g`.
+For `p : qbs_prob X` and a *bundled morphism* `f : qbsHomType X (monadP Y)`, bind is defined without any side condition: `f \o alpha_p` is random in `P(Y)`, so it has a representation `[a, g]`, and the bound measure is the Giry bind of `mu_p` with `g` (computed on the representative of `p`).
 
 ```
 Definition qbs_bind : monadP Y :=
-  @mkQBSProb R Y bind_a (giry_prob bind_mu1) (qbs_rep_random bind_rep).
+  mkQBSProb bind_a (giry_prob bind_mu1) (qbs_rep_random bind_rep).
 
 Lemma ge0_qbs_integral_bind (h : Y -> \bar R) :
   qbs_measurable Y h -> (forall y, 0 <= h y) ->
   qbs_integral Y qbs_bind h =
-  \int[qbs_prob_mu p]_r qbs_integral Y (f (qbs_prob_alpha p r)) h.
+  qbs_integral X p (fun x => qbs_integral Y (f x) h).
 
 Lemma qbs_bind_event (U : set Y) : sigma_Mx U ->
   qbs_prob_event Y qbs_bind U =
-  \int[qbs_prob_mu p]_r qbs_prob_event Y (f (qbs_prob_alpha p r)) U.
+  qbs_integral X p (fun x => qbs_prob_event Y (f x) U).
 ```
 
 Bind with a fixed continuation is itself a morphism, and the bundled version is `qbs_bindQ`:
@@ -905,19 +944,23 @@ Definition qbs_bindQ X Y Z (f : qbsHomType X (monadP Y))
 
 **File:** `theories/qbs_monad.v`
 
+Since probabilities are classes, the monad laws are equalities. Each is proved with `qbs_prob_eqP` by comparing the probabilities of `sigma_Mx` events, using `qbs_bind_event`, `qbs_return_event` and `qbs_return_integral`:
+
 ```
 Lemma qbs_bind_returnl X Y (x : X) (f : qbsHomType X (monadP Y)) :
-  qbs_prob_equiv Y (qbs_bind (qbs_return x) f) (f x).
+  qbs_bind (qbs_return x) f = f x.
 
-Lemma qbs_bind_returnr X (p : qbs_prob X) :
-  qbs_prob_equiv X (qbs_bind p (qbs_returnQ X)) p.
+Lemma qbs_bind_returnr X (p : qbs_prob X) : qbs_bind p (qbs_returnQ X) = p.
 
 Lemma qbs_bindA X Y Z (p : qbs_prob X) (f : qbsHomType X (monadP Y))
     (g : qbsHomType Y (monadP Z)) :
-  qbs_prob_equiv Z (qbs_bind (qbs_bind p f) g) (qbs_bind p (qbs_bindQ f g)).
+  qbs_bind (qbs_bind p f) g = qbs_bind p (qbs_bindQ f g).
+
+Lemma eq_qbs_bind X Y (p : qbs_prob X) (f g : qbsHomType X (monadP Y)) :
+  f =1 g -> qbs_bind p f = qbs_bind p g.
 ```
 
-The laws hold up to `qbs_prob_equiv`; on the quotient type of Section 2.17 they become equalities.
+`eq_qbs_bind` replaces the congruence lemmas of an up-to-equivalence development: bind is well defined on classes by construction, and the only congruence needed is pointwise equality of continuations. The event probability of a probability is also an integral, `qbs_prob_event_integral` (`qbs_prob_event X p U = qbs_integral X p (fun x => (x \in U)%:R%:E)` for `sigma_Mx U`).
 
 ### 2.11 Functorial Map
 
@@ -928,43 +971,24 @@ Map is the pushforward of the random element along a bundled morphism, keeping t
 ```
 Definition monadP_map X Y (f : qbsHomType X Y) (p : monadP X) :
     monadP Y :=
-  @mkQBSProb R Y (f \o qbs_prob_alpha p) (qbs_prob_mu p)
+  mkQBSProb (f \o qbs_prob_alpha p) (qbs_prob_mu p)
     (qbs_hom_proof _ (qbs_prob_alpha_random p)).
 ```
 
 | Name | Statement |
 |------|-----------|
-| `monadP_map_event` | `qbs_prob_event Y (monadP_map f p) U = qbs_prob_event X p (f @^-1` U)` |
+| `monadP_map_event` | `qbs_prob_event Y (monadP_map f p) U = qbs_prob_event X p (f @^-1` U)` for `sigma_Mx U` |
+| `monadP_map_integral` | `qbs_integral Y (monadP_map f p) h = qbs_integral X p (h \o f)` for `qbs_measurable Y h` |
+| `monadP_map_integrable` | `qbs_integrable Y (monadP_map f p) h <-> qbs_integrable X p (h \o f)` for `qbs_measurable Y h` |
+| `monadP_map_variance` | `qbs_variance Y (monadP_map f p) h = qbs_variance X p (h \o f)` |
 | `monadP_map_morphism` | `monadP_map f` is a morphism `monadP X -> monadP Y` (an HB instance) |
 | `sigma_Mx_preimage` | Preimages of `sigma_Mx` sets under morphisms are `sigma_Mx` sets |
-| `monadP_map_id` | `monadP_map (qbs_id X) p = p` (propositional equality) |
-| `monadP_map_comp` | `monadP_map (qbs_comp f g) p = monadP_map g (monadP_map f p)` (propositional equality) |
-| `monadP_map_bind` | Map is bind with `return \o f`, up to equivalence |
-| `qbs_prob_ext` | Two pairs with equal `alpha` and `mu` are equal |
-| `qbs_bind_map` | `bind (map g p) f ~ bind p (g ; f)` |
+| `monadP_map_id` | `monadP_map (qbs_id X) p = p` |
+| `monadP_map_comp` | `monadP_map (qbs_comp f g) p = monadP_map g (monadP_map f p)` |
+| `monadP_map_bind` | `monadP_map f p = qbs_bind p (qbs_comp f (qbs_returnQ Y))` |
+| `qbs_bind_map` | `qbs_bind (monadP_map g p) f = qbs_bind p (qbs_comp g f)` |
 
-### 2.12 Congruence
-
-**File:** `theories/qbs_monad.v`
-
-Since bind is total, it is a congruence for equivalence in both arguments, with no side conditions:
-
-```
-Lemma qbs_bind_equiv_l X Y (p1 p2 : qbs_prob X) (f : qbsHomType X (monadP Y)) :
-  qbs_prob_equiv X p1 p2 -> qbs_prob_equiv Y (qbs_bind p1 f) (qbs_bind p2 f).
-
-Lemma qbs_bind_equiv_r X Y (p : qbs_prob X) (f g : qbsHomType X (monadP Y)) :
-  (forall x, qbs_prob_equiv Y (f x) (g x)) ->
-  qbs_prob_equiv Y (qbs_bind p f) (qbs_bind p g).
-
-Lemma monadP_map_equiv X Y (f : qbsHomType X Y) (p1 p2 : qbs_prob X) :
-  qbs_prob_equiv X p1 p2 ->
-  qbs_prob_equiv Y (monadP_map f p1) (monadP_map f p2).
-```
-
-The integral version is `ge0_qbs_integral_equiv`.
-
-### 2.13 Monad Join
+### 2.12 Monad Join
 
 **File:** `theories/qbs_monad.v`
 
@@ -973,39 +997,40 @@ Definition qbs_join X (pp : monadP (monadP X)) : monadP X :=
   qbs_bind pp (qbs_id (monadP X)).
 ```
 
-`qbs_join_morphism` shows join is a morphism (with a bundled version `qbs_joinQ X`). The monad coherence laws hold up to equivalence:
+`qbs_join_morphism` shows join is a morphism (with a bundled version `qbs_joinQ X`). The monad coherence laws are equalities:
 
 | Name | Statement |
 |------|-----------|
-| `qbs_join_return` | `join (return p) ~ p` |
-| `qbs_join_map_return` | `join (map return p) ~ p` |
-| `qbs_join_assoc` | `join (join P) ~ join (map join P)` |
+| `qbs_join_return` | `qbs_join (qbs_return p) = p` |
+| `qbs_join_map_return` | `qbs_join (monadP_map (qbs_returnQ X) p) = p` |
+| `qbs_join_assoc` | `qbs_join (qbs_join P) = qbs_join (monadP_map (qbs_joinQ X) P)` |
 
-### 2.14 Monad Strength
+### 2.13 Monad Strength
 
 **File:** `theories/qbs_monad.v`
 
 ```
 Definition qbs_strength W X (wp : W * monadP X) : monadP (prodQ W X) :=
-  @mkQBSProb R (prodQ W X) (fun r => (wp.1, qbs_prob_alpha wp.2 r))
+  mkQBSProb (fun r => (wp.1, qbs_prob_alpha wp.2 r))
     (qbs_prob_mu wp.2) (qbs_Mx_pair_cstl wp.1 (qbs_prob_alpha_random wp.2)).
 ```
 
 | Name | Statement |
 |------|-----------|
-| `qbs_strength_event` | `qbs_prob_event _ (qbs_strength (w, p)) U = qbs_prob_event X p [set x | U (w, x)]` |
+| `qbs_strength_event` | `qbs_prob_event _ (qbs_strength (w, p)) U = qbs_prob_event X p [set x | U (w, x)]` for `sigma_Mx U` |
+| `qbs_strength_integral` | `qbs_integral _ (qbs_strength (w, p)) h = qbs_integral X p (fun x => h (w, x))` for `qbs_measurable _ h` |
 | `qbs_strength_morphism` | Strength is a morphism `prodQ W (monadP X) -> monadP (prodQ W X)` (bundled as `qbs_strengthQ`) |
 | `qbs_strength_return` | `qbs_strength (w, qbs_return x) = qbs_return (w, x)` |
 | `qbs_strength_natural` | Naturality in both arguments |
 | `qbs_strength_snd` | `monadP_map (qbs_snd W X) (qbs_strength (w, p)) = p` |
-| `qbs_strength_assoc` | `qbs_strength (u, qbs_strength (w, p)) = monadP_map (qbs_assoc U W X) (qbs_strength ((u, w), p))` (equality of pairs) |
-| `qbs_strength_join` | `qbs_prob_equiv _ (qbs_strength (w, qbs_join P)) (qbs_join (monadP_map (qbs_strengthQ W X) (qbs_strength (w, P))))` |
+| `qbs_strength_assoc` | `qbs_strength (u, qbs_strength (w, p)) = monadP_map (qbs_assoc U W X) (qbs_strength ((u, w), p))` |
+| `qbs_strength_join` | `qbs_strength (w, qbs_join P) = qbs_join (monadP_map (qbs_strengthQ W X) (qbs_strength (w, P)))` |
 
 Here `qbs_assoc U W X : qbsHomType (prodQ (prodQ U W) X) (prodQ U (prodQ W X))` is the associator. With `qbs_strength_snd`, `qbs_strength_assoc`, `qbs_strength_return` and `qbs_strength_join`, the laws of a strong monad are complete.
 
 The proof that strength is a morphism uses `measurable_giry_xsection` (measurability of `r |-> g r (xsection C r)`, a kernel-section lemma) and `sigma_Mx_section`.
 
-### 2.15 Integration as a Morphism and Internal Bind (HKSY Thm. 21)
+### 2.14 Integration as a Morphism and Internal Bind (HKSY Thm. 21)
 
 **File:** `theories/qbs_monad.v`
 
@@ -1018,25 +1043,27 @@ Lemma ge0_qbs_integral_morphism X (h : X -> \bar R) :
     (fun p => qbs_integral X p h).
 ```
 
+`ge0_qbs_measurable_integral` states that for a morphism `f : qbsHomType X (monadP Y)` and a nonnegative `qbs_measurable` `h`, the map `x |-> qbs_integral Y (f x) h` is `qbs_measurable`.
+
 Bind is internal: a single morphism `P(X) * (X => P(Y)) -> P(Y)`, obtained from strength and evaluation:
 
 ```
 Definition qbs_bind_internal X Y :
     qbsHomType (prodQ (monadP X) (expQ X (monadP Y))) (monadP Y) :=
-  qbs_bindQ (qbs_comp (qbs_pair (qbs_snd _ _) (qbs_fst _ _))
-    (qbs_strengthQ _ _)) (qbs_eval X (monadP Y)).
+  qbs_bindQ (qbs_comp (qbs_swap _ _) (qbs_strengthQ _ _))
+    (qbs_eval X (monadP Y)).
 
-Lemma qbs_bind_internal_equiv X Y (p : monadP X) (f : qbsHomType X (monadP Y)) :
-  qbs_prob_equiv Y (qbs_bind_internal X Y (p, f)) (qbs_bind p f).
+Lemma qbs_bind_internalE X Y (p : monadP X) (f : qbsHomType X (monadP Y)) :
+  qbs_bind_internal X Y (p, f) = qbs_bind p f.
 ```
 
-**Integrals through return and bind** (`theories/qbs_monad_integral.v`, after the end of `Monad_QuasiBorel.thy` in the AFP). Integrals, integrability and variance through return reduce to the pushforward (`qbs_integrable_returnP`, `qbs_integrable_return`, `qbs_integral_bind_return`, `qbs_integrable_bind_return`, `qbs_variance_bind_return`). The integral of an integrable function against a bind is the integral of the inner integrals; the signed integral map is a morphism, and so are the parametric integrals:
+**Integrals through return and bind** (`theories/qbs_monad_integral.v`, after the end of `Monad_QuasiBorel.thy` in the AFP). Integrability against a Dirac probability is `qbs_integrable_returnP` and `qbs_integrable_return`; integrals, integrability and variance of `qbs_bind p (qbs_comp g (qbs_returnQ Y))` reduce to the pushforward by `monadP_map_bind` and `monadP_map_integral`, `monadP_map_integrable`, `monadP_map_variance` (`qbs_monad.v`). The integral of an integrable function against a bind is the integral of the inner integrals; the signed integral map is a morphism, and so are the parametric integrals:
 
 ```
 Lemma qbs_integral_bind (h : Y -> \bar R) :
   qbs_measurable Y h -> qbs_integrable Y (qbs_bind p f) h ->
   qbs_integral Y (qbs_bind p f) h =
-  \int[qbs_prob_mu p]_r qbs_integral Y (f (qbs_prob_alpha p r)) h.
+  qbs_integral X p (fun x => qbs_integral Y (f x) h).
 
 Lemma qbs_integral_morphism X (h : X -> \bar R) :
   qbs_measurable X h ->
@@ -1052,7 +1079,7 @@ Lemma qbs_integral_param X Y (L : qbsHomType X (monadP Y))
 
 `qbs_integral_bind_bounded` is the same identity for bounded measurable real functions, and `qbs_integral_param_snd` is the symmetric parametric integral.
 
-### 2.16 Monadic Product and Commutativity (HKSY Prop. 22(2))
+### 2.15 Monadic Product and Commutativity (HKSY Prop. 22(2))
 
 **File:** `theories/qbs_monad.v`
 
@@ -1076,65 +1103,68 @@ Commutativity says that the order of drawing does not matter. It is proved from 
 
 ```
 Lemma monadP_pair_comm :
-  qbs_prob_equiv (prodQ X Y) (monadP_pair p q) (monadP_map (qbs_swap Y X) (monadP_pair q p)).
+  monadP_pair p q = monadP_map (qbs_swap Y X) (monadP_pair q p).
 
 Lemma qbs_bind_comm X Y Z (p : monadP X) (q : monadP Y)
     (f : qbsHomType (prodQ X Y) (monadP Z)) :
-  qbs_prob_equiv Z (qbs_bind (monadP_pair p q) f)
-    (qbs_bind (monadP_pair q p) (qbs_comp (qbs_swap Y X) f)).
+  qbs_bind (monadP_pair p q) f =
+  qbs_bind (monadP_pair q p) (qbs_comp (qbs_swap Y X) f).
 ```
 
-### 2.17 Normalisation (HKSY Sec. VI)
+### 2.16 Normalisation (HKSY Sec. VI)
 
 **File:** `theories/qbs_normalize.v`
 
-Normalisation `norm : P(X * R) -> P(X) + error` takes a probability on pairs `(x, w)` and reweights by the weight `max(0, w)`:
+Normalisation `norm : P(X * R) -> P(X) + error` takes a probability on pairs `(x, w)` and reweights by the weight `max(0, w)`. The evidence is the integral of the weight against the probability, and the density of a pair `(alpha, mu)` is the base measure weighted by the weight of `alpha`:
 
 ```
-Definition qbs_weight p (r : mR) : \bar R :=
-  (maxr 0 (qbs_prob_alpha p r).2)%:E.
+Definition qbs_pweight (xw : X * R) : \bar R := (maxr 0 xw.2)%:E.
 
-Definition qbs_evidence p : \bar R := \int[qbs_prob_mu p]_r qbs_weight p r.
+Definition qbs_evidence p : \bar R := qbs_integral _ p qbs_pweight.
 
-Definition qbs_density (A : set mR) : \bar R :=
-  \int[qbs_prob_mu p]_(r in A) qbs_weight p r.
+Definition qbs_pdensity (ha : qbs_Mx alpha) (A : set mR) : \bar R :=
+  \int[mu]_(r in A) qbs_pweight (alpha r).
+
+Definition qbs_density p : set mR -> \bar R :=
+  qbs_pdensity (qbs_prob_mu p) (qbs_prob_alpha_random p).
 ```
 
-`qbs_density p` is registered as a measure (the base measure weighted by `qbs_weight p`). The normalised probability uses mathcomp-analysis' `mnormalize`, and `qbs_normalize` fails when the evidence is zero or infinite:
+`qbs_pdensity` and `qbs_density p` are registered as measures. The normalised probability uses mathcomp-analysis' `mnormalize`, and `qbs_normalize` fails when the evidence is zero or infinite:
 
 ```
 Definition qbs_normalize_prob p : qbs_prob X :=
-  @mkQBSProb R X (fun r => (qbs_prob_alpha p r).1)
+  mkQBSProb (fun r => (qbs_prob_alpha p r).1)
     (mnormalize (qbs_density p) (qbs_prob_mu p))
-    (qbs_normalize_alpha_random p).
+    (qbs_prob_alpha_fst_random p).
 
 Definition qbs_normalize p : option (qbs_prob X) :=
-  if (0 < qbs_evidence p) && (qbs_evidence p < +oo)
+  if 0 < qbs_evidence p < +oo
   then Some (qbs_normalize_prob p) else None.
 ```
 
 | Name | Statement |
 |------|-----------|
-| `qbs_weight_ge0`, `measurable_qbs_weight` | The weight is nonnegative and measurable |
-| `qbs_densityT` | `qbs_density p [set: mR] = qbs_evidence p` |
-| `qbs_pweight`, `qbs_pweight_ge0` | The weight `max 0 w` as an extended real, and its nonnegativity |
+| `qbs_pweight_ge0`, `qbs_measurable_weight` | The weight is nonnegative and `qbs_measurable` |
+| `qbs_pdensityT`, `qbs_densityT` | `qbs_pdensity mu ha [set: mR] = \int[mu]_r qbs_pweight (alpha r)` and `qbs_density p [set: mR] = qbs_evidence p` |
 | `qbs_evidence_degen` | If the evidence is not in `(0, +oo)` then it is `0` or `+oo` |
-| `qbs_normalize_event` | The normalised probability of `U` is the weighted probability of `U` divided by the evidence (no measurability hypothesis on `U`) |
-| `qbs_evidence_equiv` | Evidence is invariant under equivalence |
-| `qbs_normalize_equiv` | Normalisation is well defined on equivalence classes (both `Some` and equivalent, or both `None`) |
 | `qbs_prob_alpha_fst_random` | The first component of the alpha of a probability on `X * R` is a random element of `X` |
 | `indic_maxr_ge0` | `0 <= \1_U x * maxr 0 w` (helper for the weighted integrals) |
 | `qbs_evidence_ge0` | `0 <= qbs_evidence p` |
-| `qbs_normalize_event_degen` | In the degenerate case (evidence zero or infinite), `qbs_prob_event X (qbs_normalize_prob p) U = qbs_prob_event _ p (fst @^-1` U)` |
-| `qbs_normalize_prob_equiv` | `qbs_prob_equiv _ p1 p2 -> qbs_prob_equiv X (qbs_normalize_prob p1) (qbs_normalize_prob p2)`, degenerate cases included |
+| `qbs_pdensity_preimage` | `qbs_pdensity mu ha ((fun r => (alpha r).1) @^-1` U) = \int[mu]_r ((\1_U (alpha r).1 : R) * maxr 0 (alpha r).2)%:E` |
+| `qbs_normalize_event_degen` | In the degenerate case (evidence zero or infinite), `qbs_prob_event X (qbs_normalize_prob p) U = qbs_prob_event _ p (fst @^-1` U)` for `sigma_Mx U` |
+| `qbs_normalize_prob_event_mk` | The events of the normalisation of the class of a pair `(alpha, mu)`: `qbs_prob_event X (qbs_normalize_prob (mkQBSProb alpha mu ha)) U = mnormalize (qbs_pdensity mu ha) mu ((fun r => (alpha r).1) @^-1` U)` for `sigma_Mx U`, degenerate cases included |
+
+Since probabilities are classes, normalisation is well defined without any invariance lemma; `qbs_normalize_prob_event_mk` is the computation rule used to prove that the normaliser is a morphism.
 
 ```
-Lemma qbs_normalize_event p (U : set X) :
+Lemma qbs_normalize_event p (U : set X) : sigma_Mx U ->
   0 < qbs_evidence p < +oo ->
   qbs_prob_event X (qbs_normalize_prob p) U =
   qbs_integral _ p (fun xw => ((\1_U xw.1 : R) * maxr 0 xw.2)%:E) *
   (fine (qbs_evidence p))^-1%:E.
 ```
+
+The normalised probability of `U` is the weighted probability of `U` divided by the evidence.
 
 **The normaliser as a QBS morphism (AFP `norm_qbs_measure_morphism`).** The total version maps into the coproduct `P(X) + 1`, with the unit summand for the degenerate case, and is a morphism:
 
@@ -1154,57 +1184,7 @@ Definition qbs_normalizeQ :
     qbsHomType (monadP (prodQ X (realQ R))) (coprodQ (monadP X) (unitQ R)).
 ```
 
-### 2.18 Quotient Type for QBS Probability
-
-**File:** `theories/qbs_quotient.v`
-
-`qbs_prob X` is quotiented by `qbs_prob_equiv` using mathcomp's `generic_quotient`, following the almost-everywhere-equality quotient of `hoelder.v`:
-
-```
-Definition qbs_equiv_op : rel (qbs_prob X) :=
-  fun p1 p2 => `[< qbs_prob_equiv X p1 p2 >].
-
-Definition qbs_quot : Type := {eq_quot qbs_prob_equiv_rel}.
-```
-
-| Name | Statement |
-|------|-----------|
-| `qbs_prob_equivP` | `reflect (qbs_prob_equiv X p1 p2) (p1 == p2 %[mod qbs_quot])` |
-| `qbs_quot_eq` | Equivalent pairs have equal classes |
-| `qbs_prob_equiv_repr` | The representative of a class is equivalent to the pair |
-
-The quotient is itself a QBS (HKSY Sec. V-D(a)): its random elements are the maps whose representatives are random in `P(X)`. The projection `qbs_quot_pi_morphism` and `qbs_quot_repr_morphism` are morphisms.
-
-The monad operations descend to the quotient:
-
-```
-Definition quot_return (x : X) : qbs_quot X := \pi_(qbs_quot X) (qbs_return x : qbs_prob X).
-Definition quot_bind (q : qbs_quot X) (f : qbsHomType X (monadP Y)) :
-  qbs_quot Y := \pi_(qbs_quot Y) (qbs_bind (repr q) f : qbs_prob Y).
-Definition quot_map (f : qbsHomType X Y) (q : qbs_quot X) : qbs_quot Y :=
-  \pi_(qbs_quot Y) (monadP_map f (repr q) : qbs_prob Y).
-Definition quot_integral (q : qbs_quot X) (h : X -> \bar R) : \bar R :=
-  qbs_integral X (repr q) h.
-```
-
-and the monad laws hold as *equalities*:
-
-```
-Lemma quot_bind_returnl X Y (x : X) (f : qbsHomType X (monadP Y)) :
-  quot_bind (quot_return x) f = \pi_(qbs_quot Y) (f x : qbs_prob Y).
-Lemma quot_bind_returnr X (q : qbs_quot X) : quot_bind q (qbs_returnQ X) = q.
-Lemma quot_bindA X Y Z (q : qbs_quot X) (f : qbsHomType X (monadP Y))
-    (g : qbsHomType Y (monadP Z)) :
-  quot_bind (quot_bind q f) g = quot_bind q (qbs_bindQ f g).
-Lemma quot_map_id X (q : qbs_quot X) : quot_map (qbs_id X) q = q.
-Lemma quot_map_comp X Y Z (f : qbsHomType X Y) (g : qbsHomType Y Z)
-    (q : qbs_quot X) :
-  quot_map (qbs_comp f g) q = quot_map g (quot_map f q).
-```
-
-The computation lemmas `quot_bindE` and `quot_mapE` relate the lifted operations to the pair-level ones on `\pi p`, and `ge0_quot_integralE` does the same for integration.
-
-### 2.19 Product Measures and Fubini
+### 2.17 Product Measures and Fubini
 
 **File:** `theories/pair_qbs_measure.v`
 
@@ -1225,35 +1205,34 @@ Definition qbs_prob_pair (X Y : qbsType R)
     (qbs_pair_alpha_random p q).
 ```
 
-This agrees with the monadic product of Section 2.16:
+The probability of a `sigma_Mx` event is the product measure of the set of seed pairs landing in it (`qbs_prob_pair_event`), and `qbs_prob_pair` is *equal* to the monadic product of Section 2.15:
 
 ```
-Lemma qbs_prob_pair_equiv (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y) :
-  qbs_prob_equiv (prodQ X Y) (monadP_pair (p : monadP X) (q : monadP Y))
-    (qbs_prob_pair p q).
+Lemma qbs_prob_pairE (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y) :
+  monadP_pair p q = qbs_prob_pair p q.
 ```
 
-Integrals against `qbs_prob_pair` reduce to integrals against the product measure `mu_p \x mu_q`, where Fubini applies. `qbs_pair_fun p q h` is `(r1, r2) |-> h (alpha_p r1, alpha_q r2)`.
+The integrals below are stated on `monadP_pair p q` and reduce, through `qbs_prob_pairE`, to integrals against the product measure `mu_p \x mu_q`, where Fubini applies. `qbs_pair_fun p q h` is `(r1, r2) |-> h (alpha_p r1, alpha_q r2)`; the hypothesis `mh` is that `h` is `qbs_measurable (prodQ X Y)`.
 
 | Name | Statement |
 |------|-----------|
 | `integral_prod_fst` / `integral_prod_snd` | On `mu1 \x mu2`, integrating a function of one coordinate gives the marginal integral |
 | `integral_prod_mul` | `\int (h1 r1 * h2 r2) d(mu1 \x mu2) = \int h1 dmu1 * \int h2 dmu2` |
-| `qbs_prob_pair_integral` | Integral against `qbs_prob_pair p q` = integral of `qbs_pair_fun p q h` against `mu_p \x mu_q` (if the latter is integrable) |
-| `qbs_prob_pair_iterated` | Integral against `qbs_prob_pair p q` = iterated QBS integral (Fubini) |
-| `qbs_prob_pair_mul` | `E[f x * g y] = E[f] * E[g]` against `qbs_prob_pair p q` |
+| `monadP_pair_integrable` | `qbs_integrable (prodQ X Y) (monadP_pair p q) h` iff `qbs_pair_fun p q h` is integrable for `mu_p \x mu_q` |
+| `monadP_pair_integral` | Integral against `monadP_pair p q` = integral of `qbs_pair_fun p q h` against `mu_p \x mu_q` (if the latter is integrable) |
+| `monadP_pair_iterated` | If `h` is `qbs_integrable` against `monadP_pair p q`, the integral is the iterated QBS integral `qbs_integral X p (fun x => qbs_integral Y q (fun y => h (x, y)))` (Fubini) |
+| `monadP_pair_mul` | `E[f x * g y] = E[f] * E[g]` against `monadP_pair p q`, for `f`, `g` and `f x * g y` `qbs_integrable` and `f x * g y` `qbs_measurable` |
 
-### 2.20 Independence
+### 2.18 Independence
 
 **File:** `theories/pair_qbs_measure.v`
 
-Independence of two morphisms out of a common probability space is defined through the product construction: the joint law equals the product of the marginals.
+Independence of two morphisms out of a common probability space is defined through the monadic product: the joint law equals the product of the marginals.
 
 ```
 Definition qbs_indep (X Y Z : qbsType R) (p : qbs_prob Z)
     (f : qbsHomType Z X) (g : qbsHomType Z Y) : Prop :=
-  qbs_prob_equiv (prodQ X Y) (monadP_map (qbs_pair f g) p)
-    (qbs_prob_pair (monadP_map f p) (monadP_map g p)).
+  monadP_map (qbs_pair f g) p = monadP_pair (monadP_map f p) (monadP_map g p).
 ```
 
 On Borel rectangles this gives the classical product rule:
@@ -1269,21 +1248,20 @@ Lemma qbs_indep_rect (Z : qbsType R) (p : qbs_prob Z)
 and the product rule for expectations of real-valued test functions:
 
 ```
-Lemma qbs_integral_indepM (X Y Z : qbsType R)
-    (p : qbs_prob Z)
-    (f : qbsHomType Z X) (g : qbsHomType Z Y)
-    (atan01 : X -> R) (tan01 : Y -> R)
-    (hindep : qbs_indep p f g)
-    (hmeas : qbs_measurable (prodQ X Y)
-       (fun xy : X * Y => (atan01 xy.1 * tan01 xy.2)%:E))
-    ... (* integrability of atan01 o f, tan01 o g, and of the product *) :
-  qbs_integral Z p (fun z => (atan01 (f z) * tan01 (g z))%:E) =
-  qbs_expect X (monadP_map f p) atan01 * qbs_expect Y (monadP_map g p) tan01.
+Lemma qbs_integral_indepM (X Y Z : qbsType R) (p : qbs_prob Z)
+    (f : qbsHomType Z X) (g : qbsHomType Z Y) (phi : X -> R) (psi : Y -> R) :
+  qbs_indep p f g ->
+  qbs_measurable X (EFin \o phi) -> qbs_measurable Y (EFin \o psi) ->
+  qbs_integrable Z p (EFin \o (phi \o f)) ->
+  qbs_integrable Z p (EFin \o (psi \o g)) ->
+  qbs_integrable Z p (fun z => (phi (f z) * psi (g z))%:E) ->
+  qbs_expect Z p (fun z => phi (f z) * psi (g z))%R =
+  qbs_expect Z p (phi \o f) * qbs_expect Z p (psi \o g).
 ```
 
-The proof rewrites the integral along the equivalence given by independence and applies `qbs_prob_pair_mul`.
+The proof rewrites the integral along the equality given by independence and applies `monadP_pair_mul`.
 
-### 2.21 Variance of Independent Sums
+### 2.19 Variance of Independent Sums
 
 **File:** `theories/pair_qbs_measure.v`
 
@@ -1305,7 +1283,7 @@ The main theorem `qbs_pair_varianceD` states `Var(f(x) + g(y)) = Var_px(f) + Var
 
 It rests on `integral_prod_fst`, `integral_prod_snd` and `integral_prod_mul`.
 
-### 2.22 Comparison with the Giry Monad (HKSY Prop. 22(3), 23)
+### 2.20 Comparison with the Giry Monad (HKSY Prop. 22(3), 23)
 
 **File:** `theories/qbs_giry.v`
 
@@ -1313,7 +1291,7 @@ A QBS probability on `measQ M` induces a probability measure on `M`, its distrib
 
 ```
 Definition qbs_to_giry (p : qbs_prob (measQ R M)) : probability M R :=
-  distribution (qbs_prob_mu p) (qbs_prob_alpha_mfun p).
+  distribution (qbs_prob_mu p) (qbs_prob_alpha_mfunR p).
 
 Lemma qbs_to_giryE (p : qbs_prob (measQ R M)) (A : set M) :
   qbs_to_giry p A = qbs_prob_event (measQ R M) p A.
@@ -1323,9 +1301,9 @@ Lemma qbs_integral_giry (p : qbs_prob (measQ R M)) (f : M -> \bar R) :
   (qbs_prob_mu p).-integrable [set: mR] (f \o qbs_prob_alpha p) ->
   qbs_integral (measQ R M) p f = \int[qbs_to_giry p]_y f y.
 
-Lemma qbs_to_giry_equiv (p1 p2 : qbs_prob (measQ R M)) :
+Lemma qbs_to_giry_inj (p1 p2 : qbs_prob (measQ R M)) :
   (forall A, measurable A -> qbs_to_giry p1 A = qbs_to_giry p2 A) ->
-  qbs_prob_equiv (measQ R M) p1 p2.
+  p1 = p2.
 
 Lemma qbs_to_giry_bind d' (M' : measurableType d') (p : qbs_prob (measQ R M))
     (f : qbsHomType (measQ R M) (monadP (measQ R M'))) (A : set M') :
@@ -1334,49 +1312,52 @@ Lemma qbs_to_giry_bind d' (M' : measurableType d') (p : qbs_prob (measQ R M))
   \int[qbs_to_giry p]_x qbs_to_giry (f x : qbs_prob _) A.
 ```
 
-(`qbs_to_giry_equiv` and `qbs_to_giry_bind` are stated for `M` with a `standard_borel_wit`.) Further lemmas: `qbs_prob_equiv_giry` (equivalent probabilities have the same distribution), `qbs_to_giry_return` (return goes to the Dirac measure), and `qbs_to_giry_map` (map goes to pushforward).
+(`qbs_to_giry_inj` and `qbs_to_giry_bind` are stated for `M` with a `standard_borel_wit`.) Further lemmas, for measurable `A`: `qbs_to_giry_return` (return goes to the Dirac measure), and `qbs_to_giry_map` (map goes to pushforward).
 
-Conversely, a probability measure `P` on `M` yields a QBS probability on `R(M)` from a measurable `encode : M -> R` with measurable left inverse `decode`, and the two constructions are mutually inverse up to equivalence:
+Conversely, a probability measure `P` on `M` yields a QBS probability on `R(M)` from a measurable `encode : M -> R` with measurable left inverse `decode`, and the two constructions are mutually inverse:
 
 ```
 Definition giry_to_qbs (P : probability M R) : qbs_prob (measQ R M) :=
-  @mkQBSProb R (measQ R M) decode (distribution P encode)
-    (measurable_funP decode).
+  mkQBSProb decode (distribution P encode) (measurable_funP decode).
 
-Lemma qbs_to_giryK (P : probability M R) (A : set M) :
+Lemma qbs_to_giryK (P : probability M R) (A : set M) : measurable A ->
   qbs_to_giry (giry_to_qbs P) A = P A.
 
 Lemma giry_to_qbsK (p : qbs_prob (measQ R M)) :
-  qbs_prob_equiv (measQ R M) (giry_to_qbs (qbs_to_giry p)) p.
+  giry_to_qbs (qbs_to_giry p) = p.
 ```
 
-### 2.23 Standard Distributions
+### 2.21 Standard Distributions
 
 **File:** `theories/measure_as_qbs_measure.v`
 
-Standard distributions as QBS probabilities (the general embedding of a probability measure on a standard Borel space is `giry_to_qbs`):
+Standard distributions as QBS probabilities (the general embedding of a probability measure on a standard Borel space is `giry_to_qbs`). A probability measure `P` on `mR` is the class of the pair `(idfun, P)`:
 
 ```
-Definition qbs_normal_distribution (mu sigma : R) : qbs_prob (realQ R) :=
-  @mkQBSProb R (realQ R) idfun
-    (normal_prob mu sigma : probability mR R)
-    (@measurable_id _ mR setT).
+Let qbs_of_prob (P : probability mR R) : qbs_prob (realQ R) :=
+  mkQBSProb (X := realQ R) idfun P (@measurable_id _ mR setT).
 
-Definition qbs_bernoulli (p : R) : qbs_prob (boolQ R) :=
-  @mkQBSProb R (boolQ R) (fun r : mR => (r < p)%R)
-    (uniform_prob ltr01 : probability mR R)
-    (measurable_ltr p).
+Definition qbs_normal_distribution m s : qbs_prob (realQ R) :=
+  qbs_of_prob (normal_prob m s).
 
-Definition qbs_interval_uniform (a b : R) (ab : (a < b)%R) :
-    qbs_prob (realQ R) :=
-  @mkQBSProb R (realQ R) idfun
-    (uniform_prob ab : probability mR R)
-    (@measurable_id _ mR setT).
+Definition qbs_bernoulli p : qbs_prob (boolQ R) :=
+  mkQBSProb (X := boolQ R) (fun r : mR => r < p)
+    (uniform_prob ltr01 : probability mR R) (measurable_ltr p).
+
+Definition qbs_interval_uniform (a b : R) (ab : a < b) : qbs_prob (realQ R) :=
+  qbs_of_prob (uniform_prob ab).
 
 Definition qbs_uniform : qbs_prob (realQ R) := qbs_interval_uniform ltr01.
 ```
 
-The map `mu |-> N(mu, sigma)` is a morphism `realQ -> monadP realQ` (`qbs_normal_morphism`), bundled as `qbs_normalQ sigma`.
+The map `mu |-> N(mu, sigma)` is a morphism `realQ -> monadP realQ` (`qbs_normal_morphism`), bundled as `qbs_normalQ sigma`. Integration against the normal distribution is integration against `normal_prob`:
+
+```
+Lemma qbs_integral_normal m s (h : R -> \bar R) :
+  qbs_measurable (realQ R) h ->
+  qbs_integral (realQ R) (qbs_normal_distribution m s) h =
+  (\int[normal_prob m s]_x h x)%E.
+```
 
 Expectation lemmas:
 
@@ -1428,9 +1409,9 @@ Lemma normal_prob_abs_lty (m s : R) : s != 0 ->
 
 On each half-line around `m`, the integral of `(x - m) * pdf` is `±s^2 * normal_peak s`, computed by the FTC with antiderivative `-s^2 * normal_pdf m s` (`ge0_continuous_FTC2y`, and `ge0_integration_by_substitutionNy` for the left half-line). `ge0_integral_normal_prob` is the nonnegative version of `integral_normal_prob`, obtained from the Radon–Nikodym change of variables.
 
-### 2.24 Bayesian Linear Regression
+### 2.22 Bayesian Linear Regression
 
-**File:** `theories/showcase/bayesian_regression.v` (456 lines, 29 Qed)
+**File:** `theories/showcase/bayesian_regression.v` (474 lines, 29 Qed)
 
 Following HKSY Sec. VI and the Isabelle AFP development (Bayesian_Linear_Regression.thy) by Hirata, Minamide, Sato, the prior is a probability on the *function space* `R => R`.
 
@@ -1485,11 +1466,10 @@ Definition posterior : monadP F := monadP_map lin posterior2.
 ```
 Lemma wprior_evidence : qbs_evidence wprior = evidence_const%:E.
 
-Theorem program_posterior :
-  exists2 q, program = Some q & qbs_prob_equiv F q posterior.
+Theorem program_posterior : program = Some posterior.
 ```
 
-The theorem says that the program succeeds (the evidence is positive and finite, as it equals `evidence_const`), and that the resulting QBS probability on functions is equivalent to the explicit Gaussian posterior.
+The theorem says that the program succeeds (the evidence is positive and finite, as it equals `evidence_const`), and that the resulting QBS probability on functions *is* the explicit Gaussian posterior: an equality, proved with `qbs_prob_eqP` by comparing the probabilities of `sigma_Mx` events.
 
 ---
 
@@ -1742,9 +1722,7 @@ measurable_aux.v (standalone measurability lemmas, no QBS imports)
                           |
                           +--> qbs_normalize.v  (also imports coproduct_qbs.v)
                           |
-                          +--> qbs_quotient.v
-                          |
-                          +--> pair_qbs_measure.v  (also imports standard_borel.v)
+                                          +--> pair_qbs_measure.v  (also imports standard_borel.v)
                           |
                           +--> measure_as_qbs_measure.v
                                   |
@@ -1764,9 +1742,9 @@ measurable_aux.v (standalone measurability lemmas, no QBS imports)
 
 **L as a measurableType.** The functor L is realised as `qbs_meas X`, a `measurableType` with the sigma-algebra `sigma_Mx X`. The adjunction L -| R is then a lemma about `measurable_fun` (`qbs_morphism_measurableP`), and laws of QBS probabilities are transported to genuine probability measures through `qbs_law`.
 
-**Setoid first, quotient second.** The monad laws are proved up to `qbs_prob_equiv` on `qbs_prob X`, and the quotient `qbs_quot X` (`qbs_quotient.v`) restates them as equalities. Congruence of bind and map for equivalence is proved unconditionally.
+**Probabilities are a quotient.** `qbs_prob X` is the quotient (`{eq_quot ...}`, mathcomp's `generic_quotient`, as the a.e. classes of `hoelder.v`) of the representatives `qbs_preprob X`, pairs `(alpha, mu)`, by `preprob_equiv`: the pairs agree on the measure of `sigma_Mx` sets. Return, bind, map and strength are defined on a representative, and the monad, strength and commutativity laws are equalities, proved with `qbs_prob_eqP` from computation lemmas on events (`qbs_return_event`, `qbs_bind_event`, `monadP_map_event`, `qbs_strength_event`). Integrals of `qbs_measurable` functions do not depend on the representative (`integral_sigma_Mx`), and `qbs_prob_event_mk`, `qbs_integral_mk`, `qbs_integrable_mk`, `qbs_variance_mk` compute on the class of a pair `mkQBSProb alpha mu ha`. No congruence lemmas are needed.
 
-**Product measure via the retraction R x R -> R.** `qbs_pair_mu_build` pushes the product measure `mu_p \x mu_q` through `encode_RR_mR` from `standard_borel.v`. Integrals against the resulting product reduce to integrals against `mu_p \x mu_q` (`qbs_prob_pair_integral`), where Fubini applies. The same retraction decodes the selector in the glue axiom of `P(X)` and the product-closure of standard Borel spaces.
+**Product measure via the retraction R x R -> R.** `qbs_pair_mu_build` pushes the product measure `mu_p \x mu_q` through `encode_RR_mR` from `standard_borel.v`. Integrals against the resulting product reduce to integrals against `mu_p \x mu_q` (`monadP_pair_integral`), where Fubini applies. The same retraction decodes the selector in the glue axiom of `P(X)` and the product-closure of standard Borel spaces.
 
 **Universe management.** The `\o` composition operator inside `[set ...]` comprehensions was replaced with explicit lambdas in a few places to avoid universe inconsistencies between `algebra_tactics.ring` and the QBS type hierarchy.
 
@@ -1775,7 +1753,7 @@ measurable_aux.v (standalone measurability lemmas, no QBS imports)
 | Feature | Isabelle AFP | This development |
 |---------|-------------|------------------|
 | QBS axioms | Locale-based | HB mixin/structure |
-| Probability monad | Quotient type | Pairs with equivalence `qbs_prob_equiv`, plus `qbs_quot` quotient with laws as equalities |
+| Probability monad | `quotient_type` of triples `(X, alpha, mu)` (HOL has no dependent types) | `qbs_prob X` is the quotient of the pairs `(alpha, mu)` (representatives `qbs_preprob X`) by `preprob_equiv`; the space `X` is the type parameter; laws are equalities |
 | Cartesian closure | Present | `qbs_curryK`, `qbs_uncurryK`, `qbs_curry_morph_uniq` |
 | L -| R adjunction | Present | `qbs_morphism_measurableP` (L as a `measurableType`) |
 | Countable coproducts / lists | Present | `sigmaQ` / `sigma_case` / `listQ`, `qbs_cons`, `list_rec`, `qbs_morphism_list_rec` (AFP `rec_list_morphism`) |
@@ -1784,84 +1762,76 @@ measurable_aux.v (standalone measurability lemmas, no QBS imports)
 | Concrete morphisms | Present | `qbs_negb/andb/orb/implb`, `qbs_ltr`, `qbs_ltn`, `qbs_case`, `qbs_arg_swap`, `qbs_exp_compose`, `natQ_morphism`, `boolQ_morphism` |
 | Standard Borel R≅R×R | Not formalized | `pair_standard_borel` (retraction, via atan + digit interleaving) |
 | Bayesian regression | Function-space prior | Function-space prior `prior : monadP (expQ RQ RQ)`, closed-form posterior |
-| Program correctness | `program_result` (Inl) | `program_posterior` (program = `Some q`, `q` equivalent to the posterior) |
+| Program correctness | `program_result` (Inl) | `program_posterior` (`program = Some posterior`) |
 | Evidence | Explicit closed form `evidence_const` | `wprior_evidence` |
 | Monad strength, join | Not formalized | `qbs_strength*` (snd, assoc, return, join), `qbs_join*` lemmas |
 | Internal bind (HKSY Thm. 21) | Not formalized | `qbs_bind_internal` |
 | Commutativity (HKSY Prop. 22(2)) | Not formalized | `monadP_pair_comm`, `qbs_bind_comm` |
-| Fubini on QBS | Not formalized | `qbs_pair_integral_iterated` + marginals |
+| Fubini on QBS | Not formalized | `monadP_pair_iterated` + marginals |
 | Independence | Not formalized | `qbs_indep`, `qbs_indep_rect`, `qbs_integral_indepM` |
 | QBS↔Giry bridge | Not formalized | `qbs_to_giry` / `giry_to_qbs`, `qbs_to_giry_bind` |
-| Normalizer | Not formalized | `qbs_normalize` + `qbs_normalize_event`, `qbs_normalize_equiv`, `qbs_normalize_morphism` (AFP `norm_qbs_measure_morphism`) |
+| Normalizer | Not formalized | `qbs_normalize` + `qbs_normalize_event`, `qbs_normalize_prob_event_mk`, `qbs_normalize_morphism` (AFP `norm_qbs_measure_morphism`) |
 | Integral arithmetic | Not formalized | `qbs_integrable`, `qbs_integrableP`, `qbs_integral_le`, `qbs_integral_bind` (`qbs_monad_integral.v`) |
 | Probability ineq. | Not formalized | `qbs_markov` + `qbs_chebyshev` |
-| Variance | Not formalized | `qbs_varianceE` + `qbs_varianceZ`, `qbs_variance_affine`, `qbs_variance_equiv` |
+| Variance | Not formalized | `qbs_varianceE` + `qbs_varianceZ`, `qbs_variance_affine`, `qbs_variance_mk` |
 | E[distributions] | Not formalized | `qbs_expect_normal` (from `integral_normal_mean`) / `bernoulli` / `uniform`, `qbs_expect_interval_uniform` (Uniform(a,b)), `qbs_bernoulli_event` |
 | Standard Borel inst. | Not formalized | R, nat, bool, prod, ereal |
-| Lines | ~5000 | 6,438 |
+| Lines | ~5000 | 6,370 |
 
 ### 4.4 Statistics
 
 | File | Lines | Proofs |
 |------|------:|-------:|
 | `measurable_aux.v` | 81 | 3 |
-| `quasi_borel.v` | 879 | 61 |
-| `measure_qbs_adjunction.v` | 318 | 20 |
+| `quasi_borel.v` | 887 | 62 |
+| `measure_qbs_adjunction.v` | 311 | 19 |
 | `coproduct_qbs.v` | 721 | 44 |
-| `probability_qbs.v` | 511 | 35 |
-| `qbs_monad.v` | 724 | 61 |
-| `qbs_monad_integral.v` | 203 | 11 |
-| `qbs_normalize.v` | 271 | 20 |
-| `qbs_quotient.v` | 188 | 19 |
-| `pair_qbs_measure.v` | 353 | 16 |
-| `qbs_giry.v` | 133 | 9 |
+| `probability_qbs.v` | 594 | 42 |
+| `qbs_monad.v` | 715 | 61 |
+| `qbs_monad_integral.v` | 171 | 8 |
+| `qbs_normalize.v` | 279 | 18 |
+| `pair_qbs_measure.v` | 389 | 20 |
+| `qbs_giry.v` | 135 | 8 |
 | `normal_centred.v` | 300 | 16 |
-| `measure_as_qbs_measure.v` | 269 | 12 |
+| `measure_as_qbs_measure.v` | 282 | 13 |
 | `standard_borel.v` | 1,031 | 59 |
-| `showcase/bayesian_regression.v` | 456 | 29 |
-| **Total** | **6,438** | **415** |
+| `showcase/bayesian_regression.v` | 474 | 29 |
+| **Total** | **6,370** | **402** |
 
-The 415 proofs are 410 `Qed` and 5 `Defined` (the standard Borel witnesses in `measure_qbs_adjunction.v`). **0 Admitted**, 0 custom axioms.
+The 402 proofs are 397 `Qed` and 5 `Defined` (the standard Borel witnesses in `measure_qbs_adjunction.v`). **0 Admitted**, 0 custom axioms.
 
 ### 4.5 Honest Limitations
 
 The formalization is honest about its scope. These limitations are
 documented in the source files and in this report, not hidden:
 
-1. **Monad laws are stated up to equivalence on pairs.** On `qbs_prob X`
-   the three laws (`qbs_bind_returnl`, `qbs_bind_returnr`, `qbs_bindA`) hold
-   up to `qbs_prob_equiv`, not propositional equality. They are equalities
-   on the quotient `qbs_quot X` (`quot_bind_returnl`, `quot_bind_returnr`,
-   `quot_bindA`), but `monadP X` itself is not quotiented, so its QBS
-   structure is on pairs, and the rest of the development (strength,
-   normaliser, integration) is stated on `monadP`.
-
-2. **`qbs_pair_integral_iterated` is iterated integration on a
+1. **`monadP_pair_iterated` is iterated integration on a
    specific product measure**, not full Fubini. It works for the
    QBS product measure constructed via the retraction R×R -> R, not for
    arbitrary product measures.
 
-3. **`qbs_pair_integral_factorization` is product-measure
+2. **`monadP_pair_mul` is product-measure
    factorization, not statistical independence.** It states
-   `E[fg] = E[f]E[g]` when `f` and `g` depend on disjoint coordinates of
-   a product measure, which is a tautology of products. The genuine
+   `E[f(x) g(y)] = E[f]E[g]` for the monadic product of two
+   probabilities, which is a tautology of products. The genuine
    independence factorization is `qbs_integral_indepM`,
-   which uses the `qbs_indep` predicate (via `qbs_prob_equiv` on the
-   pushforward) and recovers
-   `E_p[(atan01 (f z)) * (tan01 (g z))] = E[atan01 (f z)] * E[tan01 (g z)]`
+   which uses the `qbs_indep` predicate (the joint law
+   `monadP_map (qbs_pair f g) p` is the product `monadP_pair` of the
+   marginals) and recovers
+   `E_p[phi (f z) * psi (g z)] = E_p[phi (f z)] * E_p[psi (g z)]`
    from independence of `f` and `g`.
 
-4. **`standard_borel_wit` is a retract-of-R witness**, not the classical
+3. **`standard_borel_wit` is a retract-of-R witness**, not the classical
    Polish-space characterization. It matches HKSY Prop. 5, but it is
    packaged as data (`sb_encode`, `sb_decode`, `sb_encodeK`) rather than
    as a predicate.
 
-5. **`qbs_normalize` returns `option`** and returns `None` when
+4. **`qbs_normalize` returns `option`** and returns `None` when
    the evidence is zero or infinite. Programs using normalization
    must check or prove the success case; `bayesian_regression.v` does
    so in `program_posterior` (the evidence is the explicit constant `evidence_const`).
 
-6. **`qbs_to_giry_equiv` and `qbs_to_giry_bind` need a `standard_borel_wit`**
+5. **`qbs_to_giry_inj` and `qbs_to_giry_bind` need a `standard_borel_wit`**
    for the underlying measurable space, as in HKSY Prop. 23.
 
 ### 4.6 Remaining Work
