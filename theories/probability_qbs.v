@@ -54,6 +54,18 @@ Local Notation mR := (measurableTypeR R).
 
 Implicit Types (X Y Z : qbsType R) (mu : probability mR R).
 
+(** Not (yet) in mathcomp-analysis. *)
+Lemma measurable_invr : measurable_fun [set: mR] (@GRing.inv R).
+Proof.
+rewrite -(setUv [set (0 : mR)%R]); apply/measurable_funU => //.
+  exact: measurableC.
+split; first exact: measurable_fun_set1.
+apply: open_continuous_measurable_fun.
+  by apply/closed_openC/accessible_closed_set1; exact: hausdorff_accessible.
+by move=> x /[!inE] /eqP x0; exact: normed_module.inv_continuous.
+Qed.
+
+
 Section qbs_prob_basics.
 
 (* 1. QBS Probability Triple

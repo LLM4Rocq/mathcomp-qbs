@@ -1605,11 +1605,11 @@ equalities.
 
 \begin{lemma}[Signed and Parametric Integral Morphisms]\label{lem:qbs_integral_morphism_sgn}
   \rocq{QBS.qbs_monad_integral.qbs_integral_morphism_sgn}
-  \rocq{QBS.qbs_monad_integral.qbs_integral_fst}
+  \rocq{QBS.qbs_monad_integral.qbs_integral_param}
   \rocq{QBS.qbs_monad_integral.qbs_integral_snd}
   \rocqok
   \uses{thm:qbs_integral_morphism, def:qbs_integral, def:monadP}
-  $p \mapsto \int h \, dp$ is a morphism $P(X) \to R(\bar{\mathbb{R}})$ for any measurable $h$ (not only nonnegative); and $x \mapsto \int h(x, \cdot)\, dq$, $y \mapsto \int h(\cdot, y)\, dp$ are morphisms.
+  $p \mapsto \int h \, dp$ is a morphism $P(X) \to R(\bar{\mathbb{R}})$ for any measurable $h$ (not only nonnegative); for a morphism $L : X \to P(Y)$, $x \mapsto \int h(x, \cdot)\, d(L\,x)$ is a morphism (AFP \texttt{qbs\_prob\_integral\_morphism}); and $y \mapsto \int h(\cdot, y)\, dp$ is a morphism.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 

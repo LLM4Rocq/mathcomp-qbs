@@ -185,16 +185,6 @@ move=> e; rewrite /qbs_normalize -(qbs_evidence_equiv e).
 by case: ifPn => // _; exact: qbs_normalize_prob_equiv.
 Qed.
 
-Local Lemma measurable_invr : measurable_fun [set: mR] (@GRing.inv R).
-Proof.
-rewrite -(setUv [set (0 : mR)%R]); apply/measurable_funU => //.
-  exact: measurableC.
-split; first exact: measurable_fun_set1.
-apply: open_continuous_measurable_fun.
-  by apply/closed_openC/accessible_closed_set1; exact: hausdorff_accessible.
-by move=> x /[!inE] /eqP x0; exact: normed_module.inv_continuous.
-Qed.
-
 (** Normalisation as a total map into P(X) + 1 (HKSY Sec. VI). *)
 Definition qbs_normalize_sum p : coprodQ (monadP X) (unitQ R) :=
   if (0 < qbs_evidence p) && (qbs_evidence p < +oo)
@@ -254,7 +244,7 @@ split => //.
   + by apply: measurable_or; apply: measurable_fun_eqe => //; exact: md.
   + exact: measurableT_comp (measurable_giry_ev mB) mg.
   + apply: emeasurable_funM; first exact: md.
-    apply/measurable_EFinP; apply: measurableT_comp measurable_invr _.
+    apply/measurable_EFinP; apply: measurableT_comp (@measurable_invr R) _.
     exact: measurableT_comp (fine_measurable measurableT) (md _ measurableT).
 - by move=> r; exact: probability_setT.
 Qed.

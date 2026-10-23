@@ -20,6 +20,9 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad normal_centred.
 (*   qbs_interval_uniform ab == Uniform[a,b] as QBS probability on realQ, for *)
 (*                           ab : a < b                                       *)
 (*   qbs_uniform == Uniform[0,1] = qbs_interval_uniform ltr01                 *)
+(*   intervalQ == QBS of pairs (a, b) with a < b (subspace of R * R)          *)
+(*   qbs_uniformQ == (a, b) |-> Uniform[a,b] as a morphism                    *)
+(*                   intervalQ -> P(R) (qbs_uniform_of_morphism)              *)
 (*   qbs_bernoulli_event == the law of qbs_bernoulli is bernoulli_prob p      *)
 (*   qbs_expect_interval_uniform == E[Uniform[a,b]] = (a + b) / 2             *)
 (*   qbs_expect_normal == E[Normal(mu,sigma)] = mu                            *)
@@ -75,6 +78,51 @@ Arguments qbs_interval_uniform {a b}.
 
 (** Uniform[0,1] distribution as QBS probability. *)
 Definition qbs_uniform : qbs_prob (realQ R) := qbs_interval_uniform ltr01.
+
+(** The QBS of intervals (a, b) with a < b, and Uniform[a,b] as a morphism
+    out of it (AFP qbs_interval_uniform_distribution_morphism). *)
+Definition intervalQ : qbsType R :=
+  @sub_qbs R (prodQ (realQ R) (realQ R)) (fun ab => (ab.1 < ab.2)%R).
+
+Definition qbs_uniform_of (ab : intervalQ) : monadP (realQ R) :=
+  qbs_interval_uniform (svalP ab).
+
+Lemma qbs_uniform_of_morphism :
+  qbs_morphism (X := intervalQ) (Y := monadP (realQ R)) qbs_uniform_of.
+Proof.
+move=> c [m1 m2].
+exists idfun, (fun r => uniform_prob (svalP (c r)) : giry.giry mR R).
+split => //; first exact: (@measurable_id _ mR setT).
+- apply: giry.measurable_giry_codensity => // B mB.
+  pose f (z : (mR * mR) * mR) : \bar R :=
+    (\1_B z.2 * uniform_pdf z.1.1 z.1.2 z.2)%:E.
+  have -> : (fun x => uniform_prob (svalP (c x)) B) =
+      fubini_F lebesgue_measure f \o (fun x => sval (c x)).
+    apply/funext => x; rewrite /uniform_prob /fubini_F /= integral_mkcond.
+    apply: eq_integral => y _; rewrite /f /functions.patch indicE.
+    by case: (y \in B); rewrite ?mul1r ?mul0r.
+  have mf : measurable_fun [set: (mR * mR) * mR] f.
+    apply/measurable_EFinP; apply: measurable_funM.
+      exact: measurableT_comp (measurable_indic mB) measurable_snd.
+    rewrite /uniform_pdf; apply: measurable_fun_ifT => //.
+      apply: measurable_and; apply: measurable_fun_ler => //.
+      - exact: measurableT_comp measurable_fst measurable_fst.
+      - exact: measurableT_comp measurable_snd measurable_fst.
+    apply: measurableT_comp (@measurable_invr R) _.
+    by apply: measurable_funB; apply: measurableT_comp.
+  have f0 z : (0 <= f z)%E.
+    rewrite lee_fin mulr_ge0 ?indicE ?ler0n// /uniform_pdf.
+    case: ifPn => // /andP[h1 h2].
+    by rewrite invr_ge0 subr_ge0 (le_trans h1 h2).
+  apply: measurableT_comp; first exact: measurable_fun_fubini_tonelli_F.
+  by apply/measurable_fun_pairP; split.
+- by move=> r; exact: probability_setT.
+Qed.
+
+Definition qbs_uniformQ : qbsHomType intervalQ (monadP (realQ R)) :=
+  HB.pack qbs_uniform_of
+    (isQBSMorphism.Build R _ _ _ qbs_uniform_of_morphism).
+
 
 Lemma qbs_normal_morphism (sigma : R) :
   @qbs_morphism R (realQ R) (monadP (realQ R))

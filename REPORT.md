@@ -1049,10 +1049,11 @@ Lemma qbs_integral_morphism_sgn X (h : X -> \bar R) :
   qbs_morphism (X := monadP X) (Y := R_qbs R (\bar R))
     (fun p => qbs_integral X p h).
 
-Lemma qbs_integral_fst X Y (q : monadP Y) (h : prodQ X Y -> \bar R) :
+Lemma qbs_integral_param X Y (L : qbsHomType X (monadP Y))
+    (h : prodQ X Y -> \bar R) :
   qbs_measurable (prodQ X Y) h ->
   qbs_morphism (X := X) (Y := R_qbs R (\bar R))
-    (fun x => qbs_integral Y q (fun y => h (x, y))).
+    (fun x => qbs_integral Y (L x) (fun y => h (x, y))).
 ```
 
 `qbs_integral_bind_bounded` is the same identity for bounded measurable real functions, and `qbs_integral_snd` is the symmetric parametric integral.
