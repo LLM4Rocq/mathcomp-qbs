@@ -53,20 +53,23 @@ Implicit Types (X Y : qbsType R).
 (** ** Return *)
 
 Lemma qbs_integrable_returnP X (x : X) (h : X -> \bar R) :
+  qbs_measurable X h ->
   qbs_integrable X (qbs_return x) h <-> h x \is a fin_num.
 Proof.
-split=> [hi|hx].
+move=> mh; split=> [hi|hx].
   have := integrable_fin_num measurableT hi.
   by rewrite -[A in A \is a fin_num]/(qbs_integral X (qbs_return x) h)
     qbs_return_integral.
-rewrite /qbs_integrable (_ : h \o _ = fun=> (fine (h x))%:E).
+rewrite /qbs_return (qbs_integrable_mk _ _ mh).
+rewrite (_ : h \o _ = fun=> (fine (h x))%:E).
   by apply/funext => r /=; rewrite fineK.
-exact: finite_measure_integrable_cst.
+exact: finite_measure_integrable_cst _ _ measurableT.
 Qed.
 
 Lemma qbs_integrable_return X (x : X) (f : X -> R) :
+  qbs_measurable X (fun y => (f y)%:E) ->
   qbs_integrable X (qbs_return x) (fun y => (f y)%:E).
-Proof. exact/qbs_integrable_returnP. Qed.
+Proof. by move=> mf; apply/qbs_integrable_returnP. Qed.
 
 (** ** Bind against a return *)
 
@@ -75,27 +78,27 @@ Context X Y (p : monadP X) (g : qbsHomType X Y).
 
 Local Abbreviation q := (qbs_bind p (qbs_comp g (qbs_returnQ Y))).
 
-Let qe := qbs_prob_equiv_sym (monadP_map_bind g p).
+Let qe : q = monadP_map g p := esym (monadP_map_bind g p).
 
 Lemma qbs_integral_bind_return (h : Y -> \bar R) :
   qbs_measurable Y h -> qbs_integral Y q h = qbs_integral X p (h \o g).
 Proof.
-by move=> mh; rewrite (qbs_integral_equiv mh qe).
+by move=> mh; rewrite qe monadP_map_integral.
 Qed.
 
 Lemma qbs_integrable_bind_return (h : Y -> \bar R) :
   qbs_measurable Y h -> qbs_integrable Y q h <-> qbs_integrable X p (h \o g).
 Proof.
-move=> mh; split.
-  exact/(qbs_integrable_equiv mh qe).
-exact/(qbs_integrable_equiv mh (monadP_map_bind g p)).
+move=> mh; rewrite qe /monadP_map; split.
+  by move/(qbs_integrable_mk _ _ mh).
+by move=> hi; apply/(qbs_integrable_mk _ _ mh).
 Qed.
 
 Lemma qbs_variance_bind_return (f : Y -> R) :
   qbs_measurable Y (fun y => (f y)%:E) ->
   qbs_variance Y q f = qbs_variance X p (f \o g).
 Proof.
-by move=> mf; rewrite (qbs_variance_equiv mf qe).
+by move=> mf; rewrite qe /monadP_map qbs_variance_mk//.
 Qed.
 
 End bind_return.
@@ -112,7 +115,7 @@ Let hf : monadP_random Y (f \o qbs_prob_alpha p) :=
 Lemma qbs_integral_bind (h : Y -> \bar R) :
   qbs_measurable Y h -> qbs_integrable Y (qbs_bind p f) h ->
   qbs_integral Y (qbs_bind p f) h =
-  \int[qbs_prob_mu p]_r qbs_integral Y (f (qbs_prob_alpha p r)) h.
+  qbs_integral X p (fun x => qbs_integral Y (f x) h).
 Proof.
 move=> mh hi.
 have mhp := qbs_measurable_funepos mh; have mhn := qbs_measurable_funeneg mh.
@@ -147,8 +150,7 @@ Lemma qbs_integral_bind_bounded X Y (p : qbs_prob X)
     (f : qbsHomType X (monadP Y)) (k : Y -> R) :
   qbs_measurable Y (fun y => (k y)%:E) -> (exists M, forall y, `|k y| <= M)%R ->
   qbs_integral Y (qbs_bind p f) (fun y => (k y)%:E) =
-  \int[qbs_prob_mu p]_r qbs_integral Y (f (qbs_prob_alpha p r))
-    (fun y => (k y)%:E).
+  qbs_integral X p (fun x => qbs_integral Y (f x) (fun y => (k y)%:E)).
 Proof.
 move=> mk bd; apply: qbs_integral_bind => //.
 exact: qbs_integrable_bounded.
@@ -185,7 +187,9 @@ Proof.
 move=> mh a ha.
 pose g := qbs_comp (qbs_pair (qbs_id X) L) (qbs_strengthQ X Y).
 have hs : monadP_random (prodQ X Y) (g \o a) := qbs_hom_proof _ ha.
-exact: monadP_random_integral hs mh.
+have := monadP_random_integral hs mh.
+by under [X in measurable_fun _ X -> _]eq_fun do
+  rewrite /g /= qbs_strength_integral//.
 Qed.
 
 Lemma qbs_integral_param_snd X Y (p : monadP X) (h : prodQ X Y -> \bar R) :
