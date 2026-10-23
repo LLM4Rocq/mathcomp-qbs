@@ -84,7 +84,7 @@ Definition qbs_uniform : qbs_prob (realQ R) := qbs_interval_uniform ltr01.
 (** The QBS of intervals (a, b) with a < b, and Uniform[a,b] as a morphism
     out of it (AFP qbs_interval_uniform_distribution_morphism). *)
 Definition intervalQ : qbsType R :=
-  @sub_qbs R (prodQ (realQ R) (realQ R)) (fun ab => (ab.1 < ab.2)).
+  @subQ R (prodQ (realQ R) (realQ R)) (fun ab => (ab.1 < ab.2)).
 
 Definition qbs_uniform_of (ab : intervalQ) : monadP (realQ R) :=
   qbs_interval_uniform (svalP ab).

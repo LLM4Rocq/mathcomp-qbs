@@ -190,7 +190,7 @@ End ge0_integral_sigma_Mx.
 
 (** ** The law of a QBS probability on L X (HKSY l_X, eq. (3)) *)
 
-Lemma qbs_measurableE X (h : X -> \bar R) :
+Lemma qbs_measurableP X (h : X -> \bar R) :
   qbs_measurable X h <->
   measurable_fun [set: qbs_meas X] (h : qbs_meas X -> \bar R).
 Proof. exact: (qbs_morphism_measurableP (M := \bar R)). Qed.
@@ -208,7 +208,7 @@ Lemma qbs_lawE X (p : qbs_prob X) (A : set X) :
 Proof. by []. Qed.
 
 (** Equivalence of probabilities is equality of their laws. *)
-Lemma qbs_prob_equivE X (p1 p2 : qbs_prob X) :
+Lemma qbs_prob_equiv_lawP X (p1 p2 : qbs_prob X) :
   qbs_prob_equiv X p1 p2 <->
   (forall A : set (qbs_meas X), measurable A -> qbs_law p1 A = qbs_law p2 A).
 Proof. by []. Qed.
@@ -217,7 +217,7 @@ Lemma ge0_qbs_integral_law X (p : qbs_prob X) (h : X -> \bar R) :
   qbs_measurable X h -> (forall x, (0 <= h x)%E) ->
   qbs_integral X p h = (\int[qbs_law p]_x h x)%E.
 Proof.
-by move=> /qbs_measurableE mh h0; rewrite ge0_integral_distribution.
+by move=> /qbs_measurableP mh h0; rewrite ge0_integral_distribution.
 Qed.
 
 Lemma qbs_integral_law X (p : qbs_prob X) (h : X -> \bar R) :
@@ -245,7 +245,7 @@ Lemma qbs_expectE X (p : qbs_prob X)
   qbs_expect X p f = ('E_(qbs_law p)[f])%E.
 Proof.
 rewrite /qbs_expect qbs_integral_law ?unlock//.
-apply/qbs_measurableE; exact/measurable_EFinP/measurable_funPT.
+apply/qbs_measurableP; exact/measurable_EFinP/measurable_funPT.
 Qed.
 
 Definition qbs_prob_event X (p : qbs_prob X)

@@ -16,7 +16,7 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad.
 (*      qbs_equiv_op X == boolean version of qbs_prob_equiv X                 *)
 (*         qbs_quot X == {eq_quot qbs_equiv_op}, the quotient type            *)
 (*    qbs_quot_Mx X == random elements of qbs_quot X (instance of qbsType)    *)
-(* qbs_prob_equiv_canonical == the EquivRel structure on qbs_equiv_op         *)
+(* qbs_prob_equiv_rel == the EquivRel structure on qbs_equiv_op               *)
 (*      quot_return x == \pi (qbs_return x)                                   *)
 (*      quot_bind q f == \pi (qbs_bind (repr q) f)                            *)
 (*       quot_map f q == \pi (monadP_map f (repr q))                          *)
@@ -58,10 +58,10 @@ move=> q p r /asboolP hpq /asboolP hqr.
 exact/asboolP/(qbs_prob_equiv_trans hpq hqr).
 Qed.
 
-Canonical qbs_prob_equiv_canonical :=
+Canonical qbs_prob_equiv_rel :=
   EquivRel qbs_equiv_op qbs_equiv_op_refl qbs_equiv_op_sym qbs_equiv_op_trans.
 
-Definition qbs_quot : Type := {eq_quot qbs_prob_equiv_canonical}.
+Definition qbs_quot : Type := {eq_quot qbs_prob_equiv_rel}.
 
 HB.instance Definition _ := Choice.on qbs_quot.
 HB.instance Definition _ := EqQuotient.on qbs_quot.

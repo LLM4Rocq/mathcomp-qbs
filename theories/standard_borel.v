@@ -20,8 +20,8 @@ From mathcomp.algebra_tactics Require Import ring.
 (*                                                                            *)
 (* ## Bijection R <-> (0,1)                                                   *)
 (* ```                                                                        *)
-(*   phi x == atan(x)/pi + 1/2, a measurable bijection R -> (0,1)             *)
-(*   psi y == tan(pi*(y - 1/2)), its inverse (0,1) -> R                       *)
+(*   atan01 x == atan(x)/pi + 1/2, a measurable bijection R -> (0,1)          *)
+(*   tan01 y == tan(pi*(y - 1/2)), its inverse (0,1) -> R                     *)
 (* ```                                                                        *)
 (*                                                                            *)
 (* ## Binary digit machinery                                                  *)
@@ -50,18 +50,18 @@ From mathcomp.algebra_tactics Require Import ring.
 (*                                                                            *)
 (* ## Composed retraction R x R -> R -> R x R                                 *)
 (* ```                                                                        *)
-(*   encode_RR xy == R x R -> R, composing phi, pair_to_unit, and psi         *)
-(*   decode_RR r == R -> R x R, composing phi, unit_to_pair, and psi          *)
+(*   encode_RR xy == R x R -> R, composing atan01, pair_to_unit, and tan01    *)
+(*   decode_RR r == R -> R x R, composing atan01, unit_to_pair, and tan01     *)
 (* ```                                                                        *)
 (*                                                                            *)
 (* ## Main results                                                            *)
-(*   phi_gt0 == phi x > 0 for all x                                           *)
-(*   phi_lt1 == phi x < 1 for all x                                           *)
-(*   phiK    == cancel phi psi (psi is left inverse of phi)                   *)
-(*   psiK    == cancel psi phi on (0,1)                                       *)
-(*   measurable_phi == phi is measurable on R                                 *)
-(*   measurable_psi_setT == psi is measurable on R                            *)
-(*   bin_digits_reconstruction == bin_sum (bin_digit x) = x for [0,1)        *)
+(*   atan01_gt0 == atan01 x > 0 for all x                                     *)
+(*   atan01_lt1 == atan01 x < 1 for all x                                     *)
+(*   atan01K    == cancel atan01 tan01 (tan01 is left inverse of atan01)      *)
+(*   tan01K    == cancel tan01 atan01 on (0,1)                                *)
+(*   measurable_atan01 == atan01 is measurable on R                           *)
+(*   measurable_tan01_setT == tan01 is measurable on R                        *)
+(*   bin_digits_reconstruction == bin_sum (bin_digit x) = x for [0,1)         *)
 (*   pair_to_unitK == unit_to_pair (pair_to_unit (x,y)) = (x,y)               *)
 (*                    (unconditional on [0,1)^2)                              *)
 (*   unit_to_pairK == pair_to_unit (unit_to_pair r) = r                       *)
@@ -96,44 +96,44 @@ Unset Printing Implicit Defensive.
 Local Open Scope classical_set_scope.
 Local Open Scope ring_scope.
 
-Section phi_psi.
+Section atan01_tan01.
 Variable R : realType.
 Implicit Types x y : R.
 
-(** phi : R -> (0,1) via atan *)
-Definition phi x : R := atan x / pi + 1 / 2.
+(** atan01 : R -> (0,1) via atan *)
+Definition atan01 x : R := atan x / pi + 1 / 2.
 
-(** psi : (0,1) -> R via tan *)
-Definition psi y : R := tan (pi * (y - 1 / 2)).
+(** tan01 : (0,1) -> R via tan *)
+Definition tan01 y : R := tan (pi * (y - 1 / 2)).
 
-(** phi lands in (0,1) *)
-Lemma phi_gt0 x : 0 < phi x.
+(** atan01 lands in (0,1) *)
+Lemma atan01_gt0 x : 0 < atan01 x.
 Proof.
 have hpi : (0 : R) < pi := pi_gt0.
 have hat := atan_gtNpi2 x.
 have h1 : - (1 / 2) < atan x / pi by rewrite ltr_pdivlMr // mulNr mul1r mulrC.
-rewrite /phi; by rewrite -subr_gt0 opprK in h1.
+rewrite /atan01; by rewrite -subr_gt0 opprK in h1.
 Qed.
 
-Lemma phi_lt1 x : phi x < 1.
+Lemma atan01_lt1 x : atan01 x < 1.
 Proof.
 have hpi : (0 : R) < pi := pi_gt0.
 have hat := atan_ltpi2 x.
 have h1 : atan x / pi < 1 / 2 by rewrite ltr_pdivrMr // mul1r mulrC.
 have h3 := ltr_leD h1 (lexx (1 / 2 : R)).
-rewrite /phi; by rewrite -splitr in h3.
+rewrite /atan01; by rewrite -splitr in h3.
 Qed.
 
-(** psi is the inverse of phi *)
-Lemma phiK : cancel phi psi.
+(** tan01 is the inverse of atan01 *)
+Lemma atan01K : cancel atan01 tan01.
 Proof.
-rewrite /cancel => x; rewrite /psi /phi.
+rewrite /cancel => x; rewrite /tan01 /atan01.
 by rewrite addrK mulrCA divff ?mulr1 ?atanK ?gt_eqF ?pi_gt0.
 Qed.
 
-Lemma psiK : {in `](0:R), 1[, cancel psi phi}.
+Lemma tan01K : {in `](0:R), 1[, cancel tan01 atan01}.
 Proof.
-move=> y hy; rewrite /phi /psi.
+move=> y hy; rewrite /atan01 /tan01.
 have hpi : (0 : R) < pi := pi_gt0.
 have hpi0 : (pi : R) != 0 := lt0r_neq0 hpi.
 rewrite in_itv /= in hy.
@@ -148,14 +148,14 @@ by rewrite (tanK hrange) mulrC mulKf // subrK.
 Qed.
 
 (** Both are measurable *)
-Lemma measurable_phi : measurable_fun setT phi.
+Lemma measurable_atan01 : measurable_fun setT atan01.
 Proof.
-rewrite /phi; apply: measurable_funD; last exact: measurable_cst.
+rewrite /atan01; apply: measurable_funD; last exact: measurable_cst.
 apply: measurable_funM; last exact: measurable_cst.
 by apply: continuous_measurable_fun; exact: continuous_atan.
 Qed.
 
-(** psi is measurable on R: it is tan, and tan = sin * cos^-1 where inv is
+(** tan01 is measurable on R: it is tan, and tan = sin * cos^-1 where inv is
     a pointwise limit of continuous functions. *)
 Let inv_cvg_approx x :
   (fun n : nat => x / (x * x + n.+1%:R^-1)) @ \oo --> x^-1.
@@ -175,9 +175,9 @@ case: (eqVneq x 0) => [->|hx0].
   exact: @cvg_harmonic.
 Qed.
 
-Lemma measurable_psi_setT : measurable_fun [set: R] psi.
+Lemma measurable_tan01_setT : measurable_fun [set: R] tan01.
 Proof.
-rewrite /psi.
+rewrite /tan01.
 apply: measurableT_comp; last first.
   apply: measurable_funM; first exact: measurable_cst.
   apply: measurable_funB; first exact: measurable_id.
@@ -201,7 +201,7 @@ apply: (@measurable_fun_cvg _ _ _ _ (fun n x =>
 - move=> x _; exact: inv_cvg_approx.
 Qed.
 
-End phi_psi.
+End atan01_tan01.
 
 Section binary_digit_interleaving.
 Variable R : realType.
@@ -844,17 +844,17 @@ Section composed_bijection.
 (******************************************************************************)
 
 Definition encode_RR (xy : R * R) : R :=
-  psi (pair_to_unit (phi xy.1, phi xy.2)).
+  tan01 (pair_to_unit (atan01 xy.1, atan01 xy.2)).
 
 Definition decode_RR (r : R) : R * R :=
-  let uv := unit_to_pair (phi r) in (psi uv.1, psi uv.2).
+  let uv := unit_to_pair (atan01 r) in (tan01 uv.1, tan01 uv.2).
 
-(** phi x is in [0,1) *)
-Lemma phi_ge0 (x : R) : 0 <= phi x.
-Proof. exact: ltW (phi_gt0 x). Qed.
+(** atan01 x is in [0,1) *)
+Lemma atan01_ge0 (x : R) : 0 <= atan01 x.
+Proof. exact: ltW (atan01_gt0 x). Qed.
 
-Lemma phi_in_01 (x : R) : 0 <= phi x < 1.
-Proof. by apply/andP; split; [exact: phi_ge0|exact: phi_lt1]. Qed.
+Lemma atan01_in_01 (x : R) : 0 <= atan01 x < 1.
+Proof. by apply/andP; split; [exact: atan01_ge0|exact: atan01_lt1]. Qed.
 
 (** bin_sum of a digit sequence with at least one true digit is > 0 *)
 Lemma bin_sum_has_one_gt0 (d : nat -> bool) (k : nat) :
@@ -871,46 +871,46 @@ apply: sumr_ge0 => i _.
 by apply: mulr_ge0; [case: (d i) | exact: half_expn_ge0].
 Qed.
 
-(** phi x has at least one true binary digit (since phi x > 0) *)
-Lemma phi_has_true_digit (x : R) :
-  exists k, bin_digit (phi x) k = true.
+(** atan01 x has at least one true binary digit (since atan01 x > 0) *)
+Lemma atan01_has_true_digit (x : R) :
+  exists k, bin_digit (atan01 x) k = true.
 Proof.
 apply: contrapT => /forallNP hnone.
-have hd0 : bin_digit (phi x) =1 (fun _ => false).
+have hd0 : bin_digit (atan01 x) =1 (fun _ => false).
   by move=> k; apply/negbTE/negP; exact: hnone.
-have hsum0 : bin_sum (bin_digit (phi x)) = 0.
+have hsum0 : bin_sum (bin_digit (atan01 x)) = 0.
   apply: le_anti; rewrite bin_sum_ge0 andbT (bin_sum_ext hd0).
   apply: limr_le; first exact: is_cvg_bin_partial_sum.
   apply: nearW => n; rewrite /bin_partial_sum big1 ?lexx // => i _.
   by rewrite mul0r.
-have hrecon := bin_digits_reconstruction (phi_in_01 x).
-by move: (phi_gt0 x); rewrite -hrecon hsum0 ltxx.
+have hrecon := bin_digits_reconstruction (atan01_in_01 x).
+by move: (atan01_gt0 x); rewrite -hrecon hsum0 ltxx.
 Qed.
 
-(** pair_to_unit of phi values lands in (0,1) *)
-Lemma pair_to_unit_phi_gt0 (x y : R) :
-  0 < pair_to_unit (phi x, phi y).
+(** pair_to_unit of atan01 values lands in (0,1) *)
+Lemma pair_to_unit_atan01_gt0 (x y : R) :
+  0 < pair_to_unit (atan01 x, atan01 y).
 Proof.
-have [k hk] := phi_has_true_digit x.
+have [k hk] := atan01_has_true_digit x.
 apply: (bin_sum_has_one_gt0 (k := (k.*2)%N)).
 rewrite /interleave odd_double /= half_double.
 exact: hk.
 Qed.
 
-Lemma pair_to_unit_phi_lt1 (x y : R) :
-  pair_to_unit (phi x, phi y) < 1.
+Lemma pair_to_unit_atan01_lt1 (x y : R) :
+  pair_to_unit (atan01 x, atan01 y) < 1.
 Proof.
 apply: bin_sum_no_trailing_lt1.
 apply: interleave_no_trailing_ones;
-  [exact: bin_digits_no_trailing_ones (phi_in_01 _)|
-   exact: bin_digits_no_trailing_ones (phi_in_01 _)].
+  [exact: bin_digits_no_trailing_ones (atan01_in_01 _)|
+   exact: bin_digits_no_trailing_ones (atan01_in_01 _)].
 Qed.
 
-Lemma pair_to_unit_phi_in_itv (x y : R) :
-  pair_to_unit (phi x, phi y) \in `](0:R), 1[.
+Lemma pair_to_unit_atan01_in_itv (x y : R) :
+  pair_to_unit (atan01 x, atan01 y) \in `](0:R), 1[.
 Proof.
 rewrite in_itv /=; apply/andP.
-split; [exact: pair_to_unit_phi_gt0|exact: pair_to_unit_phi_lt1].
+split; [exact: pair_to_unit_atan01_gt0|exact: pair_to_unit_atan01_lt1].
 Qed.
 
 (** Round-trip: decode (encode (x,y)) = (x,y) -- UNCONDITIONAL *)
@@ -918,41 +918,42 @@ Theorem encode_RRK (xy : R * R) :
   decode_RR (encode_RR xy) = xy.
 Proof.
 rewrite /decode_RR /encode_RR.
-set v := pair_to_unit (phi xy.1, phi xy.2).
-have hv_eq : phi (psi v) = v := psiK (pair_to_unit_phi_in_itv xy.1 xy.2).
-have hutp : unit_to_pair v = (phi xy.1, phi xy.2).
-  rewrite /v; apply: pair_to_unitK; first exact: phi_in_01.
-  exact: phi_in_01.
-by rewrite hv_eq hutp /= !phiK -surjective_pairing.
+set v := pair_to_unit (atan01 xy.1, atan01 xy.2).
+have hv_eq : atan01 (tan01 v) = v :=
+  tan01K (pair_to_unit_atan01_in_itv xy.1 xy.2).
+have hutp : unit_to_pair v = (atan01 xy.1, atan01 xy.2).
+  rewrite /v; apply: pair_to_unitK; first exact: atan01_in_01.
+  exact: atan01_in_01.
+by rewrite hv_eq hutp /= !atan01K -surjective_pairing.
 Qed.
 
 (** Round-trip: encode (decode r) = r
 
    This direction requires:
    1. no_trailing_ones on the deinterleaved even/odd subsequences of
-      bin_digit(phi(r)) -- needed for unit_to_pairK
-   2. The components (unit_to_pair(phi r)).1 and .2 must be in (0,1)
-      (strictly positive) -- needed for psiK (cancel psi phi)
+      bin_digit(atan01(r)) -- needed for unit_to_pairK
+   2. The components (unit_to_pair(atan01 r)).1 and .2 must be in (0,1)
+      (strictly positive) -- needed for tan01K (cancel tan01 atan01)
 
    Condition (2) follows from (1) when the deinterleaved subsequences
    each contain at least one true digit, which holds generically
    (the set of exceptions is countable, hence measure-zero). *)
 Theorem decode_RRK (r : R)
-  (hnt_even : no_trailing_ones (deinterleave_even (bin_digit (phi r))))
-  (hnt_odd : no_trailing_ones (deinterleave_odd (bin_digit (phi r))))
-  (hu1_pos : 0 < (unit_to_pair (phi r)).1)
-  (hu2_pos : 0 < (unit_to_pair (phi r)).2) :
+  (hnt_even : no_trailing_ones (deinterleave_even (bin_digit (atan01 r))))
+  (hnt_odd : no_trailing_ones (deinterleave_odd (bin_digit (atan01 r))))
+  (hu1_pos : 0 < (unit_to_pair (atan01 r)).1)
+  (hu2_pos : 0 < (unit_to_pair (atan01 r)).2) :
   encode_RR (decode_RR r) = r.
 Proof.
 rewrite /encode_RR /decode_RR /=.
-set u1 := (unit_to_pair (phi r)).1.
-set u2 := (unit_to_pair (phi r)).2.
+set u1 := (unit_to_pair (atan01 r)).1.
+set u2 := (unit_to_pair (atan01 r)).2.
 have hu1 : u1 \in `](0:R), 1[.
   by rewrite in_itv /= hu1_pos /=; exact: bin_sum_no_trailing_lt1 hnt_even.
 have hu2 : u2 \in `](0:R), 1[.
   by rewrite in_itv /= hu2_pos /=; exact: bin_sum_no_trailing_lt1 hnt_odd.
-rewrite (psiK hu1) (psiK hu2).
-by rewrite (unit_to_pairK (phi_in_01 r) hnt_even hnt_odd) phiK.
+rewrite (tan01K hu1) (tan01K hu2).
+by rewrite (unit_to_pairK (atan01_in_01 r) hnt_even hnt_odd) atan01K.
 Qed.
 
 (** Measurability of encode_RR *)
@@ -960,27 +961,27 @@ Lemma measurable_encode_RR : measurable_fun [set: R * R] encode_RR.
 Proof.
 rewrite /encode_RR.
 have hphi : measurable_fun [set: R * R]
-    (fun xy : R * R => (phi xy.1, phi xy.2)).
+    (fun xy : R * R => (atan01 xy.1, atan01 xy.2)).
   apply: measurable_fun_pair.
-  - apply: measurableT_comp; first exact: measurable_phi.
+  - apply: measurableT_comp; first exact: measurable_atan01.
     exact: measurable_fst.
-  - apply: measurableT_comp; first exact: measurable_phi.
+  - apply: measurableT_comp; first exact: measurable_atan01.
     exact: measurable_snd.
 have hin : measurable_fun [set: R * R]
-    (fun xy : R * R => pair_to_unit (phi xy.1, phi xy.2)).
+    (fun xy : R * R => pair_to_unit (atan01 xy.1, atan01 xy.2)).
   apply: measurableT_comp; first exact: measurable_pair_to_unit.
   exact: hphi.
-exact: measurableT_comp (@measurable_psi_setT R) hin.
+exact: measurableT_comp (@measurable_tan01_setT R) hin.
 Qed.
 
 (** Measurability of decode_RR, by composition. *)
 Lemma measurable_decode_RR : measurable_fun [set: R] decode_RR.
 Proof.
 rewrite /decode_RR; apply: measurable_fun_pair.
-- apply: measurableT_comp; first exact: measurable_psi_setT.
-  exact: measurableT_comp measurable_unit_to_pair_fst (@measurable_phi R).
-- apply: measurableT_comp; first exact: measurable_psi_setT.
-  exact: measurableT_comp measurable_unit_to_pair_snd (@measurable_phi R).
+- apply: measurableT_comp; first exact: measurable_tan01_setT.
+  exact: measurableT_comp measurable_unit_to_pair_fst (@measurable_atan01 R).
+- apply: measurableT_comp; first exact: measurable_tan01_setT.
+  exact: measurableT_comp measurable_unit_to_pair_snd (@measurable_atan01 R).
 Qed.
 
 (* The main application: product of standard Borel spaces is standard Borel *)

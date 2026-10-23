@@ -95,10 +95,10 @@ Proof. by []. Qed.
 
 Record qbs_prob_rep X (b : mR -> qbs_prob X) (a : mR -> X) (g : mR -> G) :
     Prop := QbsProbRep {
-  rep_random : qbs_Mx a ;
-  rep_measurable : measurable_fun [set: mR] g ;
-  rep_mass : forall r, g r [set: mR] = 1 ;
-  rep_event : forall r U, sigma_Mx U ->
+  qbs_rep_random : qbs_Mx a ;
+  qbs_rep_measurable : measurable_fun [set: mR] g ;
+  qbs_rep_mass : forall r, g r [set: mR] = 1 ;
+  qbs_rep_event : forall r U, sigma_Mx U ->
     qbs_prob_event X (b r) U = g r (a @^-1` U) }.
 
 Definition monadP_random X : set (mR -> qbs_prob X) :=
@@ -195,13 +195,13 @@ pose g' r := giry_map (menc (P r)) ((ag (P r)).2 r).
 have a'enc n y : a' (enc n y) = (ag n).1 y by rewrite /a' idx_enc snd_enc.
 exists a', g'; split.
 - apply: (qbs_Mx_glueT (P := idx) (Fi := fun n => (ag n).1 \o snd')) midx _.
-  by move=> n; exact: qbs_Mx_compT (rep_random (hag n)) msnd.
+  by move=> n; exact: qbs_Mx_compT (qbs_rep_random (hag n)) msnd.
 - apply: (measurable_glue (P := P)
     (Fi := fun n r => giry_map (menc n) ((ag n).2 r))) => [|n].
     exact: measurable_funPT.
-  exact: measurableT_comp (measurable_giry_map _) (rep_measurable (hag n)).
-- by move=> r; rewrite /g' /= /pushforward preimage_setT (rep_mass (hag _)).
-- move=> r U mU; rewrite (rep_event (hag _))// /g' /= /pushforward.
+  exact: measurableT_comp (measurable_giry_map _) (qbs_rep_measurable (hag n)).
+- by move=> r; rewrite /g' /= /pushforward preimage_setT (qbs_rep_mass (hag _)).
+- move=> r U mU; rewrite (qbs_rep_event (hag _))// /g' /= /pushforward.
   by congr (_ _); apply/seteqP; split => y /=; rewrite a'enc.
 Qed.
 
@@ -266,14 +266,15 @@ Let bind_g : mR -> G := sval (cid (svalP (cid hf))).
 Let bind_rep : qbs_prob_rep (f \o qbs_prob_alpha p) bind_a bind_g :=
   svalP (cid (svalP (cid hf))).
 
-Let bind_mu : G := giry_bind (qbs_prob_mu p) (rep_measurable bind_rep).
+Let bind_mu : G := giry_bind (qbs_prob_mu p) (qbs_rep_measurable bind_rep).
 Let bind_mu1 : bind_mu [set: mR] = 1.
 Proof.
-by apply: giry_bind_setT; [exact: probability_setT|exact: rep_mass bind_rep].
+by apply: giry_bind_setT;
+    [exact: probability_setT|exact: qbs_rep_mass bind_rep].
 Qed.
 
 Definition qbs_bind : monadP Y :=
-  mkQBSProb bind_a (giry_prob bind_mu1) (rep_random bind_rep).
+  mkQBSProb bind_a (giry_prob bind_mu1) (qbs_rep_random bind_rep).
 
 Lemma ge0_qbs_integral_bind (h : Y -> \bar R) :
   qbs_measurable Y h -> (forall y, 0 <= h y) ->
@@ -281,14 +282,14 @@ Lemma ge0_qbs_integral_bind (h : Y -> \bar R) :
   \int[qbs_prob_mu p]_r qbs_integral Y (f (qbs_prob_alpha p r)) h.
 Proof.
 move=> mh h0; rewrite /qbs_integral /=.
-have mha := mh _ (rep_random bind_rep).
-rewrite [LHS](giry_int_bind (qbs_prob_mu p) (rep_measurable bind_rep)
+have mha := mh _ (qbs_rep_random bind_rep).
+rewrite [LHS](giry_int_bind (qbs_prob_mu p) (qbs_rep_measurable bind_rep)
   (h := h \o bind_a))//; first by move=> x; exact: h0.
 rewrite /giry_int; apply: eq_integral => r _.
 apply: (@ge0_integral_sigma_Mx R Y bind_a _ (bind_g r)) => //.
-- exact: rep_random bind_rep.
+- exact: qbs_rep_random bind_rep.
 - exact: qbs_prob_alpha_random.
-- by move=> U mU; exact/esym/(rep_event bind_rep).
+- by move=> U mU; exact/esym/(qbs_rep_event bind_rep).
 Qed.
 
 Lemma qbs_bind_event (U : set Y) : sigma_Mx U ->
@@ -296,8 +297,8 @@ Lemma qbs_bind_event (U : set Y) : sigma_Mx U ->
   \int[qbs_prob_mu p]_r qbs_prob_event Y (f (qbs_prob_alpha p r)) U.
 Proof.
 move=> mU; rewrite /qbs_prob_event /= giry_int_map//.
-  exact: measurable_giry_ev (mU _ (rep_random bind_rep)).
-by apply: eq_integral => r _; exact/esym/(rep_event bind_rep).
+  exact: measurable_giry_ev (mU _ (qbs_rep_random bind_rep)).
+by apply: eq_integral => r _; exact/esym/(qbs_rep_event bind_rep).
 Qed.
 
 End bind.
@@ -310,22 +311,22 @@ Proof.
 move=> a ha.
 have [b1 [g1 r1]] : monadP_random Y (f \o a) := qbs_hom_proof _ ha.
 have [b2 [g2 r2]] : monadP_random Z (g \o b1) :=
-  qbs_hom_proof _ (rep_random r1).
-exists b2, (fun r => giry_bind (g1 r) (rep_measurable r2)); split.
-- exact: rep_random r2.
-- exact: measurableT_comp (measurable_giry_bind _) (rep_measurable r1).
+  qbs_hom_proof _ (qbs_rep_random r1).
+exists b2, (fun r => giry_bind (g1 r) (qbs_rep_measurable r2)); split.
+- exact: qbs_rep_random r2.
+- exact: measurableT_comp (measurable_giry_bind _) (qbs_rep_measurable r1).
 - by move=> r; apply: giry_bind_setT;
-    [exact: (rep_mass r1)|exact: (rep_mass r2)].
-- move=> r U mU; rewrite (giry_bindE _ _ (mU _ (rep_random r2))).
+    [exact: (qbs_rep_mass r1)|exact: (qbs_rep_mass r2)].
+- move=> r U mU; rewrite (giry_bindE _ _ (mU _ (qbs_rep_random r2))).
   rewrite [LHS]qbs_bind_event//.
   transitivity (\int[g1 r]_t qbs_prob_event Z (g (b1 t)) U).
     apply: (@ge0_integral_sigma_Mx R Y _ b1 _ (g1 r)
       (fun y => qbs_prob_event Z (g y) U)) => //.
     + exact: qbs_prob_alpha_random.
-    + exact: rep_random r1.
+    + exact: qbs_rep_random r1.
     + exact: qbs_measurable_event.
-    + by move=> V mV; exact: (rep_event r1).
-  by apply: eq_integral => t _; rewrite (rep_event r2).
+    + by move=> V mV; exact: (qbs_rep_event r1).
+  by apply: eq_integral => t _; rewrite (qbs_rep_event r2).
 Qed.
 
 Definition qbs_returnQ X : qbsHomType X (monadP X) := @qbs_return X.
@@ -565,7 +566,7 @@ Qed.
 
 Lemma ge0_qbs_integral_morphism X (h : X -> \bar R) :
   qbs_measurable X h -> (forall x, 0 <= h x) ->
-  qbs_morphism (X := monadP X) (Y := R_qbs R (\bar R))
+  qbs_morphism (X := monadP X) (Y := measQ R (\bar R))
     (fun p => qbs_integral X p h).
 Proof. by move=> mh h0 b hb; exact: ge0_monadP_random_integral. Qed.
 
@@ -580,7 +581,7 @@ Definition qbs_bind_internal X Y :
   qbs_bindQ (qbs_comp (qbs_swap _ _) (qbs_strengthQ _ _))
     (qbs_eval X (monadP Y)).
 
-Lemma qbs_bind_internalE X Y (p : monadP X) (f : qbsHomType X (monadP Y)) :
+Lemma qbs_bind_internal_equiv X Y (p : monadP X) (f : qbsHomType X (monadP Y)) :
   qbs_prob_equiv Y (qbs_bind_internal X Y (p, f)) (qbs_bind p f).
 Proof.
 apply/qbs_prob_equivP => U mU.

@@ -75,8 +75,8 @@ This formalization follows:
 - **L ⊣ R** (HKSY Prop. 15(1)): `qbs_morphism_measurableP`, where
   `qbs_meas X` is X with the sigma-algebra `sigma_Mx`; counit
   `adjunction_counit`
-- **R is full on standard Borel domains**: `R_qbs_full`,
-  `sigma_Mx_standard_borel`
+- **R is full on standard Borel domains**: `measQ_full`,
+  `sigma_Mx_standard_borelP`
 - **Countable coproducts** (HKSY Prop. 17): `sigmaQ`, `sigma_case`,
   `sigma_case_eta`
 - **Probability monad**: `qbs_return`, `qbs_bind`, laws
@@ -89,11 +89,11 @@ This formalization follows:
 - **Quotient**: on the quotient type `qbs_quot` the monad laws hold
   as equalities
 - **QBS ↔ Giry**: `qbs_to_giry`, `qbs_integral_giry`, and on standard
-  Borel spaces `qbs_to_giry_inj`, `qbs_to_giry_bind`
+  Borel spaces `qbs_to_giry_equiv`, `qbs_to_giry_bind`
 - **Integration**: `qbs_integral_law`, `qbs_expectE` (expectation is
   `'E` on the law)
 - **Independence**: `qbs_indep_rect` (product rule),
-  `qbs_integral_indep_factorization` (E[fg] = E[f]E[g])
+  `qbs_integral_indepM` (E[fg] = E[f]E[g])
 - **R ≅ R × R**: `pair_standard_borel`, `encode_RRK`
 - **Normaliser**: `qbs_normalize`, `qbs_normalize_event`,
   `qbs_normalize_equiv`; as a morphism into P(X) + 1:
@@ -101,8 +101,8 @@ This formalization follows:
 - **Lists**: `qbs_nil`, `qbs_cons`, recursion `list_rec` as a morphism
   (`qbs_morphism_list_rec`, internal `list_rec_hom`), bijection with
   `seq` (`seq_of_listK`, `list_of_seqK`)
-- **Order structure**: meet/top/bottom of QBS structures (`qbs_infT`,
-  `qbs_topT`, `qbs_botT`), empty QBS `emptyQ`, Galois connection
+- **Order structure**: meet/top/bottom of QBS structures (`qbs_inf`,
+  `qbs_top`, `qbs_bot`), empty QBS `emptyQ`, Galois connection
   `sigma_of_Mx_of`, functions out of `natQ`/`boolQ` are morphisms
 - **Integration**: `qbs_integrableP`, `qbs_integral_le`,
   `qbs_variance_affine`, signed `qbs_integral_bind`

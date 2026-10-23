@@ -30,7 +30,8 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad.
 (*                             being a morphism P(X) -> \bar R                *)
 (*   qbs_integral_param == x |-> integral of h(x, .) against L x is a         *)
 (*                             morphism, for L : X -> P(Y)                    *)
-(*   qbs_integral_snd == y |-> integral of h(., y) against p is a morphism    *)
+(*   qbs_integral_param_snd == y |-> integral of h(., y) against p is a       *)
+(*                             morphism                                       *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -168,7 +169,7 @@ Qed.
 
 Lemma qbs_integral_morphism X (h : X -> \bar R) :
   qbs_measurable X h ->
-  qbs_morphism (X := monadP X) (Y := R_qbs R (\bar R))
+  qbs_morphism (X := monadP X) (Y := measQ R (\bar R))
     (fun p => qbs_integral X p h).
 Proof. by move=> mh b hb; exact: monadP_random_integral. Qed.
 
@@ -177,7 +178,7 @@ Proof. by move=> mh b hb; exact: monadP_random_integral. Qed.
 Lemma qbs_integral_param X Y (L : qbsHomType X (monadP Y))
     (h : prodQ X Y -> \bar R) :
   qbs_measurable (prodQ X Y) h ->
-  qbs_morphism (X := X) (Y := R_qbs R (\bar R))
+  qbs_morphism (X := X) (Y := measQ R (\bar R))
     (fun x => qbs_integral Y (L x) (fun y => h (x, y))).
 Proof.
 move=> mh a ha.
@@ -186,9 +187,9 @@ have hs : monadP_random (prodQ X Y) (g \o a) := qbs_hom_proof _ ha.
 exact: monadP_random_integral hs mh.
 Qed.
 
-Lemma qbs_integral_snd X Y (p : monadP X) (h : prodQ X Y -> \bar R) :
+Lemma qbs_integral_param_snd X Y (p : monadP X) (h : prodQ X Y -> \bar R) :
   qbs_measurable (prodQ X Y) h ->
-  qbs_morphism (X := Y) (Y := R_qbs R (\bar R))
+  qbs_morphism (X := Y) (Y := measQ R (\bar R))
     (fun y => qbs_integral X p (fun x => h (x, y))).
 Proof.
 move=> mh; apply: (qbs_integral_param (qbs_const Y p)

@@ -136,7 +136,7 @@ HB.structure Definition QBSpace (R : realType) := { T of isQBS R T }.
 
 Since the axioms take bundled measurable functions, two convenience wrappers accept bare `measurable_fun setT` proofs: `qbs_Mx_compT` and `qbs_Mx_glueT`. A third, `measurable_glue`, states that a measurable selector glued with a measurable family is measurable.
 
-**NB comments on HB.pack:** Concrete QBS constructions (products, exponentials, coproducts, etc.) are given as `HB.instance` on the carrier type and wrapped in a named definition (`prodQ`, `expQ`, ...), because the carrier types are non-canonical (e.g., `X * Y`, `qbsHomType X Y`, `X + Y`). Where the instance would be ambiguous (e.g. `generating_qbs`, which needs a generator set), it is declared on an alias type.
+**NB comments on HB.pack:** Concrete QBS constructions (products, exponentials, coproducts, etc.) are given as `HB.instance` on the carrier type and wrapped in a named definition (`prodQ`, `expQ`, ...), because the carrier types are non-canonical (e.g., `X * Y`, `qbsHomType X Y`, `X + Y`). Where the instance would be ambiguous (e.g. `generatingQ`, which needs a generator set), it is declared on an alias type.
 
 ### 1.2 Morphisms
 
@@ -188,36 +188,36 @@ These establish that QBS spaces form a category, with equalities between bundled
 The R functor sends a measurable type to its QBS of measurable functions. Its random elements are the measurable functions `mR -> M`:
 
 ```
-Section R_qbs_instance.
+Section measQ_instance.
 Context d (M : measurableType d).
 Let Mx := [set f : mR -> M | measurable_fun setT f].
 ...
 HB.instance Definition _ := @isQBS.Build R M Mx ax1 ax2 ax3.
-Definition R_qbs : qbsType R := M.
-End R_qbs_instance.
+Definition measQ : qbsType R := M.
+End measQ_instance.
 ```
 
 **Concrete instances:**
 
 ```
-Definition realQ : qbsType R := R_qbs mR.
-Definition natQ : qbsType R := R_qbs nat.
-Definition boolQ : qbsType R := R_qbs bool.
+Definition realQ : qbsType R := measQ mR.
+Definition natQ : qbsType R := measQ nat.
+Definition boolQ : qbsType R := measQ bool.
 ```
 
 In `measure_qbs_adjunction.v`, R is shown to be functorial and product-preserving:
 
 ```
-Lemma R_qbs_morphism d1 d2
+Lemma measQ_morphism d1 d2
     (M1 : measurableType d1) (M2 : measurableType d2)
     (f : {mfun M1 >-> M2}) :
-  qbs_morphism (X := R_qbs R M1) (Y := R_qbs R M2) f.
+  qbs_morphism (X := measQ R M1) (Y := measQ R M2) f.
 
-Lemma qbs_Mx_R_qbs_prod d1 d2
+Lemma qbs_Mx_measQ_prod d1 d2
     (M1 : measurableType d1) (M2 : measurableType d2)
     (alpha : mR -> M1 * M2) :
-  qbs_Mx (s := R_qbs R (M1 * M2)%type) alpha <->
-  qbs_Mx (s := prodQ (R_qbs R M1) (R_qbs R M2)) alpha.
+  qbs_Mx (s := measQ R (M1 * M2)%type) alpha <->
+  qbs_Mx (s := prodQ (measQ R M1) (measQ R M2)) alpha.
 ```
 
 ### 1.5 Binary Products
@@ -340,11 +340,11 @@ Lemma qbs_Mx_measurable (a : mR -> X) :
 
 **File:** `theories/quasi_borel.v`; `theories/measure_qbs_adjunction.v`
 
-The adjunction L -| R is the statement that QBS morphisms into `R_qbs M` are exactly the measurable maps out of `L X`:
+The adjunction L -| R is the statement that QBS morphisms into `measQ M` are exactly the measurable maps out of `L X`:
 
 ```
 Lemma qbs_morphism_measurableP d (M : measurableType d) (f : X -> M) :
-  qbs_morphism (X := X) (Y := R_qbs M) f <->
+  qbs_morphism (X := X) (Y := measQ M) f <->
   measurable_fun [set: qbs_meas] (f : qbs_meas -> M).
 ```
 
@@ -355,11 +355,11 @@ Lemma qbs_morphism_measurable (X Y : qbsType R) (f : X -> Y) :
   qbs_morphism f ->
   measurable_fun [set: qbs_meas X] (f : qbs_meas X -> qbs_meas Y).
 
-Lemma sigma_Mx_R_qbs d (M : measurableType d) (U : set M) :
-  measurable U -> sigma_Mx (X := R_qbs R M) U.
+Lemma sigma_Mx_measQ d (M : measurableType d) (U : set M) :
+  measurable U -> sigma_Mx (X := measQ R M) U.
 
 Lemma adjunction_counit d (M : measurableType d) :
-  measurable_fun [set: qbs_meas (R_qbs R M)] (idfun : _ -> M).
+  measurable_fun [set: qbs_meas (measQ R M)] (idfun : _ -> M).
 ```
 
 **Galois connection (AFP `rl_order_adjunction`).** Underneath the adjunction is an order adjunction between sets of random elements and sigma-algebras on a fixed carrier. Both maps are antitone and form a Galois connection:
@@ -381,7 +381,7 @@ Lemma sigma_of_Mx_of (T : Type) (S : set (set T)) (Mx : set (mR -> T)) :
   S `<=` sigma_of Mx <-> Mx `<=` Mx_of S.
 ```
 
-Instances: `sigma_MxE : sigma_Mx (X := X) = sigma_of (qbs_Mx (s := X))`, `qbs_Mx_R_qbs : qbs_Mx (s := R_qbs R M) = Mx_of (@measurable _ M)` and `qbs_Mx_sub_Mx_of : qbs_Mx (s := X) `<=` Mx_of (sigma_Mx (X := X))`.
+`sigma_Mx X` is defined as `sigma_of qbs_Mx` (in `quasi_borel.v`). Instances: `qbs_Mx_measQ : qbs_Mx (s := measQ R M) = Mx_of (@measurable _ M)` and `qbs_Mx_sub_Mx_of : qbs_Mx (s := X) `<=` Mx_of (sigma_Mx (X := X))`.
 
 ### 1.11 Standard Borel Spaces (HKSY Prop. 15(2))
 
@@ -411,26 +411,26 @@ Definition prod_standard_borel d1 d2
   standard_borel_wit (M1 * M2)%type.
 ```
 
-`prod_standard_borel` uses `encode_RR`/`decode_RR` from `standard_borel.v` (Part III). The extended-real QBS is `erealQ := R_qbs R (\bar R)`.
+`prod_standard_borel` uses `encode_RR`/`decode_RR` from `standard_borel.v` (Part III). The extended-real QBS is `erealQ := measQ R (\bar R)`.
 
 R is full on standard Borel domains, and on standard Borel spaces the sigma-algebra induced by the random elements is the original one:
 
 ```
-Lemma R_qbs_full d1 d2 (M1 : measurableType d1) (M2 : measurableType d2)
+Lemma measQ_full d1 d2 (M1 : measurableType d1) (M2 : measurableType d2)
     (sb : standard_borel_wit M1) (f : M1 -> M2) :
-  qbs_morphism (X := R_qbs R M1) (Y := R_qbs R M2) f ->
+  qbs_morphism (X := measQ R M1) (Y := measQ R M2) f ->
   measurable_fun setT f.
 
-Lemma sigma_Mx_standard_borel d
+Lemma sigma_Mx_standard_borelP d
     (M : measurableType d) (sb : standard_borel_wit M) :
-  forall U : set M, sigma_Mx (X := R_qbs R M) U <-> measurable U.
+  forall U : set M, sigma_Mx (X := measQ R M) U <-> measurable U.
 ```
 
 ### 1.12 Comparison Morphisms
 
 **File:** `theories/quasi_borel.v`
 
-Measurable operations on R are QBS morphisms via `R_qbs`. Addition and multiplication are bundled:
+Measurable operations on R are QBS morphisms via `measQ`. Addition and multiplication are bundled:
 
 ```
 Definition qbs_add : qbsHomType (prodQ realQ realQ) realQ
@@ -450,13 +450,13 @@ Lemma boolQ_morphism (X : qbsType R) (f : boolQ -> X) : qbs_morphism f.
 
 **File:** `theories/quasi_borel.v`
 
-For a predicate `P : set X`, `sub_qbs X P` has carrier `{x : X | P x}` and the random elements `alpha` with `proj1_sig \o alpha` random in `X`.
+For a predicate `P : set X`, `subQ X P` has carrier `{x : X | P x}` and the random elements `alpha` with `proj1_sig \o alpha` random in `X`.
 
 ### 1.14 Generating QBS
 
 **File:** `theories/quasi_borel.v`
 
-Given a set `G` of functions `mR -> T`, `generating_qbs G` is the smallest QBS containing `G`, defined as the inductive closure under the three axioms:
+Given a set `G` of functions `mR -> T`, `generatingQ G` is the smallest QBS containing `G`, defined as the inductive closure under the three axioms:
 
 ```
 Inductive generating_Mx (T : Type) (G : set (mR -> T))
@@ -472,20 +472,20 @@ Inductive generating_Mx (T : Type) (G : set (mR -> T))
       generating_Mx G (fun r => Fi (P r) r).
 ```
 
-The instance is declared on an alias `qbs_generating_type := T` (declaring it on `T` itself would make every type a `qbsType` with an undetermined generator). The lemma `generating_qbs_incl` states `G `<=` qbs_Mx (s := generating_qbs G)`, and `generating_qbs_least` states that `generating_Mx G` is contained in every closed set containing `G` (a single `qbs_closed Mx` hypothesis).
+The instance is declared on an alias `qbs_generating_type := T` (declaring it on `T` itself would make every type a `qbsType` with an undetermined generator). The lemma `generatingQ_incl` states `G `<=` qbs_Mx (s := generatingQ G)`, and `generatingQ_least` states that `generating_Mx G` is contained in every closed set containing `G` (a single `qbs_closed Mx` hypothesis).
 
 ### 1.15 Image QBS
 
 **File:** `theories/quasi_borel.v`
 
-For a morphism `f : X -> Y`, `map_qbs f` is the QBS on `Y` generated by `{f \o alpha | alpha random in X}` (using `generating_qbs`, so constants are included even when `f` is not surjective).
+For a morphism `f : X -> Y`, `mapQ f` is the QBS on `Y` generated by `{f \o alpha | alpha random in X}` (using `generatingQ`, so constants are included even when `f` is not surjective).
 
 | Name | Statement |
 |------|-----------|
-| `map_qbs_random` | `f \o alpha` is random in `map_qbs f` when `alpha` is random in `X` |
-| `map_qbs_sub` | random elements of `map_qbs f` are random in `Y` |
-| `map_qbs_morphism_in` | `f : X -> map_qbs f` is a morphism |
-| `map_qbs_morphism_out` | `g : Y -> Z` is a morphism out of `map_qbs f` when it is a morphism out of `Y` |
+| `mapQ_random` | `f \o alpha` is random in `mapQ f` when `alpha` is random in `X` |
+| `mapQ_sub` | random elements of `mapQ f` are random in `Y` |
+| `mapQ_morphism_in` | `f : X -> mapQ f` is a morphism |
+| `mapQ_morphism_out` | `g : Y -> Z` is a morphism out of `mapQ f` when it is a morphism out of `Y` |
 
 ### 1.16 Order Structure
 
@@ -494,11 +494,11 @@ For a morphism `f : X -> Y`, `map_qbs f` is the QBS on `Y` generated by `{f \o a
 Following Isabelle, the order on QBS structures on a fixed carrier `T` is inclusion of the sets of random elements:
 
 ```
-Definition qbs_leT (MxX MxY : set (mR -> T)) : Prop :=
+Definition qbs_le (MxX MxY : set (mR -> T)) : Prop :=
   MxX `<=` MxY.
 ```
 
-with `qbs_leT_refl`, `qbs_leT_trans` and `qbs_leT_antisym`. The join of two sets of random elements is `qbs_supT MxX MxY := generating_qbs [set alpha | MxX alpha \/ MxY alpha]`, with `qbs_supT_ub_l`, `qbs_supT_ub_r` and `qbs_supT_least` (least upper bound among closed sets, taking a single `qbs_closed` hypothesis).
+with `qbs_le_refl`, `qbs_le_trans` and `qbs_le_anti`. The join of two sets of random elements is `qbs_sup MxX MxY := generatingQ [set alpha | MxX alpha \/ MxY alpha]`, with `qbs_sup_ub_l`, `qbs_sup_ub_r` and `qbs_sup_least` (least upper bound among closed sets, taking a single `qbs_closed` hypothesis).
 
 **Infimum, top, bottom (AFP lattice of QBS structures).** A set of maps is closed when it satisfies the three QBS axioms:
 
@@ -510,9 +510,9 @@ Definition qbs_closed (T : Type) (Mx : set (mR -> T)) : Prop :=
         (forall i, Mx (Fi i)) -> Mx (fun r => Fi (P r) r)].
 ```
 
-`qbs_closed_Mx` (the random elements of a QBS are closed) and `qbs_closedI` (closure under `` `&` ``) give the infimum `qbs_infT MxX MxY := generating_qbs (MxX `&` MxY)`, with `qbs_infT_lb_l`, `qbs_infT_lb_r`, `qbs_infT_greatest` and `qbs_infT_Mx`. The top structure `qbs_topT T` (all maps `mR -> T` random, an instance on the alias `qbs_top_type`) satisfies `qbs_topT_ub`; the bottom `qbs_botT T := generating_qbs set0` satisfies `qbs_botT_lb`.
+`qbs_closed_Mx` (the random elements of a QBS are closed) and `qbs_closedI` (closure under `` `&` ``) give the infimum `qbs_inf MxX MxY := generatingQ (MxX `&` MxY)`, with `qbs_inf_lb_l`, `qbs_inf_lb_r`, `qbs_inf_greatest` and `qbs_inf_Mx`. The top structure `qbs_top T` (all maps `mR -> T` random, an instance on the alias `qbs_top_type`) satisfies `qbs_top_ub`; the bottom `qbs_bot T := generatingQ set0` satisfies `qbs_bot_lb`.
 
-The empty QBS is `emptyQ := qbs_topT void`. `qbs_Mx0P : qbs_Mx (s := X) = set0 <-> (X -> False)` and it is initial:
+The empty QBS is `emptyQ := qbs_top void`. `qbs_Mx0P : qbs_Mx (s := X) = set0 <-> (X -> False)` and it is initial:
 
 ```
 Definition qbs_void : qbsHomType emptyQ X
@@ -712,7 +712,7 @@ Lemma qbs_integral_equiv (X : qbsType R) (p1 p2 : qbs_prob X)
 Using the measurable structure on `L X = qbs_meas X`, a QBS probability has a law, a genuine probability measure:
 
 ```
-Lemma qbs_measurableE (X : qbsType R) (h : X -> \bar R) :
+Lemma qbs_measurableP (X : qbsType R) (h : X -> \bar R) :
   qbs_measurable X h <->
   measurable_fun [set: qbs_meas X] (h : qbs_meas X -> \bar R).
 
@@ -723,7 +723,7 @@ Definition qbs_law (X : qbsType R) (p : qbs_prob X) :
 Lemma qbs_lawE (X : qbsType R) (p : qbs_prob X) (A : set X) :
   qbs_law p A = qbs_prob_mu p (qbs_prob_alpha p @^-1` A).
 
-Lemma qbs_prob_equivE (X : qbsType R) (p1 p2 : qbs_prob X) :
+Lemma qbs_prob_equiv_lawP (X : qbsType R) (p1 p2 : qbs_prob X) :
   qbs_prob_equiv X p1 p2 <->
   (forall A : set (qbs_meas X), measurable A -> qbs_law p1 A = qbs_law p2 A).
 
@@ -830,10 +830,10 @@ Following HKSY, the random elements of `P(X)` are the maps `r |-> [alpha, g r]` 
 ```
 Record qbs_prob_rep X (b : mR -> qbs_prob X) (a : mR -> X) (g : mR -> G) :
     Prop := QbsProbRep {
-  rep_random : qbs_Mx a ;
-  rep_measurable : measurable_fun [set: mR] g ;
-  rep_mass : forall r, g r [set: mR] = 1 ;
-  rep_event : forall r U, sigma_Mx U ->
+  qbs_rep_random : qbs_Mx a ;
+  qbs_rep_measurable : measurable_fun [set: mR] g ;
+  qbs_rep_mass : forall r, g r [set: mR] = 1 ;
+  qbs_rep_event : forall r U, sigma_Mx U ->
     qbs_prob_event X (b r) U = g r (a @^-1` U) }.
 
 Definition monadP_random X : set (mR -> qbs_prob X) :=
@@ -877,7 +877,7 @@ For `p : qbs_prob X` and a *bundled morphism* `f : qbsHomType X (monadP Y)`, bin
 
 ```
 Definition qbs_bind : monadP Y :=
-  @mkQBSProb R Y bind_a (giry_prob bind_mu1) (rep_random bind_rep).
+  @mkQBSProb R Y bind_a (giry_prob bind_mu1) (qbs_rep_random bind_rep).
 
 Lemma ge0_qbs_integral_bind (h : Y -> \bar R) :
   qbs_measurable Y h -> (forall y, 0 <= h y) ->
@@ -1015,7 +1015,7 @@ Integrating a fixed nonnegative measurable function is a morphism from `P(X)` in
 ```
 Lemma ge0_qbs_integral_morphism X (h : X -> \bar R) :
   qbs_measurable X h -> (forall x, 0 <= h x) ->
-  qbs_morphism (X := monadP X) (Y := R_qbs R (\bar R))
+  qbs_morphism (X := monadP X) (Y := measQ R (\bar R))
     (fun p => qbs_integral X p h).
 ```
 
@@ -1027,7 +1027,7 @@ Definition qbs_bind_internal X Y :
   qbs_bindQ (qbs_comp (qbs_pair (qbs_snd _ _) (qbs_fst _ _))
     (qbs_strengthQ _ _)) (qbs_eval X (monadP Y)).
 
-Lemma qbs_bind_internalE X Y (p : monadP X) (f : qbsHomType X (monadP Y)) :
+Lemma qbs_bind_internal_equiv X Y (p : monadP X) (f : qbsHomType X (monadP Y)) :
   qbs_prob_equiv Y (qbs_bind_internal X Y (p, f)) (qbs_bind p f).
 ```
 
@@ -1041,17 +1041,17 @@ Lemma qbs_integral_bind (h : Y -> \bar R) :
 
 Lemma qbs_integral_morphism X (h : X -> \bar R) :
   qbs_measurable X h ->
-  qbs_morphism (X := monadP X) (Y := R_qbs R (\bar R))
+  qbs_morphism (X := monadP X) (Y := measQ R (\bar R))
     (fun p => qbs_integral X p h).
 
 Lemma qbs_integral_param X Y (L : qbsHomType X (monadP Y))
     (h : prodQ X Y -> \bar R) :
   qbs_measurable (prodQ X Y) h ->
-  qbs_morphism (X := X) (Y := R_qbs R (\bar R))
+  qbs_morphism (X := X) (Y := measQ R (\bar R))
     (fun x => qbs_integral Y (L x) (fun y => h (x, y))).
 ```
 
-`qbs_integral_bind_bounded` is the same identity for bounded measurable real functions, and `qbs_integral_snd` is the symmetric parametric integral.
+`qbs_integral_bind_bounded` is the same identity for bounded measurable real functions, and `qbs_integral_param_snd` is the symmetric parametric integral.
 
 ### 2.16 Monadic Product and Commutativity (HKSY Prop. 22(2))
 
@@ -1163,7 +1163,7 @@ Definition qbs_normalizeQ :
 Definition qbs_equiv_op : rel (qbs_prob X) :=
   fun p1 p2 => `[< qbs_prob_equiv X p1 p2 >].
 
-Definition qbs_quot : Type := {eq_quot qbs_prob_equiv_canonical}.
+Definition qbs_quot : Type := {eq_quot qbs_prob_equiv_rel}.
 ```
 
 | Name | Statement |
@@ -1268,16 +1268,16 @@ Lemma qbs_indep_rect (Z : qbsType R) (p : qbs_prob Z)
 and the product rule for expectations of real-valued test functions:
 
 ```
-Lemma qbs_integral_indep_factorization (X Y Z : qbsType R)
+Lemma qbs_integral_indepM (X Y Z : qbsType R)
     (p : qbs_prob Z)
     (f : qbsHomType Z X) (g : qbsHomType Z Y)
-    (phi : X -> R) (psi : Y -> R)
+    (atan01 : X -> R) (tan01 : Y -> R)
     (hindep : qbs_indep X Y Z p f g)
     (hmeas : qbs_measurable (prodQ X Y)
-       (fun xy : X * Y => (phi xy.1 * psi xy.2)%:E))
-    ... (* integrability of phi o f, psi o g, and of the product *) :
-  qbs_integral Z p (fun z => (phi (f z) * psi (g z))%:E) =
-  qbs_expect X (monadP_map f p) phi * qbs_expect Y (monadP_map g p) psi.
+       (fun xy : X * Y => (atan01 xy.1 * tan01 xy.2)%:E))
+    ... (* integrability of atan01 o f, tan01 o g, and of the product *) :
+  qbs_integral Z p (fun z => (atan01 (f z) * tan01 (g z))%:E) =
+  qbs_expect X (monadP_map f p) atan01 * qbs_expect Y (monadP_map g p) tan01.
 ```
 
 The proof rewrites the integral along the equivalence given by independence and applies `qbs_prob_pair_mul`.
@@ -1308,44 +1308,44 @@ It rests on `integral_prod_fst`, `integral_prod_snd` and `integral_prod_mul`.
 
 **File:** `theories/qbs_giry.v`
 
-A QBS probability on `R_qbs M` induces a probability measure on `M`, its distribution. For `M` standard Borel, the comparison is faithful and preserves bind:
+A QBS probability on `measQ M` induces a probability measure on `M`, its distribution. For `M` standard Borel, the comparison is faithful and preserves bind:
 
 ```
-Definition qbs_to_giry (p : qbs_prob (R_qbs R M)) : probability M R :=
+Definition qbs_to_giry (p : qbs_prob (measQ R M)) : probability M R :=
   distribution (qbs_prob_mu p) (qbs_prob_alpha_mfun p).
 
-Lemma qbs_to_giryE (p : qbs_prob (R_qbs R M)) (A : set M) :
-  qbs_to_giry p A = qbs_prob_event (R_qbs R M) p A.
+Lemma qbs_to_giryE (p : qbs_prob (measQ R M)) (A : set M) :
+  qbs_to_giry p A = qbs_prob_event (measQ R M) p A.
 
-Lemma qbs_integral_giry (p : qbs_prob (R_qbs R M)) (f : M -> \bar R) :
+Lemma qbs_integral_giry (p : qbs_prob (measQ R M)) (f : M -> \bar R) :
   measurable_fun [set: M] f ->
   (qbs_prob_mu p).-integrable [set: mR] (f \o qbs_prob_alpha p) ->
-  qbs_integral (R_qbs R M) p f = \int[qbs_to_giry p]_y f y.
+  qbs_integral (measQ R M) p f = \int[qbs_to_giry p]_y f y.
 
-Lemma qbs_to_giry_inj (p1 p2 : qbs_prob (R_qbs R M)) :
+Lemma qbs_to_giry_equiv (p1 p2 : qbs_prob (measQ R M)) :
   (forall A, measurable A -> qbs_to_giry p1 A = qbs_to_giry p2 A) ->
-  qbs_prob_equiv (R_qbs R M) p1 p2.
+  qbs_prob_equiv (measQ R M) p1 p2.
 
-Lemma qbs_to_giry_bind d' (M' : measurableType d') (p : qbs_prob (R_qbs R M))
-    (f : qbsHomType (R_qbs R M) (monadP (R_qbs R M'))) (A : set M') :
+Lemma qbs_to_giry_bind d' (M' : measurableType d') (p : qbs_prob (measQ R M))
+    (f : qbsHomType (measQ R M) (monadP (measQ R M'))) (A : set M') :
   measurable A ->
   qbs_to_giry (qbs_bind p f : qbs_prob _) A =
   \int[qbs_to_giry p]_x qbs_to_giry (f x : qbs_prob _) A.
 ```
 
-(`qbs_to_giry_inj` and `qbs_to_giry_bind` are stated for `M` with a `standard_borel_wit`.) Further lemmas: `qbs_prob_equiv_giry` (equivalent probabilities have the same distribution), `qbs_to_giry_return` (return goes to the Dirac measure), and `qbs_to_giry_map` (map goes to pushforward).
+(`qbs_to_giry_equiv` and `qbs_to_giry_bind` are stated for `M` with a `standard_borel_wit`.) Further lemmas: `qbs_prob_equiv_giry` (equivalent probabilities have the same distribution), `qbs_to_giry_return` (return goes to the Dirac measure), and `qbs_to_giry_map` (map goes to pushforward).
 
 Conversely, a probability measure `P` on `M` yields a QBS probability on `R(M)` from a measurable `encode : M -> R` with measurable left inverse `decode`, and the two constructions are mutually inverse up to equivalence:
 
 ```
-Definition giry_to_qbs (P : probability M R) : qbs_prob (R_qbs R M) :=
-  @mkQBSProb R (R_qbs R M) decode (distribution P encode) decode_meas.
+Definition giry_to_qbs (P : probability M R) : qbs_prob (measQ R M) :=
+  @mkQBSProb R (measQ R M) decode (distribution P encode) decode_meas.
 
 Lemma qbs_to_giryK (P : probability M R) (A : set M) :
   qbs_to_giry (giry_to_qbs P) A = P A.
 
-Lemma giry_to_qbsK (p : qbs_prob (R_qbs R M)) :
-  qbs_prob_equiv (R_qbs R M) (giry_to_qbs (qbs_to_giry p)) p.
+Lemma giry_to_qbsK (p : qbs_prob (measQ R M)) :
+  qbs_prob_equiv (measQ R M) (giry_to_qbs (qbs_to_giry p)) p.
 ```
 
 ### 2.23 Standard Distributions
@@ -1501,18 +1501,18 @@ This file constructs a measurable retraction of R × R onto R: a measurable `enc
 ### 3.1 Standard Borel: R to (0,1) Bijection
 
 ```
-Definition phi (x : R) : R := atan x / pi + 1 / 2.
-Definition psi (y : R) : R := tan (pi * (y - 1 / 2)).
+Definition atan01 (x : R) : R := atan x / pi + 1 / 2.
+Definition tan01 (y : R) : R := tan (pi * (y - 1 / 2)).
 ```
 
 | Name | Statement |
 |------|-----------|
-| `phi_gt0` | `0 < phi x` for all `x` |
-| `phi_lt1` | `phi x < 1` for all `x` |
-| `phiK` | `cancel phi psi` (psi is a left inverse of phi, unconditional) |
-| `psiK` | `{in `](0,1)[, cancel psi phi}` (phi is a left inverse of psi on (0,1)) |
-| `measurable_phi` | `measurable_fun setT phi` |
-| `measurable_psi_setT` | `measurable_fun setT psi` (measurable on all of R) |
+| `atan01_gt0` | `0 < atan01 x` for all `x` |
+| `atan01_lt1` | `atan01 x < 1` for all `x` |
+| `atan01K` | `cancel atan01 tan01` (tan01 is a left inverse of atan01, unconditional) |
+| `tan01K` | `{in `](0,1)[, cancel tan01 atan01}` (atan01 is a left inverse of tan01 on (0,1)) |
+| `measurable_atan01` | `measurable_fun setT atan01` |
+| `measurable_tan01_setT` | `measurable_fun setT tan01` (measurable on all of R) |
 
 The proofs use `atan_gtNpi2`, `atan_ltpi2`, `atanK`, `tanK`, `cos_gt0_pihalf`, and `continuous_atan`/`continuous_tan` from math-comp analysis.
 
@@ -1625,7 +1625,7 @@ Lemma unit_to_pairK (r : R) :
 
 This direction requires no-trailing-ones on the deinterleaved subsequences, which does NOT follow from no-trailing-ones on the full sequence. However, this direction is not needed for `standard_borel_wit`, which only requires `g(f(x)) = x`. The set of reals where the extra hypotheses fail is a subset of the dyadic rationals (countable, hence measure-zero).
 
-Additional helper lemmas: `bin_sum_ext`, `bin_sum_has_one_gt0`, `phi_has_true_digit`, `phi_ge0`, `phi_in_01`, `pair_to_unit_phi_gt0`, `pair_to_unit_phi_lt1`, `pair_to_unit_phi_in_itv`.
+Additional helper lemmas: `bin_sum_ext`, `bin_sum_has_one_gt0`, `atan01_has_true_digit`, `atan01_ge0`, `atan01_in_01`, `pair_to_unit_atan01_gt0`, `pair_to_unit_atan01_lt1`, `pair_to_unit_atan01_in_itv`.
 
 ### 3.5 Measurability of the Bijection Components
 
@@ -1649,22 +1649,22 @@ Additional helper lemmas: `bin_sum_ext`, `bin_sum_has_one_gt0`, `phi_has_true_di
 | `measurable_unit_to_pair_fst` | `measurable_fun setT (fun r => (unit_to_pair r).1)` |
 | `measurable_unit_to_pair_snd` | `measurable_fun setT (fun r => (unit_to_pair r).2)` |
 
-**Full-domain measurability of psi:**
+**Full-domain measurability of tan01:**
 
 ```
-Lemma measurable_psi_setT : measurable_fun [set: R] (@psi R).
+Lemma measurable_tan01_setT : measurable_fun [set: R] (@tan01 R).
 ```
 
-The proof factors `psi = sin * cos^{-1}` on `pi*(y - 1/2)`, proves `sin` and `cos` are measurable via continuity, and handles `cos^{-1}` by approximating `x^{-1}` with `x/(x^2 + 1/(n+1))` (which is continuous) and applying `measurable_fun_cvg`. The convergence `inv_cvg_approx` is proved using `cvgV` and `cvg_harmonic`.
+The proof factors `tan01 = sin * cos^{-1}` on `pi*(y - 1/2)`, proves `sin` and `cos` are measurable via continuity, and handles `cos^{-1}` by approximating `x^{-1}` with `x/(x^2 + 1/(n+1))` (which is continuous) and applying `measurable_fun_cvg`. The convergence `inv_cvg_approx` is proved using `cvgV` and `cvg_harmonic`.
 
 ### 3.6 Composed Retraction R x R to R
 
 ```
 Definition encode_RR (xy : R * R) : R :=
-  psi (pair_to_unit (phi xy.1, phi xy.2)).
+  tan01 (pair_to_unit (atan01 xy.1, atan01 xy.2)).
 
 Definition decode_RR (r : R) : R * R :=
-  let uv := unit_to_pair (phi r) in (psi uv.1, psi uv.2).
+  let uv := unit_to_pair (atan01 r) in (tan01 uv.1, tan01 uv.2).
 ```
 
 **Main round-trip theorems:**
@@ -1674,14 +1674,14 @@ Theorem encode_RRK (xy : R * R) :
   decode_RR (encode_RR xy) = xy.
 ```
 
-The proof chains: (1) `psiK` to recover `pair_to_unit(phi x, phi y)` from `phi(psi(...))`, (2) `pair_to_unitK` to recover `(phi x, phi y)` from `unit_to_pair(pair_to_unit(...))`, and (3) `phiK` twice to recover `(x, y)`.
+The proof chains: (1) `tan01K` to recover `pair_to_unit(atan01 x, atan01 y)` from `atan01(tan01(...))`, (2) `pair_to_unitK` to recover `(atan01 x, atan01 y)` from `unit_to_pair(pair_to_unit(...))`, and (3) `atan01K` twice to recover `(x, y)`.
 
 ```
 Theorem decode_RRK (r : R)
-  (hnt_even : no_trailing_ones (deinterleave_even (bin_digits (phi r))))
-  (hnt_odd : no_trailing_ones (deinterleave_odd (bin_digits (phi r))))
-  (hu1_pos : 0 < (unit_to_pair (phi r)).1)
-  (hu2_pos : 0 < (unit_to_pair (phi r)).2) :
+  (hnt_even : no_trailing_ones (deinterleave_even (bin_digits (atan01 r))))
+  (hnt_odd : no_trailing_ones (deinterleave_odd (bin_digits (atan01 r))))
+  (hu1_pos : 0 < (unit_to_pair (atan01 r)).1)
+  (hu2_pos : 0 < (unit_to_pair (atan01 r)).2) :
   encode_RR (decode_RR r) = r.
 ```
 
@@ -1694,7 +1694,7 @@ This direction requires extra hypotheses (see Section 3.4) but is not needed for
 | `measurable_encode_RR` | `measurable_fun setT encode_RR` |
 | `measurable_decode_RR` | `measurable_fun setT decode_RR` |
 
-The `measurable_encode_RR` proof composes `measurable_phi` (on each component), `measurable_pair_to_unit`, and `measurable_psi_setT`. The `measurable_decode_RR` proof also uses `measurable_psi_setT`, `measurable_unit_to_pair_fst/snd`, and `measurable_phi`.
+The `measurable_encode_RR` proof composes `measurable_atan01` (on each component), `measurable_pair_to_unit`, and `measurable_tan01_setT`. The `measurable_decode_RR` proof also uses `measurable_tan01_setT`, `measurable_unit_to_pair_fst/snd`, and `measurable_atan01`.
 
 ### 3.7 The Punchline: pair_standard_borel
 
@@ -1711,7 +1711,7 @@ exact: encode_RRK.
 Qed.
 ```
 
-This witnesses that `R x R` is standard Borel in the sense of `standard_borel_wit` (defined in `measure_qbs_adjunction.v`, Section 1.11), which only requires a measurable retraction `g(f(x)) = x` (not the reverse). It is packaged as `prod_standard_borel` there, and combined with `R_qbs_full` it shows the R functor is full on products of standard Borel spaces. For use with product measures, the file also provides `encode_RR_mR`, `decode_RR_mR`, `encode_RR_mRK` (the same maps on `measurableTypeR R`) and `measurable_truncn` (used to decode the index when gluing probabilities).
+This witnesses that `R x R` is standard Borel in the sense of `standard_borel_wit` (defined in `measure_qbs_adjunction.v`, Section 1.11), which only requires a measurable retraction `g(f(x)) = x` (not the reverse). It is packaged as `prod_standard_borel` there, and combined with `measQ_full` it shows the R functor is full on products of standard Borel spaces. For use with product measures, the file also provides `encode_RR_mR`, `decode_RR_mR`, `encode_RR_mRK` (the same maps on `measurableTypeR R`) and `measurable_truncn` (used to decode the index when gluing probabilities).
 
 ---
 
@@ -1771,7 +1771,7 @@ quasi_borel.v
 | Cartesian closure | Present | `qbs_curryK`, `qbs_uncurryK`, `qbs_curry_morph_uniq` |
 | L -| R adjunction | Present | `qbs_morphism_measurableP` (L as a `measurableType`) |
 | Countable coproducts / lists | Present | `sigmaQ` / `sigma_case` / `listQ`, `qbs_cons`, `list_rec`, `qbs_morphism_list_rec` (AFP `rec_list_morphism`) |
-| Lattice of QBS structures | Present | `qbs_supT`, `qbs_infT`, `qbs_topT`, `qbs_botT`, `emptyQ` (initial) |
+| Lattice of QBS structures | Present | `qbs_sup`, `qbs_inf`, `qbs_top`, `qbs_bot`, `emptyQ` (initial) |
 | Order adjunction (`rl_order_adjunction`) | Present | `sigma_of_Mx_of` (Galois connection `sigma_of` / `Mx_of`) |
 | Concrete morphisms | Present | `qbs_negb/andb/orb/implb`, `qbs_ltr`, `qbs_ltn`, `qbs_case`, `qbs_arg_swap`, `qbs_exp_compose`, `natQ_morphism`, `boolQ_morphism` |
 | Standard Borel R≅R×R | Not formalized | `pair_standard_borel` (retraction, via atan + digit interleaving) |
@@ -1782,7 +1782,7 @@ quasi_borel.v
 | Internal bind (HKSY Thm. 21) | Not formalized | `qbs_bind_internal` |
 | Commutativity (HKSY Prop. 22(2)) | Not formalized | `monadP_pair_comm`, `qbs_bind_comm` |
 | Fubini on QBS | Not formalized | `qbs_pair_integral_iterated` + marginals |
-| Independence | Not formalized | `qbs_indep`, `qbs_indep_rect`, `qbs_integral_indep_factorization` |
+| Independence | Not formalized | `qbs_indep`, `qbs_indep_rect`, `qbs_integral_indepM` |
 | QBS↔Giry bridge | Not formalized | `qbs_to_giry` / `giry_to_qbs`, `qbs_to_giry_bind` |
 | Normalizer | Not formalized | `qbs_normalize` + `qbs_normalize_event`, `qbs_normalize_equiv`, `qbs_normalize_morphism` (AFP `norm_qbs_measure_morphism`) |
 | Integral arithmetic | Not formalized | `qbs_integrable`, `qbs_integrableP`, `qbs_integral_le`, `qbs_integral_bind` (`qbs_monad_integral.v`) |
@@ -1835,10 +1835,10 @@ documented in the source files and in this report, not hidden:
    factorization, not statistical independence.** It states
    `E[fg] = E[f]E[g]` when `f` and `g` depend on disjoint coordinates of
    a product measure, which is a tautology of products. The genuine
-   independence factorization is `qbs_integral_indep_factorization`,
+   independence factorization is `qbs_integral_indepM`,
    which uses the `qbs_indep` predicate (via `qbs_prob_equiv` on the
    pushforward) and recovers
-   `E_p[(phi (f z)) * (psi (g z))] = E[phi (f z)] * E[psi (g z)]`
+   `E_p[(atan01 (f z)) * (tan01 (g z))] = E[atan01 (f z)] * E[tan01 (g z)]`
    from independence of `f` and `g`.
 
 4. **`standard_borel_wit` is a retract-of-R witness**, not the classical
@@ -1851,7 +1851,7 @@ documented in the source files and in this report, not hidden:
    must check or prove the success case; `bayesian_regression.v` does
    so in `program_posterior` (the evidence is the explicit constant `evidence_const`).
 
-6. **`qbs_to_giry_inj` and `qbs_to_giry_bind` need a `standard_borel_wit`**
+6. **`qbs_to_giry_equiv` and `qbs_to_giry_bind` need a `standard_borel_wit`**
    for the underlying measurable space, as in HKSY Prop. 23.
 
 ### 4.6 Remaining Work

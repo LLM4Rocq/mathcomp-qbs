@@ -9,7 +9,7 @@ From QBS Require Import measurable_aux quasi_borel standard_borel.
 (**md**************************************************************************)
 (* # Adjunction between Measurable Spaces and Quasi-Borel Spaces              *)
 (*                                                                            *)
-(* The R functor (R_qbs, quasi_borel.v) sends a measurable space to its QBS   *)
+(* The R functor (measQ, quasi_borel.v) sends a measurable space to its QBS   *)
 (* of measurable functions; the L functor (qbs_meas, quasi_borel.v) sends a   *)
 (* QBS to its carrier with the sigma-algebra sigma_Mx. L -| R is              *)
 (* qbs_morphism_measurableP (HKSY Prop. 15(1)). This file adds L on           *)
@@ -42,13 +42,13 @@ Local Abbreviation mR := (measurableTypeR R).
 Implicit Types (X Y : qbsType R).
 
 (** R functor properties.
-    R_qbs is defined in quasi_borel.v. Here we show it is functorial. *)
+    measQ is defined in quasi_borel.v. Here we show it is functorial. *)
 
-(* If f is measurable, then f is a QBS morphism between R_qbs spaces *)
-Lemma R_qbs_morphism d1 d2
+(* If f is measurable, then f is a QBS morphism between measQ spaces *)
+Lemma measQ_morphism d1 d2
     (M1 : measurableType d1) (M2 : measurableType d2)
     (f : {mfun M1 >-> M2}) :
-  qbs_morphism (X := R_qbs R M1) (Y := R_qbs R M2) f.
+  qbs_morphism (X := measQ R M1) (Y := measQ R M2) f.
 Proof.
 move=> alpha; rewrite /qbs_Mx /= => halpha.
 exact: measurableT_comp.
@@ -66,15 +66,15 @@ exact: mU _ (hf _ ha).
 Qed.
 
 (** Counit of L -| R: the identity L (R M) -> M is measurable. *)
-Lemma sigma_Mx_R_qbs d (M : measurableType d) (U : set M) :
-  measurable U -> sigma_Mx (X := R_qbs R M) U.
+Lemma sigma_Mx_measQ d (M : measurableType d) (U : set M) :
+  measurable U -> sigma_Mx (X := measQ R M) U.
 Proof.
 move=> mU a ha; rewrite -[X in measurable X]setTI.
 exact: ha measurableT U mU.
 Qed.
 
 Lemma adjunction_counit d (M : measurableType d) :
-  measurable_fun [set: qbs_meas (R_qbs R M)] (idfun : _ -> M).
+  measurable_fun [set: qbs_meas (measQ R M)] (idfun : _ -> M).
 Proof.
 by apply/qbs_morphism_measurableP => a ha.
 Qed.
@@ -82,13 +82,13 @@ Qed.
 (** R preserves products.
     R(M1 x M2) has the same random elements as prodQ(R(M1), R(M2)). *)
 
-(* The random elements of R_qbs applied to a product measurable type
-   coincide with those of the QBS product of R_qbs spaces *)
-Lemma qbs_Mx_R_qbs_prod d1 d2
+(* The random elements of measQ applied to a product measurable type
+   coincide with those of the QBS product of measQ spaces *)
+Lemma qbs_Mx_measQ_prod d1 d2
     (M1 : measurableType d1) (M2 : measurableType d2)
     (alpha : mR -> M1 * M2) :
-  qbs_Mx (s := R_qbs R (M1 * M2)%type) alpha <->
-  qbs_Mx (s := prodQ (R_qbs R M1) (R_qbs R M2)) alpha.
+  qbs_Mx (s := measQ R (M1 * M2)%type) alpha <->
+  qbs_Mx (s := prodQ (measQ R M1) (measQ R M2)) alpha.
 Proof.
 split.
   rewrite /qbs_Mx /= => halpha; split; exact: measurableT_comp.
@@ -120,9 +120,9 @@ Defined.
 
 (** R is full on standard Borel domains (HKSY Prop. 15(2)): every QBS
     morphism R(M1) -> R(M2) is measurable when M1 is standard Borel. *)
-Lemma R_qbs_full d1 d2 (M1 : measurableType d1) (M2 : measurableType d2)
+Lemma measQ_full d1 d2 (M1 : measurableType d1) (M2 : measurableType d2)
     (sb : standard_borel_wit M1) (f : M1 -> M2) :
-  qbs_morphism (X := R_qbs R M1) (Y := R_qbs R M2) f ->
+  qbs_morphism (X := measQ R M1) (Y := measQ R M2) f ->
   measurable_fun setT f.
 Proof.
 case: sb => phi psi psiK hf.
@@ -182,15 +182,15 @@ change ((sb_decode sb1 (decode_RR (encode_RR (sb_encode sb1 x1,
 by rewrite encode_RRK /= !sb_encodeK.
 Defined.
 
-(** For standard Borel [M], [sigma_Mx (R_qbs M)] coincides with
+(** For standard Borel [M], [sigma_Mx (measQ M)] coincides with
     the original sigma-algebra. *)
-Lemma sigma_Mx_standard_borel d
+Lemma sigma_Mx_standard_borelP d
     (M : measurableType d) (sb : standard_borel_wit M) :
-  forall U : set M, sigma_Mx (X := R_qbs R M) U <-> measurable U.
+  forall U : set M, sigma_Mx (X := measQ R M) U <-> measurable U.
 Proof.
 case: sb => f g hgf U; split.
 - (* sigma_Mx -> measurable: use f, g to recover measurability.
-     g is measurable so g is in Mx(R_qbs M), hence g^{-1}(U) is
+     g is measurable so g is in Mx(measQ M), hence g^{-1}(U) is
      measurable. Then U = f^{-1}(g^{-1}(U)) since g(f(x)) = x,
      and f is measurable, so U is measurable. *)
   move=> hU.
@@ -200,7 +200,7 @@ case: sb => f g hgf U; split.
   apply/seteqP; split => x /=.
     by rewrite /preimage /= => hUx; rewrite hgf.
   by rewrite /preimage /= => hgfU; rewrite -(hgf x).
-- exact: sigma_Mx_R_qbs.
+- exact: sigma_Mx_measQ.
 Qed.
 
 Local Lemma measurable_contract_fin :
@@ -293,7 +293,7 @@ Defined.
 (** Order adjunction on a fixed carrier T (AFP rl_order_adjunction).
     [sigma_of Mx] (quasi_borel.v) is the L side, and sigma_Mx X is
     sigma_of qbs_Mx by definition; [Mx_of S] is the R side: the maps
-    measurable for the set system S ([qbs_Mx (R_qbs M) = Mx_of measurable]).
+    measurable for the set system S ([qbs_Mx (measQ M) = Mx_of measurable]).
     Both are antitone, and they form a (contravariant) Galois connection. *)
 Definition Mx_of (T : Type) (S : set (set T)) : set (mR -> T) :=
   [set a | forall U, S U -> measurable (a @^-1` U)].
@@ -314,8 +314,8 @@ split=> h.
 by move=> U hU a ha; exact: h a ha U hU.
 Qed.
 
-Lemma qbs_Mx_R_qbs d (M : measurableType d) :
-  qbs_Mx (s := R_qbs R M) = Mx_of (@measurable _ M).
+Lemma qbs_Mx_measQ d (M : measurableType d) :
+  qbs_Mx (s := measQ R M) = Mx_of (@measurable _ M).
 Proof.
 rewrite eqEsubset; split=> a ha.
   by move=> U mU; have := ha measurableT U mU; rewrite setTI.

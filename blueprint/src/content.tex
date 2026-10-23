@@ -124,7 +124,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \section{The R Functor}\label{sec:R_functor}
 
 \begin{definition}[R Functor]\label{def:R_qbs}
-  \rocq{QBS.quasi_borel.R_qbs}
+  \rocq{QBS.quasi_borel.measQ}
   \rocqok
   \uses{def:isQBS}
   The functor $R : \mathbf{Meas} \to \mathbf{QBS}$ sends a measurable
@@ -152,7 +152,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \end{definition}
 
 \begin{lemma}[R Preserves Morphisms]\label{lem:R_qbs_morph}
-  \rocq{QBS.measure_qbs_adjunction.R_qbs_morphism}
+  \rocq{QBS.measure_qbs_adjunction.measQ_morphism}
   \rocqok
   \uses{def:R_qbs, def:qbs_morphism}
   If $f : M_1 \to M_2$ is a measurable function, then $f$ is a QBS morphism
@@ -367,7 +367,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \section{Subspaces}\label{sec:subspaces}
 
 \begin{definition}[Subspace QBS]\label{def:sub_qbs}
-  \rocq{QBS.quasi_borel.sub_qbs}
+  \rocq{QBS.quasi_borel.subQ}
   \rocqok
   \uses{def:isQBS}
   Given a QBS~$X$ and a predicate $P \subseteq X$, the subspace QBS
@@ -379,7 +379,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \section{Generating QBS}\label{sec:generating}
 
 \begin{definition}[Generating QBS]\label{def:generating_qbs}
-  \rocq{QBS.quasi_borel.generating_qbs}
+  \rocq{QBS.quasi_borel.generatingQ}
   \rocqok
   \uses{def:isQBS}
   Given a set $G$ of functions $\mathbb{R} \to T$, the \emph{generating QBS}
@@ -388,7 +388,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \end{definition}
 
 \begin{lemma}[Generators Are Random]\label{lem:generating_qbs_incl}
-  \rocq{QBS.quasi_borel.generating_qbs_incl}
+  \rocq{QBS.quasi_borel.generatingQ_incl}
   \rocqok
   \uses{def:generating_qbs}
   $G \subseteq M_{\mathrm{gen}(G)}$.
@@ -396,7 +396,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Generating QBS Is Least]\label{lem:generating_qbs_least}
-  \rocq{QBS.quasi_borel.generating_qbs_least}
+  \rocq{QBS.quasi_borel.generatingQ_least}
   \rocqok
   \uses{def:generating_qbs}
   If $M'$ is closed (\texttt{qbs\_closed}, a conjunction of the three QBS axioms) and $G \subseteq M'$, then
@@ -408,7 +408,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \section{Image QBS}\label{sec:image}
 
 \begin{definition}[Image QBS]\label{def:map_qbs}
-  \rocq{QBS.quasi_borel.map_qbs}
+  \rocq{QBS.quasi_borel.mapQ}
   \rocqok
   \uses{def:generating_qbs, def:qbs_morphism}
   Given a QBS morphism $f : X \to Y$, the image QBS
@@ -416,7 +416,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \end{definition}
 
 \begin{lemma}[Image Random Elements]\label{lem:map_qbs_random}
-  \rocq{QBS.quasi_borel.map_qbs_random}
+  \rocq{QBS.quasi_borel.mapQ_random}
   \rocqok
   \uses{def:map_qbs}
   If $\alpha \in M_X$, then $f \circ \alpha \in M_{\mathrm{im}(f)}$.
@@ -424,7 +424,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Image Is Coarser Than Codomain]\label{lem:map_qbs_sub}
-  \rocq{QBS.quasi_borel.map_qbs_sub}
+  \rocq{QBS.quasi_borel.mapQ_sub}
   \rocqok
   \uses{def:map_qbs}
   $M_{\mathrm{im}(f)} \subseteq M_Y$.
@@ -432,7 +432,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Image Morphism Out]\label{lem:map_qbs_morphism_out}
-  \rocq{QBS.quasi_borel.map_qbs_morphism_out}
+  \rocq{QBS.quasi_borel.mapQ_morphism_out}
   \rocqok
   \uses{def:map_qbs, def:qbs_morphism}
   If $g : Y \to Z$ is a QBS morphism, then
@@ -441,7 +441,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Image Morphism In]\label{lem:map_qbs_morphism_in}
-  \rocq{QBS.quasi_borel.map_qbs_morphism_in}
+  \rocq{QBS.quasi_borel.mapQ_morphism_in}
   \rocqok
   \uses{def:map_qbs, def:qbs_morphism}
   $f$ is a QBS morphism $X \to \mathrm{im}(f)$.
@@ -452,7 +452,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \section{Order Structure on QBS}\label{sec:order}
 
 \begin{definition}[QBS Ordering]\label{def:qbs_leT}
-  \rocq{QBS.quasi_borel.qbs_leT}
+  \rocq{QBS.quasi_borel.qbs_le}
   \rocqok
   \uses{def:isQBS}
   For QBS structures on the same carrier~$T$,
@@ -461,9 +461,9 @@ $m\mathbb{R}$ for its Borel measurable space.
 \end{definition}
 
 \begin{lemma}[Partial Order]\label{lem:qbs_leT_order}
-  \rocq{QBS.quasi_borel.qbs_leT_refl}
-  \rocq{QBS.quasi_borel.qbs_leT_trans}
-  \rocq{QBS.quasi_borel.qbs_leT_antisym}
+  \rocq{QBS.quasi_borel.qbs_le_refl}
+  \rocq{QBS.quasi_borel.qbs_le_trans}
+  \rocq{QBS.quasi_borel.qbs_le_anti}
   \rocqok
   \uses{def:qbs_leT}
   $\leq$ is reflexive, transitive, and antisymmetric.
@@ -471,7 +471,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{definition}[QBS Supremum]\label{def:qbs_supT}
-  \rocq{QBS.quasi_borel.qbs_supT}
+  \rocq{QBS.quasi_borel.qbs_sup}
   \rocqok
   \uses{def:generating_qbs, def:qbs_leT}
   The supremum of two QBS structures on~$T$ is
@@ -479,9 +479,9 @@ $m\mathbb{R}$ for its Borel measurable space.
 \end{definition}
 
 \begin{lemma}[Supremum Properties]\label{lem:qbs_supT_props}
-  \rocq{QBS.quasi_borel.qbs_supT_ub_l}
-  \rocq{QBS.quasi_borel.qbs_supT_ub_r}
-  \rocq{QBS.quasi_borel.qbs_supT_least}
+  \rocq{QBS.quasi_borel.qbs_sup_ub_l}
+  \rocq{QBS.quasi_borel.qbs_sup_ub_r}
+  \rocq{QBS.quasi_borel.qbs_sup_least}
   \rocqok
   \uses{def:qbs_supT, def:qbs_leT}
   The supremum is an upper bound for both components and is the least
@@ -491,7 +491,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 
 \begin{definition}[QBS Infimum]\label{def:qbs_infT}
   \rocq{QBS.quasi_borel.qbs_closed}
-  \rocq{QBS.quasi_borel.qbs_infT}
+  \rocq{QBS.quasi_borel.qbs_inf}
   \rocqok
   \uses{def:generating_qbs, def:qbs_leT}
   A set of maps $M$ is \emph{closed} if it is stable under precomposition with measurable maps, contains the constants, and is stable under countable measurable gluing. The infimum of two QBS structures on $T$ is $\mathrm{gen}(M_X \cap M_Y)$.
@@ -500,10 +500,10 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{lemma}[Infimum Properties]\label{lem:qbs_infT_props}
   \rocq{QBS.quasi_borel.qbs_closed_Mx}
   \rocq{QBS.quasi_borel.qbs_closedI}
-  \rocq{QBS.quasi_borel.qbs_infT_lb_l}
-  \rocq{QBS.quasi_borel.qbs_infT_lb_r}
-  \rocq{QBS.quasi_borel.qbs_infT_greatest}
-  \rocq{QBS.quasi_borel.qbs_infT_Mx}
+  \rocq{QBS.quasi_borel.qbs_inf_lb_l}
+  \rocq{QBS.quasi_borel.qbs_inf_lb_r}
+  \rocq{QBS.quasi_borel.qbs_inf_greatest}
+  \rocq{QBS.quasi_borel.qbs_inf_Mx}
   \rocqok
   \uses{def:qbs_infT, def:qbs_leT}
   The set of random elements of a QBS is closed, closed sets are stable under intersection, and the infimum is the greatest lower bound.
@@ -511,17 +511,17 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{definition}[Top, Bottom and Empty QBS]\label{def:qbs_topT}
-  \rocq{QBS.quasi_borel.qbs_topT}
-  \rocq{QBS.quasi_borel.qbs_botT}
+  \rocq{QBS.quasi_borel.qbs_top}
+  \rocq{QBS.quasi_borel.qbs_bot}
   \rocq{QBS.quasi_borel.emptyQ}
   \rocqok
   \uses{def:qbs_leT, def:generating_qbs}
-  On a type $T$, the top structure has all maps $\mathbb{R} \to T$ as random elements (an instance on the alias \texttt{top\_type}); the bottom structure is generated by no map at all; the empty QBS is \texttt{qbs\_topT void}.
+  On a type $T$, the top structure has all maps $\mathbb{R} \to T$ as random elements (an instance on the alias \texttt{qbs\_top\_type}); the bottom structure is generated by no map at all; the empty QBS is \texttt{qbs\_top void}.
 \end{definition}
 
 \begin{lemma}[Top, Bottom and Empty: Properties]\label{lem:qbs_topT_props}
-  \rocq{QBS.quasi_borel.qbs_topT_ub}
-  \rocq{QBS.quasi_borel.qbs_botT_lb}
+  \rocq{QBS.quasi_borel.qbs_top_ub}
+  \rocq{QBS.quasi_borel.qbs_bot_lb}
   \rocq{QBS.quasi_borel.qbs_Mx0P}
   \rocq{QBS.quasi_borel.qbs_void}
   \rocq{QBS.quasi_borel.emptyQ_initial}
@@ -586,7 +586,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[R Preserves Products]\label{lem:qbs_Mx_R_qbs_prod}
-  \rocq{QBS.measure_qbs_adjunction.qbs_Mx_R_qbs_prod}
+  \rocq{QBS.measure_qbs_adjunction.qbs_Mx_measQ_prod}
   \rocqok
   \uses{def:R_qbs, def:prodQ}
   $R(M_1 \times M_2)$ and $R(M_1) \times R(M_2)$ have the same random
@@ -595,7 +595,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Sigma-Algebra of $R(M)$]\label{lem:sigma_Mx_R_qbs}
-  \rocq{QBS.measure_qbs_adjunction.sigma_Mx_R_qbs}
+  \rocq{QBS.measure_qbs_adjunction.sigma_Mx_measQ}
   \rocqok
   \uses{def:sigma_Mx, def:R_qbs}
   Every measurable $U \subseteq M$ belongs to $\sigma_{M_{R(M)}}$.
@@ -611,7 +611,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Galois Connection Between Random Elements and Sigma-Algebras]\label{thm:sigma_of_Mx_of}
-  \rocq{QBS.measure_qbs_adjunction.sigma_of}
+  \rocq{QBS.quasi_borel.sigma_of}
   \rocq{QBS.measure_qbs_adjunction.Mx_of}
   \rocq{QBS.measure_qbs_adjunction.sigma_of_antitone}
   \rocq{QBS.measure_qbs_adjunction.Mx_of_antitone}
@@ -623,8 +623,7 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Instances of the Galois Connection]\label{lem:sigma_MxE}
-  \rocq{QBS.measure_qbs_adjunction.sigma_MxE}
-  \rocq{QBS.measure_qbs_adjunction.qbs_Mx_R_qbs}
+  \rocq{QBS.measure_qbs_adjunction.qbs_Mx_measQ}
   \rocq{QBS.measure_qbs_adjunction.qbs_Mx_sub_Mx_of}
   \rocqok
   \uses{thm:sigma_of_Mx_of, def:sigma_Mx, def:R_qbs}
@@ -656,12 +655,12 @@ $m\mathbb{R}$ for its Borel measurable space.
 \end{definition}
 
 \begin{theorem}[Fullness of $R$ on Standard Borel Domains (HKSY Prop.~15(2))]\label{thm:R_qbs_full}
-  \rocq{QBS.measure_qbs_adjunction.R_qbs_full}
+  \rocq{QBS.measure_qbs_adjunction.measQ_full}
   \rocqok
   \uses{def:standard_borel_wit, def:R_qbs, def:qbs_morphism}
   If $M_1$ has a standard Borel witness and $f : M_1 \to M_2$ is a
   QBS morphism $R(M_1) \to R(M_2)$, then $f$ is measurable.
-  Together with \texttt{R\_qbs\_morphism}, $R$ is full and faithful on
+  Together with \texttt{measQ\_morphism}, $R$ is full and faithful on
   standard Borel domains.
 \end{theorem}
 \begin{proof}
@@ -703,11 +702,11 @@ $m\mathbb{R}$ for its Borel measurable space.
   \rocqok
   \uses{def:standard_borel_wit}
   The extended reals $\bar{\mathbb{R}}$ have a standard Borel witness.
-  The QBS \texttt{erealQ} $= R(\bar{\mathbb{R}})$ is used for integrals.
+  The QBS $R(\bar{\mathbb{R}})$ is used for integrals.
 \end{definition}
 
 \begin{lemma}[Standard Borel: $\sigma_{M_{R(M)}}$ Coincides with Measurability]\label{lem:sigma_Mx_standard_borel}
-  \rocq{QBS.measure_qbs_adjunction.sigma_Mx_standard_borel}
+  \rocq{QBS.measure_qbs_adjunction.sigma_Mx_standard_borelP}
   \rocqok
   \uses{def:standard_borel_wit, def:sigma_Mx, def:R_qbs, lem:sigma_Mx_R_qbs}
   For $M$ with a standard Borel witness and $U \subseteq M$:
@@ -1159,7 +1158,7 @@ equalities.
 
 \begin{lemma}[Measurability and Sigma-Algebra]\label{lem:qbs_measurable_sigma_Mx}
   \rocq{QBS.probability_qbs.qbs_measurable_sigma_Mx}
-  \rocq{QBS.probability_qbs.qbs_measurableE}
+  \rocq{QBS.probability_qbs.qbs_measurableP}
   \rocqok
   \uses{def:qbs_measurable, def:sigma_Mx, def:qbs_meas, thm:qbs_morphism_measurableP}
   If $h$ is QBS measurable and $V$ is Borel measurable, then
@@ -1209,7 +1208,7 @@ equalities.
 \end{definition}
 
 \begin{lemma}[Equivalence Is Equality of Laws]\label{lem:qbs_prob_equivE}
-  \rocq{QBS.probability_qbs.qbs_prob_equivE}
+  \rocq{QBS.probability_qbs.qbs_prob_equiv_lawP}
   \rocqok
   \uses{def:qbs_law, def:qbs_prob_equiv}
   $p_1 \sim p_2$ iff $\mathrm{law}_{p_1}(A) = \mathrm{law}_{p_2}(A)$ for
@@ -1499,7 +1498,7 @@ equalities.
 
 \begin{theorem}[Internal Bind (HKSY Thm.~21)]\label{thm:qbs_bind_internal}
   \rocq{QBS.qbs_monad.qbs_bind_internal}
-  \rocq{QBS.qbs_monad.qbs_bind_internalE}
+  \rocq{QBS.qbs_monad.qbs_bind_internal_equiv}
   \rocqok
   \uses{def:qbs_bind, def:qbs_strength, lem:qbs_strength_morphism, thm:qbs_morphism_eval, def:expQ, lem:qbs_bind_morphism}
   Bind is itself a QBS morphism
@@ -1580,7 +1579,7 @@ equalities.
 \begin{lemma}[Signed and Parametric Integral Morphisms]\label{lem:qbs_integral_morphism}
   \rocq{QBS.qbs_monad_integral.qbs_integral_morphism}
   \rocq{QBS.qbs_monad_integral.qbs_integral_param}
-  \rocq{QBS.qbs_monad_integral.qbs_integral_snd}
+  \rocq{QBS.qbs_monad_integral.qbs_integral_param_snd}
   \rocqok
   \uses{thm:ge0_qbs_integral_morphism, def:qbs_integral, def:monadP}
   $p \mapsto \int h \, dp$ is a morphism $P(X) \to R(\bar{\mathbb{R}})$ for any measurable $h$ (not only nonnegative); for a morphism $L : X \to P(Y)$, $x \mapsto \int h(x, \cdot)\, d(L\,x)$ is a morphism (AFP \texttt{qbs\_prob\_integral\_morphism}); and $y \mapsto \int h(\cdot, y)\, dp$ is a morphism.
@@ -1843,7 +1842,7 @@ evidence is $0$ or infinite.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Independence Factorization]\label{lem:qbs_integral_indep_factorization}
-  \rocq{QBS.pair_qbs_measure.qbs_integral_indep_factorization}
+  \rocq{QBS.pair_qbs_measure.qbs_integral_indepM}
   \rocqok
   \uses{def:qbs_indep, lem:qbs_pair_integral_factorization, def:qbs_expect, def:qbs_prob_equiv, def:monadP_map}
   For random variables $f : Z \to X$ and $g : Z \to Y$ independent
@@ -2078,7 +2077,7 @@ probability measure on a standard Borel space is \texttt{giry\_to\_qbs}
 \begin{proof}\rocqok\end{proof}
 
 \begin{theorem}[Distributions Determine Probabilities (HKSY Prop.~22(3))]\label{thm:qbs_to_giry_inj}
-  \rocq{QBS.qbs_giry.qbs_to_giry_inj}
+  \rocq{QBS.qbs_giry.qbs_to_giry_equiv}
   \rocqok
   \uses{def:qbs_to_giry, def:qbs_prob_equiv, def:standard_borel_wit, lem:sigma_Mx_standard_borel}
   If $M$ has a standard Borel witness and two probabilities $p_1, p_2$ on
@@ -2143,8 +2142,8 @@ and (3) the composed encode/decode pair.
 \section{R to (0,1) Bijection}\label{sec:phi_psi}
 
 \begin{definition}[Phi and Psi]\label{def:phi_psi}
-  \rocq{QBS.standard_borel.phi}
-  \rocq{QBS.standard_borel.psi}
+  \rocq{QBS.standard_borel.atan01}
+  \rocq{QBS.standard_borel.tan01}
   \rocqok
   $\phi(x) = \frac{\arctan x}{\pi} + \frac{1}{2}$ maps
   $\mathbb{R} \to (0,1)$.
@@ -2152,8 +2151,8 @@ and (3) the composed encode/decode pair.
 \end{definition}
 
 \begin{lemma}[Phi Range]\label{lem:phi_range}
-  \rocq{QBS.standard_borel.phi_gt0}
-  \rocq{QBS.standard_borel.phi_lt1}
+  \rocq{QBS.standard_borel.atan01_gt0}
+  \rocq{QBS.standard_borel.atan01_lt1}
   \rocqok
   \uses{def:phi_psi}
   $0 < \phi(x) < 1$ for all $x \in \mathbb{R}$.
@@ -2161,8 +2160,8 @@ and (3) the composed encode/decode pair.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Phi--Psi Cancellation]\label{lem:phi_psi_cancel}
-  \rocq{QBS.standard_borel.psiK}
-  \rocq{QBS.standard_borel.phiK}
+  \rocq{QBS.standard_borel.tan01K}
+  \rocq{QBS.standard_borel.atan01K}
   \rocqok
   \uses{def:phi_psi}
   $\psi(\phi(x)) = x$ unconditionally.
@@ -2171,8 +2170,8 @@ and (3) the composed encode/decode pair.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Phi and Psi Measurability]\label{lem:phi_psi_measurable}
-  \rocq{QBS.standard_borel.measurable_phi}
-  \rocq{QBS.standard_borel.measurable_psi_setT}
+  \rocq{QBS.standard_borel.measurable_atan01}
+  \rocq{QBS.standard_borel.measurable_tan01_setT}
   \rocqok
   \uses{def:phi_psi}
   $\phi$ is measurable on all of~$\mathbb{R}$. $\psi$ is measurable on
@@ -2187,7 +2186,7 @@ and (3) the composed encode/decode pair.
   \rocq{QBS.standard_borel.bin_digit}
   \rocq{QBS.standard_borel.bin_partial_sum}
   \rocq{QBS.standard_borel.bin_sum}
-  \rocq{QBS.standard_borel.bin_digits}
+  \rocq{QBS.standard_borel.bin_digit}
   \rocq{QBS.standard_borel.bin_step}
   \rocq{QBS.standard_borel.bin_rem}
   \rocq{QBS.standard_borel.bin_remS}

@@ -13,7 +13,7 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad standard_borel.
 (* so that Fubini and the variance of mathcomp-analysis apply.                *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*   qbs_prob_pair p q == product QBS probability on prodQ X Y, the       *)
+(*   qbs_prob_pair p q == product QBS probability on prodQ X Y, the           *)
 (*                            pushforward of mu_p \x mu_q along R * R -> R;   *)
 (*                            it is equivalent to monadP_pair                 *)
 (*                            (qbs_prob_pair_equiv)                           *)
@@ -23,8 +23,8 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad standard_borel.
 (*     qbs_pair_fun p q h == h composed with the two alphas, on mR * mR       *)
 (*   integral_prod_{fst,snd,mul} == integrals of h rr.1, h rr.2, h1 rr.1 *    *)
 (*                            h2 rr.2 against a product of probabilities      *)
-(*   qbs_indep p f g == independence of f and g under p                 *)
-(*   qbs_pair_variance px py f g == variance of f(x) + g(y) on product    *)
+(*   qbs_indep p f g == independence of f and g under p                       *)
+(*   qbs_pair_variance px py f g == variance of f(x) + g(y) on product        *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -275,7 +275,7 @@ by move=> x _; rewrite lee_fin indicE ler0n.
 Qed.
 
 (** Independence factorization: E[phi(f) psi(g)] = E[phi(f)] E[psi(g)]. *)
-Lemma qbs_integral_indep_factorization (X Y Z : qbsType R) (p : qbs_prob Z)
+Lemma qbs_integral_indepM (X Y Z : qbsType R) (p : qbs_prob Z)
     (f : qbsHomType Z X) (g : qbsHomType Z Y) (phi : X -> R) (psi : Y -> R) :
   qbs_indep p f g ->
   qbs_measurable (prodQ X Y) (fun xy => (phi xy.1 * psi xy.2)%:E) ->
