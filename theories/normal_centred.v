@@ -34,14 +34,14 @@ Context {R : realType}.
 Implicit Types m s x : R.
 
 Let cvg_normal_pdf m s : s != 0 ->
-  normal_pdf m s x @[x --> +oo%R] --> (0 : R).
+  normal_pdf m s x @[x --> +oo] --> (0 : R).
 Proof.
 move=> s0; rewrite (normal_pdfE m s0).
 rewrite -[X in _ --> X](mulr0 (normal_peak s)).
 apply: cvgM; first exact: cvg_cst.
 have s2 : 0 < (s ^+ 2 *+ 2)^-1 :> R.
   by rewrite invr_gt0 mulrn_wgt0// exprn_even_gt0.
-have cy : ((x - m) ^+ 2 * (s ^+ 2 *+ 2)^-1) @[x --> +oo%R] --> +oo%R.
+have cy : ((x - m) ^+ 2 * (s ^+ 2 *+ 2)^-1) @[x --> +oo] --> +oo.
   apply: gt0_cvgMly => //.
   have h1 : (x - m) @[x --> +oo] --> +oo by exact: cvg_addrr.
   exact: cvg_comp h1 cvgr_expr2.
@@ -168,8 +168,6 @@ Lemma integrable_normal_centred m s : s != 0 ->
 Proof.
 move=> s0; have mg := measurable_normal_centred m s s0.
 apply/integrableP; split => //.
-have mA : measurable `]-oo, m]%classic by exact: measurable_itv.
-have mB : measurable `]m, +oo[%classic by exact: measurable_itv.
 have TAB := setT_split m.
 have dAB := disj_split m.
 have mabs : measurable_fun setT
@@ -199,8 +197,6 @@ Lemma integral_normal_centred m s : s != 0 ->
   (\int[mu]_x ((x - m) * normal_pdf m s x)%:E = 0)%E.
 Proof.
 move=> s0; have mg := measurable_normal_centred m s s0.
-have mA : measurable `]-oo, m]%classic by exact: measurable_itv.
-have mB : measurable `]m, +oo[%classic by exact: measurable_itv.
 have TAB := setT_split m.
 have dAB := disj_split m.
 have eA : (\int[mu]_(x in `]-oo, m]%classic) ((x - m) * normal_pdf m s x)%:E
@@ -229,7 +225,7 @@ rewrite -(Radon_Nikodym_SigmaFinite.change_of_variables nd)//.
 apply: ae_eq_integral => //.
 - apply: emeasurable_funM => //.
   exact: measurable_int (Radon_Nikodym_SigmaFinite.f_integrable nd).
-- apply: emeasurable_funM; first exact: mf.
+- apply: emeasurable_funM => //.
   by apply/measurable_EFinP; exact: measurable_normal_pdf.
 - have h := ae_eq_trans (ae_eq_Radon_Nikodym_SigmaFinite nd measurableT)
     (normal_pdf_uniq_ae m s).
@@ -264,7 +260,7 @@ rewrite ge0_integralD//.
 - by move=> x _; rewrite lee_fin mulr_ge0 ?normal_pdf_ge0.
 - apply/measurable_EFinP; apply: measurable_funM => //.
   exact: measurable_normal_pdf.
-apply: lte_add_pinfty; first by move/integrableP : hc => [].
+apply: lte_add_pinfty; first by case/integrableP: hc.
 under eq_integral do rewrite EFinM.
 rewrite integralZl// ?integral_normal_pdf ?mule1 ?ltry//.
 exact: integrable_normal_pdf.
