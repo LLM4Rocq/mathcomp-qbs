@@ -266,4 +266,22 @@ rewrite integralZl// ?integral_normal_pdf ?mule1 ?ltry//.
 exact: integrable_normal_pdf.
 Qed.
 
+Lemma integral_normal_mean m s : s != 0 ->
+  (\int[normal_prob m s]_x x%:E = m%:E)%E.
+Proof.
+move=> s0; have id_int := normal_prob_abs_lty m s s0.
+have hc := integrable_normal_centred m s s0.
+have hp := integrable_normal_pdf m s.
+rewrite integral_normal_prob//=; first by apply/integrableP; split.
+under eq_integral do rewrite -EFinM.
+(* x * pdf = m * pdf + (x - m) * pdf *)
+under eq_integral do rewrite -[x in x * _](subrK m) mulrDl EFinD.
+have hm : mu.-integrable setT (fun x => (m * normal_pdf m s x)%:E).
+  under eq_fun do rewrite EFinM.
+  exact: integrableZl.
+rewrite (integralD measurableT hc hm) integral_normal_centred// add0e.
+under eq_integral do rewrite EFinM.
+by rewrite integralZl// integral_normal_pdf// mule1.
+Qed.
+
 End normal_centred.
