@@ -51,16 +51,6 @@ Qed.
 (* General identities about normal densities                             *)
 Section normal_pdf_general.
 
-(* Completing the square: ax^2 + bx + c = a(x+b/(2a))^2 - (b^2-4ac)/(4a) *)
-Lemma complete_the_square (a b c x : R) (ha : a != 0) :
-  a * x ^+ 2 + b * x + c =
-  a * (x + b / (a *+ 2)) ^+ 2 - (b ^+ 2 - a *+ 4 * c) / (a *+ 4).
-Proof.
-have ha4 : a *+ 4 != 0 by rewrite mulrn_eq0.
-have ha2 : a *+ 2 != 0 by rewrite mulrn_eq0.
-field. repeat split => //; rewrite ?mulrn_eq0 //.
-Qed.
-
 (* Product of two normal densities.
    N(m,s)(x) * N(m',s')(x) = K * N(mu_new, sigma_new)(x)
    where:
@@ -214,34 +204,11 @@ Section bayesian_phase1_intercept.
 
 (* Variance recurrence *)
 
-(* When combining N(mu, sqrtr(V), b) with N(m', 1/2, b), the new
-   variance is V/(4V+1) because:
-     sqrtr(V)^2 * (1/2)^2 / (sqrtr(V)^2 + (1/2)^2)
-       = V * 1/4 / (V + 1/4) = V / (4V + 1)                          *)
-Lemma var_recurrence (V : R) :
-  0 < V ->
-  sqrtr V ^+ 2 * (2%:R ^-1) ^+ 2 / (sqrtr V ^+ 2 + (2%:R ^-1) ^+ 2) =
-  V / (V *+ 4 + 1).
-Proof.
-move=> hV.
-have hV0 : V != 0 by apply: lt0r_neq0.
-have hVn4 : V *+ 4 + 1 != 0.
-  apply: lt0r_neq0.
-  by rewrite addr_gt0 // ?ltr01 // mulrn_wgt0.
-rewrite sqr_sqrtr; last exact: (ltW hV).
-by field; rewrite mulr_natr.
-Qed.
-
 (* Concrete Phase 1 combination steps *)
 
 (* Step 0->1: N(0, 3, b) * N(5/2 - s, 1/2, b)
    sigma_new^2 = 9/37, mu_new = (90 - 36*s)/37
    scalar = normal_peak(sqrt(37/4)) * normal_fun(0, sqrt(37/4), 5/2 - s) *)
-
-Lemma phase1_step01_sigma2 :
-  3%:R ^+ 2 * (2%:R^-1 : R) ^+ 2 / (3%:R ^+ 2 + (2%:R^-1) ^+ 2) =
-  9%:R / 37%:R.
-Proof. by field. Qed.
 
 Lemma phase1_step01_mu (s : R) :
   gaussian_prod_mu 0 (5%:R / 2%:R - s) 3%:R (2%:R^-1) =
@@ -251,11 +218,6 @@ Proof. rewrite /gaussian_prod_mu. by field. Qed.
 (* Step 1->2: N(mu1, sqrtr(9/37), b) * N(19/5 - 2*s, 1/2, b)
    sigma_new^2 = 9/73, mu_new = (1134 - 540*s)/365
    where mu1 = (90 - 36*s)/37 *)
-
-Lemma phase1_step12_sigma2 :
-  (9%:R / 37%:R) * (2%:R^-1 : R) ^+ 2 /
-  (9%:R / 37%:R + (2%:R^-1) ^+ 2) = 9%:R / 73%:R.
-Proof. by field. Qed.
 
 Lemma phase1_step12_mu (s : R) :
   gaussian_prod_mu ((90%:R - 36%:R * s) / 37%:R)
@@ -275,11 +237,6 @@ Qed.
    sigma_new^2 = 9/109, mu_new = (1944 - 1080*s)/545
    where mu2 = (1134 - 540*s)/365 *)
 
-Lemma phase1_step23_sigma2 :
-  (9%:R / 73%:R) * (2%:R^-1 : R) ^+ 2 /
-  (9%:R / 73%:R + (2%:R^-1) ^+ 2) = 9%:R / 109%:R.
-Proof. by field. Qed.
-
 Lemma phase1_step23_mu (s : R) :
   gaussian_prod_mu ((1134%:R - 540%:R * s) / 365%:R)
                    (9%:R / 2%:R - 3%:R * s)
@@ -298,11 +255,6 @@ Qed.
    sigma_new^2 = 9/145, mu_new = (612 - 360*s)/145
    where mu3 = (1944 - 1080*s)/545 *)
 
-Lemma phase1_step34_sigma2 :
-  (9%:R / 109%:R) * (2%:R^-1 : R) ^+ 2 /
-  (9%:R / 109%:R + (2%:R^-1) ^+ 2) = 9%:R / 145%:R.
-Proof. by field. Qed.
-
 Lemma phase1_step34_mu (s : R) :
   gaussian_prod_mu ((1944%:R - 1080%:R * s) / 545%:R)
                    (31%:R / 5%:R - 4%:R * s)
@@ -320,11 +272,6 @@ Qed.
 (* Step 4->5: N(mu4, sqrtr(9/145), b) * N(8 - 5*s, 1/2, b)
    sigma_new^2 = 9/181, mu_new = (900 - 540*s)/181
    where mu4 = (612 - 360*s)/145 *)
-
-Lemma phase1_step45_sigma2 :
-  (9%:R / 145%:R) * (2%:R^-1 : R) ^+ 2 /
-  (9%:R / 145%:R + (2%:R^-1) ^+ 2) = 9%:R / 181%:R.
-Proof. by field. Qed.
 
 Lemma phase1_step45_mu (s : R) :
   gaussian_prod_mu ((612%:R - 360%:R * s) / 145%:R)
@@ -370,9 +317,6 @@ Lemma phase1_sqrtr_var3_neq0 : sqrtr (9%:R / 109%:R) != (0 : R).
 Proof. exact: sqrtr_nine_div_neq0. Qed.
 
 Lemma phase1_sqrtr_var4_neq0 : sqrtr (9%:R / 145%:R) != (0 : R).
-Proof. exact: sqrtr_nine_div_neq0. Qed.
-
-Lemma phase1_sqrtr_var5_neq0 : sqrtr (9%:R / 181%:R) != (0 : R).
 Proof. exact: sqrtr_nine_div_neq0. Qed.
 
 (* The main Phase 1 result for the first 3 steps:
@@ -583,52 +527,6 @@ Qed.
    normal_fun_linear, the normal_fun factor becomes
    normal_fun(A_k/B_k, S_k*C_k/B_k, s) where S_k = sqrt(sigma_k^2 + 1/4). *)
 
-(* Step 0->1: m=0, m'=5/2-s, S=sqrt(37/4)
-   diff = 5/2-s = (5/2 - 1*s)/1, so A=5/2, B=1, C=1
-   center = 5/2, width = sqrt(37/4) *)
-Lemma phase2_scalar01_diff (s : R) :
-  (5%:R / 2%:R - s) - 0 = (5%:R / 2%:R - 1 * s) / 1.
-Proof. by field. Qed.
-
-Lemma phase2_scalar01_fun (s : R) :
-  normal_fun 0 (sqrtr (3%:R ^+ 2 + (2%:R^-1) ^+ 2))
-             (5%:R / 2%:R - s) =
-  normal_fun (5%:R / 2%:R) (sqrtr (3%:R ^+ 2 + (2%:R^-1) ^+ 2)) s.
-Proof. by rewrite normal_fun_sub. Qed.
-
-(* Step 1->2: m=(90-36s)/37, m'=19/5-2s, S=sqrt(9/37+1/4)=sqrt(73/148)
-   diff = 19/5-2s - (90-36s)/37 = (253 - 190s)/185
-   A=253, B=190, C=185
-   center = 253/190, width = sqrt(73/148)*185/190 *)
-Lemma phase2_scalar12_diff (s : R) :
-  (19%:R / 5%:R - 2%:R * s) - (90%:R - 36%:R * s) / 37%:R =
-  (253%:R - 190%:R * s) / 185%:R.
-Proof. by field. Qed.
-
-(* Step 2->3: m=(1134-540s)/365, m'=9/2-3s, S=sqrt(9/73+1/4)=sqrt(109/292)
-   diff = 9/2-3s - (1134-540s)/365 = (1017 - 1110*s)/730
-   A=1017, B=1110, C=730 *)
-Lemma phase2_scalar23_diff (s : R) :
-  (9%:R / 2%:R - 3%:R * s) - (1134%:R - 540%:R * s) / 365%:R =
-  (1017%:R - 1110%:R * s) / 730%:R.
-Proof. by field. Qed.
-
-(* Step 3->4: m=(1944-1080s)/545, m'=31/5-4s, S=sqrt(9/109+1/4)=sqrt(145/436)
-   diff = 31/5-4s - (1944-1080s)/545 = (287 - 220*s)/109
-   A=287, B=220, C=109 *)
-Lemma phase2_scalar34_diff (s : R) :
-  (31%:R / 5%:R - 4%:R * s) - (1944%:R - 1080%:R * s) / 545%:R =
-  (287%:R - 220%:R * s) / 109%:R.
-Proof. by field. Qed.
-
-(* Step 4->5: m=(612-360s)/145, m'=8-5s, S=sqrt(9/145+1/4)=sqrt(181/580)
-   diff = 8-5s - (612-360s)/145 = (548 - 365*s)/145
-   A=548, B=365, C=145 *)
-Lemma phase2_scalar45_diff (s : R) :
-  (8%:R - 5%:R * s) - (612%:R - 360%:R * s) / 145%:R =
-  (548%:R - 365%:R * s) / 145%:R.
-Proof. by field. Qed.
-
 (* For the full Phase 2 computation, each step k requires:
    1. Computing the difference m'_k(s) - mu_k(s) = (A_k - B_k*s) / C_k
    2. Applying normal_fun_linear to get normal_fun(A_k/B_k, S_k*C_k/B_k, s)
@@ -699,16 +597,6 @@ have -> : gaussian_prod_mu 0 (5%:R / 2%:R) 3%:R
   rewrite sqr_sqrtr; last by apply: divr_ge0; rewrite ?ler0n.
   by field.
 done.
-Qed.
-
-Lemma phase2_step0_sigma2 :
-  (gaussian_prod_sigma 3%:R (sqrtr (37%:R / 4%:R : R))) ^+ 2 =
-  333%:R / 73%:R.
-Proof.
-have hsqrt_neq0 := sqrtr_pnat_div_neq0 (a := 37) (b := 4) isT isT.
-rewrite gaussian_prod_sigma_sqr ?pnatr_eq0 //.
-rewrite sqr_sqrtr; last by apply: divr_ge0; rewrite ?ler0n.
-by field.
 Qed.
 
 Lemma phase2_step0_sigma_neq0 :
@@ -805,14 +693,6 @@ rewrite -mulrA (mulrCA (normal_pdf _ _ _)) !mulrA.
 rewrite (normal_pdf_times_chain _ _ _ _
            phase2_step0_sigma_neq0 phase2_W12_neq0).
 by rewrite !mulrA.
-Qed.
-
-(* Simplify sigma^2 from step 1 *)
-Lemma phase2_step1_sigma2 :
-  (gaussian_prod_sigma sigma0 W12) ^+ 2 =
-  sigma0 ^+ 2 * W12 ^+ 2 / (sigma0 ^+ 2 + W12 ^+ 2).
-Proof.
-exact: gaussian_prod_sigma_sqr phase2_step0_sigma_neq0 phase2_W12_neq0.
 Qed.
 
 Lemma phase2_step1_sigma_neq0 :

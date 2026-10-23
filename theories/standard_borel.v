@@ -54,14 +54,14 @@ From mathcomp.algebra_tactics Require Import ring.
 (* ## Main results                                                            *)
 (*   phi_gt0 == phi x > 0 for all x                                          *)
 (*   phi_lt1 == phi x < 1 for all x                                          *)
-(*   psiK    == cancel phi psi (psi is left inverse of phi)                   *)
-(*   phiK    == cancel psi phi on (0,1)                                       *)
+(*   phiK    == cancel phi psi (psi is left inverse of phi)                   *)
+(*   psiK    == cancel psi phi on (0,1)                                       *)
 (*   measurable_phi == phi is measurable on R                                 *)
 (*   measurable_psi == psi is measurable on (0,1)                             *)
 (*   bin_digits_reconstruction == bin_sum (bin_digits x) = x for [0,1)       *)
-(*   unit_to_pairK == unit_to_pair (pair_to_unit (x,y)) = (x,y)              *)
+(*   pair_to_unitK == unit_to_pair (pair_to_unit (x,y)) = (x,y)              *)
 (*                    (unconditional on [0,1)^2)                              *)
-(*   pair_to_unitK == pair_to_unit (unit_to_pair r) = r                      *)
+(*   unit_to_pairK == pair_to_unit (unit_to_pair r) = r                      *)
 (*                    (conditional on no_trailing_ones)                       *)
 (*   encode_RRK == decode_RR (encode_RR xy) = xy                             *)
 (*   measurable_encode_RR == encode_RR is measurable                         *)
@@ -73,11 +73,11 @@ From mathcomp.algebra_tactics Require Import ring.
 (*                                  measurable                               *)
 (*                                                                            *)
 (* ## Note on the no_trailing_ones gap                                        *)
-(* The round-trip pair_to_unitK requires no_trailing_ones on the       *)
+(* The round-trip unit_to_pairK requires no_trailing_ones on the       *)
 (* deinterleaved subsequences, which does NOT follow from no_trailing_ones    *)
 (* on the full binary expansion. However, for standard_borel_wit (R * R),     *)
 (* only the OTHER direction (encode_RRK, i.e. g(f(x))=x) is needed,   *)
-(* and that direction (unit_to_pairK / encode_RRK) is proved    *)
+(* and that direction (pair_to_unitK / encode_RRK) is proved    *)
 (* unconditionally. See the detailed comments in the Round-trip section.     *)
 (******************************************************************************)
 
@@ -129,13 +129,13 @@ by rewrite -splitr in h3.
 Qed.
 
 (** psi is the inverse of phi *)
-Lemma psiK : cancel phi psi.
+Lemma phiK : cancel phi psi.
 Proof.
 rewrite /cancel => x; rewrite /psi /phi.
 by rewrite addrK mulrCA divff ?mulr1 ?atanK ?gt_eqF ?pi_gt0.
 Qed.
 
-Lemma phiK : {in `](0:R), 1[, cancel psi phi}.
+Lemma psiK : {in `](0:R), 1[, cancel psi phi}.
 Proof.
 move=> y hy; rewrite /phi /psi.
 have hpi : (0 : R) < pi := pi_gt0.
@@ -443,7 +443,7 @@ End pairing_reconstruction.
 
 (* Subsection: round-trip lemmas for pair_to_unit/unit_to_pair, including
    the no_trailing_ones canonicalization, uniqueness of binary expansions,
-   and the unconditional unit_to_pairK direction. *)
+   and the unconditional pair_to_unitK direction. *)
 Section round_trips.
 
 (******************************************************************************)
@@ -451,12 +451,12 @@ Section round_trips.
 (*                                                                            *)
 (* We prove two round-trip lemmas:                                            *)
 (*                                                                            *)
-(* 1. unit_to_pairK: unit_to_pair (pair_to_unit (x,y)) = (x,y)        *)
+(* 1. pair_to_unitK: unit_to_pair (pair_to_unit (x,y)) = (x,y)        *)
 (*    This holds UNCONDITIONALLY for all (x,y) in [0,1)^2.                   *)
 (*    This is the direction needed for standard_borel_wit (R * R), which       *)
 (*    only requires g(f(x)) = x (i.e., decode after encode = identity).      *)
 (*                                                                            *)
-(* 2. pair_to_unitK: pair_to_unit (unit_to_pair r) = r                 *)
+(* 2. unit_to_pairK: pair_to_unit (unit_to_pair r) = r                 *)
 (*    This requires no_trailing_ones on the deinterleaved subsequences.       *)
 (*    The full binary expansion bin_digits(r) has no trailing ones for        *)
 (*    r in [0,1) (proved in bin_digits_no_trailing_ones), but this does NOT   *)
@@ -707,9 +707,9 @@ Qed.
 (* Note: The no_trailing_ones hypotheses on deinterleaved subsequences do NOT
    follow from no_trailing_ones on the full sequence. This lemma is therefore
    not usable unconditionally. However, it is NOT needed for standard_borel_wit:
-   only unit_to_pairK (the other direction, proved below without extra
+   only pair_to_unitK (the other direction, proved below without extra
    hypotheses) is required. See the comment block above for details. *)
-Lemma pair_to_unitK (r : R) :
+Lemma unit_to_pairK (r : R) :
   0 <= r < 1 ->
   no_trailing_ones (deinterleave_even (bin_digits r)) ->
   no_trailing_ones (deinterleave_odd (bin_digits r)) ->
@@ -741,7 +741,7 @@ Qed.
 (* This is the KEY round-trip lemma: decode after encode is the identity.
    It holds unconditionally for (x,y) in [0,1)^2, with no trailing-ones
    hypothesis needed. This is the direction required by standard_borel_wit. *)
-Lemma unit_to_pairK (xy : R * R) :
+Lemma pair_to_unitK (xy : R * R) :
   0 <= xy.1 < 1 -> 0 <= xy.2 < 1 ->
   unit_to_pair (pair_to_unit xy) = xy.
 Proof.
@@ -1041,31 +1041,6 @@ rewrite in_itv /=; apply/andP.
 split; [exact: pair_to_unit_phi_gt0|exact: pair_to_unit_phi_lt1].
 Qed.
 
-Lemma pair_to_unit_phi_in_01 (x y : R) :
-  0 <= pair_to_unit (phi x, phi y) < 1.
-Proof.
-apply/andP; split.
-- exact: ltW (pair_to_unit_phi_gt0 x y).
-- exact: pair_to_unit_phi_lt1.
-Qed.
-
-(** unit_to_pair components of phi r are in [0,1] *)
-Lemma unit_to_pair_fst_ge0 (r : R) :
-  0 <= (unit_to_pair (phi r)).1.
-Proof. exact: bin_sum_ge0. Qed.
-
-Lemma unit_to_pair_fst_le1 (r : R) :
-  (unit_to_pair (phi r)).1 <= 1.
-Proof. exact: bin_sum_le1. Qed.
-
-Lemma unit_to_pair_snd_ge0 (r : R) :
-  0 <= (unit_to_pair (phi r)).2.
-Proof. exact: bin_sum_ge0. Qed.
-
-Lemma unit_to_pair_snd_le1 (r : R) :
-  (unit_to_pair (phi r)).2 <= 1.
-Proof. exact: bin_sum_le1. Qed.
-
 (** Round-trip: decode (encode (x,y)) = (x,y) -- UNCONDITIONAL *)
 Theorem encode_RRK (xy : R * R) :
   decode_RR (encode_RR xy) = xy.
@@ -1073,14 +1048,14 @@ Proof.
 rewrite /decode_RR /encode_RR.
 set v := pair_to_unit (phi xy.1, phi xy.2).
 have hv_itv : v \in `](0:R), 1[ := pair_to_unit_phi_in_itv xy.1 xy.2.
-have hv_eq : phi (psi v) = v := phiK hv_itv.
+have hv_eq : phi (psi v) = v := psiK hv_itv.
 have hx01 : 0 <= (phi xy.1) < 1 := phi_in_01 xy.1.
 have hy01 : 0 <= (phi xy.2) < 1 := phi_in_01 xy.2.
 have hutp : unit_to_pair v = (phi xy.1, phi xy.2).
-  rewrite /v; apply: unit_to_pairK.
+  rewrite /v; apply: pair_to_unitK.
   - exact: hx01.
   - exact: hy01.
-rewrite hv_eq hutp !psiK.
+rewrite hv_eq hutp !phiK.
 by destruct xy.
 Qed.
 
@@ -1088,9 +1063,9 @@ Qed.
 
    This direction requires:
    1. no_trailing_ones on the deinterleaved even/odd subsequences of
-      bin_digits(phi(r)) -- needed for pair_to_unitK
+      bin_digits(phi(r)) -- needed for unit_to_pairK
    2. The components (unit_to_pair(phi r)).1 and .2 must be in (0,1)
-      (strictly positive) -- needed for phiK (cancel psi phi)
+      (strictly positive) -- needed for psiK (cancel psi phi)
 
    Condition (2) follows from (1) when the deinterleaved subsequences
    each contain at least one true digit, which holds generically
@@ -1113,11 +1088,11 @@ have hu1_01 : u1 \in `](0:R), 1[.
   by rewrite in_itv /=; apply/andP; split.
 have hu2_01 : u2 \in `](0:R), 1[.
   by rewrite in_itv /=; apply/andP; split.
-rewrite (phiK hu1_01) (phiK hu2_01).
+rewrite (psiK hu1_01) (psiK hu2_01).
 have hphi01 := phi_in_01 r.
 rewrite -/u1 -/u2 /u1 /u2.
-rewrite (pair_to_unitK hphi01 hnt_even hnt_odd).
-by rewrite psiK.
+rewrite (unit_to_pairK hphi01 hnt_even hnt_odd).
+by rewrite phiK.
 Qed.
 
 (** Measurability of encode_RR *)

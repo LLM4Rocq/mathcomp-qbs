@@ -45,7 +45,7 @@ Proof. by move=> p; exact/asboolP/qbs_prob_equivxx. Qed.
 
 Let qbs_equiv_op_sym : symmetric qbs_equiv_op.
 Proof.
-by move=> p q; apply/idP/idP => /asboolP h; exact/asboolP/qbs_prob_equivC.
+by move=> p q; apply/idP/idP => /asboolP h; exact/asboolP/qbs_prob_equiv_sym.
 Qed.
 
 Let qbs_equiv_op_trans : transitive qbs_equiv_op.

@@ -73,7 +73,7 @@ Lemma qbs_prob_equivxx (X : qbsType R) (p : qbs_prob X) :
   qbs_prob_equiv X p p.
 Proof. by []. Qed.
 
-Lemma qbs_prob_equivC (X : qbsType R) (p1 p2 : qbs_prob X) :
+Lemma qbs_prob_equiv_sym (X : qbsType R) (p1 p2 : qbs_prob X) :
   qbs_prob_equiv X p1 p2 -> qbs_prob_equiv X p2 p1.
 Proof. by move=> h U /h ->. Qed.
 

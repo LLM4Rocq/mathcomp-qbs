@@ -631,28 +631,20 @@ Inductive generating_Mx (T : Type) (G : set (mR -> T))
 
 Section generating_qbs_instance.
 Variables (T : Type) (G : set (mR -> T)).
+(** NB: the instance is declared on an alias of T; declaring it on T itself
+    would make every type a qbsType with an undetermined generator G. *)
+Definition generating_type : Type := T.
 HB.instance Definition _ :=
-  @isQBS.Build R T (generating_Mx G)
+  @isQBS.Build R generating_type (generating_Mx G)
     (fun alpha f ha => gen_comp f ha)
     (fun x => gen_const G x)
     (fun P Fi hFi => gen_glue P hFi).
-Definition generating_qbs : qbsType R := T.
+Definition generating_qbs : qbsType R := generating_type.
 End generating_qbs_instance.
 
 Lemma generating_qbs_incl (T : Type) (G : set (mR -> T)) :
   G `<=` qbs_Mx (s := generating_qbs G).
 Proof. by move=> alpha halpha; exact: gen_base. Qed.
-
-(* 11. Exponential morphisms *)
-
-(* Helper: random element paired with constant is random in product *)
-Local Lemma prodQ_random_const (X Y : qbsType R) (alpha : mR -> X) (y : Y) :
-  qbs_Mx alpha -> qbs_Mx (fun r => (alpha r, y)).
-Proof.
-move=> halpha; split => /=.
-  exact: halpha.
-exact: qbs_Mx_const.
-Qed.
 
 (* 12. Image QBS (map_qbs) *)
 (* Given a QBS morphism f : X -> Y, the image QBS map_qbs f X has
