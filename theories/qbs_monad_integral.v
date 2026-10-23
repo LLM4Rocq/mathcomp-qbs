@@ -56,7 +56,7 @@ Lemma qbs_integrable_returnP X (x : X) (h : X -> \bar R) :
 Proof.
 split=> [hi|hx].
   have := integrable_fin_num measurableT hi.
-  by rewrite -[X in X \is a fin_num]/(qbs_integral X (qbs_return x) h)
+  by rewrite -[A in A \is a fin_num]/(qbs_integral X (qbs_return x) h)
     qbs_return_integral.
 rewrite /qbs_integrable (_ : h \o _ = fun=> (fine (h x))%:E).
   by apply/funext => r /=; rewrite fineK.
@@ -133,8 +133,7 @@ have iA : (qbs_prob_mu p).-integrable setT A.
 have iB : (qbs_prob_mu p).-integrable setT B.
   apply/integrableP; split => //.
   under eq_integral do rewrite gee0_abs//.
-  rewrite -ge0_fin_numE; first by apply: integral_ge0 => r _; exact: B0.
-  by rewrite -eB; exact: qbs_integral_funeneg_fin_num hi.
+  by rewrite -eB; exact: qbs_integral_funeneg_lty hi.
 rewrite qbs_integralE eA eB -(integralB measurableT iA iB).
 by apply: eq_integral => r _; rewrite qbs_integralE.
 Qed.

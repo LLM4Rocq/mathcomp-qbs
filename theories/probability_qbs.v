@@ -348,6 +348,13 @@ rewrite /qbs_integral; congr (_ \is a fin_num).
 by apply: eq_integral => r _; rewrite funeneg_comp.
 Qed.
 
+Lemma qbs_integral_funeneg_lty X (p : qbs_prob X)
+    (h : X -> \bar R) :
+  qbs_integrable X p h -> qbs_integral X p h^\- < +oo.
+Proof.
+by move=> /qbs_integral_funeneg_fin_num; rewrite fin_numElt => /andP[_].
+Qed.
+
 (** Bounded measurable real functions are integrable. *)
 Lemma qbs_integrable_bounded X (p : qbs_prob X) (k : X -> R) :
   qbs_measurable X (fun x => (k x)%:E) -> (exists M, forall x, `|k x| <= M)%R ->
@@ -391,7 +398,7 @@ move=> mf mg f0 fg; apply: ge0_le_integral => //.
 Qed.
 
 Lemma qbs_varianceE X (p : qbs_prob X) (h : X -> R) :
-  h \o qbs_prob_alpha p \in Lfun (qbs_prob_mu p) 2 ->
+  h \o qbs_prob_alpha p \in Lfun (qbs_prob_mu p) 2%:E ->
   qbs_variance X p h =
   qbs_expect X p (fun x => h x ^+ 2)%R - (qbs_expect X p h) ^+ 2.
 Proof.
@@ -401,7 +408,7 @@ Qed.
 
 Lemma qbs_varianceZ X (p : qbs_prob X) (a : R)
     (h : X -> R) :
-  h \o qbs_prob_alpha p \in Lfun (qbs_prob_mu p) 2 ->
+  h \o qbs_prob_alpha p \in Lfun (qbs_prob_mu p) 2%:E ->
   qbs_variance X p (a \o* h)%R =
   (a ^+ 2)%:E * qbs_variance X p h.
 Proof.
@@ -456,9 +463,7 @@ Definition qbs_rv X (p : qbs_prob X)
     (h : X -> R)
     (hm : measurable_fun setT (h \o qbs_prob_alpha p)) :
     {RV (qbs_prob_mu p) >-> R} :=
-  HB.pack (h \o qbs_prob_alpha p)
-    (@isMeasurableFun.phant_Build _ _ _ _
-       (h \o qbs_prob_alpha p) hm).
+  mfun_Sub (mem_set hm).
 
 (** Markov inequality lifted to QBS probabilities. *)
 Lemma qbs_markov X (p : qbs_prob X)
@@ -468,42 +473,28 @@ Lemma qbs_markov X (p : qbs_prob X)
     (hmf : measurable_fun [set: R] f)
     (hf0 : forall r, (0 <= r)%R -> (0 <= f r)%R)
     (hfnd : {in Num.nneg &, {homo f : x y / (x <= y)%R}}) :
-  (f eps)%:E * qbs_prob_event X p [set x | eps%:E <= `|(h x)%:E|] <=
-  qbs_integral X p (fun x => ((f \o normr \o h) x)%:E).
+  (f eps)%:E * qbs_prob_event X p [set x | (eps <= `|h x|)%R] <=
+  qbs_integral X p (fun x => (f `|h x|)%:E).
 Proof.
-rewrite /qbs_prob_event /qbs_integral /=.
 pose rv : {RV (qbs_prob_mu p) >-> R} := qbs_rv hm.
-have -> : qbs_prob_alpha p @^-1` [set x | eps%:E <= `|(h x)%:E|] =
-          [set x | eps%:E <= `|(rv x)%:E|] by [].
-have -> : (fun x => ((f \o normr \o h) (qbs_prob_alpha p x))%:E) =
-          (fun x => ((f \o normr \o rv) x)%:E) by [].
-have := @markov _ _ R (qbs_prob_mu p) rv f eps heps hmf hf0 hfnd.
-suff -> : (\int[qbs_prob_mu p]_x (((f \o normr) \o rv) x)%:E)%E =
-          'E_(qbs_prob_mu p)[((f \o normr) \o rv)] by [].
-by rewrite unlock.
+have := @markov _ _ R _ rv f eps heps hmf hf0 hfnd.
+rewrite unlock /qbs_prob_event /qbs_integral /=.
+under eq_set => x do rewrite -abse_EFin lee_fin.
+exact.
 Qed.
 
-(** Chebyshev inequality lifted to QBS
-    probabilities. *)
+(** Chebyshev inequality lifted to QBS probabilities. *)
 Lemma qbs_chebyshev X (p : qbs_prob X)
     (h : X -> R) (eps : R)
     (hm : measurable_fun setT (h \o qbs_prob_alpha p))
     (heps : (0 < eps)%R) :
-  qbs_prob_mu p
-    [set x | (eps <= `|h (qbs_prob_alpha p x) -
-      fine (qbs_expect X p h)|)%R] <=
+  qbs_prob_event X p [set x | (eps <= `|h x - fine (qbs_expect X p h)|)%R] <=
   (eps ^- 2)%:E * qbs_variance X p h.
 Proof.
-rewrite /qbs_variance /qbs_expect /qbs_integral.
 pose rv : {RV (qbs_prob_mu p) >-> R} := qbs_rv hm.
-have hE : (\int[qbs_prob_mu p]_x (h (qbs_prob_alpha p x))%:E)%E =
-          'E_(qbs_prob_mu p)[rv] by rewrite unlock.
+have hE : qbs_expect X p h = 'E_(qbs_prob_mu p)[rv] by rewrite unlock.
 rewrite hE.
-have -> : (h \o qbs_prob_alpha p) = (rv : mR -> R) by [].
-have -> : [set x | (eps <= `|h (qbs_prob_alpha p x) -
-    fine 'E_(qbs_prob_mu p)[rv]|)%R] =
-  [set x | (eps <= `|rv x - fine 'E_(qbs_prob_mu p)[rv]|)%R] by [].
-exact: chebyshev.
+exact: (@chebyshev _ _ R _ rv eps heps).
 Qed.
 
 End probability_inequalities.
