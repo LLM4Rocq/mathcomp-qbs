@@ -1,6 +1,6 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_algebra reals ereal topology
+From mathcomp Require Import boot algebra reals ereal topology
   classical_sets borel_hierarchy measure kernel probability
   measurable_structure measurable_function measure_function
   lebesgue_integral lebesgue_measure probability_measure
@@ -30,10 +30,12 @@ From QBS Require Import quasi_borel measure_qbs_adjunction
 (******************************************************************************)
 
 Import GRing.Theory Num.Def Num.Theory measurable_realfun.
+Import MeasurableR.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
+Set SsrOldRewriteGoalsOrder.  (* TODO: port to the MathComp 2.6 goal order *)
 
 Local Open Scope classical_set_scope.
 Local Open Scope ereal_scope.
@@ -60,10 +62,7 @@ Lemma prob_sfinite_measure
     (P : probability T R) :
   sfinite_measure P.
 Proof.
-apply: sfinite_measure_sigma_finite.
-apply: fin_num_fun_sigma_finite.
-  by rewrite measure0.
-exact: probability_fin_num_fun.
+exact: s_finite.
 Qed.
 
 (** The Giry image of a QBS probability is s-finite. *)

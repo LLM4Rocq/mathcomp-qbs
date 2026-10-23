@@ -23,6 +23,7 @@ Import GRing.Theory Num.Def Num.Theory.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
+Set SsrOldRewriteGoalsOrder.  (* TODO: port to the MathComp 2.6 goal order *)
 Import order.Order.POrderTheory.
 
 Section normal_density_algebra.
@@ -88,7 +89,7 @@ have hsqS : sqrtr (s ^+ 2 + s' ^+ 2) != 0.
   by apply: lt0r_neq0; rewrite sqrtr_gt0.
 have hsnew : s * s' / sqrtr (s ^+ 2 + s' ^+ 2) != 0.
   by rewrite mulf_neq0 ?invr_neq0 // mulf_neq0.
-have hpi : 0 <= pi := pi_ge0 R.
+have hpi : 0 <= pi :> R := pi_ge0.
 have hs2pi : 0 <= s ^+ 2 * pi := mulr_ge0 (sqr_ge0 _) hpi.
 have hS2pi : 0 <= (s ^+ 2 + s' ^+ 2) * pi.
   by apply: mulr_ge0 => //; exact: addr_ge0 (sqr_ge0 _) (sqr_ge0 _).
@@ -107,8 +108,7 @@ congr (_ * _).
   congr (expR _).
   rewrite sqr_sqrtr ?addr_ge0 ?sqr_ge0 //.
   rewrite exprMn exprVn sqr_sqrtr ?addr_ge0 ?sqr_ge0 //.
-  field.
-  by rewrite hS hs hs'.
+  by field.
 Qed.
 
 (* Helper definitions for iterating normal_pdf_times                     *)
@@ -414,7 +414,8 @@ have sigma12 : gaussian_prod_sigma (sqrtr (9%:R / 37%:R)) (2%:R^-1 : R) =
     by apply: divr_ge0; rewrite ?mulr_ge0 ?invr_ge0 ?ler0n ?sqrtr_ge0.
   rewrite -[LHS](ger0_norm hge0) -sqrtr_sqr.
   congr (sqrtr _).
-  rewrite gaussian_prod_sigma_sqr ?invr_neq0 ?pnatr_eq0 //.
+  rewrite gaussian_prod_sigma_sqr ?invr_neq0 ?pnatr_eq0 //;
+    try exact: sqrtr_pnat_div_neq0.
   rewrite sqr_sqrtr; last by apply: divr_ge0; rewrite ?ler0n.
   by field.
 rewrite sigma12.
@@ -427,7 +428,8 @@ have sigma23 : gaussian_prod_sigma (sqrtr (9%:R / 73%:R)) (2%:R^-1 : R) =
     by apply: divr_ge0; rewrite ?mulr_ge0 ?invr_ge0 ?ler0n ?sqrtr_ge0.
   rewrite -[LHS](ger0_norm hge0) -sqrtr_sqr.
   congr (sqrtr _).
-  rewrite gaussian_prod_sigma_sqr ?invr_neq0 ?pnatr_eq0 //.
+  rewrite gaussian_prod_sigma_sqr ?invr_neq0 ?pnatr_eq0 //;
+    try exact: sqrtr_pnat_div_neq0.
   rewrite sqr_sqrtr; last by apply: divr_ge0; rewrite ?ler0n.
   by field.
 rewrite sigma23.
@@ -481,7 +483,8 @@ have sigma34 : gaussian_prod_sigma (sqrtr (9%:R / 109%:R)) (2%:R^-1 : R) =
        rewrite ?mulr_ge0 ?invr_ge0 ?ler0n ?sqrtr_ge0.
   rewrite -[LHS](ger0_norm hge0) -sqrtr_sqr.
   congr (sqrtr _).
-  rewrite gaussian_prod_sigma_sqr ?invr_neq0 ?pnatr_eq0 //.
+  rewrite gaussian_prod_sigma_sqr ?invr_neq0 ?pnatr_eq0 //;
+    try exact: sqrtr_pnat_div_neq0.
   rewrite sqr_sqrtr; last by apply: divr_ge0; rewrite ?ler0n.
   by field.
 rewrite sigma34.
@@ -497,7 +500,8 @@ have sigma45 : gaussian_prod_sigma (sqrtr (9%:R / 145%:R)) (2%:R^-1 : R) =
        rewrite ?mulr_ge0 ?invr_ge0 ?ler0n ?sqrtr_ge0.
   rewrite -[LHS](ger0_norm hge0) -sqrtr_sqr.
   congr (sqrtr _).
-  rewrite gaussian_prod_sigma_sqr ?invr_neq0 ?pnatr_eq0 //.
+  rewrite gaussian_prod_sigma_sqr ?invr_neq0 ?pnatr_eq0 //;
+    try exact: sqrtr_pnat_div_neq0.
   rewrite sqr_sqrtr; last by apply: divr_ge0; rewrite ?ler0n.
   by field.
 rewrite sigma45.
@@ -531,15 +535,6 @@ Section bayesian_phase2_slope.
      normal_fun(center, width, s) when m'-mu is linear in s.
 *)
 
-(* normal_fun is symmetric: (x-m)^2 = (m-x)^2 *)
-Lemma normal_fun_sym (m s x : R) :
-  normal_fun m s x = normal_fun x s m.
-Proof.
-rewrite /normal_fun; congr (expR _).
-rewrite -sqrrN; congr (- _ / _); congr (_ ^+ 2).
-ring.
-Qed.
-
 (* normal_fun with zero center and subtraction *)
 Lemma normal_fun_sub (m s a : R) :
   normal_fun 0 s (a - m) = normal_fun a s m.
@@ -566,12 +561,11 @@ suff heq : (m' - m) ^+ 2 / (sigma ^+ 2 *+ 2) =
   exact: heq.
 rewrite hdiff.
 have h : (a - B * s) / c = - (B / c) * (s - a / B).
-  field. by rewrite hB hc.
+  by field.
 rewrite h -mulNr exprMn.
 rewrite -(mulr_natr (sigma ^+ 2) 2) -(mulr_natr ((sigma * c / B) ^+ 2) 2).
 rewrite !exprMn exprVn.
-field.
-by rewrite hsigma hB hc.
+by field.
 Qed.
 
 (* Phase 2: Rewriting each gaussian_prod_scalar as a function of s       *)

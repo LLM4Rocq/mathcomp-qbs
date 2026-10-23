@@ -1,6 +1,6 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_algebra reals classical_sets filter
+From mathcomp Require Import boot algebra reals classical_sets filter
   topology num_topology normedtype sequences measurable_structure
   measurable_function measurable_realfun trigo lebesgue_stieltjes_measure.
 From mathcomp.algebra_tactics Require Import ring.
@@ -82,6 +82,7 @@ From mathcomp.algebra_tactics Require Import ring.
 (******************************************************************************)
 
 Import GRing.Theory Num.Def Num.Theory.
+Import MeasurableR.
 Import numFieldTopology.Exports.
 Import order.Order.POrderTheory.
 Import boolp.
@@ -106,7 +107,7 @@ Definition psi (y : R) : R := tan (pi * (y - 1 / 2)).
 Lemma phi_gt0 x : 0 < phi x.
 Proof.
 rewrite /phi.
-have hpi : (0 : R) < pi := pi_gt0 R.
+have hpi : (0 : R) < pi := pi_gt0.
 have hatangt : - (pi / 2) < atan x := atan_gtNpi2 x.
 have h1 : - (1 / 2) < atan x / (pi : R).
   rewrite ltr_pdivlMr //.
@@ -117,7 +118,7 @@ Qed.
 Lemma phi_lt1 x : phi x < 1.
 Proof.
 rewrite /phi.
-have hpi : (0 : R) < pi := pi_gt0 R.
+have hpi : (0 : R) < pi := pi_gt0.
 have hatanlt : atan x < pi / 2 := atan_ltpi2 x.
 have h1 : atan x / (pi : R) < 1 / 2.
   rewrite ltr_pdivrMr //.
@@ -131,14 +132,13 @@ Qed.
 Lemma psiK : cancel phi psi.
 Proof.
 rewrite /cancel => x; rewrite /psi /phi.
-rewrite addrK mulrCA divff ?mulr1; first exact: atanK.
-exact: lt0r_neq0 (pi_gt0 R).
+by rewrite addrK mulrCA divff ?mulr1 ?atanK ?gt_eqF ?pi_gt0.
 Qed.
 
 Lemma phiK : {in `](0:R), 1[, cancel psi phi}.
 Proof.
 move=> y hy; rewrite /phi /psi.
-have hpi : (0 : R) < pi := pi_gt0 R.
+have hpi : (0 : R) < pi := pi_gt0.
 have hpi0 : (pi : R) != 0 := lt0r_neq0 hpi.
 rewrite in_itv /= in hy.
 have /andP [hy0 hy1] := hy.
@@ -414,7 +414,7 @@ have habs_half : `|(2%:R^-1 : R)| < 1.
 have hrem_cvg : (fun n => rem n * 2%:R^-1 ^+ n : R^o) n
                   @[n --> \oo] --> (0 : R^o).
   apply: (@squeeze_cvgr _ _ _ _
-    (fun _ => 0 : R^o) (fun n => 2%:R^-1 ^+ n : R^o)).
+    (fun _ => 0 : R^o) _ (fun n => 2%:R^-1 ^+ n : R^o)).
   - apply: nearW => n; apply/andP; split.
     + apply: mulr_ge0; first by have [] := hrem_bound n.
       by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n.
@@ -808,8 +808,7 @@ Lemma measurable_bin_digit (n : nat) :
   measurable_fun [set: R] (fun x : R => bin_digit x n : bool).
 Proof.
 rewrite (_ : (fun x : R => _) =
-  (fun x => 2%:R^-1 <= iter n step x)); last first.
-  by apply: funext => x; rewrite bin_digit_iter.
+  (fun x => 2%:R^-1 <= iter n step x)); first by apply: funext => x; rewrite bin_digit_iter.
 apply: measurable_fun_ler.
 - exact: measurable_cst.
 - exact: measurable_iter_step.
@@ -852,8 +851,7 @@ Lemma measurable_bool_scale {d : measure_display} {T : measurableType d}
   measurable_fun [set: T] (fun x => (f x)%:R * c : R).
 Proof.
 move=> hf.
-rewrite (_ : (fun x => _) = (fun x => if f x then c else (0 : R))); last first.
-  by apply: funext => x; case: (f x) => /=; rewrite ?mul1r ?mul0r.
+rewrite (_ : (fun x => _) = (fun x => if f x then c else (0 : R))); first by apply: funext => x; case: (f x) => /=; rewrite ?mul1r ?mul0r.
 by apply: measurable_fun_ifT => //; exact: measurable_cst.
 Qed.
 
@@ -872,8 +870,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R * R]
     bin_partial_sum (interleave (bin_digits xy.1) (bin_digits xy.2)) n : R^o))).
 - move=> m; rewrite /bin_partial_sum.
   elim: m => [|m IHm].
-    rewrite (_ : (fun _ : R * R => _) = (fun _ => (0 : R))); last first.
-      by apply: funext => xy; rewrite big_ord0.
+    rewrite (_ : (fun _ : R * R => _) = (fun _ => (0 : R))); first by apply: funext => xy; rewrite big_ord0.
     exact: measurable_cst.
   rewrite (_ : (fun xy : R * R => \sum_(i < m.+1) _) =
     ((fun xy : R * R =>
@@ -881,8 +878,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R * R]
         2%:R^-1 ^+ i.+1) \+
      (fun xy : R * R =>
       (interleave (bin_digits xy.1) (bin_digits xy.2) m)%:R *
-        2%:R^-1 ^+ m.+1))%R); last first.
-    by apply: funext => xy; rewrite big_ord_recr.
+        2%:R^-1 ^+ m.+1))%R); first by apply: funext => xy; rewrite big_ord_recr.
   apply: measurable_funD => //.
   apply: measurable_bool_scale.
   exact: measurable_interleave_digit.
@@ -900,8 +896,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R]
     bin_partial_sum (deinterleave_even (bin_digits x)) n : R^o))).
 - move=> m; rewrite /bin_partial_sum.
   elim: m => [|m IHm].
-    rewrite (_ : (fun _ : R => _) = (fun _ => (0 : R))); last first.
-      by apply: funext => x; rewrite big_ord0.
+    rewrite (_ : (fun _ : R => _) = (fun _ => (0 : R))); first by apply: funext => x; rewrite big_ord0.
     exact: measurable_cst.
   rewrite (_ : (fun x : R => \sum_(i < m.+1) _) =
     ((fun x : R =>
@@ -909,8 +904,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R]
         2%:R^-1 ^+ i.+1) \+
      (fun x : R =>
       (deinterleave_even (bin_digits x) m)%:R *
-        2%:R^-1 ^+ m.+1))%R); last first.
-    by apply: funext => x; rewrite big_ord_recr.
+        2%:R^-1 ^+ m.+1))%R); first by apply: funext => x; rewrite big_ord_recr.
   apply: measurable_funD => //.
   apply: measurable_bool_scale.
   exact: measurable_deinterleave_even_digit.
@@ -928,8 +922,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R]
     bin_partial_sum (deinterleave_odd (bin_digits x)) n : R^o))).
 - move=> m; rewrite /bin_partial_sum.
   elim: m => [|m IHm].
-    rewrite (_ : (fun _ : R => _) = (fun _ => (0 : R))); last first.
-      by apply: funext => x; rewrite big_ord0.
+    rewrite (_ : (fun _ : R => _) = (fun _ => (0 : R))); first by apply: funext => x; rewrite big_ord0.
     exact: measurable_cst.
   rewrite (_ : (fun x : R => \sum_(i < m.+1) _) =
     ((fun x : R =>
@@ -937,8 +930,7 @@ apply: (@measurable_fun_cvg _ _ R [set: R]
         2%:R^-1 ^+ i.+1) \+
      (fun x : R =>
       (deinterleave_odd (bin_digits x) m)%:R *
-        2%:R^-1 ^+ m.+1))%R); last first.
-    by apply: funext => x; rewrite big_ord_recr.
+        2%:R^-1 ^+ m.+1))%R); first by apply: funext => x; rewrite big_ord_recr.
   apply: measurable_funD => //.
   apply: measurable_bool_scale.
   exact: measurable_deinterleave_odd_digit.
@@ -1217,18 +1209,18 @@ rewrite /decode_RR.
 apply: measurable_fun_pair.
 - apply: measurableT_comp; first exact: measurable_psi_setT.
   rewrite (_ : (fun x => (unit_to_pair (phi x)).1) =
-    (fun x => (unit_to_pair x).1) \o (@phi R)); last by [].
+    (fun x => (unit_to_pair x).1) \o (@phi R)); first by [].
   apply: measurableT_comp.
     exact: measurable_unit_to_pair_fst.
   exact: measurable_phi.
 - rewrite (_ : (fun x => psi (unit_to_pair (phi x)).2) =
     (@psi R) \o
-    ((fun x => (unit_to_pair x).2) \o (@phi R))); last by [].
+    ((fun x => (unit_to_pair x).2) \o (@phi R))); first by [].
   apply: measurableT_comp; first exact: measurable_psi_setT.
   rewrite (_ : (fun x => (unit_to_pair x).2) \o (@phi R) =
-    (fun x => (unit_to_pair (@phi R x)).2)); last by [].
+    (fun x => (unit_to_pair (@phi R x)).2)); first by [].
   rewrite (_ : (fun x => (unit_to_pair (phi x)).2) =
-    (fun x => (unit_to_pair x).2) \o (@phi R)); last by [].
+    (fun x => (unit_to_pair x).2) \o (@phi R)); first by [].
   apply: measurableT_comp.
     exact: measurable_unit_to_pair_snd.
   exact: measurable_phi.

@@ -1,6 +1,6 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_algebra reals classical_sets
+From mathcomp Require Import boot algebra boolp reals classical_sets
   num_topology measurable_structure measurable_function
   lebesgue_stieltjes_measure measurable_realfun.
 
@@ -53,6 +53,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 Import Num.Def Num.Theory.
+Import MeasurableR.
 Import numFieldTopology.Exports.
 
 Local Open Scope classical_set_scope.
@@ -124,6 +125,30 @@ Let hf : qbs_morphism f :=
 HB.instance Definition _ := @isQBSMorphism.Build R X Y f hf.
 Definition qbs_const : qbsHomType X Y := f.
 End qbs_const_instance.
+
+(** Extensionality: bundled morphisms are equal iff their underlying
+    functions are pointwise equal. *)
+Lemma qbs_homeqP (X Y : qbsType R) (f g : qbsHomType X Y) :
+  f = g <-> f =1 g.
+Proof.
+split=> [->//|/funext].
+case: f g => [f [[pf]]] [g [[pg]]] /= efg.
+by move: pf pg; rewrite efg => pf pg; rewrite (Prop_irrelevance pf pg).
+Qed.
+
+(** Category laws. *)
+Lemma qbs_comp1 (X Y : qbsType R) (f : qbsHomType X Y) :
+  qbs_comp (qbs_id X) f = f.
+Proof. exact/qbs_homeqP. Qed.
+
+Lemma qbs_1comp (X Y : qbsType R) (f : qbsHomType X Y) :
+  qbs_comp f (qbs_id Y) = f.
+Proof. exact/qbs_homeqP. Qed.
+
+Lemma qbs_compA (W X Y Z : qbsType R) (f : qbsHomType W X)
+    (g : qbsHomType X Y) (h : qbsHomType Y Z) :
+  qbs_comp f (qbs_comp g h) = qbs_comp (qbs_comp f g) h.
+Proof. exact/qbs_homeqP. Qed.
 
 (** Convenience wrappers: accept bare [measurable_fun setT] proofs. *)
 
@@ -385,34 +410,91 @@ HB.instance Definition _ := @isQBSMorphism.Build R Y Z curry_fun curry_proof.
 Definition qbs_curry : qbsHomType Y Z := curry_fun.
 End qbs_curry_instance.
 
-(** ## Universal property of exponentials                            *)
-(** The following lemmas state that [eval] and [curry] form the      *)
-(** bijection underlying the cartesian closed structure on QBS.      *)
-(** They are stated as pointwise equations and hold by [reflexivity].*)
+(** Currying as a bundled morphism into the exponential. *)
+Section qbs_curry_morph_instance.
+Variables (X Y Z : qbsType R) (f : qbsHomType (prodQ X Y) Z).
+Let F : X -> expQ Y Z := qbs_curry f.
+Let hF : qbs_morphism F.
+Proof.
+move=> beta hbeta gamma [hg1 hg2]; apply: qbs_hom_proof; split => //=.
+exact: qbs_Mx_compT hbeta hg1.
+Qed.
+HB.instance Definition _ := @isQBSMorphism.Build R X (expQ Y Z) F hF.
+(** Curried morphism [X -> (Y => Z)] of [f : X * Y -> Z]. *)
+Definition qbs_curry_morph : qbsHomType X (expQ Y Z) := F.
+End qbs_curry_morph_instance.
 
-(** Beta rule for cartesian closure: evaluating the curried form
-    recovers the original morphism. The underlying function of
-    [qbs_curry f] at [x] is [fun y => f (x, y)], so applying
-    it at [y] yields [f (x, y)].
+(** Uncurrying: [g : X -> (Y => Z)] gives [X * Y -> Z]. *)
+Definition qbs_uncurry (X Y Z : qbsType R) (g : qbsHomType X (expQ Y Z)) :
+    qbsHomType (prodQ X Y) Z :=
+  qbs_comp (qbs_pair (qbs_comp (qbs_fst X Y) g) (qbs_snd X Y)) (qbs_eval Y Z).
 
-    Here we package the curried function at [x] as a [qbsHomType]
-    directly to let HB resolve its structure; the [prodQ_const_random]
-    witness provides the required [isQBSMorphism] instance. *)
-Lemma qbs_morphism_curry_eval (X Y Z : qbsType R)
-  (f : qbsHomType (prodQ X Y) Z) (x : X) (y : Y) :
-  let cf : Y -> Z := fun y0 => (f : prodQ X Y -> Z) (x, y0) in
-  cf y = (f : prodQ X Y -> Z) (x, y).
+(** Pointwise application [w |-> f w (g w)]. *)
+Definition qbs_exp_comp (W X Y : qbsType R) (f : qbsHomType W (expQ X Y))
+    (g : qbsHomType W X) : qbsHomType W Y :=
+  qbs_comp (qbs_pair f g) (qbs_eval X Y).
+
+(** ## Universal property of exponentials *)
+
+Section qbs_curry_theory.
+Variables (X Y Z : qbsType R).
+Implicit Types (f : qbsHomType (prodQ X Y) Z) (g : qbsHomType X (expQ Y Z)).
+
+Lemma qbs_curry_morphE f x y : qbs_curry_morph f x y = f (x, y).
 Proof. by []. Qed.
 
-(** Eta rule for cartesian closure: the evaluation morphism applied
-    to a pair [(h, y)] with [h : qbsHomType R Y Z] recovers the
-    pointwise application [h y]. This shows that [eval] is a left
-    inverse of [curry] at the level of underlying functions. *)
-Lemma qbs_morphism_eval_curry (Y Z : qbsType R)
-  (h : qbsHomType Y Z) (y : Y) :
-  (fun p : prodQ (expQ Y Z) Y => (p.1 : Y -> Z) p.2) (h, y) =
-  (h : Y -> Z) y.
+Lemma qbs_uncurryE g x y : qbs_uncurry g (x, y) = g x y.
 Proof. by []. Qed.
+
+(** beta: [eval \o (curry f * id) = f]. *)
+Lemma qbs_curryK : cancel (@qbs_curry_morph X Y Z) (@qbs_uncurry X Y Z).
+Proof. by move=> f; apply/qbs_homeqP => -[]. Qed.
+
+(** eta: [curry (eval \o (g * id)) = g]. *)
+Lemma qbs_uncurryK : cancel (@qbs_uncurry X Y Z) (@qbs_curry_morph X Y Z).
+Proof. by move=> g; apply/qbs_homeqP => x; apply/qbs_homeqP. Qed.
+
+(** Uniqueness of the transpose. *)
+Lemma qbs_curry_morph_uniq f g : qbs_uncurry g = f -> g = qbs_curry_morph f.
+Proof. by move=> <-; rewrite qbs_uncurryK. Qed.
+
+End qbs_curry_theory.
+
+(** Currying and uncurrying are themselves morphisms between
+    exponentials, so the bijection is internal. *)
+Section qbs_curry_exp_instance.
+Variables (X Y Z : qbsType R).
+Let C : expQ (prodQ X Y) Z -> expQ X (expQ Y Z) := @qbs_curry_morph X Y Z.
+Let hC : qbs_morphism C.
+Proof.
+move=> k hk beta [hb1 hb2] gamma [hg1 hg2].
+apply: (hk (fun r => ((beta (gamma r).1).1,
+                      ((beta (gamma r).1).2, (gamma r).2)))).
+split => /=; first exact: (measurableT_comp hb1 hg1).
+split => //=.
+exact: qbs_Mx_compT hb2 hg1.
+Qed.
+HB.instance Definition _ :=
+  @isQBSMorphism.Build R (expQ (prodQ X Y) Z) (expQ X (expQ Y Z)) C hC.
+(** Internal currying [(X * Y => Z) -> (X => Y => Z)]. *)
+Definition qbs_curry_exp : qbsHomType (expQ (prodQ X Y) Z)
+  (expQ X (expQ Y Z)) := C.
+
+Let U : expQ X (expQ Y Z) -> expQ (prodQ X Y) Z := @qbs_uncurry X Y Z.
+Let hU : qbs_morphism U.
+Proof.
+move=> k hk delta [hd1 [hd2 hd3]].
+have hb : qbs_Mx (fun r => ((delta r).1, (delta r).2.1) : realQ * X).
+  by split.
+apply: (hk _ hb (fun r => (r, (delta r).2.2))).
+by split => //=; exact: measurable_id.
+Qed.
+HB.instance Definition _ :=
+  @isQBSMorphism.Build R (expQ X (expQ Y Z)) (expQ (prodQ X Y) Z) U hU.
+(** Internal uncurrying [(X => Y => Z) -> (X * Y => Z)]. *)
+Definition qbs_uncurry_exp : qbsHomType (expQ X (expQ Y Z))
+  (expQ (prodQ X Y) Z) := U.
+End qbs_curry_exp_instance.
 
 (* 6. Unit QBS *)
 

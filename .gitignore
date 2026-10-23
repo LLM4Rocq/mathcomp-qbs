@@ -44,3 +44,6 @@ QBS-export.tar.gz
 .DS_Store
 MATHCOMP_SPECIALIST.md
 TODO_FIXES.md
+
+# Local opam switch
+_opam/

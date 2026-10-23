@@ -1,6 +1,6 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_algebra reals ereal topology boolp
+From mathcomp Require Import boot algebra reals ereal topology boolp
   classical_sets normedtype numfun measure lebesgue_integral
   lebesgue_integral_fubini lebesgue_stieltjes_measure probability
   hoelder functions.
@@ -21,10 +21,12 @@ From QBS Require Import quasi_borel probability_qbs standard_borel.
 (******************************************************************************)
 
 Import GRing.Theory Num.Def Num.Theory measurable_realfun.
+Import MeasurableR.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
+Set SsrOldRewriteGoalsOrder.  (* TODO: port to the MathComp 2.6 goal order *)
 Import boolp.
 
 Local Open Scope classical_set_scope.
@@ -261,8 +263,9 @@ transitivity (\int[qbs_prob_mu px]_r1
   ((f (qbs_prob_alpha px r1))%:E *
    \int[qbs_prob_mu py]_r2 (g (qbs_prob_alpha py r2))%:E)).
 - apply: eq_integral => r1 _.
-  under eq_integral do rewrite EFinM.
-  rewrite integralZl //.
+  rewrite (eq_integral (fun x =>
+    (f (qbs_prob_alpha px r1))%:E * (g (qbs_prob_alpha py x))%:E)) //.
+  by rewrite integralZl.
 - have hfin : (\int[qbs_prob_mu py]_r2 (g (qbs_prob_alpha py r2))%:E)
     \is a fin_num by exact: (integrable_fin_num measurableT hintg).
   rewrite -(fineK hfin).

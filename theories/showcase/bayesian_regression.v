@@ -1,6 +1,6 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_algebra reals ereal topology
+From mathcomp Require Import boot algebra reals ereal topology
   classical_sets normedtype numfun measure lebesgue_integral
   lebesgue_integral_fubini lebesgue_stieltjes_measure lebesgue_measure
   probability charge boolp.
@@ -36,50 +36,15 @@ From QBS Require Import quasi_borel probability_qbs pair_qbs_measure
 (******************************************************************************)
 
 Import GRing.Theory Num.Def Num.Theory measurable_realfun.
+Import MeasurableR.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
+Set SsrOldRewriteGoalsOrder.  (* TODO: port to the MathComp 2.6 goal order *)
 Import boolp order.Order.POrderTheory.
 
 Local Open Scope classical_set_scope.
-
-(** Integration against normal_prob via Radon-Nikodym. *)
-
-Section integral_normal_prob.
-Variable R : realType.
-Local Notation mu := (@lebesgue_measure R).
-Local Open Scope ring_scope.
-Local Open Scope ereal_scope.
-
-(* Convert integration against normal_prob to Lebesgue integration
-   with the normal_pdf density. This is the normal-distribution
-   analogue of integral_beta_prob from mathcomp-analysis. *)
-Lemma integral_normal_prob (m sigma : R) (hsigma : (sigma != 0)%R)
-    f (f_meas : measurable_fun setT f)
-    (f_int : (\int[normal_prob m sigma]_x `|f x| < +oo)%E) :
-  \int[normal_prob m sigma]_x f x =
-  \int[mu]_x (f x * (normal_pdf m sigma x)%:E).
-Proof.
-rewrite -(Radon_Nikodym_change_of_variables
-            (normal_prob_dominates m sigma) measurableT); last first.
-  by apply/integrableP; split.
-apply: ae_eq_integral => //.
-- apply: emeasurable_funM => //; apply: (measurable_int mu).
-  apply: (integrableS _ _ (@subsetT _ _)) => //=.
-  by apply: Radon_Nikodym_integrable; exact: normal_prob_dominates.
-- apply: emeasurable_funM => //=; apply/measurableT_comp => //=.
-  by apply/measurable_funTS; exact: measurable_normal_pdf.
-- apply: ae_eqe_mul2l => /=.
-  rewrite Radon_NikodymE//=; first exact: normal_prob_dominates.
-  move=> ?.
-  case: cid => /= h [h1 h2 h3].
-  apply: integral_ae_eq => //=.
-  + apply/measurable_EFinP; exact: measurable_normal_pdf.
-  + by move=> E E01 mE; rewrite -h3.
-Qed.
-
-End integral_normal_prob.
 
 (** Part II: Bayesian regression example. *)
 
@@ -495,8 +460,7 @@ Lemma phase1_integration (s : R)
   \int[normal_prob (0 : R) prior_sigma]_b (obs (s, b))%:E =
   (scalar_of_s s)%:E.
 Proof.
-have h3 : (prior_sigma != 0)%R by rewrite /prior_sigma pnatr_eq0.
-rewrite (integral_normal_prob h3) //.
+rewrite integral_normal_prob //; last by apply/integrableP; split.
 under eq_integral do rewrite -EFinM.
 have step1 : forall x : R, (obs (s, x) * normal_pdf 0 prior_sigma x =
   scalar_of_s s * normal_pdf (phase1_mu5 s) phase1_sigma5 x)%R.
@@ -554,8 +518,7 @@ Lemma phase2_integration
   \int[normal_prob (0 : R) prior_sigma]_s (scalar_of_s s)%:E =
   (phase2_const R)%:E.
 Proof.
-have h3 : (prior_sigma != 0)%R by rewrite /prior_sigma pnatr_eq0.
-rewrite (integral_normal_prob h3) //.
+rewrite integral_normal_prob //; last by apply/integrableP; split.
 under eq_integral do rewrite -EFinM.
 under eq_integral do rewrite scalar_of_s_mul_pdf.
 under eq_integral do rewrite EFinM.
@@ -618,7 +581,7 @@ Qed.
 (** Discharging the measure-theoretic hypotheses. *)
 
 Lemma noise_sigma_neq0 : (noise_sigma != 0)%R.
-Proof. by rewrite /noise_sigma invr_neq0. Qed.
+Proof. by rewrite /noise_sigma invr_eq0 pnatr_eq0. Qed.
 
 Lemma d_le_peak (mu x : R) : (d mu x <= normal_peak noise_sigma)%R.
 Proof. rewrite /d; apply: normal_pdf_ub; exact: noise_sigma_neq0. Qed.

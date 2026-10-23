@@ -1,6 +1,6 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_algebra reals ereal topology boolp
+From mathcomp Require Import boot algebra reals ereal topology boolp
   classical_sets borel_hierarchy numfun measure lebesgue_measure sequences
   lebesgue_integral hoelder probability lebesgue_stieltjes_measure charge.
 From QBS Require Import quasi_borel.
@@ -27,6 +27,9 @@ Import GRing.Theory Num.Def Num.Theory
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
+Set SsrOldRewriteGoalsOrder.  (* TODO: port to the MathComp 2.6 goal order *)
+
+Import MeasurableR.
 
 Local Open Scope classical_set_scope.
 

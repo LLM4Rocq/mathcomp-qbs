@@ -1,6 +1,6 @@
 (* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_algebra reals ereal topology
+From mathcomp Require Import boot algebra reals ereal topology
   classical_sets borel_hierarchy numfun measure lebesgue_integral_definition
   lebesgue_stieltjes_measure lebesgue_measure lebesgue_integral probability
   measurable_realfun derive ftc gauss_integral charge boolp.
@@ -24,10 +24,12 @@ From QBS Require Import quasi_borel probability_qbs.
 (******************************************************************************)
 
 Import GRing.Theory Num.Def Num.Theory.
+Import MeasurableR.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
+Set SsrOldRewriteGoalsOrder.  (* TODO: port to the MathComp 2.6 goal order *)
 Import boolp order.Order.POrderTheory.
 
 Local Open Scope classical_set_scope.
@@ -135,31 +137,6 @@ rewrite /qbs_Mx /= => r.
 exact: @measurable_id _ mR setT.
 Qed.
 
-(** Convert normal_prob integral to Lebesgue with density. *)
-Lemma integral_normal_prob (m s : R) (hs : (s != 0)%R)
-    f (f_meas : measurable_fun setT f)
-    (f_int : (\int[normal_prob m s]_x `|f x| < +oo)%E) :
-  (\int[normal_prob m s]_x f x =
-  \int[lebesgue_measure]_x (f x * (normal_pdf m s x)%:E))%E.
-Proof.
-rewrite -(Radon_Nikodym_change_of_variables
-            (normal_prob_dominates m s) measurableT); last first.
-  by apply/integrableP; split.
-apply: ae_eq_integral => //.
-- apply: emeasurable_funM => //; apply: (measurable_int lebesgue_measure).
-  apply: (integrableS _ _ (@subsetT _ _)) => //=.
-  by apply: Radon_Nikodym_integrable; exact: normal_prob_dominates.
-- apply: emeasurable_funM => //=; apply/measurableT_comp => //=.
-  by apply/measurable_funTS; exact: measurable_normal_pdf.
-- apply: ae_eqe_mul2l => /=.
-  rewrite Radon_NikodymE//=; first exact: normal_prob_dominates.
-  move=> ?.
-  case: cid => /= h [h1 h2 h3].
-  apply: integral_ae_eq => //=.
-  + apply/measurable_EFinP; exact: measurable_normal_pdf.
-  + by move=> E E01 mE; rewrite -h3.
-Qed.
-
 (** Distribution expectation lemmas. *)
 
 Section distribution_expectations.
@@ -171,6 +148,7 @@ Lemma qbs_expect_bernoulli (p : R) (hp0 : 0 <= p) (hp1 : p <= 1) :
 Proof.
 rewrite /qbs_expect /qbs_integral /=.
 rewrite integral_uniform//; last first.
+  by move=> x; rewrite lee_fin.
   apply: measurableT_comp => //=.
   apply: measurableT_comp => //=.
   exact: measurable_fun_ltr (@measurable_id _ mR setT)
@@ -247,8 +225,7 @@ Lemma qbs_expect_normal (mu sigma : R) (hsigma : 0 < sigma)
     (fun x => x) = mu%:E.
 Proof.
 rewrite /qbs_expect /qbs_integral /=.
-have hsigma0 : sigma != 0 by exact: lt0r_neq0.
-rewrite (integral_normal_prob hsigma0)//=.
+rewrite integral_normal_prob//=; last by apply/integrableP; split.
 under eq_integral do rewrite -EFinM.
 (* Split x * pdf = mu * pdf + (x - mu) * pdf *)
 rewrite (_ : (fun x => (x * normal_pdf mu sigma x)%:E) =

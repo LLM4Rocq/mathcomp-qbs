@@ -120,22 +120,26 @@ The formalization is honest about its scope. Key limitations:
 
 ## Requirements
 
-- Rocq 9.0.x -- 9.1.x
-- Math-comp 2.5.x
-- Math-comp analysis 1.15.x -- 1.16.x
+- Rocq 9.0 -- 9.3 (tested with 9.2.0)
+- Math-comp 2.6.x
+- Math-comp analysis 1.18.x
 - Hierarchy Builder 1.10.x
-- Math-comp algebra-tactics 1.2.x (for `ring`/`field`)
+- Math-comp algebra-tactics (for `ring`/`field`). No release supports
+  Math-comp 2.6 yet: install the `master` branch with its
+  `coq-mathcomp-ssreflect` upper bound relaxed.
 
 ### Installation
 
 ```bash
-opam install coq-mathcomp-analysis coq-mathcomp-algebra-tactics
+opam repo add rocq-released https://rocq-prover.org/opam/released
+opam install rocq-mathcomp-analysis.1.18.0
+opam pin add coq-mathcomp-algebra-tactics <path-to-patched-algebra-tactics>
 ```
 
 ## Building
 
 ```bash
-coq_makefile -f _CoqProject -o Makefile
+rocq makefile -f _CoqProject -o Makefile
 make -j4
 ```
 
