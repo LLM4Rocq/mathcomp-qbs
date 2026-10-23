@@ -15,16 +15,20 @@ From QBS Require Import quasi_borel standard_borel probability_qbs.
 (* measures. Bind is the Giry bind of mathcomp-analysis.                      *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*        giry_prob m m1 == the probability measure m : giry T R, given a     *)
-(*                          proof m1 that m has total mass 1                  *)
-(*   qbs_prob_rep b a g == b r is represented by [a, g r] for every r         *)
-(*            monadP X == the QBS of probabilities on X                       *)
-(*        qbs_return x == the Dirac probability at x                          *)
-(*        qbs_bind p f == monadic bind, for f : qbsHomType X (monadP Y)       *)
-(*      monadP_map f p == pushforward of p along f : qbsHomType X Y           *)
-(*        qbs_join pp == monad multiplication monadP (monadP X) -> monadP X   *)
-(*   qbs_strength (w, p) == strength W * monadP X -> monadP (W * X)           *)
-(*         qbs_assoc U W X == associativity (U * W) * X -> U * (W * X)        *)
+(*              giry_prob m m1 == m : giry T R given a proof m1 that m(T) = 1 *)
+(*          qbs_prob_rep b a g == b r is represented by [a, g r] for every r  *)
+(*                    monadP X == the QBS of probabilities on X               *)
+(*             monadP_random X == its random elements                         *)
+(*                qbs_return x == the Dirac probability at x                  *)
+(*                qbs_bind p f == bind, for f : qbsHomType X (monadP Y)       *)
+(*              monadP_map f p == pushforward of p along f : qbsHomType X Y   *)
+(*                 qbs_join pp == multiplication P(P(X)) -> P(X)                  *)
+(*         qbs_strength (w, p) == strength W * monadP X -> monadP (W * X)     *)
+(*             qbs_assoc U W X == associativity (U * W) * X -> U * (W * X)    *)
+(*      qbs_returnQ, qbs_bindQ == return and bind as qbsHomType morphisms     *)
+(*    qbs_joinQ, qbs_strengthQ == join and strength as qbsHomType morphisms   *)
+(*       qbs_bind_internal X Y == bind as P(X) * (X => P(Y)) -> P(Y)          *)
+(* qbs_swap X Y, qbs_pairP p q == swap; monadic product of p, q               *)
 (* ```                                                                        *)
 (*                                                                            *)
 (* The strength laws (unit, associativity, return, join) are                  *)
@@ -49,8 +53,8 @@ Lemma giry_bindE d' (T' : measurableType d') (mu : giry T' R)
     (g : T' -> giry T R) (mg : measurable_fun [set: T'] g) (A : set T) :
   measurable A -> giry_bind mu mg A = \int[mu]_x g x A.
 Proof.
-move=> mA; rewrite /giry_bind /= /giry_join /=.
-by rewrite giry_int_map//; exact: measurable_giry_ev.
+move=> mA; rewrite /giry_bind /= /giry_join /= giry_int_map//.
+exact: measurable_giry_ev.
 Qed.
 
 Lemma giry_bind_setT d' (T' : measurableType d') (mu : giry T' R)
@@ -75,11 +79,16 @@ Lemma giry_probE A : giry_prob m1 A = m A. Proof. by []. Qed.
 
 End giry_prob.
 
-Section qbs_monad.
+Section probability_monad.
 Variable R : realType.
 Local Notation mR := (measurableTypeR R).
 Local Notation G := (giry mR R).
 Implicit Types (W X Y Z : qbsType R).
+
+Lemma qbs_prob_equivP X (p1 p2 : qbs_prob X) :
+  qbs_prob_equiv X p1 p2 <->
+  forall U, sigma_Mx U -> qbs_prob_event X p1 U = qbs_prob_event X p2 U.
+Proof. by []. Qed.
 
 (** ** The QBS of probabilities *)
 
@@ -192,10 +201,16 @@ HB.instance Definition _ X :=
 Lemma monadP_randomE X : qbs_Mx (s := monadP X) = monadP_random X.
 Proof. by []. Qed.
 
+Lemma qbs_measurable_event X Y (f : qbsHomType X (monadP Y)) (U : set Y) :
+  sigma_Mx U -> qbs_measurable X (fun x => qbs_prob_event Y (f x) U).
+Proof.
+by move=> mU b hb; apply: monadP_random_event mU; exact: qbs_hom_proof.
+Qed.
+
 (** ** Return *)
 
 Definition qbs_return X (x : X) : monadP X :=
-  @mkQBSProb R X (fun=> x) (\d_(0 : mR))%R (qbs_Mx_const x).
+  mkQBSProb (fun=> x) (\d_(0 : mR))%R (qbs_Mx_const x).
 
 Lemma qbs_return_event X (x : X) (U : set X) :
   qbs_prob_event X (qbs_return x) U = (x \in U)%:R%:E.
@@ -236,7 +251,7 @@ by apply: giry_bind_setT; [exact: probability_setT|exact: rep_mass bind_rep].
 Qed.
 
 Definition qbs_bind : monadP Y :=
-  @mkQBSProb R Y bind_a (giry_prob bind_mu1) (rep_random bind_rep).
+  mkQBSProb bind_a (giry_prob bind_mu1) (rep_random bind_rep).
 
 Lemma qbs_bind_integral (h : Y -> \bar R) :
   qbs_measurable Y h -> (forall y, 0 <= h y) ->
@@ -277,7 +292,8 @@ have [b2 [g2 r2]] : monadP_random Z (g \o b1) :=
 exists b2, (fun r => giry_bind (g1 r) (rep_measurable r2)); split.
 - exact: rep_random r2.
 - exact: measurableT_comp (measurable_giry_bind _) (rep_measurable r1).
-- by move=> r; apply: giry_bind_setT; [exact: (rep_mass r1)|exact: (rep_mass r2)].
+- by move=> r; apply: giry_bind_setT;
+    [exact: (rep_mass r1)|exact: (rep_mass r2)].
 - move=> r U mU; rewrite (giry_bindE _ _ (mU _ (rep_random r2))).
   rewrite [LHS]qbs_bind_event//.
   transitivity (\int[g1 r]_t qbs_prob_event Z (g (b1 t)) U).
@@ -285,7 +301,7 @@ exists b2, (fun r => giry_bind (g1 r) (rep_measurable r2)); split.
       (fun y => qbs_prob_event Z (g y) U)) => //.
     + exact: qbs_prob_alpha_random.
     + exact: rep_random r1.
-    + by move=> b hb; apply: monadP_random_event mU; exact: qbs_hom_proof.
+    + exact: qbs_measurable_event.
     + by move=> V mV; exact: (rep_event r1).
   by apply: eq_integral => t _; rewrite (rep_event r2).
 Qed.
@@ -313,30 +329,30 @@ Qed.
 Lemma qbs_bind_returnl X Y (x : X) (f : qbsHomType X (monadP Y)) :
   qbs_prob_equiv Y (qbs_bind (qbs_return x) f) (f x).
 Proof.
-move=> U mU; rewrite -[LHS]/(qbs_prob_event _ _ _) qbs_bind_event//.
+apply/qbs_prob_equivP => U mU; rewrite qbs_bind_event//.
 by rewrite /= integral_cst//= diracT mule1.
 Qed.
 
 Lemma qbs_bind_returnr X (p : qbs_prob X) :
   qbs_prob_equiv X (qbs_bind p (qbs_returnQ X)) p.
 Proof.
-move=> U mU; rewrite -[LHS]/(qbs_prob_event _ _ _) qbs_bind_event//.
+apply/qbs_prob_equivP => U mU; rewrite qbs_bind_event//.
 under eq_integral do rewrite qbs_return_event.
 have mU' := mU _ (qbs_prob_alpha_random p).
-by rewrite -[in RHS](setIT (qbs_prob_alpha p @^-1` U)) -integral_indic.
+rewrite /qbs_prob_event -[in RHS](setIT (qbs_prob_alpha p @^-1` U)).
+by rewrite -integral_indic.
 Qed.
 
 Lemma qbs_bindA X Y Z (p : qbs_prob X) (f : qbsHomType X (monadP Y))
     (g : qbsHomType Y (monadP Z)) :
   qbs_prob_equiv Z (qbs_bind (qbs_bind p f) g) (qbs_bind p (qbs_bindQ f g)).
 Proof.
-move=> U mU.
-rewrite -[LHS]/(qbs_prob_event _ _ _) -[RHS]/(qbs_prob_event _ _ _).
-have mh : qbs_measurable Y (fun y => qbs_prob_event Z (g y) U).
-  by move=> b hb; apply: monadP_random_event mU; exact: qbs_hom_proof.
-have h0 y : 0 <= qbs_prob_event Z (g y) U by exact: measure_ge0.
+apply/qbs_prob_equivP => U mU.
+have mh := qbs_measurable_event g mU.
+have h0 y : 0 <= qbs_prob_event Z (g y) U by [].
 rewrite qbs_bind_event//.
-rewrite -[LHS]/(qbs_integral Y (qbs_bind p f) (fun y => qbs_prob_event Z (g y) U)).
+rewrite -[LHS]/(qbs_integral Y (qbs_bind p f)
+  (fun y => qbs_prob_event Z (g y) U)).
 rewrite qbs_bind_integral// qbs_bind_event//.
 by apply: eq_integral => r _; rewrite qbs_bindQE qbs_bind_event.
 Qed.
@@ -345,7 +361,7 @@ Qed.
 
 Definition monadP_map X Y (f : qbsHomType X Y) (p : monadP X) :
     monadP Y :=
-  @mkQBSProb R Y (f \o qbs_prob_alpha p) (qbs_prob_mu p)
+  mkQBSProb (f \o qbs_prob_alpha p) (qbs_prob_mu p)
     (qbs_hom_proof _ (qbs_prob_alpha_random p)).
 
 Lemma sigma_Mx_preimage X Y (f : qbsHomType X Y) (U : set Y) :
@@ -373,7 +389,7 @@ Lemma qbs_prob_eqP X (p1 p2 : qbs_prob X) :
   qbs_prob_mu p1 = qbs_prob_mu p2 -> p1 = p2.
 Proof.
 case: p1 p2 => [a1 m1 h1] [a2 m2 h2] /= ea em; subst a2 m2.
-by rewrite (Prop_irrelevance h1 h2).
+by congr mkQBSProb; exact: Prop_irrelevance.
 Qed.
 
 Lemma monadP_map_id X (p : qbs_prob X) : monadP_map (qbs_id X) p = p.
@@ -387,8 +403,8 @@ Proof. exact: qbs_prob_eqP. Qed.
 Lemma monadP_map_bind X Y (f : qbsHomType X Y) (p : qbs_prob X) :
   qbs_prob_equiv Y (monadP_map f p) (qbs_bind p (qbs_comp f (qbs_returnQ Y))).
 Proof.
-move=> U mU; rewrite -[LHS]/(qbs_prob_event _ _ _).
-rewrite -[RHS]/(qbs_prob_event _ _ _) qbs_bind_event// monadP_map_event.
+apply/qbs_prob_equivP => U mU.
+rewrite qbs_bind_event// monadP_map_event.
 have mU' := sigma_Mx_preimage f mU.
 under [RHS]eq_integral do rewrite /= qbs_return_event.
 have mA := mU' _ (qbs_prob_alpha_random p).
@@ -401,25 +417,24 @@ Lemma ge0_qbs_integral_equiv X (p1 p2 : qbs_prob X) (h : X -> \bar R) :
   qbs_measurable X h -> (forall x, 0 <= h x) -> qbs_prob_equiv X p1 p2 ->
   qbs_integral X p1 h = qbs_integral X p2 h.
 Proof.
-move=> mh h0 e; apply: ge0_integral_sigma_Mx => //; exact: qbs_prob_alpha_random.
+move=> mh h0 e; apply: ge0_integral_sigma_Mx => //;
+  exact: qbs_prob_alpha_random.
 Qed.
 
 Lemma qbs_bind_equiv_l X Y (p1 p2 : qbs_prob X) (f : qbsHomType X (monadP Y)) :
   qbs_prob_equiv X p1 p2 -> qbs_prob_equiv Y (qbs_bind p1 f) (qbs_bind p2 f).
 Proof.
-move=> e U mU.
-rewrite -[LHS]/(qbs_prob_event _ _ _) -[RHS]/(qbs_prob_event _ _ _).
+move=> e; apply/qbs_prob_equivP => U mU.
 rewrite !qbs_bind_event//.
 apply: (ge0_qbs_integral_equiv (h := fun x => qbs_prob_event Y (f x) U)) => //.
-by move=> a ha; apply: monadP_random_event mU; exact: qbs_hom_proof.
+exact: qbs_measurable_event.
 Qed.
 
 Lemma qbs_bind_equiv_r X Y (p : qbs_prob X) (f g : qbsHomType X (monadP Y)) :
   (forall x, qbs_prob_equiv Y (f x) (g x)) ->
   qbs_prob_equiv Y (qbs_bind p f) (qbs_bind p g).
 Proof.
-move=> e U mU.
-rewrite -[LHS]/(qbs_prob_event _ _ _) -[RHS]/(qbs_prob_event _ _ _).
+move=> e; apply/qbs_prob_equivP => U mU.
 by rewrite !qbs_bind_event//; apply: eq_integral => r _; exact: e.
 Qed.
 
@@ -435,15 +450,15 @@ Definition qbs_join X (pp : monadP (monadP X)) : monadP X :=
 
 Lemma qbs_join_morphism X :
   qbs_morphism (X := monadP (monadP X)) (Y := monadP X) (@qbs_join X).
-Proof. exact: (qbs_bind_morphism (qbs_id _) (qbs_id _)). Qed.
+Proof. exact: qbs_bind_morphism (qbs_id _) (qbs_id _). Qed.
 
 HB.instance Definition _ X :=
   @isQBSMorphism.Build R (monadP (monadP X)) (monadP X) (@qbs_join X)
     (@qbs_join_morphism X).
 
-Lemma qbs_join_return X (p : qbs_prob X) :
-  qbs_prob_equiv X (qbs_join (qbs_return (p : monadP X))) p.
-Proof. exact: (qbs_bind_returnl (p : monadP X) (qbs_id (monadP X))). Qed.
+Lemma qbs_join_return X (p : monadP X) :
+  qbs_prob_equiv X (qbs_join (qbs_return p)) p.
+Proof. exact: qbs_bind_returnl p (qbs_id (monadP X)). Qed.
 
 (** ** Strength *)
 
@@ -468,7 +483,7 @@ Qed.
 End giry_section.
 
 Definition qbs_strength W X (wp : W * monadP X) : monadP (prodQ W X) :=
-  @mkQBSProb R (prodQ W X) (fun r => (wp.1, qbs_prob_alpha wp.2 r))
+  mkQBSProb (fun r => (wp.1, qbs_prob_alpha wp.2 r))
     (qbs_prob_mu wp.2) (prodQ_const_random wp.1 (qbs_prob_alpha_random wp.2)).
 
 Lemma qbs_strength_event W X (w : W) (p : monadP X) (U : set (prodQ W X)) :
@@ -514,8 +529,7 @@ HB.instance Definition _ W X :=
 
 Definition qbs_strengthQ W X :
     qbsHomType (prodQ W (monadP X)) (monadP (prodQ W X)) :=
-  HB.pack (@qbs_strength W X)
-    (isQBSMorphism.Build R _ _ _ (@qbs_strength_morphism W X)).
+  @qbs_strength W X.
 
 Lemma qbs_strength_return W X (w : W) (x : X) :
   qbs_strength (w, qbs_return x) = qbs_return (w, x).
@@ -552,8 +566,7 @@ Definition qbs_bind_internal X Y :
 Lemma qbs_bind_internalE X Y (p : monadP X) (f : qbsHomType X (monadP Y)) :
   qbs_prob_equiv Y (qbs_bind_internal X Y (p, f)) (qbs_bind p f).
 Proof.
-move=> U mU.
-rewrite -[LHS]/(qbs_prob_event _ _ _) -[RHS]/(qbs_prob_event _ _ _).
+apply/qbs_prob_equivP => U mU.
 by rewrite qbs_bindQE !qbs_bind_event.
 Qed.
 
@@ -564,7 +577,8 @@ Definition qbs_swap X Y : qbsHomType (prodQ X Y) (prodQ Y X) :=
 
 (** The monadic product: p >>= (fun x => strength (x, q)). *)
 Definition qbs_pairP X Y (p : monadP X) (q : monadP Y) : monadP (prodQ X Y) :=
-  qbs_bind p (qbs_comp (qbs_pair (qbs_id X) (qbs_const X q)) (qbs_strengthQ X Y)).
+  qbs_bind p
+    (qbs_comp (qbs_pair (qbs_id X) (qbs_const X q)) (qbs_strengthQ X Y)).
 
 Lemma qbs_pairP_event X Y (p : monadP X) (q : monadP Y) (U : set (prodQ X Y)) :
   sigma_Mx U ->
@@ -599,10 +613,10 @@ by rewrite -comp_preimage E.
 Qed.
 
 Lemma qbs_pairP_comm :
-  qbs_prob_equiv (prodQ X Y) (qbs_pairP p q) (monadP_map (qbs_swap Y X) (qbs_pairP q p)).
+  qbs_prob_equiv (prodQ X Y) (qbs_pairP p q)
+    (monadP_map (qbs_swap Y X) (qbs_pairP q p)).
 Proof.
-move=> U mU.
-rewrite -[LHS]/(qbs_prob_event _ _ _) -[RHS]/(qbs_prob_event _ _ _).
+apply/qbs_prob_equivP => U mU.
 rewrite monadP_map_event qbs_pairP_event//.
 rewrite (qbs_pairP_event _ _ (sigma_Mx_preimage (qbs_swap Y X) mU)).
 have mA := measurable_seeds mU.
@@ -631,8 +645,7 @@ Lemma qbs_bind_map X Y Z (g : qbsHomType X Y) (p : monadP X)
     (f : qbsHomType Y (monadP Z)) :
   qbs_prob_equiv Z (qbs_bind (monadP_map g p) f) (qbs_bind p (qbs_comp g f)).
 Proof.
-move=> U mU.
-rewrite -[LHS]/(qbs_prob_event _ _ _) -[RHS]/(qbs_prob_event _ _ _).
+apply/qbs_prob_equivP => U mU.
 by rewrite !qbs_bind_event.
 Qed.
 
@@ -649,14 +662,13 @@ Qed.
 (** ** Join and strength laws *)
 
 Definition qbs_joinQ X : qbsHomType (monadP (monadP X)) (monadP X) :=
-  HB.pack (@qbs_join X)
-    (isQBSMorphism.Build R _ _ _ (@qbs_join_morphism X)).
+  @qbs_join X.
 
 Lemma qbs_join_map_return X (p : monadP X) :
   qbs_prob_equiv X (qbs_join (monadP_map (qbs_returnQ X) p)) p.
 Proof.
 apply: qbs_prob_equiv_trans (qbs_bind_map _ _ _) _.
-exact: (qbs_bind_returnr p).
+exact: qbs_bind_returnr.
 Qed.
 
 Lemma qbs_join_assoc X (P : monadP (monadP (monadP X))) :
@@ -677,7 +689,7 @@ Proof. exact: qbs_prob_eqP. Qed.
 
 Lemma qbs_strength_snd W X (w : W) (p : monadP X) :
   monadP_map (qbs_snd W X) (qbs_strength (w, p)) = p.
-Proof. by case: p => a mu ha; exact: qbs_prob_eqP. Qed.
+Proof. exact: qbs_prob_eqP. Qed.
 
 Definition qbs_assoc (U W X : qbsType R) :
     qbsHomType (prodQ (prodQ U W) X) (prodQ U (prodQ W X)) :=
@@ -693,13 +705,12 @@ Lemma qbs_strength_join W X (w : W) (P : monadP (monadP X)) :
   qbs_prob_equiv (prodQ W X) (qbs_strength (w, qbs_join P))
     (qbs_join (monadP_map (qbs_strengthQ W X) (qbs_strength (w, P)))).
 Proof.
-move=> U mU.
-rewrite -[LHS]/(qbs_prob_event _ _ _) -[RHS]/(qbs_prob_event _ _ _).
+apply/qbs_prob_equivP => U mU.
 rewrite qbs_strength_event /qbs_join !qbs_bind_event//.
 exact: sigma_Mx_section.
 Qed.
 
-End qbs_monad.
+End probability_monad.
 
 Arguments monadP_random {R} X.
 Arguments monadP {R} X.
