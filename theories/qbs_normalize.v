@@ -1,8 +1,8 @@
 (* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
-From mathcomp Require Import boot algebra reals ereal topology classical_sets
-  boolp numfun measure measurable_realfun lebesgue_measure lebesgue_integral
-  lebesgue_stieltjes_measure probability giry.
+From mathcomp Require Import boot order functions algebra reals ereal topology
+  classical_sets boolp numfun measure measurable_realfun lebesgue_measure
+  lebesgue_integral lebesgue_stieltjes_measure probability giry.
 From QBS Require Import quasi_borel coproduct_qbs probability_qbs qbs_monad.
 
 (**md**************************************************************************)
@@ -27,7 +27,7 @@ From QBS Require Import quasi_borel coproduct_qbs probability_qbs qbs_monad.
 (* ```                                                                        *)
 (******************************************************************************)
 
-Import order.Order.TTheory GRing.Theory Num.Def Num.Theory.
+Import Order.TTheory GRing.Theory Num.Def Num.Theory.
 Import MeasurableR.
 
 Set Implicit Arguments.
@@ -39,7 +39,7 @@ Local Open Scope ereal_scope.
 
 Section qbs_normalize.
 Variable R : realType.
-Local Notation mR := (measurableTypeR R).
+Local Abbreviation mR := (measurableTypeR R).
 Variable X : qbsType R.
 Implicit Types p : qbs_prob (prodQ X (realQ R)).
 
@@ -138,7 +138,7 @@ congr (_ * _).
 rewrite -[LHS]/(\int[qbs_prob_mu p]_(r in (fun r : mR =>
   (qbs_prob_alpha p r).1) @^-1` U) qbs_weight p r).
 rewrite integral_mkcond /qbs_integral.
-apply: eq_integral => r _; rewrite /functions.patch /qbs_weight indicE.
+apply: eq_integral => r _; rewrite patchE /qbs_weight indicE.
 have -> : (r \in (fun r0 : mR => (qbs_prob_alpha p r0).1) @^-1` U) =
     ((qbs_prob_alpha p r).1 \in U) by apply/idP/idP; rewrite !inE.
 by case: (_ \in U); rewrite ?mul1r ?mul0r.
@@ -223,7 +223,7 @@ have md A : measurable A ->
     by rewrite mule_ge0 ?lee_fin ?indicE ?ler0n ?le_max ?lexx.
   have -> : (fun r => qbs_density (pr r) A) = (giry_int^~ w) \o g.
     apply/funext => r; rewrite /qbs_density integral_mkcond /giry_int /=.
-    apply: eq_integral => t _; rewrite /w /functions.patch indicE.
+    apply: eq_integral => t _; rewrite /w patchE indicE.
     by case: (t \in A); rewrite ?mul1e ?mul0e.
   exact: measurableT_comp (measurable_giry_int mw w0) mg.
 right; right; exists P, (fun r => qbs_normalize_prob (b r)), (fun=> tt).

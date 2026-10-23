@@ -35,7 +35,7 @@ Local Open Scope quotient_scope.
 
 Section quotient_monad.
 Variable R : realType.
-Local Notation mR := (measurableTypeR R).
+Local Abbreviation mR := (measurableTypeR R).
 Implicit Types (X Y Z : qbsType R).
 
 Section equiv_instances.

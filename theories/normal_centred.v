@@ -1,6 +1,6 @@
 (* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
-From mathcomp Require Import boot algebra boolp reals ereal topology
+From mathcomp Require Import boot order algebra boolp reals ereal topology
   classical_sets normedtype sequences numfun measure measurable_realfun
   lebesgue_measure lebesgue_integral probability exp derive realfun ftc.
 
@@ -20,14 +20,14 @@ From mathcomp Require Import boot algebra boolp reals ereal topology
 (* ```                                                                        *)
 (******************************************************************************)
 
-Import order.Order.TTheory GRing.Theory Num.Def Num.Theory.
+Import Order.TTheory GRing.Theory Num.Def Num.Theory.
 Import numFieldNormedType.Exports.
 Import MeasurableR.
 
 Local Open Scope ring_scope.
 Local Open Scope classical_set_scope.
 
-Local Notation mu := lebesgue_measure.
+Local Abbreviation mu := lebesgue_measure.
 
 Section normal_centred.
 Context {R : realType}.

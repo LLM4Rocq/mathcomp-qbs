@@ -1,7 +1,7 @@
 (* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
-From mathcomp Require Import boot algebra reals classical_sets boolp functions
-  topology normedtype num_normedtype filter measurable_structure
+From mathcomp Require Import boot order algebra reals classical_sets boolp
+  functions topology normedtype num_normedtype filter measurable_structure
   measurable_function borel_hierarchy lebesgue_stieltjes_measure
   measurable_realfun ereal.
 From QBS Require Import quasi_borel standard_borel.
@@ -30,7 +30,7 @@ From QBS Require Import quasi_borel standard_borel.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-Import order.Order.TTheory GRing.Theory Num.Def Num.Theory constructive_ereal.
+Import Order.TTheory GRing.Theory Num.Def Num.Theory constructive_ereal.
 Import MeasurableR.
 
 Local Open Scope classical_set_scope.
@@ -39,7 +39,7 @@ Local Open Scope ring_scope.
 Section measure_qbs_adjunction.
 Variable R : realType.
 
-Local Notation mR := (measurableTypeR R).
+Local Abbreviation mR := (measurableTypeR R).
 
 Implicit Types (X Y : qbsType R).
 

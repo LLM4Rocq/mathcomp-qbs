@@ -1,6 +1,6 @@
 (* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
-From mathcomp Require Import boot algebra reals classical_sets filter
+From mathcomp Require Import boot order algebra reals classical_sets filter
   topology num_topology normedtype sequences measurable_structure
   measurable_function measurable_realfun trigo lebesgue_stieltjes_measure
   measurable_fun_approximation.
@@ -87,7 +87,7 @@ From mathcomp.algebra_tactics Require Import ring.
 Import GRing.Theory Num.Def Num.Theory.
 Import MeasurableR.
 Import numFieldTopology.Exports.
-Import order.Order.POrderTheory.
+Import Order.POrderTheory.
 Import boolp.
 
 Set Implicit Arguments.
@@ -1006,7 +1006,7 @@ End binary_digit_interleaving.
    lebesgue_stieltjes_measure-based sigma algebras (product measures etc.) *)
 Section standard_borel_mR.
 Variable R : realType.
-Local Notation mR := (measurableTypeR R).
+Local Abbreviation mR := (measurableTypeR R).
 
 Definition encode_RR_mR : mR * mR -> mR := @encode_RR R.
 Definition decode_RR_mR : mR -> mR * mR := @decode_RR R.

@@ -53,10 +53,10 @@ Local Open Scope ring_scope.
 
 Section regression.
 Variable R : realType.
-Local Notation mR := (measurableTypeR R).
-Local Notation RQ := (realQ R).
-Local Notation W := (prodQ RQ RQ).
-Local Notation F := (expQ RQ RQ).
+Local Abbreviation mR := (measurableTypeR R).
+Local Abbreviation RQ := (realQ R).
+Local Abbreviation W := (prodQ RQ RQ).
+Local Abbreviation F := (expQ RQ RQ).
 
 (** ** Model *)
 

@@ -33,7 +33,7 @@ Local Open Scope ereal_scope.
 
 Section giry_comparison.
 Variable R : realType.
-Local Notation mR := (measurableTypeR R).
+Local Abbreviation mR := (measurableTypeR R).
 
 Section qbs_to_giry.
 Context d (M : measurableType d).

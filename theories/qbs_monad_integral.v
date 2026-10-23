@@ -46,7 +46,7 @@ Local Open Scope ereal_scope.
 
 Section qbs_monad_integral.
 Variable R : realType.
-Local Notation mR := (measurableTypeR R).
+Local Abbreviation mR := (measurableTypeR R).
 Implicit Types (X Y : qbsType R).
 
 (** ** Return *)
@@ -72,7 +72,7 @@ Proof. exact/qbs_integrable_returnP. Qed.
 Section bind_return.
 Context X Y (p : monadP X) (g : qbsHomType X Y).
 
-Local Notation q := (qbs_bind p (qbs_comp g (qbs_returnQ Y))).
+Local Abbreviation q := (qbs_bind p (qbs_comp g (qbs_returnQ Y))).
 
 Let qe := qbs_prob_equiv_sym (monadP_map_bind g p).
 

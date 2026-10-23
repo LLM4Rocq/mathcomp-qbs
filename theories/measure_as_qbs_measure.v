@@ -1,8 +1,8 @@
 (* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
-From mathcomp Require Import boot algebra reals ereal topology normedtype
-  classical_sets numfun measure lebesgue_measure lebesgue_integral probability
-  measurable_realfun derive ftc boolp.
+From mathcomp Require Import boot order functions algebra reals ereal topology
+  normedtype classical_sets numfun measure lebesgue_measure lebesgue_integral
+  probability measurable_realfun derive ftc boolp.
 From mathcomp Require giry.
 From mathcomp.algebra_tactics Require Import ring.
 From QBS Require Import quasi_borel probability_qbs qbs_monad normal_centred.
@@ -33,7 +33,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Import order.Order.POrderTheory GRing.Theory Num.Def Num.Theory.
+Import Order.POrderTheory GRing.Theory Num.Def Num.Theory.
 Import MeasurableR.
 
 Local Open Scope ring_scope.
@@ -42,7 +42,7 @@ Local Open Scope classical_set_scope.
 Section measure_as_qbs.
 Variable R : realType.
 
-Local Notation mR := (measurableTypeR R).
+Local Abbreviation mR := (measurableTypeR R).
 
 Implicit Types (p m s : R).
 
@@ -101,7 +101,7 @@ split => //; first exact: (@measurable_id _ mR setT).
   have -> : (fun x => uniform_prob (svalP (c x)) B) =
       fubini_F lebesgue_measure f \o (fun x => sval (c x)).
     apply/funext => x; rewrite /uniform_prob /fubini_F /= integral_mkcond.
-    apply: eq_integral => y _; rewrite /f /functions.patch indicE.
+    apply: eq_integral => y _; rewrite /f patchE indicE.
     by case: (y \in B); rewrite ?mul1r ?mul0r.
   have mf : measurable_fun [set: (mR * mR) * mR] f.
     apply/measurable_EFinP; apply: measurable_funM.

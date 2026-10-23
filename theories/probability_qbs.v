@@ -1,6 +1,6 @@
 (* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
-From mathcomp Require Import boot algebra reals ereal topology boolp
+From mathcomp Require Import boot order algebra reals ereal topology boolp
   classical_sets borel_hierarchy numfun measure lebesgue_measure sequences
   lebesgue_integral hoelder probability lebesgue_stieltjes_measure charge
   normedtype.
@@ -42,7 +42,7 @@ From QBS Require Import quasi_borel.
 (* The probability monad itself is in qbs_monad.v.                            *)
 (******************************************************************************)
 
-Import GRing.Theory Num.Def Num.Theory order.Order.POrderTheory
+Import GRing.Theory Num.Def Num.Theory Order.POrderTheory
   measurable_realfun MeasurableR.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -53,7 +53,7 @@ Local Open Scope classical_set_scope.
 Section probability_qbs.
 Variable R : realType.
 
-Local Notation mR := (measurableTypeR R).
+Local Abbreviation mR := (measurableTypeR R).
 
 Implicit Types X : qbsType R.
 

@@ -132,7 +132,7 @@ This formalization follows:
 
 ## Requirements
 
-- Rocq 9.2 (tested with 9.2.0; the opam file allows 9.0 -- 9.3)
+- Rocq 9.2 or 9.3 (tested with 9.2.0)
 - Math-comp 2.6.x
 - Math-comp analysis 1.18.x
 - Hierarchy Builder 1.10.x

@@ -40,7 +40,7 @@ Local Open Scope classical_set_scope.
 Section product_measure.
 Variable R : realType.
 
-Local Notation mR := (measurableTypeR R).
+Local Abbreviation mR := (measurableTypeR R).
 
 Implicit Types (X Y : qbsType R).
 

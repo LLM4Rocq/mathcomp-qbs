@@ -100,7 +100,7 @@ HB.structure Definition QBSHom (R : realType) (X Y : qbsType R) :=
 Section qbs.
 Variable R : realType.
 
-Local Notation mR := (measurableTypeR R).
+Local Abbreviation mR := (measurableTypeR R).
 
 Implicit Types (X Y Z W : qbsType R).
 

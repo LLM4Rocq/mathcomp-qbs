@@ -81,8 +81,8 @@ End giry_prob.
 
 Section probability_monad.
 Context (R : realType).
-Local Notation mR := (measurableTypeR R).
-Local Notation G := (giry mR R).
+Local Abbreviation mR := (measurableTypeR R).
+Local Abbreviation G := (giry mR R).
 Implicit Types (W X Y Z : qbsType R).
 
 Lemma qbs_prob_equivP X (p1 p2 : qbs_prob X) :

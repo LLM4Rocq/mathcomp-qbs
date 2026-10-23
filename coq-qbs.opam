@@ -15,7 +15,7 @@ bug-reports: "https://github.com/LLM4Rocq/mathcomp-qbs/issues"
 dev-repo: "git+https://github.com/LLM4Rocq/mathcomp-qbs.git"
 
 depends: [
-  "rocq-core" {>= "9.0" & < "9.4~"}
+  "rocq-core" {>= "9.2" & < "9.4~"}
   "rocq-mathcomp-boot" {>= "2.6.0" & < "2.7~"}
   "rocq-mathcomp-algebra" {>= "2.6.0" & < "2.7~"}
   "rocq-mathcomp-analysis" {>= "1.18.0" & < "1.19~"}
