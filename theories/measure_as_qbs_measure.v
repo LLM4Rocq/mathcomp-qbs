@@ -94,9 +94,8 @@ Lemma qbs_uniform_of_morphism :
 Proof.
 move=> c [m1 m2].
 exists idfun, (fun r => uniform_prob (svalP (c r)) : giry mR R).
-apply: QbsProbRep; first exact: (@measurable_id _ mR setT); last first.
-  by move=> r U mU; rewrite qbs_prob_event_mk.
-  by move=> r; exact: probability_setT.
+split; [exact: (@measurable_id _ mR setT)| |by move=> r; exact: probability_setT
+  |by move=> r U mU; rewrite qbs_prob_event_mk].
 apply: measurable_giry_codensity => // B mB.
   pose f (z : (mR * mR) * mR) : \bar R :=
     (\1_B z.2 * uniform_pdf z.1.1 z.1.2 z.2)%:E.
@@ -131,9 +130,8 @@ Lemma qbs_normal_morphism s :
     (fun m => qbs_normal_distribution m s).
 Proof.
 move=> a ha; exists idfun, (fun r => normal_prob (a r) s : giry mR R).
-apply: QbsProbRep; first exact: (@measurable_id _ mR setT); last first.
-  by move=> r U mU; rewrite qbs_prob_event_mk.
-  by move=> r; exact: probability_setT.
+split; [exact: (@measurable_id _ mR setT)| |by move=> r; exact: probability_setT
+  |by move=> r U mU; rewrite qbs_prob_event_mk].
 apply: measurable_giry_codensity => // B mB.
 exact: measurableT_comp (measurable_normal_prob _ mB) ha.
 Qed.
@@ -187,11 +185,7 @@ Lemma qbs_expect_bernoulli p (hp0 : 0 <= p) (hp1 : p <= 1) :
   qbs_expect (boolQ R) (qbs_bernoulli p) (fun b : bool => b%:R) = p%:E.
 Proof.
 rewrite /qbs_expect qbs_integral_mk /=.
-  move=> a ha.
-  have ha' : measurable_fun setT a := ha.
-  have mi : measurable_fun setT (fun r => if a r then 1%E else 0%E : \bar R).
-    by apply: measurable_fun_ifT => //; exact: measurable_cst.
-  by apply: (eq_measurable_fun _ _ mi) => r _; case: (a r).
+  exact: (boolQ_morphism (X := measQ R (\bar R))).
 have -> : (fun x : mR => ((((x < p)%R : bool)%:R : R))%:E) =
     (fun x => (\1_[set r : mR | r < p] x)%:E).
   by apply: funext => x /=; rewrite indicE mem_setE.
