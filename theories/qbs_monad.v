@@ -69,7 +69,7 @@ Qed.
 
 Definition giry_prob (m : giry T R) of m [set: T] = 1 : set T -> \bar R := m.
 
-Variables (m : giry T R) (m1 : m [set: T] = 1).
+Context (m : giry T R) (m1 : m [set: T] = 1).
 
 HB.instance Definition _ := Measure.on (giry_prob m1).
 HB.instance Definition _ :=
@@ -80,7 +80,7 @@ Lemma giry_probE A : giry_prob m1 A = m A. Proof. by []. Qed.
 End giry_prob.
 
 Section probability_monad.
-Variable R : realType.
+Context (R : realType).
 Local Notation mR := (measurableTypeR R).
 Local Notation G := (giry mR R).
 Implicit Types (W X Y Z : qbsType R).
@@ -136,8 +136,33 @@ Local Lemma monadP_const X (p : qbs_prob X) :
   monadP_random X (fun=> p).
 Proof.
 exists (qbs_prob_alpha p), (fun=> qbs_prob_mu p : G); split => //.
-- exact: qbs_prob_alpha_random.
-- by move=> _; exact: probability_setT.
+  exact: qbs_prob_alpha_random.
+by move=> _; exact: probability_setT.
+Qed.
+
+Local Lemma measurable_encode r :
+  measurable_fun [set: mR] (fun t => encode_RR_mR (r, t)).
+Proof.
+exact: measurableT_comp (@measurable_RR_to_R R) (pair1_measurable _).
+Qed.
+
+Local Lemma measurable_decode1 :
+  measurable_fun [set: mR] (fst \o @decode_RR_mR R).
+Proof. exact: measurableT_comp measurable_fst (@measurable_R_to_RR R). Qed.
+
+Local Lemma measurable_decode2 :
+  measurable_fun [set: mR] (snd \o @decode_RR_mR R).
+Proof. exact: measurableT_comp measurable_snd (@measurable_R_to_RR R). Qed.
+
+(** Random elements of a product, read off a single seed through decoding. *)
+Local Lemma qbs_Mx_decode_pair X Y (a : mR -> X) (b : mR -> Y) :
+  qbs_Mx a -> qbs_Mx b ->
+  qbs_Mx
+    (fun s : mR => (a (decode_RR_mR s).1, b (decode_RR_mR s).2) : prodQ X Y).
+Proof.
+move=> ha hb; split.
+  exact: qbs_Mx_compT ha measurable_decode1.
+exact: qbs_Mx_compT hb measurable_decode2.
 Qed.
 
 Section glue.
@@ -145,28 +170,19 @@ Context X (P : {mfun mR >-> nat}) (F : nat -> mR -> qbs_prob X).
 Hypothesis hF : forall i, monadP_random X (F i).
 
 Let enc (n : nat) (y : mR) : mR := encode_RR_mR (n%:R%R, y).
-Local Lemma menc n : measurable_fun [set: mR] (enc n).
-Proof.
-exact: measurableT_comp (@measurable_RR_to_R R) (pair1_measurable _).
-Qed.
+Let menc n : measurable_fun [set: mR] (enc n) := measurable_encode _.
 Let idx (r : mR) : nat := truncn (decode_RR_mR r).1.
 Let snd' (r : mR) : mR := (decode_RR_mR r).2.
 
-Local Lemma midx : measurable_fun [set: mR] idx.
-Proof.
-apply: measurableT_comp (@measurable_truncn R) _.
-exact: measurableT_comp measurable_fst (@measurable_R_to_RR R).
-Qed.
+Let midx : measurable_fun [set: mR] idx :=
+  measurableT_comp (@measurable_truncn R) measurable_decode1.
 
-Local Lemma msnd : measurable_fun [set: mR] snd'.
-Proof.
-exact: measurableT_comp measurable_snd (@measurable_R_to_RR R).
-Qed.
+Let msnd : measurable_fun [set: mR] snd' := measurable_decode2.
 
-Local Lemma idx_enc n y : idx (enc n y) = n.
+Let idx_enc n y : idx (enc n y) = n.
 Proof. by rewrite /idx /enc encode_RR_mRK /= natrK. Qed.
 
-Local Lemma snd_enc n y : snd' (enc n y) = y.
+Let snd_enc n y : snd' (enc n y) = y.
 Proof. by rewrite /snd' /enc encode_RR_mRK. Qed.
 
 Local Lemma monadP_glue : monadP_random X (fun r => F (P r) r).
@@ -223,13 +239,19 @@ Lemma qbs_return_morphism X : qbs_morphism (X := X) (Y := monadP X)
   (@qbs_return X).
 Proof.
 move=> a ha; exists a, (@giry_ret _ mR R); split => //.
-- exact: measurable_giry_ret.
-- by move=> r; exact: diracT.
+  exact: measurable_giry_ret.
+by move=> r; exact: diracT.
 Qed.
 
 HB.instance Definition _ X :=
   @isQBSMorphism.Build R X (monadP X) (@qbs_return X)
     (@qbs_return_morphism X).
+
+Lemma qbs_return_integral X (x : X) (h : X -> \bar R) :
+  qbs_integral X (qbs_return x) h = h x.
+Proof.
+by rewrite /qbs_integral /= integral_cst//= diracT mule1.
+Qed.
 
 (** ** Bind *)
 
@@ -318,12 +340,6 @@ Lemma qbs_bindQE X Y Z (f : qbsHomType X (monadP Y))
   qbs_bindQ f g x = qbs_bind (f x) g.
 Proof. by []. Qed.
 
-Lemma qbs_return_integral X (x : X) (h : X -> \bar R) :
-  qbs_integral X (qbs_return x) h = h x.
-Proof.
-by rewrite /qbs_integral /= integral_cst//= diracT mule1.
-Qed.
-
 (** ** Monad laws *)
 
 Lemma qbs_bind_returnl X Y (x : X) (f : qbsHomType X (monadP Y)) :
@@ -376,8 +392,8 @@ Lemma monadP_map_morphism X Y (f : qbsHomType X Y) :
   qbs_morphism (X := monadP X) (Y := monadP Y) (monadP_map f).
 Proof.
 move=> b [a [g [ha mg g1 hb]]]; exists (f \o a), g; split => //.
-- exact: qbs_hom_proof.
-- by move=> r U mU; rewrite /= monadP_map_event hb//; exact: sigma_Mx_preimage.
+  exact: qbs_hom_proof.
+by move=> r U mU; rewrite /= monadP_map_event hb//; exact: sigma_Mx_preimage.
 Qed.
 
 HB.instance Definition _ X Y (f : qbsHomType X Y) :=
@@ -456,6 +472,9 @@ HB.instance Definition _ X :=
   @isQBSMorphism.Build R (monadP (monadP X)) (monadP X) (@qbs_join X)
     (@qbs_join_morphism X).
 
+Definition qbs_joinQ X : qbsHomType (monadP (monadP X)) (monadP X) :=
+  @qbs_join X.
+
 Lemma qbs_join_return X (p : monadP X) :
   qbs_prob_equiv X (qbs_join (qbs_return p)) p.
 Proof. exact: qbs_bind_returnl p (qbs_id (monadP X)). Qed.
@@ -463,7 +482,7 @@ Proof. exact: qbs_bind_returnl p (qbs_id (monadP X)). Qed.
 (** ** Strength *)
 
 Section giry_section.
-Variables (g : mR -> G) (mg : measurable_fun [set: mR] g)
+Context (g : mR -> G) (mg : measurable_fun [set: mR] g)
   (g1 : forall r, g r [set: mR] = 1).
 
 Let kg : mR -> {measure set mR -> \bar R}%R := fun r => g r.
@@ -501,19 +520,14 @@ Lemma qbs_strength_morphism W X :
 Proof.
 move=> c [hw [a [g [ha mg g1 hb]]]].
 pose e r t : mR := encode_RR_mR (r, t).
-have me r : measurable_fun [set: mR] (e r).
-  exact: measurableT_comp (@measurable_RR_to_R R) (pair1_measurable _).
+have me r : measurable_fun [set: mR] (e r) := measurable_encode r.
 pose b t : prodQ W X := ((c ((decode_RR_mR t).1)).1, a (decode_RR_mR t).2).
 have be r t : b (e r t) = ((c r).1, a t) by rewrite /b /e encode_RR_mRK.
 exists b, (fun r => giry_map (me r) (g r)); split.
-- split.
-  + apply: qbs_Mx_compT hw _.
-    exact: measurableT_comp measurable_fst (@measurable_R_to_RR R).
-  + apply: qbs_Mx_compT ha _.
-    exact: measurableT_comp measurable_snd (@measurable_R_to_RR R).
+- exact: qbs_Mx_decode_pair hw ha.
 - apply: measurable_giry_codensity => // B mB.
   have mC : measurable ((@encode_RR_mR R) @^-1` B).
-    by rewrite -[X in measurable X]setTI; exact: (@measurable_RR_to_R R).
+    by rewrite -[A in measurable A]setTI; exact: (@measurable_RR_to_R R).
   have := measurable_giry_xsection mg g1 mC.
   apply: eq_measurable_fun => r _; rewrite /= /pushforward; congr (_ _).
   by apply/seteqP; split => t; rewrite /xsection /= inE.
@@ -555,13 +569,16 @@ Lemma qbs_integral_morphism X (h : X -> \bar R) :
     (fun p => qbs_integral X p h).
 Proof. by move=> mh h0 b hb; exact: monadP_random_integral. Qed.
 
+Definition qbs_swap X Y : qbsHomType (prodQ X Y) (prodQ Y X) :=
+  qbs_pair (qbs_snd X Y) (qbs_fst X Y).
+
 (** ** Internal bind (HKSY Thm. 21): bind is a morphism
     P(X) * (X => P(Y)) -> P(Y), obtained from the strength and eval. *)
 
 Definition qbs_bind_internal X Y :
     qbsHomType (prodQ (monadP X) (expQ X (monadP Y))) (monadP Y) :=
-  qbs_bindQ (qbs_comp (qbs_pair (qbs_snd _ _) (qbs_fst _ _))
-    (qbs_strengthQ _ _)) (qbs_eval X (monadP Y)).
+  qbs_bindQ (qbs_comp (qbs_swap _ _) (qbs_strengthQ _ _))
+    (qbs_eval X (monadP Y)).
 
 Lemma qbs_bind_internalE X Y (p : monadP X) (f : qbsHomType X (monadP Y)) :
   qbs_prob_equiv Y (qbs_bind_internal X Y (p, f)) (qbs_bind p f).
@@ -571,9 +588,6 @@ by rewrite qbs_bindQE !qbs_bind_event.
 Qed.
 
 (** ** Products and commutativity (HKSY Prop. 22) *)
-
-Definition qbs_swap X Y : qbsHomType (prodQ X Y) (prodQ Y X) :=
-  qbs_pair (qbs_snd X Y) (qbs_fst X Y).
 
 (** The monadic product: p >>= (fun x => strength (x, q)). *)
 Definition qbs_pairP X Y (p : monadP X) (q : monadP Y) : monadP (prodQ X Y) :=
@@ -598,13 +612,8 @@ Local Lemma measurable_seeds (U : set (prodQ X Y)) : sigma_Mx U ->
   measurable [set rt : mR * mR | U (ap rt.1, aq rt.2)].
 Proof.
 move=> mU.
-have hb : qbs_Mx (fun s : mR =>
-    (ap (decode_RR_mR s).1, aq (decode_RR_mR s).2) : prodQ X Y).
-  split.
-  - apply: qbs_Mx_compT (qbs_prob_alpha_random p) _.
-    exact: measurableT_comp measurable_fst (@measurable_R_to_RR R).
-  - apply: qbs_Mx_compT (qbs_prob_alpha_random q) _.
-    exact: measurableT_comp measurable_snd (@measurable_R_to_RR R).
+have hb := qbs_Mx_decode_pair (qbs_prob_alpha_random p)
+  (qbs_prob_alpha_random q).
 have := (@measurable_RR_to_R R) measurableT _ (mU _ hb); rewrite setTI.
 have E : (fun s : mR => (ap (decode_RR_mR s).1, aq (decode_RR_mR s).2) : X * Y)
     \o (@encode_RR_mR R) = (fun rt : mR * mR => (ap rt.1, aq rt.2) : X * Y).
@@ -630,13 +639,13 @@ transitivity (\int[qbs_prob_mu p]_r \int[qbs_prob_mu q]_t f (r, t)).
   have mS : measurable [set t | U (ap r, aq t)].
     have := measurable_xsection r mA; congr measurable.
     by apply/seteqP; split => t; rewrite /xsection /= inE.
-  by rewrite -[X in qbs_prob_mu q X]setIT -integral_indic.
+  by rewrite -[A in qbs_prob_mu q A]setIT -integral_indic.
 rewrite (fubini_tonelli (m1 := qbs_prob_mu p) (m2 := qbs_prob_mu q) f mf f0).
 apply: eq_integral => t _.
 have mS : measurable [set r | (qbs_swap Y X @^-1` U) (aq t, ap r)].
   have := measurable_ysection t mA; congr measurable.
   by apply/seteqP; split => r; rewrite /ysection /= inE.
-by rewrite -[X in qbs_prob_mu p X]setIT -integral_indic.
+by rewrite -[A in qbs_prob_mu p A]setIT -integral_indic.
 Qed.
 
 End commutativity.
@@ -660,9 +669,6 @@ exact/qbs_bind_equiv_l/qbs_pairP_comm.
 Qed.
 
 (** ** Join and strength laws *)
-
-Definition qbs_joinQ X : qbsHomType (monadP (monadP X)) (monadP X) :=
-  @qbs_join X.
 
 Lemma qbs_join_map_return X (p : monadP X) :
   qbs_prob_equiv X (qbs_join (monadP_map (qbs_returnQ X) p)) p.
