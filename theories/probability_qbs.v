@@ -1,8 +1,9 @@
-(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
+(* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
 From mathcomp Require Import boot algebra reals ereal topology boolp
   classical_sets borel_hierarchy numfun measure lebesgue_measure sequences
-  lebesgue_integral hoelder probability lebesgue_stieltjes_measure charge.
+  lebesgue_integral hoelder probability lebesgue_stieltjes_measure charge
+  normedtype.
 From mathcomp.algebra_tactics Require Import ring.
 From QBS Require Import quasi_borel.
 
@@ -31,18 +32,21 @@ From QBS Require Import quasi_borel.
 (*   qbs_integrable_equiv, qbs_variance_equiv == equivalent probabilities     *)
 (*                           agree on integrability and variance              *)
 (*   qbs_variance_affine  == Var(a * h + b) = a^2 * Var(h)                    *)
+(*   qbs_measurable X h   == h o alpha is Borel for every random alpha        *)
+(*   qbs_expect X p h     == expectation of a real function                   *)
+(*   qbs_prob_event X p U == mu (alpha @^-1` U)                               *)
+(*   qbs_variance X p h   == variance of h o alpha under mu                   *)
+(*   qbs_rv X p h hm      == random variable from a measurable h o alpha      *)
+(*   measurable_invr      == measurability of the inverse function on R       *)
 (* ```                                                                        *)
 (* The probability monad itself is in qbs_monad.v.                            *)
 (******************************************************************************)
 
-Import GRing.Theory Num.Def Num.Theory
-  order.Order.POrderTheory measurable_realfun
-  charge.
+Import GRing.Theory Num.Def Num.Theory order.Order.POrderTheory
+  measurable_realfun MeasurableR.
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-
-Import MeasurableR.
 
 Local Open Scope classical_set_scope.
 
@@ -51,7 +55,7 @@ Variable R : realType.
 
 Local Notation mR := (measurableTypeR R).
 
-Implicit Types (X Y Z : qbsType R) (mu : probability mR R).
+Implicit Types X : qbsType R.
 
 (** Not (yet) in mathcomp-analysis. *)
 Lemma measurable_invr : measurable_fun [set: mR] (@GRing.inv R).
@@ -61,66 +65,44 @@ rewrite -(setUv [set (0 : mR)%R]); apply/measurable_funU => //.
 split; first exact: measurable_fun_set1.
 apply: open_continuous_measurable_fun.
   by apply/closed_openC/accessible_closed_set1; exact: hausdorff_accessible.
-by move=> x /[!inE] /eqP x0; exact: normed_module.inv_continuous.
+by move=> x /[!inE] /eqP x0; exact: inv_continuous.
 Qed.
 
-
-Section qbs_prob_basics.
-
-(* 1. QBS Probability Triple
-   A probability on a QBS X is a pair (alpha, mu) where
-   alpha : R -> X is a random element (in Mx) and
-   mu is a probability measure on R. *)
-
-(** Probability triple on a QBS: a random element
-    alpha and a base probability measure mu. *)
+(** Probability triple on a QBS: a random element alpha : R -> X (in Mx) and
+    a base probability measure mu on R. *)
 Record qbs_prob (X : qbsType R) := mkQBSProb {
   qbs_prob_alpha : mR -> X ;
   qbs_prob_mu : probability mR R ;
-  qbs_prob_alpha_random : qbs_Mx (s := X) qbs_prob_alpha }.
+  qbs_prob_alpha_random : qbs_Mx qbs_prob_alpha }.
 
-(* 2. Equivalence of Probability Triples
-   Two triples (alpha1, mu1) ~ (alpha2, mu2) iff they induce
-   the same pushforward measure on X, i.e., for all measurable
-   U in sigma_Mx(X),
-   mu1(alpha1^{-1}(U)) = mu2(alpha2^{-1}(U)). *)
-
-(** Equivalence of probability triples: same
-    pushforward measure on sigma_Mx sets. *)
-Definition qbs_prob_equiv (X : qbsType R) (p1 p2 : qbs_prob X) : Prop :=
+(** Equivalence of probability triples: same pushforward measure on
+    sigma_Mx sets, i.e. mu1(alpha1^{-1}(U)) = mu2(alpha2^{-1}(U)) for all
+    U in sigma_Mx(X). *)
+Definition qbs_prob_equiv X (p1 p2 : qbs_prob X) : Prop :=
   forall (U : set X),
-    @sigma_Mx R X U ->
+    sigma_Mx U ->
     qbs_prob_mu p1 (qbs_prob_alpha p1 @^-1` U) =
     qbs_prob_mu p2 (qbs_prob_alpha p2 @^-1` U).
 
 Arguments qbs_prob_equiv : clear implicits.
+Arguments mkQBSProb {X}.
 
-Lemma qbs_prob_equivxx (X : qbsType R) (p : qbs_prob X) :
+Lemma qbs_prob_equivxx X (p : qbs_prob X) :
   qbs_prob_equiv X p p.
 Proof. by []. Qed.
 
-Lemma qbs_prob_equiv_sym (X : qbsType R) (p1 p2 : qbs_prob X) :
+Lemma qbs_prob_equiv_sym X (p1 p2 : qbs_prob X) :
   qbs_prob_equiv X p1 p2 -> qbs_prob_equiv X p2 p1.
 Proof. by move=> h U /h ->. Qed.
 
-Lemma qbs_prob_equiv_trans (X : qbsType R) (p1 p2 p3 : qbs_prob X) :
+Lemma qbs_prob_equiv_trans X (p1 p2 p3 : qbs_prob X) :
   qbs_prob_equiv X p1 p2 -> qbs_prob_equiv X p2 p3 ->
   qbs_prob_equiv X p1 p3.
 Proof. by move=> h12 h23 U hU; rewrite h12 // h23. Qed.
 
-End qbs_prob_basics.
-
-Arguments qbs_prob : clear implicits.
-Arguments mkQBSProb {X}.
-Arguments qbs_prob_equiv : clear implicits.
-
-Section qbs_integration.
-
-(* 7. Integration on QBS Probability Spaces *)
-
-(** Integration of h : X -> \bar R against a QBS
-    probability, via the base measure and alpha. *)
-Definition qbs_integral (X : qbsType R) (p : qbs_prob X)
+(** Integration of h : X -> \bar R against a QBS probability, via the base
+    measure and alpha. *)
+Definition qbs_integral X (p : qbs_prob X)
   (h : X -> \bar R) : \bar R :=
   (\int[qbs_prob_mu p]_x (h (qbs_prob_alpha p x)))%E.
 
@@ -130,17 +112,17 @@ Arguments qbs_integral : clear implicits.
    h is sigma_Mx-measurable iff for every random element alpha
    in Mx(X), the composition h o alpha : R -> \bar R is Borel
    measurable. *)
-Definition qbs_measurable (X : qbsType R) (h : X -> \bar R) : Prop :=
-  forall alpha, qbs_Mx (s := X) alpha ->
+Definition qbs_measurable X (h : X -> \bar R) : Prop :=
+  forall alpha, qbs_Mx alpha ->
     measurable_fun setT (fun r => h (alpha r)).
 
 Arguments qbs_measurable : clear implicits.
 
 (* If h is sigma_Mx-measurable, then preimages of
    measurable sets are in sigma_Mx. *)
-Lemma qbs_measurable_sigma_Mx (X : qbsType R) (h : X -> \bar R)
+Lemma qbs_measurable_sigma_Mx X (h : X -> \bar R)
   (hm : qbs_measurable X h) (V : set (\bar R)) :
-  measurable V -> @sigma_Mx R X (h @^-1` V).
+  measurable V -> sigma_Mx (h @^-1` V).
 Proof.
 move=> hV alpha halpha.
 by have := hm alpha halpha measurableT V hV; rewrite setTI.
@@ -186,139 +168,86 @@ move=> mh a ha; move: (mh _ ha) => /measurable_funeneg.
 by apply: eq_measurable_fun => r _; rewrite !funenegE.
 Qed.
 
-(** Integration respects equivalence for sigma_Mx-measurable integrands. *)
-Lemma qbs_integral_equiv (X : qbsType R) (p1 p2 : qbs_prob X)
-    (h : X -> \bar R) :
-  qbs_measurable X h -> qbs_prob_equiv X p1 p2 ->
-  qbs_integral X p1 h = qbs_integral X p2 h.
-Proof.
-move=> mh e; rewrite /qbs_integral integralE [RHS]integralE.
-have mhp := qbs_measurable_funepos mh.
-have mhn := qbs_measurable_funeneg mh.
-have ep a r : (fun x0 : mR => h (a x0))^\+ r = h^\+ (a r) by rewrite !funeposE.
-have en a r : (fun x0 : mR => h (a x0))^\- r = h^\- (a r) by rewrite !funenegE.
-under eq_integral do rewrite ep.
-under [X in _ - X]eq_integral do rewrite en.
-under [in RHS]eq_integral do rewrite ep.
-under [X in _ = _ - X]eq_integral do rewrite en.
-congr (_ - _).
-  apply: (ge0_integral_sigma_Mx (k := h^\+)) => //;
-    exact: qbs_prob_alpha_random.
-apply: (ge0_integral_sigma_Mx (k := h^\-)) => //; exact: qbs_prob_alpha_random.
-Qed.
-
 (** Splitting the integral into positive and negative parts. *)
 Lemma qbs_integralE X (p : qbs_prob X) (h : X -> \bar R) :
   qbs_integral X p h = qbs_integral X p h^\+ - qbs_integral X p h^\-.
 Proof.
-rewrite /qbs_integral integralE.
+rewrite /qbs_integral integralE; congr (_ - _).
+- by apply: eq_integral => r _; rewrite funepos_comp.
+- by apply: eq_integral => r _; rewrite funeneg_comp.
+Qed.
+
+(** Integration respects equivalence for sigma_Mx-measurable integrands. *)
+Lemma qbs_integral_equiv X (p1 p2 : qbs_prob X)
+    (h : X -> \bar R) :
+  qbs_measurable X h -> qbs_prob_equiv X p1 p2 ->
+  qbs_integral X p1 h = qbs_integral X p2 h.
+Proof.
+move=> mh e; rewrite [LHS]qbs_integralE [RHS]qbs_integralE.
+have mhp := qbs_measurable_funepos mh.
+have mhn := qbs_measurable_funeneg mh.
 congr (_ - _).
-- by apply: eq_integral => r _; rewrite /= !funeposE.
-- by apply: eq_integral => r _; rewrite /= !funenegE.
+  by apply: (ge0_integral_sigma_Mx (k := h^\+)) => //;
+    exact: qbs_prob_alpha_random.
+by apply: (ge0_integral_sigma_Mx (k := h^\-)) => //;
+  exact: qbs_prob_alpha_random.
 Qed.
 
 End ge0_integral_sigma_Mx.
 
-(* 7b. Pushforward integral infrastructure
-   Since X is a QBS (not a measurableType), we compose with
-   h : X -> \bar R to obtain pushforward mu (h o alpha). *)
-
-(* The QBS integral equals the integral of id against the
-   pushforward of mu through (h o alpha). *)
-Lemma qbs_integral_as_pushforward (X : qbsType R) (p : qbs_prob X)
-  (h : X -> \bar R)
-  (hm : qbs_measurable X h)
-  (hint : (qbs_prob_mu p).-integrable setT (h \o qbs_prob_alpha p)) :
-  qbs_integral X p h =
-  (\int[pushforward (qbs_prob_mu p) (h \o qbs_prob_alpha p)]_y y)%E.
-Proof.
-rewrite /qbs_integral.
-have hma := hm _ (qbs_prob_alpha_random p).
-rewrite -(@integral_pushforward _ _ mR (\bar R : measurableType _) R
-  (h \o qbs_prob_alpha p) hma
-  (qbs_prob_mu p) setT id
-  (@measurable_id _ (\bar R) setT) hint measurableT).
-by [].
-Qed.
-
-(* Pushforward integrability: if h o alpha is mu-integrable,
-   then id is integrable w.r.t. the pushforward measure. *)
-Lemma qbs_pushforward_integrable (X : qbsType R) (p : qbs_prob X)
-  (h : X -> \bar R)
-  (hm : qbs_measurable X h)
-  (hint : (qbs_prob_mu p).-integrable setT (h \o qbs_prob_alpha p)) :
-  (pushforward (qbs_prob_mu p) (h \o qbs_prob_alpha p)).-integrable setT id.
-Proof.
-have hma := hm _ (qbs_prob_alpha_random p).
-exact: (integrable_pushforward hma
-  (@measurable_id _ (\bar R) setT) hint measurableT).
-Qed.
-
-
 (** ** The law of a QBS probability on L X (HKSY l_X, eq. (3)) *)
 
-Lemma qbs_measurableE (X : qbsType R) (h : X -> \bar R) :
+Lemma qbs_measurableE X (h : X -> \bar R) :
   qbs_measurable X h <->
   measurable_fun [set: qbs_meas X] (h : qbs_meas X -> \bar R).
 Proof. exact: (qbs_morphism_measurableP (M := \bar R)). Qed.
 
-Definition qbs_prob_alpha_mfun (X : qbsType R) (p : qbs_prob X) :
+Definition qbs_prob_alpha_mfun X (p : qbs_prob X) :
     {mfun mR >-> qbs_meas X} :=
   mfun_Sub (mem_set (qbs_Mx_measurable (qbs_prob_alpha_random p))).
 
-Definition qbs_law (X : qbsType R) (p : qbs_prob X) :
+Definition qbs_law X (p : qbs_prob X) :
     probability (qbs_meas X) R :=
   distribution (qbs_prob_mu p) (qbs_prob_alpha_mfun p).
 
-Lemma qbs_lawE (X : qbsType R) (p : qbs_prob X) (A : set X) :
+Lemma qbs_lawE X (p : qbs_prob X) (A : set X) :
   qbs_law p A = qbs_prob_mu p (qbs_prob_alpha p @^-1` A).
 Proof. by []. Qed.
 
 (** Equivalence of probabilities is equality of their laws. *)
-Lemma qbs_prob_equivE (X : qbsType R) (p1 p2 : qbs_prob X) :
+Lemma qbs_prob_equivE X (p1 p2 : qbs_prob X) :
   qbs_prob_equiv X p1 p2 <->
   (forall A : set (qbs_meas X), measurable A -> qbs_law p1 A = qbs_law p2 A).
 Proof. by []. Qed.
 
-Lemma ge0_qbs_integral_law (X : qbsType R) (p : qbs_prob X) (h : X -> \bar R) :
+Lemma ge0_qbs_integral_law X (p : qbs_prob X) (h : X -> \bar R) :
   qbs_measurable X h -> (forall x, (0 <= h x)%E) ->
   qbs_integral X p h = (\int[qbs_law p]_x h x)%E.
 Proof.
 by move=> /qbs_measurableE mh h0; rewrite ge0_integral_distribution.
 Qed.
 
-Lemma qbs_integral_law (X : qbsType R) (p : qbs_prob X) (h : X -> \bar R) :
+Lemma qbs_integral_law X (p : qbs_prob X) (h : X -> \bar R) :
   qbs_measurable X h -> qbs_integral X p h = (\int[qbs_law p]_x h x)%E.
 Proof.
-move=> mh; rewrite /qbs_integral integralE [RHS]integralE.
-have /qbs_measurableE mh' := mh.
+move=> mh; rewrite qbs_integralE [RHS]integralE.
 congr (_ - _)%E.
-- rewrite ge0_integral_distribution//; first exact: measurable_funepos mh'.
-  by apply: eq_integral => r _; rewrite /= !funeposE.
-- rewrite ge0_integral_distribution//; first exact: measurable_funeneg mh'.
-  by apply: eq_integral => r _; rewrite /= !funenegE.
+- apply: ge0_qbs_integral_law (fun x => funepos_ge0 _ _).
+  exact: qbs_measurable_funepos.
+- apply: ge0_qbs_integral_law (fun x => funeneg_ge0 _ _).
+  exact: qbs_measurable_funeneg.
 Qed.
 
-End qbs_integration.
-
-Arguments qbs_integral : clear implicits.
-Arguments qbs_measurable : clear implicits.
-
-Section monad_operations.
-
-(* 9. Expectation and probability of events *)
-
-(** Expectation of a real-valued function h on a
-    QBS probability, defined as qbs_integral of
-    the extended-real embedding. *)
-Definition qbs_expect (X : qbsType R) (p : qbs_prob X)
+(** Expectation of a real-valued function h on a QBS probability, defined as
+    qbs_integral of the extended-real embedding. *)
+Definition qbs_expect X (p : qbs_prob X)
   (h : X -> R) : \bar R :=
   qbs_integral X p (fun x => (h x)%:E).
 
 Arguments qbs_expect : clear implicits.
 
 (** QBS expectation is the expectation of a random variable on the law. *)
-Lemma qbs_expectE (X : qbsType R) (p : qbs_prob X)
+Lemma qbs_expectE X (p : qbs_prob X)
     (f : {mfun qbs_meas X >-> R}) :
   qbs_expect X p f = ('E_(qbs_law p)[f])%E.
 Proof.
@@ -326,55 +255,43 @@ rewrite /qbs_expect qbs_integral_law ?unlock//.
 apply/qbs_measurableE; exact/measurable_EFinP/measurable_funPT.
 Qed.
 
-Definition qbs_prob_event (X : qbsType R) (p : qbs_prob X)
+Definition qbs_prob_event X (p : qbs_prob X)
   (U : set X) : \bar R :=
   qbs_prob_mu p (qbs_prob_alpha p @^-1` U).
 
 Arguments qbs_prob_event : clear implicits.
 
-(* 10. Variance
-   Defined via the mathcomp-analysis variance applied to
-   f o alpha against the base measure mu. *)
-
-(** Variance of f : X -> R under a QBS probability,
-    via the base-measure variance of f o alpha. *)
-Definition qbs_variance (X : qbsType R) (p : qbs_prob X)
+(** Variance of f : X -> R under a QBS probability, via the base-measure
+    variance of f o alpha. *)
+Definition qbs_variance X (p : qbs_prob X)
   (f : X -> R) : \bar R :=
   variance (qbs_prob_mu p) (f \o qbs_prob_alpha p).
 
-Arguments qbs_variance : clear implicits.
-
-End monad_operations.
-
-Arguments qbs_expect : clear implicits.
-Arguments qbs_prob_event : clear implicits.
 Arguments qbs_variance : clear implicits.
 
 Section probability_inequalities.
 
 Local Open Scope ereal_scope.
 
-(* 15. QBS-level integrability predicate *)
-
-(** Integrability of h : X -> \bar R under a QBS
-    probability: h o alpha is mu-integrable. *)
-Definition qbs_integrable (X : qbsType R) (p : qbs_prob X)
+(** Integrability of h : X -> \bar R under a QBS probability: h o alpha is
+    mu-integrable. *)
+Definition qbs_integrable X (p : qbs_prob X)
     (h : X -> \bar R) :=
   (qbs_prob_mu p).-integrable setT (h \o qbs_prob_alpha p).
 
 Arguments qbs_integrable : clear implicits.
 
 (** Integrability of constants, and the integral of a constant. *)
-Lemma qbs_integrable_cst (X : qbsType R) (p : qbs_prob X) (c : R) :
+Lemma qbs_integrable_cst X (p : qbs_prob X) (c : R) :
   qbs_integrable X p (fun=> c%:E).
 Proof. exact: finite_measure_integrable_cst. Qed.
 
-Lemma qbs_integral_cst (X : qbsType R) (p : qbs_prob X) (c : \bar R) :
+Lemma qbs_integral_cst X (p : qbs_prob X) (c : \bar R) :
   qbs_integral X p (fun=> c) = c.
 Proof. by rewrite /qbs_integral integral_cst//= probability_setT mule1. Qed.
 
 (** Integrability only depends on the equivalence class of the probability. *)
-Lemma qbs_integrable_equiv (X : qbsType R) (p1 p2 : qbs_prob X)
+Lemma qbs_integrable_equiv X (p1 p2 : qbs_prob X)
     (h : X -> \bar R) :
   qbs_measurable X h -> qbs_prob_equiv X p1 p2 ->
   qbs_integrable X p1 h -> qbs_integrable X p2 h.
@@ -383,12 +300,12 @@ move=> mh e /integrableP[_ fin]; apply/integrableP; split.
   exact: mh _ (qbs_prob_alpha_random p2).
 have mabs : qbs_measurable X (abse \o h).
   by move=> a ha; exact: measurableT_comp (mh _ ha).
-move: fin; rewrite -[X in X < _]/(qbs_integral X p1 (abse \o h)).
+move: fin; rewrite -[Y in Y < _]/(qbs_integral X p1 (abse \o h)).
 by rewrite (qbs_integral_equiv mabs e).
 Qed.
 
 (** A sigma_Mx-measurable function is integrable iff |h| has finite integral. *)
-Lemma qbs_integrableP (X : qbsType R) (p : qbs_prob X) (h : X -> \bar R) :
+Lemma qbs_integrableP X (p : qbs_prob X) (h : X -> \bar R) :
   qbs_measurable X h ->
   qbs_integrable X p h <-> qbs_integral X p (fun x => `|h x|) < +oo.
 Proof.
@@ -396,7 +313,7 @@ move=> mh; split=> [/integrableP[_ //]|fin]; apply/integrableP; split => //.
 exact: mh _ (qbs_prob_alpha_random p).
 Qed.
 
-Lemma qbs_integrable_abseP (X : qbsType R) (p : qbs_prob X)
+Lemma qbs_integrable_abseP X (p : qbs_prob X)
     (h : X -> \bar R) :
   qbs_measurable X h ->
   qbs_integrable X p (abse \o h) <-> qbs_integrable X p h.
@@ -407,7 +324,7 @@ by move: fin; under eq_integral do rewrite /= abse_id.
 Qed.
 
 (** Multiplication by a bounded measurable factor preserves integrability. *)
-Lemma qbs_integrableMr (X : qbsType R) (p : qbs_prob X) (k : X -> R)
+Lemma qbs_integrableMr X (p : qbs_prob X) (k : X -> R)
     (h : X -> \bar R) :
   measurable_fun setT (k \o qbs_prob_alpha p) ->
   (exists M, forall x, `|k x| <= M)%R ->
@@ -420,26 +337,26 @@ Qed.
 
 (** The positive part of an integrable function has finite integral, and so
     has its negative part. *)
-Lemma qbs_integral_funepos_lty (X : qbsType R) (p : qbs_prob X)
+Lemma qbs_integral_funepos_lty X (p : qbs_prob X)
     (h : X -> \bar R) :
   qbs_integrable X p h -> qbs_integral X p h^\+ < +oo.
 Proof.
 move=> hi; have := integral_funepos_lt_pinfty measurableT hi.
 rewrite /qbs_integral; congr (_ < _) => //.
-by apply: eq_integral => r _; rewrite /= !funeposE.
+by apply: eq_integral => r _; rewrite funepos_comp.
 Qed.
 
-Lemma qbs_integral_funeneg_fin_num (X : qbsType R) (p : qbs_prob X)
+Lemma qbs_integral_funeneg_fin_num X (p : qbs_prob X)
     (h : X -> \bar R) :
   qbs_integrable X p h -> qbs_integral X p h^\- \is a fin_num.
 Proof.
 move=> hi; have := integrable_neg_fin_num measurableT hi.
 rewrite /qbs_integral; congr (_ \is a fin_num).
-by apply: eq_integral => r _; rewrite /= !funenegE.
+by apply: eq_integral => r _; rewrite funeneg_comp.
 Qed.
 
 (** Bounded measurable real functions are integrable. *)
-Lemma qbs_integrable_bounded (X : qbsType R) (p : qbs_prob X) (k : X -> R) :
+Lemma qbs_integrable_bounded X (p : qbs_prob X) (k : X -> R) :
   qbs_measurable X (fun x => (k x)%:E) -> (exists M, forall x, `|k x| <= M)%R ->
   qbs_integrable X p (fun x => (k x)%:E).
 Proof.
@@ -449,7 +366,7 @@ have := qbs_integrableMr (h := fun=> 1%:E) mka bd (qbs_integrable_cst p 1%R).
 by apply: eq_integrable => // r _ /=; rewrite mule1.
 Qed.
 
-Lemma qbs_integrable_sqrB (X : qbsType R) (p : qbs_prob X) (k : X -> R)
+Lemma qbs_integrable_sqrB X (p : qbs_prob X) (k : X -> R)
     (c : R) :
   k \o qbs_prob_alpha p \in Lfun (qbs_prob_mu p) 2%:E ->
   qbs_integrable X p (fun x => ((k x - c) ^+ 2)%:E).
@@ -466,12 +383,12 @@ rewrite -!EFinD; congr (_%:E); ring.
 Qed.
 
 (** Monotonicity of the integral. *)
-Lemma qbs_integral_le (X : qbsType R) (p : qbs_prob X) (f g : X -> \bar R) :
+Lemma qbs_integral_le X (p : qbs_prob X) (f g : X -> \bar R) :
   qbs_integrable X p f -> qbs_integrable X p g -> (forall x, f x <= g x) ->
   qbs_integral X p f <= qbs_integral X p g.
 Proof. by move=> hf hg fg; apply: le_integral => // r _; exact: fg. Qed.
 
-Lemma ge0_qbs_integral_le (X : qbsType R) (p : qbs_prob X) (f g : X -> \bar R) :
+Lemma ge0_qbs_integral_le X (p : qbs_prob X) (f g : X -> \bar R) :
   qbs_measurable X f -> qbs_measurable X g -> (forall x, 0 <= f x) ->
   (forall x, f x <= g x) -> qbs_integral X p f <= qbs_integral X p g.
 Proof.
@@ -480,9 +397,7 @@ move=> mf mg f0 fg; apply: ge0_le_integral => //.
 - exact: mg _ (qbs_prob_alpha_random p).
 Qed.
 
-(* 18. Variance formulas *)
-
-Lemma qbs_varianceE (X : qbsType R) (p : qbs_prob X) (h : X -> R) :
+Lemma qbs_varianceE X (p : qbs_prob X) (h : X -> R) :
   h \o qbs_prob_alpha p \in Lfun (qbs_prob_mu p) 2 ->
   qbs_variance X p h =
   qbs_expect X p (fun x => h x ^+ 2)%R - (qbs_expect X p h) ^+ 2.
@@ -491,7 +406,7 @@ move=> hL2; rewrite /qbs_variance /qbs_expect /qbs_integral.
 by rewrite varianceE //; congr (_ - _); rewrite unlock.
 Qed.
 
-Lemma qbs_varianceZ (X : qbsType R) (p : qbs_prob X) (a : R)
+Lemma qbs_varianceZ X (p : qbs_prob X) (a : R)
     (h : X -> R) :
   h \o qbs_prob_alpha p \in Lfun (qbs_prob_mu p) 2 ->
   qbs_variance X p (a \o* h)%R =
@@ -505,7 +420,7 @@ exact: varianceZ.
 Qed.
 
 (** The variance as the integral of the squared deviation from the mean. *)
-Lemma qbs_varianceE_integral (X : qbsType R) (p : qbs_prob X) (h : X -> R) :
+Lemma qbs_varianceE_integral X (p : qbs_prob X) (h : X -> R) :
   qbs_variance X p h =
   qbs_integral X p (fun x => ((h x - fine (qbs_expect X p h)) *
                               (h x - fine (qbs_expect X p h)))%R%:E).
@@ -515,19 +430,19 @@ by apply: eq_integral.
 Qed.
 
 (** The variance only depends on the equivalence class of the probability. *)
-Lemma qbs_variance_equiv (X : qbsType R) (p1 p2 : qbs_prob X) (h : X -> R) :
+Lemma qbs_variance_equiv X (p1 p2 : qbs_prob X) (h : X -> R) :
   qbs_measurable X (fun x => (h x)%:E) -> qbs_prob_equiv X p1 p2 ->
   qbs_variance X p1 h = qbs_variance X p2 h.
 Proof.
 move=> mh e; rewrite !qbs_varianceE_integral.
-have ee : qbs_expect X p1 h = qbs_expect X p2 h := qbs_integral_equiv mh e.
-rewrite ee; apply: qbs_integral_equiv e => a ha.
+rewrite /qbs_expect (qbs_integral_equiv mh e).
+apply: qbs_integral_equiv e => a ha.
 have /measurable_EFinP mha := mh _ ha.
 apply/measurable_EFinP/measurable_funM; apply: measurable_funB => //.
 Qed.
 
 (** Variance of an affine function, Var(a * h + b) = a^2 * Var(h). *)
-Lemma qbs_variance_affine (X : qbsType R) (p : qbs_prob X) (a b : R)
+Lemma qbs_variance_affine X (p : qbs_prob X) (a b : R)
     (h : X -> R) :
   h \o qbs_prob_alpha p \in Lfun (qbs_prob_mu p) 2%:E ->
   qbs_variance X p (fun x => a * h x + b)%R =
@@ -543,10 +458,8 @@ have -> : (fun x => a * h x + b)%R = (fun x => (a \o* h)%R x + b)%R.
 exact: (varianceD_cst_r (X := (a \o* h)%R \o qbs_prob_alpha p) b haL2).
 Qed.
 
-(* 19. Markov inequality for QBS *)
-
 (** Build a random variable from a measurable composition. *)
-Definition qbs_rv (X : qbsType R) (p : qbs_prob X)
+Definition qbs_rv X (p : qbs_prob X)
     (h : X -> R)
     (hm : measurable_fun setT (h \o qbs_prob_alpha p)) :
     {RV (qbs_prob_mu p) >-> R} :=
@@ -555,7 +468,7 @@ Definition qbs_rv (X : qbsType R) (p : qbs_prob X)
        (h \o qbs_prob_alpha p) hm).
 
 (** Markov inequality lifted to QBS probabilities. *)
-Lemma qbs_markov (X : qbsType R) (p : qbs_prob X)
+Lemma qbs_markov X (p : qbs_prob X)
     (h : X -> R) (f : R -> R) (eps : R)
     (hm : measurable_fun setT (h \o qbs_prob_alpha p))
     (heps : (0 < eps)%R)
@@ -573,15 +486,13 @@ have -> : (fun x => ((f \o normr \o h) (qbs_prob_alpha p x))%:E) =
           (fun x => ((f \o normr \o rv) x)%:E) by [].
 have := @markov _ _ R (qbs_prob_mu p) rv f eps heps hmf hf0 hfnd.
 suff -> : (\int[qbs_prob_mu p]_x (((f \o normr) \o rv) x)%:E)%E =
-          'E_(qbs_prob_mu p)[((f \o [eta normr]) \o rv)] by [].
+          'E_(qbs_prob_mu p)[((f \o normr) \o rv)] by [].
 by rewrite unlock.
 Qed.
 
-(* 20. Chebyshev inequality for QBS *)
-
 (** Chebyshev inequality lifted to QBS
     probabilities. *)
-Lemma qbs_chebyshev (X : qbsType R) (p : qbs_prob X)
+Lemma qbs_chebyshev X (p : qbs_prob X)
     (h : X -> R) (eps : R)
     (hm : measurable_fun setT (h \o qbs_prob_alpha p))
     (heps : (0 < eps)%R) :
@@ -603,9 +514,6 @@ exact: chebyshev.
 Qed.
 
 End probability_inequalities.
-
-Arguments qbs_integrable : clear implicits.
-
 
 End probability_qbs.
 
