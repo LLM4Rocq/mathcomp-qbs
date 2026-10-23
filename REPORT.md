@@ -4,7 +4,7 @@
 **Repository:** https://github.com/LLM4Rocq/mathcomp-qbs
 **Date:** 2026-10-23
 **Status:** 411 proofs (406 Qed + 5 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 6,460 across 14 files
+**Lines of Rocq:** 6,468 across 14 files
 
 > **Note**: The higher-order PPL development (`ppl_qbs.v`,
 > `ppl_kernel.v`, `showcase/ppl_examples.v`) is on the `ppl`
@@ -98,7 +98,7 @@ Throughout, HKSY refers to the LICS 2017 paper above; "Prop. n" and "Thm. n" ref
 
 ## Part I: Core QBS Theory
 
-Source files: `theories/quasi_borel.v` (912 lines, 61 Qed), `theories/measure_qbs_adjunction.v` (342 lines, 16 Qed + 5 Defined), `theories/coproduct_qbs.v` (725 lines, 43 Qed).
+Source files: `theories/quasi_borel.v` (909 lines, 61 Qed), `theories/measure_qbs_adjunction.v` (342 lines, 21 Qed + 5 Defined), `theories/coproduct_qbs.v` (725 lines, 43 Qed).
 
 ### 1.1 The isQBS Mixin and QBSpace Structure
 
@@ -643,7 +643,7 @@ Lemma qbs_morphism_list_rec (W : qbsType R) (b : qbsHomType W Y)
 
 ## Part II: Probability Monad and Integration
 
-Source files: `theories/probability_qbs.v` (535 lines, 35 Qed), `theories/qbs_monad.v` (723 lines, 61 Qed), `theories/qbs_monad_integral.v` (202 lines, 11 Qed), `theories/qbs_normalize.v` (263 lines, 19 Qed), `theories/qbs_quotient.v` (189 lines, 19 Qed), `theories/pair_qbs_measure.v` (362 lines, 15 Qed), `theories/qbs_giry.v` (133 lines, 9 Qed), `theories/normal_centred.v` (289 lines, 16 Qed), `theories/measure_as_qbs_measure.v` (265 lines, 11 Qed), `theories/showcase/bayesian_regression.v` (457 lines, 29 Qed).
+Source files: `theories/probability_qbs.v` (536 lines, 35 Qed), `theories/qbs_monad.v` (723 lines, 61 Qed), `theories/qbs_monad_integral.v` (202 lines, 11 Qed), `theories/qbs_normalize.v` (263 lines, 19 Qed), `theories/qbs_quotient.v` (189 lines, 19 Qed), `theories/pair_qbs_measure.v` (362 lines, 15 Qed), `theories/qbs_giry.v` (133 lines, 9 Qed), `theories/normal_centred.v` (289 lines, 16 Qed), `theories/measure_as_qbs_measure.v` (265 lines, 11 Qed), `theories/showcase/bayesian_regression.v` (457 lines, 29 Qed).
 
 ### 2.1 QBS Probability Triple
 
@@ -1494,7 +1494,7 @@ The theorem says that the program succeeds (the evidence is positive and finite,
 
 ## Part III: Standard Borel Spaces (R × R as a Retract of R)
 
-Source file: `theories/standard_borel.v` (1,063 lines, 61 Qed).
+Source file: `theories/standard_borel.v` (1,073 lines, 61 Qed).
 
 This file constructs a measurable retraction of R × R onto R: a measurable `encode_RR : R × R -> R` with a measurable left inverse `decode_RR`. This is exactly what the characterisation of standard Borel spaces as retracts of R (HKSY Prop. 5) needs, and it shows that the product of standard Borel spaces is standard Borel. `encode_RR` is not surjective (binary expansions ending in infinitely many 1s are missed), so this is a retraction, not an isomorphism. The construction composes three layers: (1) a bijection R ↔ (0,1) via arctangent, (2) a map (0,1)² -> (0,1) by binary digit interleaving with a left inverse, and (3) the composed encode/decode pair. The retraction is used by `qbs_monad.v` (gluing of random elements of P(X)) and `pair_qbs_measure.v` (product probability triples), and by `prod_standard_borel` in `measure_qbs_adjunction.v`.
 
@@ -1790,16 +1790,16 @@ quasi_borel.v
 | Variance | Not formalized | `qbs_varianceE` + `qbs_varianceZ`, `qbs_variance_affine`, `qbs_variance_equiv` |
 | E[distributions] | Not formalized | `qbs_expect_normal` (from `integral_normal_mean`) / `bernoulli` / `uniform`, `qbs_expect_interval_uniform` (Uniform(a,b)), `qbs_bernoulli_event` |
 | Standard Borel inst. | Not formalized | R, nat, bool, prod, ereal |
-| Lines | ~5000 | 6,460 |
+| Lines | ~5000 | 6,468 |
 
 ### 4.4 Statistics
 
 | File | Lines | Proofs |
 |------|------:|-------:|
-| `quasi_borel.v` | 912 | 61 |
+| `quasi_borel.v` | 909 | 61 |
 | `measure_qbs_adjunction.v` | 342 | 21 |
 | `coproduct_qbs.v` | 725 | 43 |
-| `probability_qbs.v` | 535 | 35 |
+| `probability_qbs.v` | 536 | 35 |
 | `qbs_monad.v` | 723 | 61 |
 | `qbs_monad_integral.v` | 202 | 11 |
 | `qbs_normalize.v` | 263 | 19 |
@@ -1808,9 +1808,9 @@ quasi_borel.v
 | `qbs_giry.v` | 133 | 9 |
 | `normal_centred.v` | 289 | 16 |
 | `measure_as_qbs_measure.v` | 265 | 11 |
-| `standard_borel.v` | 1,063 | 61 |
+| `standard_borel.v` | 1,073 | 61 |
 | `showcase/bayesian_regression.v` | 457 | 29 |
-| **Total** | **6,460** | **411** |
+| **Total** | **6,468** | **411** |
 
 The 411 proofs are 406 `Qed` and 5 `Defined` (the standard Borel witnesses in `measure_qbs_adjunction.v`). **0 Admitted**, 0 custom axioms.
 

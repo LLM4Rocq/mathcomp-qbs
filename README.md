@@ -18,7 +18,7 @@ programming semantics.
 
 ## Overview
 
-**411 proofs, 0 Admitted, 0 custom axioms, 6,460 lines across 14 files.**
+**411 proofs, 0 Admitted, 0 custom axioms, 6,468 lines across 14 files.**
 
 > **Note**: A higher-order PPL with denotational semantics in QBS
 > (`ppl_qbs.v`, `ppl_kernel.v`, `showcase/ppl_examples.v`) is
@@ -43,16 +43,16 @@ This formalization follows:
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `quasi_borel.v` | 912 | 61 | HB structure, morphisms, products, exponentials, cartesian closure, the L functor (`qbs_meas`) and L ⊣ R, lattice of QBS structures, empty QBS |
+| `quasi_borel.v` | 909 | 61 | HB structure, morphisms, products, exponentials, cartesian closure, the L functor (`qbs_meas`) and L ⊣ R, lattice of QBS structures, empty QBS |
 | `measure_qbs_adjunction.v` | 342 | 21 | Counit of L ⊣ R, standard Borel spaces, R is full on standard Borel domains, order adjunction |
 | `coproduct_qbs.v` | 725 | 43 | Binary and countable coproducts (HKSY Prop. 17), dependent products, lists with cons and recursion, concrete morphisms |
-| `standard_borel.v` | 1,063 | 61 | R ≅ (0,1) via atan, digit interleaving, R ≅ R × R |
+| `standard_borel.v` | 1,073 | 61 | R ≅ (0,1) via atan, digit interleaving, R ≅ R × R |
 
 ### Probability
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `probability_qbs.v` | 535 | 35 | Probability triples, equivalence, integration and integrability, law, expectation, variance |
+| `probability_qbs.v` | 536 | 35 | Probability triples, equivalence, integration and integrability, law, expectation, variance |
 | `qbs_monad.v` | 723 | 61 | The HKSY probability monad: return, bind, laws, map, join, strength and its laws, commutativity |
 | `qbs_normalize.v` | 263 | 19 | Normalisation of weighted probabilities (HKSY Sec. VI), as a morphism P(X × R) → P(X) + 1 |
 | `qbs_monad_integral.v` | 202 | 11 | Integrals, integrability and variance through return and bind |
