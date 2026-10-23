@@ -126,15 +126,15 @@ Definition post_s_var : R := 9 * 181 / (29 * 2309).
 Definition post_b_mean (s : R) : R := (900 - 540 * s) / 181.
 Definition post_b_var : R := 9 / 181.
 
-Local Lemma post_s_var_gt0 : 0 < post_s_var.
+Let post_s_var_gt0 : 0 < post_s_var.
 Proof. by rewrite /post_s_var divr_gt0 // ?mulr_gt0 // ltr0n. Qed.
 
-Local Lemma post_b_var_gt0 : 0 < post_b_var.
+Let post_b_var_gt0 : 0 < post_b_var.
 Proof. by rewrite /post_b_var divr_gt0 // ltr0n. Qed.
 
 Let obs2 (s b : R) : R := obs_fun (lin (s, b)).
 
-Local Lemma expoE s b :
+Let expoE s b :
   - (s - 0) ^+ 2 / (3 ^+ 2 *+ 2) + - (b - 0) ^+ 2 / (3 ^+ 2 *+ 2) +
   - (5 / 2 - (s * 1 + b)) ^+ 2 / (2^-1 ^+ 2 *+ 2) +
   - (19 / 5 - (s * 2 + b)) ^+ 2 / (2^-1 ^+ 2 *+ 2) +
@@ -149,14 +149,14 @@ rewrite /post_s_mean /post_b_mean /post_s_var /post_b_var.
 by field.
 Qed.
 
-Local Lemma peakE :
+Let peakE :
   normal_peak 3 ^+ 2 * normal_peak 2^-1 ^+ 5 =
   4 * sqrtr 2 / (pi ^+ 2 * sqrtr (29 * 2309 * pi)) *
   normal_peak (sqrtr post_s_var) * normal_peak (sqrtr post_b_var) :> R.
 Proof.
 have pi0 : 0 < pi :> R := pi_gt0.
 have vs0 := post_s_var_gt0; have vb0 := post_b_var_gt0.
-apply/eqP; rewrite -(@eqrXn2 _ 2) //.
+apply/eqP; rewrite -(eqrXn2 (n := 2)) //.
 - by rewrite mulr_ge0 ?exprn_ge0 ?normal_peak_ge0.
 - by rewrite !mulr_ge0 ?normal_peak_ge0 ?invr_ge0 ?mulr_ge0 ?sqrtr_ge0
     ?exprn_ge0 ?ltW.
@@ -202,7 +202,7 @@ Qed.
 
 (** The posterior: s ~ N(post_s_mean, sqrt post_s_var), and given s,
     b ~ N(post_b_mean s, sqrt post_b_var); pushed to functions by lin. *)
-Local Lemma post_b_mean_morphism : qbs_morphism (X := RQ) (Y := RQ) post_b_mean.
+Let post_b_mean_morphism : qbs_morphism (X := RQ) (Y := RQ) post_b_mean.
 Proof.
 move=> a ha; apply: measurable_funM => //; apply: measurable_funB => //.
 exact: measurable_funM.
@@ -241,10 +241,10 @@ Proof. by move=> mh h0; rewrite ge0_qbs_integral_bind. Qed.
 
 Let K : R := normal_peak 2^-1 ^+ 5.
 
-Local Lemma obs2_ge0 s b : (0 <= obs2 s b)%R.
+Let obs2_ge0 s b : (0 <= obs2 s b)%R.
 Proof. by rewrite /obs2 /obs_fun /d !mulr_ge0 ?normal_pdf_ge0. Qed.
 
-Local Lemma obs2_ub s b : (obs2 s b <= K)%R.
+Let obs2_ub s b : (obs2 s b <= K)%R.
 Proof.
 rewrite /obs2 /obs_fun /d /K !exprS expr0 mulr1.
 have ub (x m : R) : (normal_pdf m 2^-1 x <= normal_peak 2^-1)%R.
@@ -257,46 +257,46 @@ Qed.
 
 Let obs2Q : qbsHomType W RQ := qbs_comp lin obs.
 
-Local Lemma measurable_obs2 : qbs_measurable W (fun sb => (obs2 sb.1 sb.2)%:E).
+Let measurable_obs2 : qbs_measurable W (fun sb => (obs2 sb.1 sb.2)%:E).
 Proof.
 move=> a ha; apply/measurable_EFinP.
 exact: (qbs_hom_proof (s := obs2Q) _ ha).
 Qed.
 
-Local Lemma qbs_Mx_pair_cst (s : R) : qbs_Mx (s := W) (fun b : mR => (s, b)).
+Let qbs_Mx_pair_cst (s : R) : qbs_Mx (s := W) (fun b : mR => (s, b)).
 Proof. by split; [exact: measurable_cst|exact: measurable_id]. Qed.
 
-Local Lemma measurable_mul_obs2 (h : W -> \bar R) :
+Let measurable_mul_obs2 (h : W -> \bar R) :
   qbs_measurable W h ->
   qbs_measurable W (fun sb => h sb * (obs2 sb.1 sb.2)%:E).
 Proof.
 by move=> mh a ha; apply: emeasurable_funM; [exact: mh|exact: measurable_obs2].
 Qed.
 
-Local Lemma mul_obs2_ge0 (h : W -> \bar R) :
+Let mul_obs2_ge0 (h : W -> \bar R) :
   (forall x, 0 <= h x) -> forall sb, 0 <= h sb * (obs2 sb.1 sb.2)%:E.
 Proof. by move=> h0 sb; rewrite mule_ge0 ?lee_fin ?obs2_ge0. Qed.
 
-Local Lemma integral_normal_prob_cst1 (m s : R) :
+Let integral_normal_prob_cst1 (m s : R) :
   \int[normal_prob m s]_x (fun=> 1 : \bar R) x = 1.
 Proof. by rewrite integral_cst //= probability_setT mule1. Qed.
 
-Local Lemma ge0_of_le1 (T : Type) (h : T -> \bar R) :
+Let ge0_of_le1 (T : Type) (h : T -> \bar R) :
   (forall x, 0 <= h x <= 1) -> forall x, 0 <= h x.
 Proof. by move=> h01 x; case/andP: (h01 x). Qed.
 
-Local Lemma integral_normal_prob_bnd (m s M : R) (f : mR -> \bar R) :
+Let integral_normal_prob_bnd (m s M : R) (f : mR -> \bar R) :
   measurable_fun [set: mR] f -> (forall x, 0 <= f x <= M%:E) ->
   0 <= \int[normal_prob m s]_x f x <= M%:E.
 Proof.
 move=> mf fM; apply/andP; split.
   by apply: integral_ge0 => x _; case/andP: (fM x).
-rewrite (@le_trans _ _ (\int[normal_prob m s]_x M%:E))//.
+rewrite (le_trans _ (y := \int[normal_prob m s]_x M%:E))//.
   by apply: ge0_le_integral => // x _; case/andP: (fM x).
 by rewrite integral_cst //= probability_setT mule1.
 Qed.
 
-Local Lemma integral_normal_prob_bounded (m s : R) (f : mR -> \bar R) (M : R) :
+Let integral_normal_prob_bounded (m s : R) (f : mR -> \bar R) (M : R) :
   measurable_fun [set: mR] f -> (forall x, 0 <= f x <= M%:E) ->
   \int[normal_prob m s]_x f x =
   \int[lebesgue_measure]_x (f x * (normal_pdf m s x)%:E).
@@ -308,7 +308,7 @@ apply: emeasurable_bounded_integrable => //.
 Qed.
 
 (** s |-> \int[N(m s, sigma)]_b h (s, b) is measurable. *)
-Local Lemma measurable_normal_prob_integral (m : qbsHomType RQ RQ) (sigma : R)
+Let measurable_normal_prob_integral (m : qbsHomType RQ RQ) (sigma : R)
     (h : W -> \bar R) :
   qbs_measurable W h -> (forall x, 0 <= h x) ->
   measurable_fun [set: mR]
@@ -321,17 +321,17 @@ have hg := qbs_hom_proof (s := g) idfun (@measurable_id _ mR setT).
 by have := ge0_qbs_integral_morphism mh h0 hg.
 Qed.
 
-Local Lemma evidence_const_gt0 : (0 < evidence_const)%R.
+Let evidence_const_gt0 : (0 < evidence_const)%R.
 Proof.
 rewrite /evidence_const mulr_gt0 ?expR_gt0//.
 rewrite divr_gt0 ?mulr_gt0 ?sqrtr_gt0 ?exprn_gt0 ?pi_gt0 ?ltr0n //.
 all: by rewrite ?mulr_gt0 ?ltr0n ?pi_gt0.
 Qed.
 
-Local Lemma evidence_const_ge0 : (0 <= evidence_const)%R.
+Let evidence_const_ge0 : (0 <= evidence_const)%R.
 Proof. exact: ltW evidence_const_gt0. Qed.
 
-Local Lemma factor_inner (h : W -> \bar R) (s : R) :
+Let factor_inner (h : W -> \bar R) (s : R) :
   qbs_measurable W h -> (forall x, 0 <= h x <= 1) ->
   (\int[normal_prob 0 3]_b (h (s, b) * (obs2 s b)%:E)) * (normal_pdf 0 3 s)%:E =
   (evidence_const * normal_pdf post_s_mean (sqrtr post_s_var) s)%:E *
@@ -403,7 +403,6 @@ rewrite -ge0_integralZl//.
 - apply: emeasurable_funM => //.
   by apply/measurable_EFinP; exact: measurable_normal_pdf.
 - by move=> x _; rewrite mule_ge0 ?lee_fin ?normal_pdf_ge0//; case/andP: (bJ x).
-- exact: evidence_const_ge0.
 - apply: eq_integral => s _.
   by rewrite (factor_inner s mh h01) muleCA -EFinM muleC.
 Qed.
