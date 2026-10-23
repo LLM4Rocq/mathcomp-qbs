@@ -66,9 +66,6 @@ Proof. exact: qbs_measurable_weight (qbs_prob_alpha_random p). Qed.
 
 Definition qbs_evidence p : \bar R := \int[qbs_prob_mu p]_r qbs_weight p r.
 
-Lemma qbs_evidence_ge0 p : 0 <= qbs_evidence p.
-Proof. by apply: integral_ge0 => r _; exact: qbs_weight_ge0. Qed.
-
 Lemma qbs_evidence_equiv p1 p2 :
   qbs_prob_equiv _ p1 p2 -> qbs_evidence p1 = qbs_evidence p2.
 Proof.
@@ -99,14 +96,14 @@ HB.instance Definition _ := isMeasure.Build _ _ _ qbs_density
 
 End density.
 
-Lemma qbs_normalize_alpha_random p :
+Lemma qbs_prob_alpha_fst_random p :
   qbs_Mx (s := X) (fun r => (qbs_prob_alpha p r).1).
 Proof. by have [] := qbs_prob_alpha_random p. Qed.
 
 Definition qbs_normalize_prob p : qbs_prob X :=
   mkQBSProb (fun r => (qbs_prob_alpha p r).1)
     (mnormalize (qbs_density p) (qbs_prob_mu p))
-    (qbs_normalize_alpha_random p).
+    (qbs_prob_alpha_fst_random p).
 
 Definition qbs_normalize p : option (qbs_prob X) :=
   if 0 < qbs_evidence p < +oo
@@ -115,12 +112,19 @@ Definition qbs_normalize p : option (qbs_prob X) :=
 Lemma qbs_densityT p : qbs_density p [set: mR] = qbs_evidence p.
 Proof. by []. Qed.
 
+Lemma qbs_evidence_ge0 p : 0 <= qbs_evidence p.
+Proof. by rewrite -qbs_densityT; exact: measure_ge0. Qed.
+
 Lemma qbs_evidence_degen p :
   ~~ (0 < qbs_evidence p < +oo) -> qbs_evidence p = 0 \/ qbs_evidence p = +oo.
 Proof.
 have := qbs_evidence_ge0 p; rewrite le_eqVlt => /orP[/eqP<-|ev0]; first by left.
 rewrite ev0 /= -leNgt leye_eq => /eqP; by right.
 Qed.
+
+Lemma indic_maxr_ge0 (T : Type) (U : set T) (x : T) (w : R) :
+  (0 <= (\1_U x : R) * maxr 0 w)%R.
+Proof. by rewrite mulr_ge0 ?le_max ?lexx ?orbT// indicE ler0n. Qed.
 
 (** The normalised probability of U is the weighted probability of U
     divided by the evidence. *)
@@ -176,7 +180,7 @@ rewrite -[LHS]/(qbs_prob_event _ _ _) -[RHS]/(qbs_prob_event _ _ _).
 have [hev|hev] := boolP (0 < qbs_evidence p1 < +oo).
   rewrite !qbs_normalize_event -?(qbs_evidence_equiv e)//; congr (_ * _).
   apply: ge0_qbs_integral_equiv e; first exact: qbs_measurable_weighted_indic.
-  by move=> xw; rewrite lee_fin mulr_ge0 ?le_max ?lexx ?orbT// indicE ler0n.
+  by move=> xw; rewrite lee_fin; exact: indic_maxr_ge0.
 rewrite !qbs_normalize_event_degen -?(qbs_evidence_equiv e)//.
 exact: e _ (sigma_Mx_preimage (qbs_fst X (realQ R)) mU).
 Qed.
@@ -212,7 +216,9 @@ pose P r := 0 < qbs_evidence (b r) < +oo.
 have mev : measurable_fun [set: mR] (fun r => qbs_evidence (b r)).
   exact: (ge0_qbs_integral_morphism qbs_measurable_weight qbs_pweight_ge0 hb).
 have mP : measurable_fun [set: mR] P.
-  by apply: measurable_and; exact: measurable_fun_lte.
+  apply: measurable_and.
+  - exact: measurable_fun_lte (measurable_cst 0) mev.
+  - exact: measurable_fun_lte mev (measurable_cst +oo).
 have md A : measurable A ->
     measurable_fun [set: mR] (fun r => qbs_density (pr r) A).
   move=> mA; pose w t : \bar R := (\1_A t)%:E * (maxr 0 (a t).2)%:E.
@@ -221,19 +227,20 @@ have md A : measurable A ->
     apply/measurable_EFinP; apply: measurable_maxr => //.
     by have [] := ha.
   have w0 t : 0 <= w t.
-    by rewrite mule_ge0 ?lee_fin ?indicE ?ler0n ?le_max ?lexx.
+    by rewrite /w -EFinM lee_fin; exact: indic_maxr_ge0.
   have -> : (fun r => qbs_density (pr r) A) = (giry_int^~ w) \o g.
     apply/funext => r; rewrite /qbs_density integral_mkcond /giry_int /=.
     apply: eq_integral => t _; rewrite /w patchE indicE.
     by case: (t \in A); rewrite ?mul1e ?mul0e.
   exact: measurableT_comp (measurable_giry_int mw w0) mg.
 right; right; exists P, (fun r => qbs_normalize_prob (b r)), (fun=> tt).
-split => //; split; last first.
+split; first exact: mP.
+split; last first.
   split => // r.
   by rewrite /= /qbs_normalize_sum /qbs_normalize -/(P r); case: ifP.
 (* By saturation, it suffices to normalise the representative [a, g r]. *)
-apply: (@monadP_random_equiv _ _ (fun r => qbs_normalize_prob (pr r))).
-  by move=> r; apply: qbs_normalize_prob_equiv; exact: qbs_prob_equiv_sym.
+apply: (monadP_random_equiv (b1 := fun r => qbs_normalize_prob (pr r))).
+  by move=> r; apply: qbs_normalize_prob_equiv; exact/qbs_prob_equiv_sym/epr.
 exists (fun t => (a t).1),
   (fun r => qbs_prob_mu (qbs_normalize_prob (pr r)) : giry mR R).
 split => //.
