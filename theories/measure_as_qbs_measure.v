@@ -94,8 +94,9 @@ Lemma qbs_uniform_of_morphism :
 Proof.
 move=> c [m1 m2].
 exists idfun, (fun r => uniform_prob (svalP (c r)) : giry mR R).
-split=> //; [exact: (@measurable_id _ mR setT) | |
-  by move=> r; exact: probability_setT].
+apply: QbsProbRep; first exact: (@measurable_id _ mR setT); last first.
+  by move=> r U mU; rewrite qbs_prob_event_mk.
+  by move=> r; exact: probability_setT.
 apply: measurable_giry_codensity => // B mB.
   pose f (z : (mR * mR) * mR) : \bar R :=
     (\1_B z.2 * uniform_pdf z.1.1 z.1.2 z.2)%:E.
@@ -130,8 +131,9 @@ Lemma qbs_normal_morphism s :
     (fun m => qbs_normal_distribution m s).
 Proof.
 move=> a ha; exists idfun, (fun r => normal_prob (a r) s : giry mR R).
-split=> //; [exact: (@measurable_id _ mR setT) | |
-  by move=> r; exact: probability_setT].
+apply: QbsProbRep; first exact: (@measurable_id _ mR setT); last first.
+  by move=> r U mU; rewrite qbs_prob_event_mk.
+  by move=> r; exact: probability_setT.
 apply: measurable_giry_codensity => // B mB.
 exact: measurableT_comp (measurable_normal_prob _ mB) ha.
 Qed.
@@ -174,11 +176,28 @@ have [->|p0] := eqVneq p 0; first by rewrite ltxx.
 by rewrite ifT// lte_fin lt0r p0.
 Qed.
 
+(** Functions out of measQ M are qbs_measurable as soon as they are
+    measurable. *)
+Let qbs_measurable_measQ d (M : measurableType d) (h : M -> \bar R) :
+  measurable_fun setT h -> qbs_measurable (@measQ R d M) h.
+Proof. by move=> mh a ha; exact: measurableT_comp mh ha. Qed.
+
+Let sigma_Mx_measQ d (M : measurableType d) (A : set M) :
+  measurable A -> sigma_Mx (X := @measQ R d M) A.
+Proof.
+by move=> mA a ha; have := ha measurableT A mA; rewrite setTI.
+Qed.
+
 (** E[Bernoulli(p)] = p. *)
 Lemma qbs_expect_bernoulli p (hp0 : 0 <= p) (hp1 : p <= 1) :
   qbs_expect (boolQ R) (qbs_bernoulli p) (fun b : bool => b%:R) = p%:E.
 Proof.
-rewrite /qbs_expect /qbs_integral /=.
+rewrite /qbs_expect qbs_integral_mk /=.
+  move=> a ha.
+  have ha' : measurable_fun setT a := ha.
+  have mi : measurable_fun setT (fun r => if a r then 1%E else 0%E : \bar R).
+    by apply: measurable_fun_ifT => //; exact: measurable_cst.
+  by apply: (eq_measurable_fun _ _ mi) => r _; case: (a r).
 have -> : (fun x : mR => ((((x < p)%R : bool)%:R : R))%:E) =
     (fun x => (\1_[set r : mR | r < p] x)%:E).
   by apply: funext => x /=; rewrite indicE mem_setE.
@@ -192,6 +211,8 @@ Lemma qbs_bernoulli_event p (hp0 : 0 <= p) (hp1 : p <= 1)
   qbs_prob_event (boolQ R) (qbs_bernoulli p) A = bernoulli_prob p A.
 Proof.
 have p01 : 0 <= p <= 1 by apply/andP.
+rewrite qbs_prob_event_mk.
+  exact: (@sigma_Mx_measQ _ bool A).
 pose f : {mfun mR >-> bool} := mfun_Sub (mem_set (measurable_ltr p)).
 pose P : probability bool R :=
   distribution (uniform_prob ltr01 : probability mR R) f.
@@ -225,7 +246,9 @@ Proof.
 have iid : lebesgue_measure.-integrable `[a, b] (@EFin R).
   apply: (@continuous_compact_integrable R idfun); first exact: segment_compact.
   by apply: continuous_in_subspaceT => x _; exact: cvg_id.
-rewrite /qbs_expect /qbs_integral /= integral_uniform_integrable//.
+rewrite /qbs_expect qbs_integral_mk /=.
+  by apply: qbs_measurable_measQ; exact/measurable_EFinP/measurable_id.
+rewrite integral_uniform_integrable//.
 have dF (x : R) : is_derive x 1 (fun x : R => x ^+ 2 / 2) x.
   have h := is_deriveM (is_deriveX 2 (is_derive_id x 1))
     (is_derive_cst (2^-1 : R) x 1).
@@ -259,7 +282,9 @@ Proof. by rewrite qbs_expect_interval_uniform add0r div1r. Qed.
 Lemma qbs_expect_normal m s : s != 0 ->
   qbs_expect (realQ R) (qbs_normal_distribution m s) (fun x => x) = m%:E.
 Proof.
-by move=> s0; rewrite /qbs_expect /qbs_integral/=; exact: integral_normal_mean.
+move=> s0; rewrite /qbs_expect qbs_integral_mk /=.
+  by apply: qbs_measurable_measQ; exact/measurable_EFinP/measurable_id.
+exact: integral_normal_mean.
 Qed.
 
 End distribution_expectations.
