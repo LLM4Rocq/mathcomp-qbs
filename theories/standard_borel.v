@@ -852,22 +852,13 @@ Lemma bin_sum_has_one_gt0 (d : nat -> bool) (k : nat) :
 Proof.
 move=> hdk.
 have heps : (0 : R) < (d k)%:R * 2^-1 ^+ k.+1.
-  rewrite hdk /= mul1r; apply: exprn_gt0.
-  by rewrite invr_gt0; apply: ltr0n.
-suff hle : (d k)%:R * 2^-1 ^+ k.+1 <= bin_sum d.
-  exact: (lt_le_trans heps hle).
-rewrite /bin_sum.
-apply: (@closed_cvg _ _ eventually _
-  (fun n => bin_partial_sum d n : R^o)
-  (fun z : R => (d k)%:R * 2^-1 ^+ k.+1 <= z)
-  _ _ (bin_sum d)).
-- exact: closed_ge.
-- exists k.+1 => // m hmk.
-  rewrite /bin_partial_sum (bigD1 (Ordinal hmk)) //=.
-  rewrite lerDl; apply: sumr_ge0 => i _.
-  apply: mulr_ge0; first by case: (d i).
-  by exact: half_expn_ge0.
-- rewrite /bin_sum; exact: is_cvg_bin_partial_sum.
+  by rewrite hdk /= mul1r exprn_gt0 // invr_gt0.
+apply: lt_le_trans heps _.
+apply: limr_ge; first exact: is_cvg_bin_partial_sum.
+exists k.+1 => // m hmk.
+rewrite /bin_partial_sum (bigD1 (Ordinal hmk)) //= lerDl.
+apply: sumr_ge0 => i _.
+by apply: mulr_ge0; [case: (d i) | exact: half_expn_ge0].
 Qed.
 
 (** phi x has at least one true binary digit (since phi x > 0) *)
@@ -875,29 +866,15 @@ Lemma phi_has_true_digit (x : R) :
   exists k, bin_digits (phi x) k = true.
 Proof.
 apply: contrapT => hnone.
-have hall : forall k, bin_digits (phi x) k = false.
-  move=> k; apply: contrapT => hk.
-  by apply: hnone; exists k; case: (bin_digits (phi x) k) hk.
 have hd0 : bin_digits (phi x) =1 (fun _ => false).
-  by move=> k; rewrite hall.
-have hbps0 : forall n, bin_partial_sum (fun _ : nat => false) n = (0 : R).
-  move=> n; rewrite /bin_partial_sum big1 // => i _.
-  by rewrite /= mul0r.
+  by move=> k; apply/negbTE/negP => hk; apply: hnone; exists k.
 have hsum0 : bin_sum (bin_digits (phi x)) = 0.
-  have hle : bin_sum (bin_digits (phi x)) <= 0.
-    rewrite (bin_sum_ext hd0) /bin_sum.
-    apply: (@closed_cvg _ _ eventually _
-      (fun n => bin_partial_sum (fun _ => false) n : R^o) (fun z : R => z <= 0)
-      _ _ _).
-    - exact: closed_le.
-    - by apply: nearW => n; rewrite hbps0.
-    - exact: is_cvg_bin_partial_sum.
-  have hge := bin_sum_ge0 (bin_digits (phi x)).
-  by apply: le_anti; apply/andP; split.
-have hphi01 := phi_in_01 x.
-have hrecon := bin_digits_reconstruction hphi01.
-by rewrite hsum0 in hrecon; have := phi_gt0 x; rewrite -hrecon
-   ltxx.
+  apply: le_anti; rewrite bin_sum_ge0 andbT (bin_sum_ext hd0).
+  apply: limr_le; first exact: is_cvg_bin_partial_sum.
+  apply: nearW => n; rewrite /bin_partial_sum big1 ?lexx // => i _.
+  by rewrite mul0r.
+have hrecon := bin_digits_reconstruction (phi_in_01 x).
+by move: (phi_gt0 x); rewrite -hrecon hsum0 ltxx.
 Qed.
 
 (** pair_to_unit of phi values lands in (0,1) *)
@@ -932,16 +909,11 @@ Theorem encode_RRK (xy : R * R) :
 Proof.
 rewrite /decode_RR /encode_RR.
 set v := pair_to_unit (phi xy.1, phi xy.2).
-have hv_itv : v \in `](0:R), 1[ := pair_to_unit_phi_in_itv xy.1 xy.2.
-have hv_eq : phi (psi v) = v := psiK hv_itv.
-have hx01 : 0 <= (phi xy.1) < 1 := phi_in_01 xy.1.
-have hy01 : 0 <= (phi xy.2) < 1 := phi_in_01 xy.2.
+have hv_eq : phi (psi v) = v := psiK (pair_to_unit_phi_in_itv xy.1 xy.2).
 have hutp : unit_to_pair v = (phi xy.1, phi xy.2).
-  rewrite /v; apply: pair_to_unitK.
-  - exact: hx01.
-  - exact: hy01.
-rewrite hv_eq hutp !phiK.
-by destruct xy.
+  rewrite /v; apply: pair_to_unitK; first exact: phi_in_01.
+  exact: phi_in_01.
+by rewrite hv_eq hutp /= !phiK -surjective_pairing.
 Qed.
 
 (** Round-trip: encode (decode r) = r
@@ -965,19 +937,12 @@ Proof.
 rewrite /encode_RR /decode_RR /=.
 set u1 := (unit_to_pair (phi r)).1.
 set u2 := (unit_to_pair (phi r)).2.
-have hu1_lt1 : u1 < 1.
-  exact: bin_sum_no_trailing_lt1 hnt_even.
-have hu2_lt1 : u2 < 1.
-  exact: bin_sum_no_trailing_lt1 hnt_odd.
-have hu1_01 : u1 \in `](0:R), 1[.
-  by rewrite in_itv /=; apply/andP; split.
-have hu2_01 : u2 \in `](0:R), 1[.
-  by rewrite in_itv /=; apply/andP; split.
-rewrite (psiK hu1_01) (psiK hu2_01).
-have hphi01 := phi_in_01 r.
-rewrite -/u1 -/u2 /u1 /u2.
-rewrite (unit_to_pairK hphi01 hnt_even hnt_odd).
-by rewrite phiK.
+have hu1 : u1 \in `](0:R), 1[.
+  by rewrite in_itv /= hu1_pos /=; exact: bin_sum_no_trailing_lt1 hnt_even.
+have hu2 : u2 \in `](0:R), 1[.
+  by rewrite in_itv /= hu2_pos /=; exact: bin_sum_no_trailing_lt1 hnt_odd.
+rewrite (psiK hu1) (psiK hu2).
+by rewrite (unit_to_pairK (phi_in_01 r) hnt_even hnt_odd) phiK.
 Qed.
 
 (** Measurability of encode_RR *)
