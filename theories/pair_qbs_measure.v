@@ -237,6 +237,44 @@ Definition qbs_indep (X Y Z : qbsType R) (p : qbs_prob Z)
 
 Arguments qbs_indep : clear implicits.
 
+(** For real-valued variables, qbs_indep gives the classical product rule
+    on Borel rectangles. *)
+Lemma qbs_indep_rect (Z : qbsType R) (p : qbs_prob Z)
+    (f g : qbsHomType Z (realQ R)) (A B : set mR) :
+  measurable A -> measurable B -> qbs_indep _ _ _ p f g ->
+  qbs_prob_event Z p [set z | A (f z) /\ B (g z)] =
+  qbs_prob_event Z p (f @^-1` A) * qbs_prob_event Z p (g @^-1` B).
+Proof.
+move=> mA mB hind.
+have mU : sigma_Mx (X := prodQ (realQ R) (realQ R)) (A `*` B).
+  move=> b [hb1 hb2].
+  have -> : b @^-1` (A `*` B) =
+      (fun r => (b r).1) @^-1` A `&` (fun r => (b r).2) @^-1` B by [].
+  apply: measurableI.
+    by have := hb1 measurableT A mA; rewrite setTI.
+  by have := hb2 measurableT B mB; rewrite setTI.
+transitivity (qbs_prob_event _ (monadP_map (qbs_pair f g) p) (A `*` B)) => //.
+rewrite /qbs_prob_event (hind _ mU) -(qbs_prob_pairE _ _ mU).
+rewrite -[LHS]/(qbs_prob_event _ _ _) qbs_pairP_event//=.
+set a := qbs_prob_alpha p.
+have mfA : measurable (a @^-1` (f @^-1` A)).
+  have := @qbs_hom_proof _ _ _ f _ (qbs_prob_alpha_random p) measurableT A mA.
+  by rewrite setTI.
+transitivity (\int[qbs_prob_mu p]_r
+  ((\1_(a @^-1` (f @^-1` A)) r)%:E * qbs_prob_mu p (a @^-1` (g @^-1` B)))).
+  apply: eq_integral => r _; rewrite indicE.
+  have [h|h] := boolP (r \in a @^-1` (f @^-1` A)).
+    rewrite mul1e; congr (_ _); apply/seteqP; split => t /=; rewrite /preimage /=.
+      by case.
+    by move=> Bt; split => //; move: h; rewrite inE.
+  rewrite mul0e (_ : [set t | _] = set0) ?measure0//.
+  by apply/seteqP; split => t //= [Ar _]; move: h; rewrite notin_setE.
+rewrite ge0_integralZr// ?integral_indic ?setIT//.
+  exact/measurable_EFinP/measurable_indic.
+by move=> x _; rewrite lee_fin indicE ler0n.
+Qed.
+
+
 (* E[f * g] = E[f] * E[g] for independent random variables.
    The proof uses the product measure and Fubini:
      E_{p x q}[f(x) * g(y)]

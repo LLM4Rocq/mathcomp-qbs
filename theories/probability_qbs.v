@@ -257,10 +257,16 @@ by move=> /qbs_measurableE mh h0; rewrite ge0_integral_distribution.
 Qed.
 
 Lemma qbs_integral_law (X : qbsType R) (p : qbs_prob X) (h : X -> \bar R) :
-  qbs_measurable X h ->
-  (qbs_prob_mu p).-integrable [set: mR] (h \o qbs_prob_alpha p) ->
-  qbs_integral X p h = (\int[qbs_law p]_x h x)%E.
-Proof. by move=> /qbs_measurableE mh ih; rewrite integral_distribution. Qed.
+  qbs_measurable X h -> qbs_integral X p h = (\int[qbs_law p]_x h x)%E.
+Proof.
+move=> mh; rewrite /qbs_integral integralE [RHS]integralE.
+have /qbs_measurableE mh' := mh.
+congr (_ - _)%E.
+- rewrite ge0_integral_distribution//; last exact: measurable_funepos mh'.
+  by apply: eq_integral => r _; rewrite /= !funeposE.
+- rewrite ge0_integral_distribution//; last exact: measurable_funeneg mh'.
+  by apply: eq_integral => r _; rewrite /= !funenegE.
+Qed.
 
 End qbs_integration.
 
@@ -279,6 +285,15 @@ Definition qbs_expect (X : qbsType R) (p : qbs_prob X)
   qbs_integral X p (fun x => (h x)%:E).
 
 Arguments qbs_expect : clear implicits.
+
+(** QBS expectation is the expectation of a random variable on the law. *)
+Lemma qbs_expectE (X : qbsType R) (p : qbs_prob X)
+    (f : {mfun qbs_meas X >-> R}) :
+  qbs_expect X p f = ('E_(qbs_law p)[f])%E.
+Proof.
+rewrite /qbs_expect qbs_integral_law; first by rewrite unlock.
+apply/qbs_measurableE; exact/measurable_EFinP/measurable_funPT.
+Qed.
 
 Definition qbs_prob_event (X : qbsType R) (p : qbs_prob X)
   (U : set X) : \bar R :=
