@@ -103,19 +103,19 @@ Definition qbs_pair_alpha (X Y : qbsType R)
 
 Lemma qbs_pair_alpha_random (X Y : qbsType R)
   (p : qbs_prob X) (q : qbs_prob Y) :
-  @qbs_Mx R (prodQ X Y) (qbs_pair_alpha p q).
+  qbs_Mx (s := prodQ X Y) (qbs_pair_alpha p q).
 Proof.
 rewrite /qbs_Mx /=; split.
-- have -> : (fun r => (qbs_pair_alpha p q r).1) =
-    qbs_prob_alpha p \o (fst \o decode_RR_mR) by [].
+  have -> : (fun r => (qbs_pair_alpha p q r).1) =
+      qbs_prob_alpha p \o (fst \o decode_RR_mR) by [].
   apply: qbs_Mx_compT; first exact: (qbs_prob_alpha_random p).
   apply: measurableT_comp; first exact: measurable_fst.
   exact: measurable_R_to_RR.
-- have -> : (fun r => (qbs_pair_alpha p q r).2) =
+have -> : (fun r => (qbs_pair_alpha p q r).2) =
     qbs_prob_alpha q \o (snd \o decode_RR_mR) by [].
-  apply: qbs_Mx_compT; first exact: (qbs_prob_alpha_random q).
-  apply: measurableT_comp; first exact: measurable_snd.
-  exact: measurable_R_to_RR.
+apply: qbs_Mx_compT; first exact: (qbs_prob_alpha_random q).
+apply: measurableT_comp; first exact: measurable_snd.
+exact: measurable_R_to_RR.
 Qed.
 
 Definition qbs_prob_pair (X Y : qbsType R)
@@ -128,13 +128,13 @@ Definition qbs_prob_pair (X Y : qbsType R)
 (** The encoded product agrees with the monadic product
     p >>= (fun x => strength (x, q)) of qbs_monad.v. *)
 Lemma qbs_prob_pair_equiv (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y) :
-  qbs_prob_equiv (prodQ X Y) (monadP_pair (p : monadP X) (q : monadP Y))
+  qbs_prob_equiv (prodQ X Y) (monadP_pair p q)
     (qbs_prob_pair p q).
 Proof.
 move=> U mU; rewrite -[LHS]/(qbs_prob_event _ _ _) monadP_pair_event//.
 rewrite /qbs_prob_pair /= /qbs_pair_mu_build /=.
 rewrite /product_measure1 /=; apply: eq_integral => r _; congr (_ _).
-rewrite /xsection; apply/seteqP; split => t; rewrite /preimage /= inE /=.
+rewrite /xsection; apply/seteqP; split=> t; rewrite /preimage /= inE /=.
 all: by rewrite /qbs_pair_alpha encode_RR_mRK.
 Qed.
 
@@ -152,7 +152,7 @@ Lemma integral_prod_fst (h : mR -> \bar R) :
 Proof.
 move=> hi; rewrite -(integral12_prod_meas1 hi); apply: eq_integral => x _.
 rewrite /fubini_F -(cstE _ (h x)) integral_cst//.
-by rewrite [X in _ * X](@probability_setT _ _ _ mu2) mule1.
+by rewrite [X in _ * X](probability_setT mu2) mule1.
 Qed.
 
 Lemma integral_prod_snd (h : mR -> \bar R) :
@@ -161,7 +161,7 @@ Lemma integral_prod_snd (h : mR -> \bar R) :
 Proof.
 move=> hi; rewrite -(integral21_prod_meas1 hi); apply: eq_integral => y _.
 rewrite /fubini_G -(cstE _ (h y)) integral_cst//.
-by rewrite [X in _ * X](@probability_setT _ _ _ mu1) mule1.
+by rewrite [X in _ * X](probability_setT mu1) mule1.
 Qed.
 
 Lemma integral_prod_mul (h1 h2 : mR -> R) :
@@ -264,11 +264,11 @@ transitivity (\int[qbs_prob_mu p]_r
   apply: eq_integral => r _; rewrite indicE.
   have [h|h] := boolP (r \in a @^-1` (f @^-1` A)).
     rewrite mul1e; congr (_ _); apply/seteqP.
-    split => t /=; rewrite /preimage /=.
+    split=> t /=; rewrite /preimage /=.
       by case.
-    by move=> Bt; split => //; move: h; rewrite inE.
+    by move=> Bt; split=> //; move: h; rewrite inE.
   rewrite mul0e (_ : [set t | _] = set0); last by rewrite measure0.
-  by apply/seteqP; split => t //= [Ar _]; move: h; rewrite notin_setE.
+  by apply/seteqP; split=> t //= [Ar _]; move: h; rewrite notin_setE.
 rewrite ge0_integralZr//; last by rewrite integral_indic// setIT.
   exact/measurable_EFinP/measurable_indic.
 by move=> x _; rewrite lee_fin indicE ler0n.
@@ -324,10 +324,10 @@ have mu_fin : mu setT \is a fin_num.
 have fin1 (m : probability mR R) : m setT \is a fin_num.
   by rewrite probability_setT.
 have EF : 'E_mu[F] = 'E_(qbs_prob_mu px)[(f \o qbs_prob_alpha px)].
-  rewrite !unlock; exact: (integral_prod_fst
+  by rewrite !unlock; exact: (integral_prod_fst
     (h := fun x => (f (qbs_prob_alpha px x))%:E) (L2_integrable mu_fin hF2)).
 have EG : 'E_mu[G] = 'E_(qbs_prob_mu py)[(g \o qbs_prob_alpha py)].
-  rewrite !unlock; exact: (integral_prod_snd
+  by rewrite !unlock; exact: (integral_prod_snd
     (h := fun y => (g (qbs_prob_alpha py y))%:E) (L2_integrable mu_fin hG2)).
 rewrite /qbs_pair_variance -[fun rr => _]/(F \+ G)%R varianceD//.
 rewrite covarianceE ?(Lfun2_mul_Lfun1 hF2 hG2) ?(Lfun_subset12 mu_fin)//.
@@ -343,10 +343,10 @@ have EFG : 'E_mu[F] * 'E_mu[G] \is a fin_num.
 rewrite subee// mule0 adde0.
 rewrite /qbs_variance !varianceE ?(Lfun_subset12 (fin1 _))//.
 rewrite -/mu EF EG; congr (_ - _ + (_ - _)); rewrite !unlock.
-- exact: (integral_prod_fst (Lfun2_integrable_sqr hF2)
+  exact: (integral_prod_fst (Lfun2_integrable_sqr hF2)
     (h := fun x => ((f (qbs_prob_alpha px x)) ^+ 2)%:E)).
-- exact: (integral_prod_snd (Lfun2_integrable_sqr hG2)
-    (h := fun y => ((g (qbs_prob_alpha py y)) ^+ 2)%:E)).
+exact: (integral_prod_snd (Lfun2_integrable_sqr hG2)
+  (h := fun y => ((g (qbs_prob_alpha py y)) ^+ 2)%:E)).
 Qed.
 
 End product_measure.

@@ -97,7 +97,7 @@ HB.instance Definition _ := isMeasure.Build _ _ _ qbs_density
 End density.
 
 Lemma qbs_prob_alpha_fst_random p :
-  qbs_Mx (s := X) (fun r => (qbs_prob_alpha p r).1).
+  qbs_Mx (fun r => (qbs_prob_alpha p r).1).
 Proof. by have [] := qbs_prob_alpha_random p. Qed.
 
 Definition qbs_normalize_prob p : qbs_prob X :=
@@ -119,7 +119,7 @@ Lemma qbs_evidence_degen p :
   ~~ (0 < qbs_evidence p < +oo) -> qbs_evidence p = 0 \/ qbs_evidence p = +oo.
 Proof.
 have := qbs_evidence_ge0 p; rewrite le_eqVlt => /orP[/eqP<-|ev0]; first by left.
-rewrite ev0 /= -leNgt leye_eq => /eqP; by right.
+by rewrite ev0 /= -leNgt leye_eq => /eqP; right.
 Qed.
 
 Lemma indic_maxr_ge0 (T : Type) (U : set T) (x : T) (w : R) :
@@ -217,8 +217,8 @@ have mev : measurable_fun [set: mR] (fun r => qbs_evidence (b r)).
   exact: (ge0_qbs_integral_morphism qbs_measurable_weight qbs_pweight_ge0 hb).
 have mP : measurable_fun [set: mR] P.
   apply: measurable_and.
-  - exact: measurable_fun_lte (measurable_cst 0) mev.
-  - exact: measurable_fun_lte mev (measurable_cst +oo).
+    exact: measurable_fun_lte (measurable_cst 0) mev.
+  exact: measurable_fun_lte mev (measurable_cst +oo).
 have md A : measurable A ->
     measurable_fun [set: mR] (fun r => qbs_density (pr r) A).
   move=> mA; pose w t : \bar R := (\1_A t)%:E * (maxr 0 (a t).2)%:E.
@@ -236,14 +236,14 @@ have md A : measurable A ->
 right; right; exists P, (fun r => qbs_normalize_prob (b r)), (fun=> tt).
 split; first exact: mP.
 split; last first.
-  split => // r.
+  split=> // r.
   by rewrite /= /qbs_normalize_sum /qbs_normalize -/(P r); case: ifP.
 (* By saturation, it suffices to normalise the representative [a, g r]. *)
 apply: (monadP_random_equiv (b1 := fun r => qbs_normalize_prob (pr r))).
   by move=> r; apply: qbs_normalize_prob_equiv; exact/qbs_prob_equiv_sym/epr.
 exists (fun t => (a t).1),
-  (fun r => qbs_prob_mu (qbs_normalize_prob (pr r)) : giry mR R).
-split => //.
+  (fun r => qbs_prob_mu (qbs_normalize_prob (pr r))).
+split=> //.
 - by have [] := ha.
 - apply: measurable_giry_codensity => // B mB; rewrite /= /mnormalize.
   set c := fun x => (qbs_density (pr x) [set: mR] == 0) ||
@@ -260,7 +260,7 @@ split => //.
   + apply: emeasurable_funM; first exact: md.
     apply/measurable_EFinP; apply: measurableT_comp measurable_invr _.
     exact: measurableT_comp (fine_measurable measurableT) (md _ measurableT).
-- by move=> r; exact: probability_setT.
+- by move=> ?; exact: probability_setT.
 Qed.
 
 Definition qbs_normalizeQ :
