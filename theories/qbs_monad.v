@@ -127,10 +127,9 @@ Qed.
 Local Lemma monadP_comp X (b : mR -> qbs_prob X) (f : {mfun mR >-> mR}) :
   monadP_random X b -> monadP_random X (b \o f).
 Proof.
-move=> [a [g [ha mg g1 hb]]]; exists a, (g \o f); split => //.
-- exact: measurableT_comp mg (measurable_funPT f).
-- by move=> r; exact: g1.
-- by move=> r U mU; exact: hb.
+move=> [a [g [ha mg g1 hb]]]; exists a, (g \o f).
+exact: QbsProbRep ha (measurableT_comp mg (measurable_funPT f))
+  (fun r => g1 (f r)) (fun r => hb (f r)).
 Qed.
 
 Local Lemma monadP_const X (p : qbs_prob X) :
