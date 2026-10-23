@@ -213,7 +213,7 @@ Definition post_b_meanQ : qbsHomType RQ RQ :=
 
 Definition posterior2 : monadP W :=
   qbs_bind
-    (qbs_normal_distribution post_s_mean (sqrtr post_s_var) : monadP _)
+    (qbs_normal_distribution post_s_mean (sqrtr post_s_var))
     (qbs_comp (qbs_pair (qbs_id RQ)
       (qbs_comp post_b_meanQ (qbs_normalQ (sqrtr post_b_var))))
       (qbs_strengthQ RQ RQ)).
@@ -303,8 +303,8 @@ Let integral_normal_prob_bounded (m s : R) (f : mR -> \bar R) (M : R) :
 Proof.
 move=> mf fM; apply: integral_normal_prob => //.
 apply: emeasurable_bounded_integrable => //.
-- by move=> x; have /andP[] := fM x.
-- by exists M => x; have /andP[] := fM x.
+  by move=> x; have /andP[] := fM x.
+by exists M => x; have /andP[] := fM x.
 Qed.
 
 (** s |-> \int[N(m s, sigma)]_b h (s, b) is measurable. *)

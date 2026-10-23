@@ -161,13 +161,13 @@ exact: continuous_measurable_fun (continuous_normal_centred m s0).
 Qed.
 Arguments measurable_normal_centred m {s} s0.
 
-Let setT_split m : [set: R] = `]-oo, m]%classic `|` `]m, +oo[%classic.
+Let setT_split m : [set: R] = `]-oo, m] `|` `]m, +oo[.
 Proof.
-apply/seteqP; split => // x _; rewrite /= !in_itv/= andbT.
+apply/seteqP; split=> // x _; rewrite /= !in_itv/= andbT.
 by case: (leP x m); [left|right].
 Qed.
 
-Let disj_split m : [disjoint `]-oo, m]%classic & `]m, +oo[%classic].
+Let disj_split m : [disjoint `]-oo, m] & `]m, +oo[].
 Proof.
 rewrite disj_set2E; apply/eqP; rewrite -subset0 => x/= [].
 by rewrite !in_itv/= andbT => /[swap] /le_lt_trans /[apply]; rewrite ltxx.
@@ -177,19 +177,19 @@ Lemma integrable_normal_centred m s : s != 0 ->
   mu.-integrable setT (fun x => ((x - m) * normal_pdf m s x)%:E).
 Proof.
 move=> s0; have mg := measurable_normal_centred m s0.
-apply/integrableP; split => //.
+apply/integrableP; split=> //.
 have TAB := setT_split m.
 have dAB := disj_split m.
 have mabs : measurable_fun setT
     (fun x : R => `|((x - m) * normal_pdf m s x)%:E|%E).
   by apply: measurableT_comp.
-have eA : (\int[mu]_(x in `]-oo, m]%classic) `|((x - m) * normal_pdf m s x)%:E|
+have eA : (\int[mu]_(x in `]-oo, m]) `|((x - m) * normal_pdf m s x)%:E|
     = (s ^+ 2 * normal_peak s)%:E)%E.
   rewrite -(integral_normal_centred_left m s0).
   apply: eq_integral => x; rewrite inE/= in_itv/= => xm.
   rewrite normrM (ger0_norm (normal_pdf_ge0 _ _ _)).
   by rewrite ler0_norm ?subr_le0// opprB.
-have eB : (\int[mu]_(x in `]m, +oo[%classic) `|((x - m) * normal_pdf m s x)%:E|
+have eB : (\int[mu]_(x in `]m, +oo[) `|((x - m) * normal_pdf m s x)%:E|
     = (s ^+ 2 * normal_peak s)%:E)%E.
   rewrite -(integral_normal_centred_right m s0).
   rewrite integral_itvob_itvcb.
@@ -210,14 +210,14 @@ Proof.
 move=> s0; have mg := measurable_normal_centred m s0.
 have TAB := setT_split m.
 have dAB := disj_split m.
-have eA : (\int[mu]_(x in `]-oo, m]%classic) ((x - m) * normal_pdf m s x)%:E
+have eA : (\int[mu]_(x in `]-oo, m]) ((x - m) * normal_pdf m s x)%:E
     = - (s ^+ 2 * normal_peak s)%:E)%E.
   rewrite -(integral_normal_centred_left m s0) -integral_ge0N.
     move=> x; rewrite /= in_itv/= => xm.
     by rewrite lee_fin mulr_ge0// ?normal_pdf_ge0// subr_ge0.
   apply: eq_integral => x; rewrite inE/= in_itv/= => xm.
   by rewrite -mulNr opprB.
-have eB : (\int[mu]_(x in `]m, +oo[%classic) ((x - m) * normal_pdf m s x)%:E
+have eB : (\int[mu]_(x in `]m, +oo[) ((x - m) * normal_pdf m s x)%:E
     = (s ^+ 2 * normal_peak s)%:E)%E.
   rewrite -(integral_normal_centred_right m s0).
   rewrite integral_itvob_itvcb//.
@@ -248,7 +248,7 @@ Lemma normal_prob_abs_lty m s : s != 0 ->
   (\int[normal_prob m s]_x `|x%:E| < +oo)%E.
 Proof.
 move=> s0; rewrite ge0_integral_normal_prob//.
-- by move=> x; exact: abse_ge0.
+- by move=> ?; exact: abse_ge0.
 - by apply: measurableT_comp => //; exact/measurable_EFinP.
 have hc := integrable_normal_centred m s0.
 apply: (@le_lt_trans _ _ (\int[mu]_x (`|((x - m) * normal_pdf m s x)%:E| +
@@ -267,7 +267,7 @@ apply: (@le_lt_trans _ _ (\int[mu]_x (`|((x - m) * normal_pdf m s x)%:E| +
     rewrite ler_wpM2r ?normal_pdf_ge0//.
     by rewrite -{1}(subrK m x) ler_normD.
 rewrite ge0_integralD//.
-- by move=> x _; exact: abse_ge0.
+- by move=> ? _; exact: abse_ge0.
 - by apply: measurableT_comp => //; exact: measurable_int hc.
 - by move=> x _; rewrite lee_fin mulr_ge0 ?normal_pdf_ge0.
 - apply/measurable_EFinP; apply: measurable_funM => //.
