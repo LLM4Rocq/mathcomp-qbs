@@ -32,7 +32,7 @@ From QBS Require Import measurable_aux quasi_borel standard_borel
 (* qbs_swap X Y, monadP_pair p q == swap; monadic product of p, q             *)
 (* ```                                                                        *)
 (*                                                                            *)
-(* The monad laws (qbs_bind_returnl, qbs_bind_returnr, qbs_bindA), the       *)
+(* The monad laws (qbs_bind_returnl, qbs_bind_returnr, qbs_bindA), the        *)
 (* strength laws (qbs_strength_snd, qbs_strength_assoc, qbs_strength_return,  *)
 (* qbs_strength_join) and commutativity (qbs_bind_comm) are equalities,       *)
 (* proved with qbs_prob_eqP from the computation lemmas qbs_return_event,     *)
