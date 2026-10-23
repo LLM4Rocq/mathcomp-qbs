@@ -1,8 +1,9 @@
-(* mathcomp analysis (c) 2026 Inria and AIST. License: CeCILL-C.              *)
+(* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
 From mathcomp Require Import boot algebra reals classical_sets filter
   topology num_topology normedtype sequences measurable_structure
-  measurable_function measurable_realfun trigo lebesgue_stieltjes_measure.
+  measurable_function measurable_realfun trigo lebesgue_stieltjes_measure
+  measurable_fun_approximation.
 From mathcomp.algebra_tactics Require Import ring.
 
 (**md**************************************************************************)
@@ -59,7 +60,7 @@ From mathcomp.algebra_tactics Require Import ring.
 (*   phiK    == cancel phi psi (psi is left inverse of phi)                   *)
 (*   psiK    == cancel psi phi on (0,1)                                       *)
 (*   measurable_phi == phi is measurable on R                                 *)
-(*   measurable_psi == psi is measurable on (0,1)                             *)
+(*   measurable_psi_setT == psi is measurable on R                            *)
 (*   bin_digits_reconstruction == bin_sum (bin_digits x) = x for [0,1)       *)
 (*   pair_to_unitK == unit_to_pair (pair_to_unit (x,y)) = (x,y)              *)
 (*                    (unconditional on [0,1)^2)                              *)
@@ -75,12 +76,12 @@ From mathcomp.algebra_tactics Require Import ring.
 (*                                  measurable                               *)
 (*                                                                            *)
 (* ## Note on the no_trailing_ones gap                                        *)
-(* The round-trip unit_to_pairK requires no_trailing_ones on the       *)
-(* deinterleaved subsequences, which does NOT follow from no_trailing_ones    *)
-(* on the full binary expansion. However, for standard_borel_wit (R * R),     *)
-(* only the OTHER direction (encode_RRK, i.e. g(f(x))=x) is needed,   *)
-(* and that direction (pair_to_unitK / encode_RRK) is proved    *)
-(* unconditionally. See the detailed comments in the Round-trip section.     *)
+(* The round-trip unit_to_pairK requires no_trailing_ones on the              *)
+(* deinterleaved subsequences, which does NOT follow from no_trailing_ones on *)
+(* the full binary expansion. However, only the OTHER direction (encode_RRK,  *)
+(* i.e. g(f(x)) = x) is needed to show that R * R is standard Borel, and that *)
+(* direction (pair_to_unitK / encode_RRK) is proved unconditionally. See the  *)
+(* comments in the round-trip section.                                        *)
 (******************************************************************************)
 
 Import GRing.Theory Num.Def Num.Theory.
@@ -108,26 +109,19 @@ Definition psi (y : R) : R := tan (pi * (y - 1 / 2)).
 (** phi lands in (0,1) *)
 Lemma phi_gt0 x : 0 < phi x.
 Proof.
-rewrite /phi.
 have hpi : (0 : R) < pi := pi_gt0.
-have hatangt : - (pi / 2) < atan x := atan_gtNpi2 x.
-have h1 : - (1 / 2) < atan x / (pi : R).
-  rewrite ltr_pdivlMr //.
-  by rewrite mulNr mul1r mulrC.
-rewrite -subr_gt0 subr0; move: h1; rewrite -subr_gt0 opprK; exact.
+have hat := atan_gtNpi2 x.
+have h1 : - (1 / 2) < atan x / pi by rewrite ltr_pdivlMr // mulNr mul1r mulrC.
+rewrite /phi; by rewrite -subr_gt0 opprK in h1.
 Qed.
 
 Lemma phi_lt1 x : phi x < 1.
 Proof.
-rewrite /phi.
 have hpi : (0 : R) < pi := pi_gt0.
-have hatanlt : atan x < pi / 2 := atan_ltpi2 x.
-have h1 : atan x / (pi : R) < 1 / 2.
-  rewrite ltr_pdivrMr //.
-  by rewrite mul1r mulrC.
-have h2 : (1/2 : R) <= 1/2 by done.
-have h3 := ltr_leD h1 h2.
-by rewrite -splitr in h3.
+have hat := atan_ltpi2 x.
+have h1 : atan x / pi < 1 / 2 by rewrite ltr_pdivrMr // mul1r mulrC.
+have h3 := ltr_leD h1 (lexx (1 / 2 : R)).
+rewrite /phi; by rewrite -splitr in h3.
 Qed.
 
 (** psi is the inverse of phi *)
@@ -156,42 +150,66 @@ Qed.
 (** Both are measurable *)
 Lemma measurable_phi : measurable_fun setT phi.
 Proof.
-rewrite /phi.
-apply: measurable_funD.
-  apply: measurable_funM.
-    apply: continuous_measurable_fun; exact: continuous_atan.
-  exact: measurable_cst.
-exact: measurable_cst.
+rewrite /phi; apply: measurable_funD; last exact: measurable_cst.
+apply: measurable_funM; last exact: measurable_cst.
+by apply: continuous_measurable_fun; exact: continuous_atan.
 Qed.
 
-Lemma measurable_psi : measurable_fun (`](0:R), 1[) psi.
+(** psi is measurable on R: it is tan, and tan = sin * cos^-1 where inv is
+    a pointwise limit of continuous functions. *)
+Let inv_cvg_approx (x : R) :
+  (fun n : nat => x / (x * x + n.+1%:R^-1)) @ \oo --> x^-1.
 Proof.
-apply: open_continuous_measurable_fun; first exact: interval_open.
-move=> y hy.
-have hy01 : 0 < y < 1.
-  move: hy; rewrite inE /= => /andP [].
-  by rewrite !bnd_simp => ? ?; apply/andP.
-have /andP [hy0 hy1] := hy01.
-have hcos : cos (pi * (y - 1 / 2)) != 0.
-  rewrite lt0r_neq0 //; apply: cos_gt0_pihalf.
-  apply/andP; split.
-    have -> : - ((pi : R) / 2) = pi * (- (1 / 2)) by rewrite mulrN mul1r.
-    by rewrite ltr_pM2l ?pi_gt0 // ltrDr.
-  have -> : (pi : R) / 2 = pi * (1 / 2) by rewrite mul1r.
-  rewrite ltr_pM2l ?pi_gt0 // ltrBlDr -splitr; exact: hy1.
-rewrite /psi.
-apply: (@continuous_comp _ _ _
-          (fun y0 : R => pi * (y0 - 1/2)) tan).
-  apply: continuousM; first exact: cvg_cst.
-  apply: continuousB; first exact: cvg_id.
+case: (eqVneq x 0) => [->|hx0].
+- rewrite invr0.
+  under eq_cvg do rewrite mul0r.
   exact: cvg_cst.
-exact: continuous_tan.
+- have -> : x^-1 = x / (x * x).
+    by rewrite invfM ?unitfE // [x * (x^-1 * x^-1)]mulrCA
+               mulrV ?unitfE // mulr1.
+  apply: cvgM; first exact: cvg_cst.
+  apply: cvgV.
+    by rewrite mulf_neq0.
+  rewrite -[X in _ --> X]addr0.
+  apply: cvgD; first exact: cvg_cst.
+  exact: @cvg_harmonic.
+Qed.
+
+Lemma measurable_psi_setT : measurable_fun [set: R] psi.
+Proof.
+rewrite /psi.
+apply: measurableT_comp; last first.
+  apply: measurable_funM; first exact: measurable_cst.
+  apply: measurable_funB; first exact: measurable_id.
+  exact: measurable_cst.
+rewrite /tan.
+apply: measurable_funM.
+  apply: continuous_measurable_fun; exact: continuous_sin.
+apply: measurableT_comp; last first.
+  apply: continuous_measurable_fun; exact: continuous_cos.
+apply: (@measurable_fun_cvg _ _ _ _ (fun n (x : R) =>
+  x * (x * x + n.+1%:R^-1)^-1)).
+- move=> m; apply: continuous_measurable_fun => y.
+  rewrite /continuous_at.
+  have hden_neq0 : y * y + m.+1%:R^-1 != 0.
+    rewrite lt0r_neq0 //; apply: ltr_wpDl; first exact: sqr_ge0.
+    by rewrite invr_gt0; exact: ltr0Sn.
+  apply: cvgM; first exact: cvg_id.
+  apply: cvgV => //.
+  apply: cvgD; last exact: cvg_cst.
+  apply: cvgM; exact: cvg_id.
+- move=> x _; exact: inv_cvg_approx.
 Qed.
 
 End phi_psi.
 
 Section binary_digit_interleaving.
 Variable R : realType.
+
+Let half_ge0 : 0 <= 2^-1 :> R. Proof. by rewrite invr_ge0. Qed.
+
+Let half_expn_ge0 n : 0 <= 2^-1 ^+ n :> R.
+Proof. by rewrite exprn_ge0 ?half_ge0. Qed.
 
 (* Subsection: basic binary digit / partial sum definitions and their
    arithmetic properties, plus interleave/deinterleave definitions and
@@ -205,13 +223,13 @@ Section binary_digit_arithmetic.
 (* n-th binary digit of x in [0,1): iterative doubling-and-testing *)
 Fixpoint bin_digit (x : R) (n : nat) : bool :=
   match n with
-  | 0%N => (2%:R^-1 <= x)
-  | n'.+1 => bin_digit (if (2%:R^-1 <= x) then x *+ 2 - 1 else x *+ 2) n'
+  | 0%N => (2^-1 <= x)
+  | n'.+1 => bin_digit (if (2^-1 <= x) then x *+ 2 - 1 else x *+ 2) n'
   end.
 
 (* Binary partial sum: reconstruct from first n digits *)
 Definition bin_partial_sum (d : nat -> bool) (n : nat) : R :=
-  \sum_(i < n) (d i)%:R * (2%:R^-1) ^+ i.+1.
+  \sum_(i < n) (d i)%:R * (2^-1) ^+ i.+1.
 
 (* Limit of partial sums = full binary expansion *)
 Definition bin_sum (d : nat -> bool) : R :=
@@ -219,6 +237,19 @@ Definition bin_sum (d : nat -> bool) : R :=
 
 (* Extract all digits of x *)
 Definition bin_digits (x : R) : nat -> bool := bin_digit x.
+
+(* The doubling-and-testing step, and the remainder after n steps *)
+Definition bin_step (y : R) : R := if 2^-1 <= y then y *+ 2 - 1 else y *+ 2.
+
+Definition bin_rem (x : R) (n : nat) : R := iter n bin_step x.
+
+Arguments bin_rem : simpl never.
+
+Lemma bin_remS (x : R) n : bin_rem x n.+1 = bin_step (bin_rem x n).
+Proof. by []. Qed.
+
+Lemma bin_digit_rem (n : nat) (x : R) : bin_digit x n = (2^-1 <= bin_rem x n).
+Proof. by elim: n x => [|n IHn] x //=; rewrite IHn /bin_rem -iterSr. Qed.
 
 (******************************************************************************)
 (* Interleaving and deinterleaving digit sequences                            *)
@@ -269,12 +300,12 @@ Qed.
 (******************************************************************************)
 
 Lemma geom_half_sum (n : nat) :
-  \sum_(i < n) (2%:R : R)^-1 ^+ i.+1 = 1 - 2%:R^-1 ^+ n.
+  \sum_(i < n) (2 : R)^-1 ^+ i.+1 = 1 - 2^-1 ^+ n.
 Proof.
 elim: n => [|k IHk].
   by rewrite big_ord0 expr0 subrr.
 rewrite big_ord_recr /= IHk exprSr.
-set a := 2%:R^-1 ^+ k; rewrite -addrA; congr (_ + _).
+set a := 2^-1 ^+ k; rewrite -addrA; congr (_ + _).
 by rewrite {1}(splitr a) opprD subrK.
 Qed.
 
@@ -286,18 +317,24 @@ Lemma bin_partial_sum_le1 (d : nat -> bool) (n : nat) :
   bin_partial_sum d n <= 1.
 Proof.
 rewrite /bin_partial_sum.
-suff hgeom : \sum_(i < n) (2%:R : R)^-1 ^+ i.+1 <= 1.
-  have hle : \sum_(i < n) (d i)%:R * (2%:R : R)^-1 ^+ i.+1 <=
-             \sum_(i < n) (2%:R : R)^-1 ^+ i.+1.
-    apply: ler_sum => i _.
-    rewrite -[X in _ <= X]mul1r.
-    apply: ler_wpM2r;
-      [by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n|
-       by case: (d i)].
-  exact: (le_trans hle hgeom).
-rewrite geom_half_sum lerBlDr -{1}[1]addr0.
-apply: lerD => //.
-by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n.
+apply: le_trans (_ : \sum_(i < n) 2^-1 ^+ i.+1 <= 1).
+  apply: ler_sum => i _.
+  rewrite -[X in _ <= X]mul1r.
+  by apply: ler_wpM2r; [exact: half_expn_ge0 | case: (d i)].
+by rewrite geom_half_sum lerBlDr -{1}[1]addr0 lerD2l.
+Qed.
+
+Lemma half2 : 2^-1 *+ 2 = (1 : R).
+Proof. by rewrite -mulr_natr mulVf ?pnatr_eq0. Qed.
+
+Lemma bin_rem_itv (x : R) n : 0 <= x < 1 -> 0 <= bin_rem x n < 1.
+Proof.
+move=> hx; elim: n => [//|k /andP[IHk0 IHk1]].
+rewrite bin_remS /bin_step; case: ifP => hle; apply/andP; split.
+- by rewrite subr_ge0 -half2 ler_pMn2r.
+- by rewrite ltrBlDr -mulr2n ltr_pMn2r.
+- exact: mulrn_wge0.
+- by rewrite -half2 ltr_pMn2r // real_ltNge ?num_real // hle.
 Qed.
 
 Lemma bin_partial_sum_ge0 (d : nat -> bool) (n : nat) :
@@ -305,7 +342,7 @@ Lemma bin_partial_sum_ge0 (d : nat -> bool) (n : nat) :
 Proof.
 rewrite /bin_partial_sum; apply: sumr_ge0 => i _.
 apply: mulr_ge0; first by case: (d i).
-by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n.
+by exact: half_expn_ge0.
 Qed.
 
 Lemma bin_partial_sum_nd (d : nat -> bool) :
@@ -316,7 +353,7 @@ rewrite /bin_partial_sum big_ord_recr /=.
 rewrite -[X in X <= _]addr0.
 apply: lerD => //.
 apply: mulr_ge0; first by case: (d n).
-by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n.
+by exact: half_expn_ge0.
 Qed.
 
 Lemma is_cvg_bin_partial_sum (d : nat -> bool) :
@@ -330,22 +367,14 @@ Qed.
 
 Lemma bin_sum_le1 (d : nat -> bool) : bin_sum d <= 1.
 Proof.
-apply: (@closed_cvg _ _ eventually _
-  (fun n => bin_partial_sum d n : R^o) (fun x : R => x <= 1)
-  _ _ (bin_sum d)).
-- exact: closed_le.
-- by apply: nearW => n; exact: bin_partial_sum_le1.
-- rewrite /bin_sum; exact: is_cvg_bin_partial_sum.
+apply: limr_le; first exact: is_cvg_bin_partial_sum.
+by apply: nearW => n; exact: bin_partial_sum_le1.
 Qed.
 
 Lemma bin_sum_ge0 (d : nat -> bool) : 0 <= bin_sum d.
 Proof.
-apply: (@closed_cvg _ _ eventually _
-  (fun n => bin_partial_sum d n : R^o) (fun x : R => 0 <= x)
-  _ _ (bin_sum d)).
-- exact: closed_ge.
-- by apply: nearW => n; exact: bin_partial_sum_ge0.
-- rewrite /bin_sum; exact: is_cvg_bin_partial_sum.
+apply: limr_ge; first exact: is_cvg_bin_partial_sum.
+by apply: nearW => n; exact: bin_partial_sum_ge0.
 Qed.
 
 End binary_digit_arithmetic.
@@ -366,12 +395,6 @@ Definition unit_to_pair (r : R) : R * R :=
   (bin_sum (deinterleave_even (bin_digits r)),
    bin_sum (deinterleave_odd (bin_digits r))).
 
-Lemma half2 : 2%:R^-1 *+ 2 = (1 : R).
-Proof.
-have h : (1 : R) / 2%:R = 2%:R^-1 by rewrite div1r.
-by rewrite /GRing.natmul /= -[2%:R^-1]h -(@splitr R 1).
-Qed.
-
 (******************************************************************************)
 (* Reconstruction: bin_sum (bin_digits x) = x for x in [0,1)                 *)
 (******************************************************************************)
@@ -379,66 +402,45 @@ Qed.
 Lemma bin_digits_reconstruction (x : R) :
   0 <= x < 1 -> bin_sum (bin_digits x) = x.
 Proof.
-move=> /andP[hx0 hx1].
-rewrite /bin_sum /bin_digits.
+move=> hx; rewrite /bin_sum /bin_digits.
 suff hcvg : (fun n => bin_partial_sum (bin_digit x) n : R^o) n
               @[n --> \oo] --> x.
   exact: (cvg_lim _ hcvg).
-pose step := fun (y : R) => if 2%:R^-1 <= y then y *+ 2 - 1 else y *+ 2.
-pose rem := fix f n := match n with 0%N => x | n'.+1 => step (f n') end.
-have hrem_digit : forall n, bin_digit x n = (2%:R^-1 <= rem n).
-  suff hgen : forall n y, bin_digit y n = (2%:R^-1 <= iter n step y).
-    by move=> n; rewrite hgen; congr (_ <= _); elim: n => //= k ->.
-  by elim=> [|k IHk] //= y; rewrite IHk -iterSr iterS.
-have hinv : forall n : nat,
-    x - bin_partial_sum (bin_digit x) n = rem n * 2%:R^-1 ^+ n :> R.
-  elim=> [|k IHk].
+have hinv n :
+    x - bin_partial_sum (bin_digit x) n = bin_rem x n * 2^-1 ^+ n :> R.
+  elim: n => [|k IHk].
     by rewrite /bin_partial_sum big_ord0 subr0 expr0 mulr1.
-  rewrite /bin_partial_sum big_ord_recr /= -/bin_partial_sum hrem_digit exprSr.
-  case hle: (2%:R^-1 <= rem k).
-  - rewrite /= mul1r /step hle opprD addrA -/bin_partial_sum.
-    have -> : x - bin_partial_sum (bin_digit x) k - (2%:R^-1 ^+ k / 2) =
-              rem k * 2%:R^-1 ^+ k - 2%:R^-1 ^+ k / 2 by rewrite IHk.
-    set h := 2%:R^-1 ^+ k; rewrite mulrBl mul1r mulrnAl -mulrnAr.
+  rewrite /bin_partial_sum big_ord_recr /= -/bin_partial_sum.
+  rewrite bin_digit_rem exprSr.
+  case hle: (2^-1 <= bin_rem x k).
+  - rewrite /= mul1r /bin_step hle opprD addrA -/bin_partial_sum.
+    have -> : x - bin_partial_sum (bin_digit x) k - (2^-1 ^+ k / 2) =
+              bin_rem x k * 2^-1 ^+ k - 2^-1 ^+ k / 2 by rewrite IHk.
+    set h := 2^-1 ^+ k; rewrite mulrBl mul1r mulrnAl -mulrnAr.
     by congr (_ * _ - _); rewrite mulr2n -splitr.
-  - rewrite /= mul0r addr0 -/bin_partial_sum IHk /step hle.
-    set h := 2%:R^-1 ^+ k; rewrite mulrnAl mulrCA.
+  - rewrite /= mul0r addr0 -/bin_partial_sum IHk /bin_step hle.
+    set h := 2^-1 ^+ k; rewrite mulrnAl mulrCA.
     by rewrite -mulrnAr mulr2n -splitr mulrC.
-have hrem_bound : forall n, 0 <= rem n /\ rem n < 1.
-  elim=> [|k [IHk0 IHk1]] /=; first by split.
-  rewrite /step; case: ifP => hle; split.
-  - by rewrite subr_ge0 -half2 ler_pMn2r.
-  - by rewrite ltrBlDr -mulr2n ltr_pMn2r.
-  - have := @mulrn_wge0 R (rem k) 2 IHk0; done.
-  - by rewrite -half2 ltr_pMn2r // real_ltNge ?num_real // hle.
-have habs_half : `|(2%:R^-1 : R)| < 1.
-  by rewrite ger0_norm ?invr_ge0 ?ler0n // invf_lt1 ?ltr0n // ltr1n.
-have hrem_cvg : (fun n => rem n * 2%:R^-1 ^+ n : R^o) n
+have habs_half : `|(2^-1 : R)| < 1.
+  by rewrite ger0_norm ?half_ge0 // invf_lt1 ?ltr0n // ltr1n.
+have hrem_cvg : (fun n => bin_rem x n * 2^-1 ^+ n : R^o) n
                   @[n --> \oo] --> (0 : R^o).
   apply: (@squeeze_cvgr _ _ _ _
-    (fun _ => 0 : R^o) _ (fun n => 2%:R^-1 ^+ n : R^o)).
-  - apply: nearW => n; apply/andP; split.
-    + apply: mulr_ge0; first by have [] := hrem_bound n.
-      by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n.
-    + rewrite -[X in _ <= X]mul1r; apply: ler_pM.
-      * by have [] := hrem_bound n.
-      * by apply: (@exprn_ge0 R); rewrite invr_ge0; apply: ler0n.
-      * by have [_ h] := hrem_bound n; exact: ltW h.
-      * by [].
+    (fun _ => 0 : R^o) _ (fun n => 2^-1 ^+ n : R^o)).
+  - apply: nearW => n; have /andP[h0 h1] := bin_rem_itv n hx.
+    apply/andP; split; first exact: mulr_ge0 (half_expn_ge0 n).
+    rewrite -[X in _ <= X]mul1r.
+    exact: ler_pM h0 (half_expn_ge0 n) (ltW h1) (lexx _).
   - exact: cvg_cst.
-  - have := @cvg_geometric R 1 _ habs_half.
-    rewrite /geometric /=.
-    by move=> h; have : (fun n0 => 1 * 2%:R^-1 ^+ n0 : R^o) n
-      @[n --> \oo] --> 0 := h; under eq_cvg do rewrite mul1r.
-have heq : forall n, bin_partial_sum (bin_digit x) n =
-    x - rem n * 2%:R^-1 ^+ n :> R.
-  by move=> m; have h := hinv m; rewrite -h opprB addrCA subrr addr0.
-suff : (fun n => x - rem n * 2%:R^-1 ^+ n : R^o) n
+  - exact: cvg_expr habs_half.
+have heq n :
+    bin_partial_sum (bin_digit x) n = x - bin_rem x n * 2^-1 ^+ n :> R.
+  by rewrite -hinv opprB addrCA subrr addr0.
+suff : (fun n => x - bin_rem x n * 2^-1 ^+ n : R^o) n
          @[n --> \oo] --> (x : R^o).
   by move=> h; under eq_cvg do rewrite heq; exact: h.
-have : (fun n : nat => (x : R^o)) n @[n --> \oo] --> x.
-  exact: cvg_cst.
-move=> hcstx; have := cvgB hcstx hrem_cvg; rewrite subr0; exact.
+have hcstx : (fun n : nat => (x : R^o)) n @[n --> \oo] --> x by exact: cvg_cst.
+by have := cvgB hcstx hrem_cvg; rewrite subr0; exact.
 Qed.
 
 End pairing_reconstruction.
@@ -453,24 +455,23 @@ Section round_trips.
 (*                                                                            *)
 (* We prove two round-trip lemmas:                                            *)
 (*                                                                            *)
-(* 1. pair_to_unitK: unit_to_pair (pair_to_unit (x,y)) = (x,y)        *)
-(*    This holds UNCONDITIONALLY for all (x,y) in [0,1)^2.                   *)
-(*    This is the direction needed for standard_borel_wit (R * R), which       *)
-(*    only requires g(f(x)) = x (i.e., decode after encode = identity).      *)
+(* 1. pair_to_unitK: unit_to_pair (pair_to_unit (x,y)) = (x,y)                *)
+(*    This holds UNCONDITIONALLY for all (x,y) in [0,1)^2. It is the          *)
+(*    direction needed to show that R * R is standard Borel, which only       *)
+(*    requires g(f(x)) = x (i.e., decode after encode = identity).            *)
 (*                                                                            *)
-(* 2. unit_to_pairK: pair_to_unit (unit_to_pair r) = r                 *)
+(* 2. unit_to_pairK: pair_to_unit (unit_to_pair r) = r                        *)
 (*    This requires no_trailing_ones on the deinterleaved subsequences.       *)
 (*    The full binary expansion bin_digits(r) has no trailing ones for        *)
 (*    r in [0,1) (proved in bin_digits_no_trailing_ones), but this does NOT   *)
 (*    imply that the deinterleaved even/odd subsequences lack trailing ones.  *)
-(*    Example: r with digits 1,0,1,0,... has no trailing ones, but           *)
-(*    deinterleave_even gives 1,1,1,... (all ones).                          *)
+(*    Example: r with digits 1,0,1,0,... has no trailing ones, but            *)
+(*    deinterleave_even gives 1,1,1,... (all ones).                           *)
 (*                                                                            *)
-(*    This direction is NOT needed for standard_borel_wit (the product of      *)
-(*    standard Borel spaces theorem). The set of reals where the extra        *)
-(*    hypotheses fail is a subset of the dyadic rationals (countable, hence   *)
-(*    measure zero), but we do not formalize this fact here since it is       *)
-(*    not required.                                                           *)
+(*    This direction is NOT needed for the product of standard Borel spaces.  *)
+(*    The set of reals where the extra hypotheses fail is a subset of the     *)
+(*    dyadic rationals (countable, hence measure zero), but we do not         *)
+(*    formalize this fact here since it is not required.                      *)
 (******************************************************************************)
 
 (* Round-trip: these follow from bin_digits_reconstruction combined with
@@ -500,59 +501,41 @@ Definition no_trailing_ones (d : nat -> bool) : Prop :=
 Lemma bin_digits_no_trailing_ones (x : R) :
   0 <= x < 1 -> no_trailing_ones (bin_digits x).
 Proof.
-move=> /andP [hx0 hx1].
-rewrite /no_trailing_ones /bin_digits.
-pose step := fun (y : R) => if 2%:R^-1 <= y then y *+ 2 - 1 else y *+ 2.
-pose rem := fix f n := match n with 0%N => x | n'.+1 => step (f n') end.
-have hrem_digit : forall n, bin_digit x n = (2%:R^-1 <= rem n).
-  suff hgen : forall n y, bin_digit y n = (2%:R^-1 <= iter n step y).
-    by move=> n; rewrite hgen; congr (_ <= _); elim: n => //= k ->.
-  by elim=> [|k IHk] //= y; rewrite IHk -iterSr iterS.
-have hrem_bound : forall n, 0 <= rem n /\ rem n < 1.
-  elim=> [|k [IHk0 IHk1]] /=; first by split.
-  rewrite /step; case: ifP => hle; split.
-  - by rewrite subr_ge0 -half2 ler_pMn2r.
-  - by rewrite ltrBlDr -mulr2n ltr_pMn2r.
-  - have := @mulrn_wge0 R (rem k) 2 IHk0; done.
-  - by rewrite -half2 ltr_pMn2r // real_ltNge ?num_real // hle.
-have hstep_simp : forall N n, (N <= n)%N ->
-    (forall m, (N <= m)%N -> 2%:R^-1 <= rem m) ->
-    rem n.+1 = rem n *+ 2 - 1.
-  by move=> NN n hn hall; rewrite /= /step (hall n hn).
-have hstep_eq : forall N n, (N <= n)%N ->
-    (forall m, (N <= m)%N -> 2%:R^-1 <= rem m) ->
-    1 - rem n.+1 = (1 - rem n) *+ 2.
-  move=> NN n hn hall; rewrite (hstep_simp NN) //.
-  by rewrite -[rem n *+ 2]mulr_natr -[(1 - rem n) *+ 2]mulr_natr; ring.
-move=> N.
-suff : exists n, (N <= n)%N /\ ~~ (2%:R^-1 <= rem n).
+move=> hx N; rewrite /bin_digits.
+have hrem n := elimT andP (bin_rem_itv n hx).
+suff : exists n, (N <= n)%N /\ ~~ (2^-1 <= bin_rem x n).
   move=> [n [hn hlt]]; exists n; split=> //.
-  by rewrite hrem_digit; apply/negbTE.
+  by rewrite bin_digit_rem; apply/negbTE.
 apply: contrapT => hnex.
-have hall : forall n, (N <= n)%N -> 2%:R^-1 <= rem n.
-  move=> n hn; apply: contrapT => hlt.
+have hall n : (N <= n)%N -> 2^-1 <= bin_rem x n.
+  move=> hn; apply: contrapT => hlt.
   by apply: hnex; exists n; split => //; apply/negP.
-have hinv : forall k : nat, 1 - rem (N + k)%N = (1 - rem N) *+ 2 ^ k.
-  elim=> [|k IHk]; first by rewrite /= expn0 mulr1n addn0.
+have hstep_eq n : (N <= n)%N ->
+    1 - bin_rem x n.+1 = (1 - bin_rem x n) *+ 2.
+  move=> hn; rewrite bin_remS /bin_step (hall n hn) /=.
+  rewrite -[bin_rem x n *+ 2]mulr_natr -[(1 - bin_rem x n) *+ 2]mulr_natr.
+  by ring.
+have hinv k : 1 - bin_rem x (N + k)%N = (1 - bin_rem x N) *+ 2 ^ k.
+  elim: k => [|k IHk]; first by rewrite /= expn0 mulr1n addn0.
   have -> : (N + k.+1)%N = (N + k).+1 by rewrite addnS.
-  by rewrite (hstep_eq N) ?leq_addr // IHk -mulrnA expnSr.
-have hle : forall k : nat, (1 - rem N) *+ 2 ^ k <= 1.
-  move=> k; rewrite -hinv lerBlDr -{1}[1]addr0 lerD2l.
-  exact: (hrem_bound (N + k)%N).1.
-have hpos : 0 < 1 - rem N by rewrite subr_gt0; exact: (hrem_bound N).2.
-have hinv_ge : 0 <= (1 - rem N)^-1.
+  by rewrite hstep_eq ?leq_addr // IHk -mulrnA expnSr.
+have hle k : (1 - bin_rem x N) *+ 2 ^ k <= 1.
+  rewrite -hinv lerBlDr -{1}[1]addr0 lerD2l.
+  exact: (hrem (N + k)%N).1.
+have hpos : 0 < 1 - bin_rem x N by rewrite subr_gt0; exact: (hrem N).2.
+have hinv_ge : 0 <= (1 - bin_rem x N)^-1.
   by rewrite invr_ge0; exact: ltW hpos.
 have harch := archi_boundP hinv_ge.
 set m := archi_bound _ in harch.
-have hm : 1 < (1 - rem N) *+ m.
+have hm : 1 < (1 - bin_rem x N) *+ m.
   rewrite -mulr_natr.
-  have h : (1 - rem N) * (1 - rem N)^-1 < (1 - rem N) * m%:R.
+  have h : (1 - bin_rem x N) * (1 - bin_rem x N)^-1 < (1 - bin_rem x N) * m%:R.
     by rewrite ltr_pM2l.
   by rewrite divff ?lt0r_neq0 // in h.
 have [k hk] : exists k, (m <= 2 ^ k)%N.
   by exists m; exact: ltnW (ltn_expl _ (ltnSn 1)).
 have h1 := hle k.
-suff h2 : (1 - rem N) *+ m <= (1 - rem N) *+ 2 ^ k.
+suff h2 : (1 - bin_rem x N) *+ m <= (1 - bin_rem x N) *+ 2 ^ k.
   by have := lt_le_trans hm (le_trans h2 h1);
      rewrite ltxx.
 rewrite -[X in X <= _]mulr_natr -[X in _ <= X]mulr_natr.
@@ -577,40 +560,21 @@ Qed.
 Lemma bin_sum_no_trailing_lt1 (d : nat -> bool) :
   no_trailing_ones d -> bin_sum d < 1.
 Proof.
-move=> hnt.
-have [n [_ hdn]] := hnt 0%N.
-have heps : (0 : R) < 2%:R^-1 ^+ n.+1.
-  by apply: exprn_gt0; rewrite invr_gt0; apply: ltr0n.
-suff hlt1 : bin_sum d <= 1 - 2%:R^-1 ^+ n.+1.
-  apply: (le_lt_trans hlt1).
-  rewrite ltrBlDr -{1}[1]addr0 ltrD2l. exact: heps.
-apply: (@closed_cvg _ _ eventually _
-  (fun m => bin_partial_sum d m : R^o) (fun y : R => y <= 1 - 2%:R^-1 ^+ n.+1)
-  _ _ (bin_sum d)).
-- exact: closed_le.
-- exists n.+1 => // m hmn.
-  rewrite /bin_partial_sum.
-  apply: (le_trans
-    (y := \sum_(i < m) (2%:R^-1 : R) ^+ i.+1 - 2%:R^-1 ^+ n.+1)).
-  + rewrite (bigD1 (Ordinal hmn)) //=
-      [X in _ <= X - _](bigD1 (Ordinal hmn)) //=.
-    rewrite hdn /= mul0r add0r.
-    change (\sum_(i < m | i != Ordinal hmn) (d i)%:R * 2%:R^-1 ^+ i.+1 <=
-      (2%:R^-1 ^+ n.+1 +
-       \sum_(i < m | i != Ordinal hmn) 2%:R^-1 ^+ i.+1) -
-      2%:R^-1 ^+ n.+1 :> R).
-    have -> : (2%:R^-1 ^+ n.+1 +
-      \sum_(i < m | i != Ordinal hmn) (2%:R^-1 : R) ^+ i.+1) -
-      2%:R^-1 ^+ n.+1 =
-      \sum_(i < m | i != Ordinal hmn) (2%:R^-1 : R) ^+ i.+1 :> R.
-      by rewrite addrC addKr.
-    apply: ler_sum => i _. rewrite -[X in _ <= X]mul1r.
-    apply: ler_wpM2r;
-      [by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n|by case: (d i)].
-  + rewrite geom_half_sum. apply: lerD => //.
-    rewrite lerBlDr -{1}[1]addr0 lerD2l.
-    by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n.
-- rewrite /bin_sum; exact: is_cvg_bin_partial_sum.
+move=> hnt; have [n [_ hdn]] := hnt 0%N.
+have heps : (0 : R) < 2^-1 ^+ n.+1 by rewrite exprn_gt0 // invr_gt0.
+suff hlt1 : bin_sum d <= 1 - 2^-1 ^+ n.+1.
+  by apply: le_lt_trans hlt1 _; rewrite ltrBlDr -{1}[1]addr0 ltrD2l.
+apply: limr_le; first exact: is_cvg_bin_partial_sum.
+exists n.+1 => // m hmn.
+rewrite /bin_partial_sum.
+apply: le_trans (_ : \sum_(i < m) 2^-1 ^+ i.+1 - 2^-1 ^+ n.+1 <= _).
+  rewrite (bigD1 (Ordinal hmn)) //=
+    [X in _ <= X - _](bigD1 (Ordinal hmn)) //=.
+  rewrite hdn /= mul0r add0r addrC addKr.
+  apply: ler_sum => i _; rewrite -[X in _ <= X]mul1r.
+  by apply: ler_wpM2r; [exact: half_expn_ge0 | case: (d i)].
+rewrite geom_half_sum; apply: lerD => //.
+by rewrite lerBlDr -{1}[1]addr0 lerD2l; exact: half_expn_ge0.
 Qed.
 
 (* The converse of reconstruction: bin_digits (bin_sum d) =1 d
@@ -619,12 +583,12 @@ Qed.
    This is the uniqueness of binary expansions: there is only one
    representation of a real in [0,1) without trailing ones. *)
 Lemma bin_sum_shift (d : nat -> bool) :
-  bin_sum d = (d 0%N)%:R * 2%:R^-1 + bin_sum (d \o succn) * 2%:R^-1.
+  bin_sum d = (d 0%N)%:R * 2^-1 + bin_sum (d \o succn) * 2^-1.
 Proof.
 have hrel : forall n : nat,
   bin_partial_sum d n.+1 =
-  (d 0%N)%:R * 2%:R^-1 +
-  bin_partial_sum (d \o succn) n * 2%:R^-1.
+  (d 0%N)%:R * 2^-1 +
+  bin_partial_sum (d \o succn) n * 2^-1.
   move=> n; rewrite /bin_partial_sum big_ord_recl /=.
   congr (_ + _).
   rewrite /= mulr_suml; apply: eq_bigr => i _.
@@ -640,20 +604,20 @@ have hlim_shift : limn [eta bin_partial_sum d] =
   by rewrite cvg_shiftS.
 rewrite hlim_shift.
 have -> : (fun n => bin_partial_sum d n.+1 : R^o) =
-  (fun n => (d 0%N)%:R * 2%:R^-1 +
-    bin_partial_sum (d \o succn) n * 2%:R^-1 : R^o).
+  (fun n => (d 0%N)%:R * 2^-1 +
+    bin_partial_sum (d \o succn) n * 2^-1 : R^o).
   by apply: funext => n; rewrite hrel.
 apply: cvg_lim => //.
 have hcst :
-  (fun _ : nat => (d 0%N)%:R * 2%:R^-1 : R^o) n
-  @[n --> \oo] --> ((d 0%N)%:R * 2%:R^-1 : R^o).
+  (fun _ : nat => (d 0%N)%:R * 2^-1 : R^o) n
+  @[n --> \oo] --> ((d 0%N)%:R * 2^-1 : R^o).
   exact: cvg_cst.
 have hprod :
   (fun n : nat =>
-    bin_partial_sum (d \o succn) n * 2%:R^-1 : R^o) n
+    bin_partial_sum (d \o succn) n * 2^-1 : R^o) n
   @[n --> \oo] -->
   (limn [eta bin_partial_sum (d \o succn)] *
-    2%:R^-1 : R^o).
+    2^-1 : R^o).
   exact: cvgMr_tmp.
 exact: cvgD hcst hprod.
 Qed.
@@ -676,28 +640,28 @@ elim: n d hnt => [|n IHn] dd hnt.
 - rewrite /bin_digits /= bin_sum_shift.
   case hd0 : (dd 0%N) => /=.
   + rewrite mul1r; apply/idP.
-    have hge0 : 0 <= bin_sum (dd \o succn) * 2%:R^-1.
-      by apply: mulr_ge0; [exact: bin_sum_ge0|rewrite invr_ge0; apply: ler0n].
+    have hge0 : 0 <= bin_sum (dd \o succn) * 2^-1.
+      by apply: mulr_ge0; [exact: bin_sum_ge0|exact: half_ge0].
     rewrite lerDl //.
   + rewrite mul0r add0r; apply: lt_geF.
     rewrite ltr_pdivrMr ?ltr0n // mulVf ?pnatr_eq0 //.
     exact: bin_sum_no_trailing_lt1 (no_trailing_ones_shift hnt).
 - rewrite /bin_digits /=.
   have hnt' := no_trailing_ones_shift hnt.
-  have hstep : (if 2%:R^-1 <= bin_sum dd then bin_sum dd *+ 2 - 1
+  have hstep : (if 2^-1 <= bin_sum dd then bin_sum dd *+ 2 - 1
                 else bin_sum dd *+ 2) = bin_sum (dd \o succn).
     rewrite bin_sum_shift.
     case hd0 : (dd 0%N) => /=.
     + rewrite mul1r.
-      have hge : 2%:R^-1 <= (2%:R^-1 + bin_sum (dd \o succn) * 2%:R^-1).
+      have hge : 2^-1 <= (2^-1 + bin_sum (dd \o succn) * 2^-1).
         rewrite lerDl //; apply: mulr_ge0;
-          [exact: bin_sum_ge0|by rewrite invr_ge0; apply: ler0n].
+          [exact: bin_sum_ge0|exact: half_ge0].
       rewrite hge.
       rewrite mulrnDl -[2^-1 *+ 2]mulr_natr mulVf ?pnatr_eq0 //.
       rewrite -[_ / 2 *+ 2]mulr_natr -mulrA mulVf ?pnatr_eq0 // mulr1.
       by rewrite addrC addKr.
     + rewrite mul0r add0r.
-      have hlt : bin_sum (dd \o succn) / 2 < 2%:R^-1.
+      have hlt : bin_sum (dd \o succn) / 2 < 2^-1.
         have hlt1 := bin_sum_no_trailing_lt1 hnt'.
         rewrite ltr_pdivrMr ?ltr0n // mulVf ?pnatr_eq0 //.
       rewrite (lt_geF hlt).
@@ -720,22 +684,13 @@ Proof.
 move=> hr hnte hnto.
 set de := deinterleave_even (bin_digits r).
 set do_ := deinterleave_odd (bin_digits r).
-have hnt := bin_digits_no_trailing_ones hr.
-have hnt_de : no_trailing_ones de := hnte.
-have hnt_do : no_trailing_ones do_ := hnto.
-have hconv_de := bin_digits_bin_sum hnt_de.
-have hconv_do := bin_digits_bin_sum hnt_do.
+have hconv_de := bin_digits_bin_sum hnte.
+have hconv_do := bin_digits_bin_sum hnto.
 rewrite /pair_to_unit /unit_to_pair /= -/de -/do_.
-have heq :
-  interleave (bin_digits (bin_sum de))
-    (bin_digits (bin_sum do_)) =1 bin_digits r.
-  move=> n; rewrite /interleave.
-  case: (boolP (odd n)) => hodd /=.
-  - have := odd_double_half n; rewrite hodd /= add1n => heq.
-    rewrite (hconv_do n./2) /do_ /deinterleave_odd.
-    by rewrite heq.
-  - rewrite (hconv_de n./2) /de /deinterleave_even.
-    by rewrite even_halfK.
+have heq : interleave (bin_digits (bin_sum de)) (bin_digits (bin_sum do_))
+    =1 bin_digits r.
+  move=> n; rewrite /interleave (hconv_de n./2) (hconv_do n./2).
+  exact: interleave_deinterleaveK.
 rewrite (bin_sum_ext heq).
 by rewrite /de /do_ bin_digits_reconstruction.
 Qed.
@@ -778,12 +733,9 @@ Section measurability_constructions.
 (* Measurability helpers                                                      *)
 (******************************************************************************)
 
-(* The doubling-and-testing step function *)
-Let step : R -> R := fun x => if (2%:R^-1 <= x) then x *+ 2 - 1 else x *+ 2.
-
-Lemma measurable_step : measurable_fun [set: R] step.
+Lemma measurable_bin_step : measurable_fun [set: R] bin_step.
 Proof.
-rewrite /step; apply: measurable_fun_ifT.
+rewrite /bin_step; apply: measurable_fun_ifT.
 - apply: measurable_fun_ler; first exact: measurable_cst.
   exact: measurable_id.
 - apply: measurable_funB; first exact: (natmul_measurable 2).
@@ -791,29 +743,20 @@ rewrite /step; apply: measurable_fun_ifT.
 - exact: (natmul_measurable 2).
 Qed.
 
-Lemma measurable_iter_step (k : nat) :
-  measurable_fun [set: R] (iter k step).
+Lemma measurable_bin_rem (n : nat) : measurable_fun [set: R] (bin_rem ^~ n).
 Proof.
-elim: k => [|k IHk] /=.
+elim: n => [|n IHn].
 - exact: measurable_id.
-- exact: measurableT_comp measurable_step IHk.
-Qed.
-
-Lemma bin_digit_iter (n : nat) (x : R) :
-  bin_digit x n = (2%:R^-1 <= iter n step x).
-Proof.
-elim: n x => [|n IHn] x //=.
-by rewrite IHn -iterSr.
+- exact: measurableT_comp measurable_bin_step IHn.
 Qed.
 
 Lemma measurable_bin_digit (n : nat) :
   measurable_fun [set: R] (fun x : R => bin_digit x n : bool).
 Proof.
-rewrite (_ : (fun x : R => _) =
-  (fun x => 2%:R^-1 <= iter n step x)); first by apply: funext => x; rewrite bin_digit_iter.
-apply: measurable_fun_ler.
-- exact: measurable_cst.
-- exact: measurable_iter_step.
+apply: (eq_measurable_fun (fun x => 2^-1 <= bin_rem x n)).
+  by move=> x _; rewrite bin_digit_rem.
+apply: measurable_fun_ler; first exact: measurable_cst.
+exact: measurable_bin_rem.
 Qed.
 
 Lemma measurable_interleave_digit (m : nat) :
@@ -846,104 +789,57 @@ Qed.
 (* Measurability of bin_sum as a limit of measurable partial sums             *)
 (******************************************************************************)
 
-(* Helper: measurability of a single summand b%:R * c for measurable bool b *)
+(* Measurability of a single summand b%:R * c for measurable bool b *)
 Lemma measurable_bool_scale {d : measure_display} {T : measurableType d}
     (f : T -> bool) (c : R) :
   measurable_fun [set: T] f ->
   measurable_fun [set: T] (fun x => (f x)%:R * c : R).
 Proof.
-move=> hf.
-rewrite (_ : (fun x => _) = (fun x => if f x then c else (0 : R))); first by apply: funext => x; case: (f x) => /=; rewrite ?mul1r ?mul0r.
+move=> hf; apply: (eq_measurable_fun (fun x => if f x then c else 0)).
+  by move=> x _; case: (f x) => /=; rewrite ?mul1r ?mul0r.
 by apply: measurable_fun_ifT => //; exact: measurable_cst.
 Qed.
 
-(******************************************************************************)
-(* Measurability                                                              *)
-(******************************************************************************)
+(* bin_sum is a limit of measurable partial sums *)
+Lemma measurable_bin_sum {d : measure_display} {T : measurableType d}
+    (dig : T -> nat -> bool) :
+  (forall n, measurable_fun [set: T] (dig ^~ n)) ->
+  measurable_fun [set: T] (fun x => bin_sum (dig x)).
+Proof.
+move=> hdig.
+apply: (@measurable_fun_cvg _ _ R [set: T]
+  (fun n x => bin_partial_sum (dig x) n)).
+- by move=> m; apply: measurable_sum => i; exact/measurable_bool_scale/hdig.
+- by move=> x _; exact: is_cvg_bin_partial_sum.
+Qed.
 
 Lemma measurable_pair_to_unit :
   measurable_fun [set: R * R] pair_to_unit.
 Proof.
-rewrite /pair_to_unit /bin_sum.
-apply: (@measurable_fun_cvg _ _ R [set: R * R]
-  (fun n (xy : R * R) =>
-    bin_partial_sum (interleave (bin_digits xy.1) (bin_digits xy.2)) n)
-  (fun xy => limn (fun n =>
-    bin_partial_sum (interleave (bin_digits xy.1) (bin_digits xy.2)) n : R^o))).
-- move=> m; rewrite /bin_partial_sum.
-  elim: m => [|m IHm].
-    rewrite (_ : (fun _ : R * R => _) = (fun _ => (0 : R))); first by apply: funext => xy; rewrite big_ord0.
-    exact: measurable_cst.
-  rewrite (_ : (fun xy : R * R => \sum_(i < m.+1) _) =
-    ((fun xy : R * R =>
-      \sum_(i < m) (interleave (bin_digits xy.1) (bin_digits xy.2) i)%:R *
-        2%:R^-1 ^+ i.+1) \+
-     (fun xy : R * R =>
-      (interleave (bin_digits xy.1) (bin_digits xy.2) m)%:R *
-        2%:R^-1 ^+ m.+1))%R); first by apply: funext => xy; rewrite big_ord_recr.
-  apply: measurable_funD => //.
-  apply: measurable_bool_scale.
-  exact: measurable_interleave_digit.
-- move=> xy _; exact: is_cvg_bin_partial_sum.
+apply: (measurable_bin_sum
+  (dig := fun xy => interleave (bin_digits xy.1) (bin_digits xy.2))).
+exact: measurable_interleave_digit.
 Qed.
 
 Lemma measurable_unit_to_pair_fst :
   measurable_fun [set: R] (fun r => (unit_to_pair r).1).
 Proof.
-rewrite /unit_to_pair /= /bin_sum.
-apply: (@measurable_fun_cvg _ _ R [set: R]
-  (fun n (x : R) =>
-    bin_partial_sum (deinterleave_even (bin_digits x)) n)
-  (fun x => limn (fun n =>
-    bin_partial_sum (deinterleave_even (bin_digits x)) n : R^o))).
-- move=> m; rewrite /bin_partial_sum.
-  elim: m => [|m IHm].
-    rewrite (_ : (fun _ : R => _) = (fun _ => (0 : R))); first by apply: funext => x; rewrite big_ord0.
-    exact: measurable_cst.
-  rewrite (_ : (fun x : R => \sum_(i < m.+1) _) =
-    ((fun x : R =>
-      \sum_(i < m) (deinterleave_even (bin_digits x) i)%:R *
-        2%:R^-1 ^+ i.+1) \+
-     (fun x : R =>
-      (deinterleave_even (bin_digits x) m)%:R *
-        2%:R^-1 ^+ m.+1))%R); first by apply: funext => x; rewrite big_ord_recr.
-  apply: measurable_funD => //.
-  apply: measurable_bool_scale.
-  exact: measurable_deinterleave_even_digit.
-- move=> x _; exact: is_cvg_bin_partial_sum.
+apply: (measurable_bin_sum (dig := fun x => deinterleave_even (bin_digits x))).
+exact: measurable_deinterleave_even_digit.
 Qed.
 
 Lemma measurable_unit_to_pair_snd :
   measurable_fun [set: R] (fun r => (unit_to_pair r).2).
 Proof.
-rewrite /unit_to_pair /= /bin_sum.
-apply: (@measurable_fun_cvg _ _ R [set: R]
-  (fun n (x : R) =>
-    bin_partial_sum (deinterleave_odd (bin_digits x)) n)
-  (fun x => limn (fun n =>
-    bin_partial_sum (deinterleave_odd (bin_digits x)) n : R^o))).
-- move=> m; rewrite /bin_partial_sum.
-  elim: m => [|m IHm].
-    rewrite (_ : (fun _ : R => _) = (fun _ => (0 : R))); first by apply: funext => x; rewrite big_ord0.
-    exact: measurable_cst.
-  rewrite (_ : (fun x : R => \sum_(i < m.+1) _) =
-    ((fun x : R =>
-      \sum_(i < m) (deinterleave_odd (bin_digits x) i)%:R *
-        2%:R^-1 ^+ i.+1) \+
-     (fun x : R =>
-      (deinterleave_odd (bin_digits x) m)%:R *
-        2%:R^-1 ^+ m.+1))%R); first by apply: funext => x; rewrite big_ord_recr.
-  apply: measurable_funD => //.
-  apply: measurable_bool_scale.
-  exact: measurable_deinterleave_odd_digit.
-- move=> x _; exact: is_cvg_bin_partial_sum.
+apply: (measurable_bin_sum (dig := fun x => deinterleave_odd (bin_digits x))).
+exact: measurable_deinterleave_odd_digit.
 Qed.
 
 End measurability_constructions.
 
 (* Subsection: the composed R x R <-> R bijection encode_RR/decode_RR,
-   its round-trip property, and measurability (including measurable_psi
-   on all of R), culminating in pair_standard_borel. *)
+   its round-trip property, and measurability, culminating in
+   pair_standard_borel. *)
 Section composed_bijection.
 
 (******************************************************************************)
@@ -968,23 +864,14 @@ Lemma bin_sum_has_one_gt0 (d : nat -> bool) (k : nat) :
   d k = true -> 0 < bin_sum d.
 Proof.
 move=> hdk.
-have heps : (0 : R) < (d k)%:R * 2%:R^-1 ^+ k.+1.
-  rewrite hdk /= mul1r; apply: exprn_gt0.
-  by rewrite invr_gt0; apply: ltr0n.
-suff hle : (d k)%:R * 2%:R^-1 ^+ k.+1 <= bin_sum d.
-  exact: (lt_le_trans heps hle).
-rewrite /bin_sum.
-apply: (@closed_cvg _ _ eventually _
-  (fun n => bin_partial_sum d n : R^o)
-  (fun z : R => (d k)%:R * 2%:R^-1 ^+ k.+1 <= z)
-  _ _ (bin_sum d)).
-- exact: closed_ge.
-- exists k.+1 => // m hmk.
-  rewrite /bin_partial_sum (bigD1 (Ordinal hmk)) //=.
-  rewrite lerDl; apply: sumr_ge0 => i _.
-  apply: mulr_ge0; first by case: (d i).
-  by apply: exprn_ge0; rewrite invr_ge0; apply: ler0n.
-- rewrite /bin_sum; exact: is_cvg_bin_partial_sum.
+have heps : (0 : R) < (d k)%:R * 2^-1 ^+ k.+1.
+  by rewrite hdk /= mul1r exprn_gt0 // invr_gt0.
+apply: lt_le_trans heps _.
+apply: limr_ge; first exact: is_cvg_bin_partial_sum.
+exists k.+1 => // m hmk.
+rewrite /bin_partial_sum (bigD1 (Ordinal hmk)) //= lerDl.
+apply: sumr_ge0 => i _.
+by apply: mulr_ge0; [case: (d i) | exact: half_expn_ge0].
 Qed.
 
 (** phi x has at least one true binary digit (since phi x > 0) *)
@@ -992,29 +879,15 @@ Lemma phi_has_true_digit (x : R) :
   exists k, bin_digits (phi x) k = true.
 Proof.
 apply: contrapT => hnone.
-have hall : forall k, bin_digits (phi x) k = false.
-  move=> k; apply: contrapT => hk.
-  by apply: hnone; exists k; case: (bin_digits (phi x) k) hk.
 have hd0 : bin_digits (phi x) =1 (fun _ => false).
-  by move=> k; rewrite hall.
-have hbps0 : forall n, bin_partial_sum (fun _ : nat => false) n = (0 : R).
-  move=> n; rewrite /bin_partial_sum big1 // => i _.
-  by rewrite /= mul0r.
+  by move=> k; apply/negbTE/negP => hk; apply: hnone; exists k.
 have hsum0 : bin_sum (bin_digits (phi x)) = 0.
-  have hle : bin_sum (bin_digits (phi x)) <= 0.
-    rewrite (bin_sum_ext hd0) /bin_sum.
-    apply: (@closed_cvg _ _ eventually _
-      (fun n => bin_partial_sum (fun _ => false) n : R^o) (fun z : R => z <= 0)
-      _ _ _).
-    - exact: closed_le.
-    - by apply: nearW => n; rewrite hbps0.
-    - exact: is_cvg_bin_partial_sum.
-  have hge := bin_sum_ge0 (bin_digits (phi x)).
-  by apply: le_anti; apply/andP; split.
-have hphi01 := phi_in_01 x.
-have hrecon := bin_digits_reconstruction hphi01.
-by rewrite hsum0 in hrecon; have := phi_gt0 x; rewrite -hrecon
-   ltxx.
+  apply: le_anti; rewrite bin_sum_ge0 andbT (bin_sum_ext hd0).
+  apply: limr_le; first exact: is_cvg_bin_partial_sum.
+  apply: nearW => n; rewrite /bin_partial_sum big1 ?lexx // => i _.
+  by rewrite mul0r.
+have hrecon := bin_digits_reconstruction (phi_in_01 x).
+by move: (phi_gt0 x); rewrite -hrecon hsum0 ltxx.
 Qed.
 
 (** pair_to_unit of phi values lands in (0,1) *)
@@ -1049,16 +922,11 @@ Theorem encode_RRK (xy : R * R) :
 Proof.
 rewrite /decode_RR /encode_RR.
 set v := pair_to_unit (phi xy.1, phi xy.2).
-have hv_itv : v \in `](0:R), 1[ := pair_to_unit_phi_in_itv xy.1 xy.2.
-have hv_eq : phi (psi v) = v := psiK hv_itv.
-have hx01 : 0 <= (phi xy.1) < 1 := phi_in_01 xy.1.
-have hy01 : 0 <= (phi xy.2) < 1 := phi_in_01 xy.2.
+have hv_eq : phi (psi v) = v := psiK (pair_to_unit_phi_in_itv xy.1 xy.2).
 have hutp : unit_to_pair v = (phi xy.1, phi xy.2).
-  rewrite /v; apply: pair_to_unitK.
-  - exact: hx01.
-  - exact: hy01.
-rewrite hv_eq hutp !phiK.
-by destruct xy.
+  rewrite /v; apply: pair_to_unitK; first exact: phi_in_01.
+  exact: phi_in_01.
+by rewrite hv_eq hutp /= !phiK -surjective_pairing.
 Qed.
 
 (** Round-trip: encode (decode r) = r
@@ -1082,125 +950,40 @@ Proof.
 rewrite /encode_RR /decode_RR /=.
 set u1 := (unit_to_pair (phi r)).1.
 set u2 := (unit_to_pair (phi r)).2.
-have hu1_lt1 : u1 < 1.
-  exact: bin_sum_no_trailing_lt1 hnt_even.
-have hu2_lt1 : u2 < 1.
-  exact: bin_sum_no_trailing_lt1 hnt_odd.
-have hu1_01 : u1 \in `](0:R), 1[.
-  by rewrite in_itv /=; apply/andP; split.
-have hu2_01 : u2 \in `](0:R), 1[.
-  by rewrite in_itv /=; apply/andP; split.
-rewrite (psiK hu1_01) (psiK hu2_01).
-have hphi01 := phi_in_01 r.
-rewrite -/u1 -/u2 /u1 /u2.
-rewrite (unit_to_pairK hphi01 hnt_even hnt_odd).
-by rewrite phiK.
+have hu1 : u1 \in `](0:R), 1[.
+  by rewrite in_itv /= hu1_pos /=; exact: bin_sum_no_trailing_lt1 hnt_even.
+have hu2 : u2 \in `](0:R), 1[.
+  by rewrite in_itv /= hu2_pos /=; exact: bin_sum_no_trailing_lt1 hnt_odd.
+rewrite (psiK hu1) (psiK hu2).
+by rewrite (unit_to_pairK (phi_in_01 r) hnt_even hnt_odd) phiK.
 Qed.
 
 (** Measurability of encode_RR *)
 Lemma measurable_encode_RR : measurable_fun [set: R * R] encode_RR.
 Proof.
 rewrite /encode_RR.
-have hmeas_phi_pair : measurable_fun [set: R * R]
-  (fun xy : R * R => (phi xy.1, phi xy.2)).
+have hphi : measurable_fun [set: R * R]
+    (fun xy : R * R => (phi xy.1, phi xy.2)).
   apply: measurable_fun_pair.
   - apply: measurableT_comp; first exact: measurable_phi.
     exact: measurable_fst.
   - apply: measurableT_comp; first exact: measurable_phi.
     exact: measurable_snd.
-have hmeas_inner : measurable_fun [set: R * R]
-  (fun xy : R * R => pair_to_unit (phi xy.1, phi xy.2)).
+have hin : measurable_fun [set: R * R]
+    (fun xy : R * R => pair_to_unit (phi xy.1, phi xy.2)).
   apply: measurableT_comp; first exact: measurable_pair_to_unit.
-  exact: hmeas_phi_pair.
-apply: (measurable_comp (F := `](0:R), 1[)).
-- exact: measurable_itv.
-- move=> _ [xy _ <-] /=.
-  rewrite in_itv /=; apply/andP; split.
-  + exact: pair_to_unit_phi_gt0.
-  + exact: pair_to_unit_phi_lt1.
-- exact: measurable_psi.
-- exact: hmeas_inner.
+  exact: hphi.
+exact: measurableT_comp (@measurable_psi_setT R) hin.
 Qed.
 
-(** Measurability of psi on setT.
-    psi y = tan(pi * (y - 1/2)) is continuous (hence measurable) on
-    every open interval ]n, n+1[ for integer n, since the only
-    singularities of tan(pi*(y-1/2)) are at y = 0, 1, -1, 2, ...
-    (integer values). Since R is a countable union of such open
-    intervals plus the countable set of integers (singletons are
-    measurable), psi is measurable on setT. *)
-Lemma inv_cvg_approx (x : R) :
-  (fun n : nat => x / (x * x + n.+1%:R^-1)) @ \oo --> x^-1.
-Proof.
-case: (eqVneq x 0) => [->|hx0].
-- rewrite invr0.
-  under eq_cvg do rewrite mul0r.
-  exact: cvg_cst.
-- have -> : x^-1 = x / (x * x).
-    by rewrite invfM ?unitfE // [x * (x^-1 * x^-1)]mulrCA
-               mulrV ?unitfE // mulr1.
-  apply: cvgM; first exact: cvg_cst.
-  apply: cvgV.
-    by rewrite mulf_neq0.
-  rewrite -[X in _ --> X]addr0.
-  apply: cvgD; first exact: cvg_cst.
-  exact: @cvg_harmonic.
-Qed.
-
-Lemma measurable_psi_setT : measurable_fun [set: R] (@psi R).
-Proof.
-rewrite /psi.
-apply: measurableT_comp; last first.
-  apply: measurable_funM; first exact: measurable_cst.
-  apply: measurable_funB; first exact: measurable_id.
-  exact: measurable_cst.
-(* Goal: measurable_fun setT tan *)
-rewrite /tan.
-apply: measurable_funM.
-  apply: continuous_measurable_fun; exact: continuous_sin.
-(* Goal: measurable_fun setT (fun x => (cos x)^-1) *)
-apply: measurableT_comp; last first.
-  apply: continuous_measurable_fun; exact: continuous_cos.
-(* Goal: measurable_fun setT inv *)
-apply: (@measurable_fun_cvg _ _ _ _ (fun n (x : R) =>
-  x * (x * x + n.+1%:R^-1)^-1)).
-- move=> m; apply: continuous_measurable_fun => y.
-  rewrite /continuous_at.
-  have hden_neq0 : y * y + m.+1%:R^-1 != 0.
-    rewrite lt0r_neq0 //; apply: ltr_wpDl; first exact: sqr_ge0.
-    by rewrite invr_gt0; exact: ltr0Sn.
-  apply: cvgM; first exact: cvg_id.
-  apply: cvgV => //.
-  apply: cvgD; last exact: cvg_cst.
-  apply: cvgM; exact: cvg_id.
-- move=> x _; exact: inv_cvg_approx.
-Qed.
-
-(** Measurability of decode_RR.
-    This follows from measurability of psi on setT (measurable_psi_setT),
-    measurable_unit_to_pair_fst/snd, and measurable_phi, by composition.
-    The proof is deferred pending the proof of measurable_psi_setT. *)
+(** Measurability of decode_RR, by composition. *)
 Lemma measurable_decode_RR : measurable_fun [set: R] decode_RR.
 Proof.
-rewrite /decode_RR.
-apply: measurable_fun_pair.
+rewrite /decode_RR; apply: measurable_fun_pair.
 - apply: measurableT_comp; first exact: measurable_psi_setT.
-  rewrite (_ : (fun x => (unit_to_pair (phi x)).1) =
-    (fun x => (unit_to_pair x).1) \o (@phi R)); first by [].
-  apply: measurableT_comp.
-    exact: measurable_unit_to_pair_fst.
-  exact: measurable_phi.
-- rewrite (_ : (fun x => psi (unit_to_pair (phi x)).2) =
-    (@psi R) \o
-    ((fun x => (unit_to_pair x).2) \o (@phi R))); first by [].
-  apply: measurableT_comp; first exact: measurable_psi_setT.
-  rewrite (_ : (fun x => (unit_to_pair x).2) \o (@phi R) =
-    (fun x => (unit_to_pair (@phi R x)).2)); first by [].
-  rewrite (_ : (fun x => (unit_to_pair (phi x)).2) =
-    (fun x => (unit_to_pair x).2) \o (@phi R)); first by [].
-  apply: measurableT_comp.
-    exact: measurable_unit_to_pair_snd.
-  exact: measurable_phi.
+  exact: measurableT_comp measurable_unit_to_pair_fst (@measurable_phi R).
+- apply: measurableT_comp; first exact: measurable_psi_setT.
+  exact: measurableT_comp measurable_unit_to_pair_snd (@measurable_phi R).
 Qed.
 
 (* The main application: product of standard Borel spaces is standard Borel *)
@@ -1249,18 +1032,11 @@ Local Lemma measurable_fun_nat_discrete d (T : measurableType d)
   measurable_fun D g.
 Proof.
 move=> hg _ Y _; rewrite /measurable /=.
-suff -> : D `&` g @^-1` Y = \bigcup_(n in setT)
-  (fun n => if asbool (Y n) then D `&` g @^-1` [set n] else set0) n.
-  apply: bigcup_measurable => n _.
-  by case: asboolP => _; [exact: hg | exact: measurable0].
-rewrite eqEsubset; split => [r [hDr hYgr] | r [n _ /=]].
-  exists (g r) => //=.
-  case: asboolP => [_ | hNY].
-    by split => //; rewrite /preimage /=.
-  by exfalso; exact: hNY hYgr.
-case: asboolP => [hYn | _]; last by [].
-move=> [hDr]; rewrite /preimage /= => ->.
-by split => //; exact: hYn.
+have -> : D `&` g @^-1` Y = \bigcup_(n in Y) (D `&` g @^-1` [set n]).
+  apply/seteqP; split=> [r [Dr Ygr]|r [n Yn [Dr /= gr]]].
+    by exists (g r).
+  by split=> //; rewrite /preimage /= gr.
+by apply: bigcup_measurable => n Yn; exact: hg.
 Qed.
 
 (** truncn : R -> nat is measurable.
