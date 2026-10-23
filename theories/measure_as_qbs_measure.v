@@ -5,7 +5,7 @@ From mathcomp Require Import boot algebra reals ereal topology
   lebesgue_stieltjes_measure lebesgue_measure lebesgue_integral probability
   measurable_realfun derive ftc gauss_integral charge boolp.
 From mathcomp Require giry.
-From QBS Require Import quasi_borel probability_qbs qbs_monad.
+From QBS Require Import quasi_borel probability_qbs qbs_monad normal_centred.
 
 (**md**************************************************************************)
 (* # Embedding Classical Probability into QBS Probability                     *)
@@ -17,7 +17,7 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad.
 (*   qbs_normal_distribution mu sigma == Normal(mu, sigma) as QBS probability *)
 (*   qbs_bernoulli p == Bernoulli(p) as QBS probability on boolQ             *)
 (*   qbs_uniform == Uniform[0,1] as QBS probability on realQ                 *)
-(*   qbs_expect_normal == E[Normal(mu,sigma)] = mu (assumes centred moment 0) *)
+(*   qbs_expect_normal == E[Normal(mu,sigma)] = mu                           *)
 (*                        (requires integrability hypotheses)                *)
 (* ```                                                                        *)
 (******************************************************************************)
@@ -159,18 +159,14 @@ rewrite (@continuous_FTC2 _ idfun (fun x => x ^+ 2 / 2) 0 1 ltr01).
 - by rewrite expr0n /= mul0r oppr0 adde0 expr1n mul1r.
 Qed.
 
-(** E[Normal(mu,sigma)] = mu, conditional on the hypothesis centred_moment0
-    that the centred first moment \int (x - mu) * pdf(x) dx vanishes (true:
-    (x - mu) * pdf is odd around mu), which is not proved here. *)
-Lemma qbs_expect_normal (mu sigma : R) (hsigma : 0 < sigma)
-  (id_int : (\int[normal_prob mu sigma]_x `|x%:E| < +oo)%E)
-  (centred_int : lebesgue_measure.-integrable setT
-    (fun x => ((x - mu) * normal_pdf mu sigma x)%:E))
-  (centred_moment0 : (\int[lebesgue_measure]_x
-    ((x - mu) * normal_pdf mu sigma x)%:E = 0 :> \bar R)%E) :
+(** E[Normal(mu,sigma)] = mu. *)
+Lemma qbs_expect_normal (mu sigma : R) : sigma != 0 ->
   qbs_expect (realQ R) (qbs_normal_distribution mu sigma)
     (fun x => x) = mu%:E.
 Proof.
+move=> s0; have id_int := normal_prob_abs_lty mu sigma s0.
+have centred_int := integrable_normal_centred mu sigma s0.
+have centred_moment0 := integral_normal_centred mu sigma s0.
 rewrite /qbs_expect /qbs_integral /=.
 rewrite integral_normal_prob//=; first by apply/integrableP; split.
 under eq_integral do rewrite -EFinM.

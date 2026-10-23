@@ -8,6 +8,7 @@ theories/qbs_monad.v
 theories/qbs_normalize.v
 theories/pair_qbs_measure.v
 theories/qbs_quotient.v
+theories/normal_centred.v
 theories/measure_as_qbs_measure.v
 theories/standard_borel.v
 theories/qbs_giry.v

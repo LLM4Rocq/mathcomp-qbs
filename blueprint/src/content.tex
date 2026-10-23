@@ -1769,17 +1769,39 @@ probability measure on a standard Borel space is \texttt{giry\_to\_qbs}
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
-\begin{lemma}[Expected Value of Normal (conditional)]\label{lem:qbs_expect_normal}
+\begin{lemma}[Centred First Moment of the Normal Density]\label{lem:integral_normal_centred}
+  \rocq{QBS.normal_centred.integral_normal_centred}
+  \rocqok
+  For $\sigma \neq 0$, the function
+  $x \mapsto (x - \mu)\,\mathrm{pdf}_{\mu,\sigma}(x)$ is Lebesgue integrable
+  and $\int (x - \mu)\,\mathrm{pdf}_{\mu,\sigma}(x)\,dx = 0$.
+\end{lemma}
+\begin{proof}\rocqok
+  On $[\mu, +\infty)$ the integral is $\sigma^2 \cdot \mathrm{pdf}_{\mu,\sigma}(\mu)$
+  by the fundamental theorem of calculus, with antiderivative
+  $-\sigma^2\,\mathrm{pdf}_{\mu,\sigma}$; on $(-\infty, \mu]$ it is the
+  opposite, by the substitution $x \mapsto -x$.
+\end{proof}
+
+\begin{lemma}[First Absolute Moment of the Normal]\label{lem:normal_prob_abs_lty}
+  \rocq{QBS.normal_centred.normal_prob_abs_lty}
+  \rocqok
+  \uses{lem:integral_normal_centred}
+  For nonnegative measurable $f$,
+  $\int f\, d\mathcal{N}(\mu,\sigma) = \int f(x)\,\mathrm{pdf}_{\mu,\sigma}(x)\,dx$.
+  Consequently, for $\sigma \neq 0$,
+  $\int |x|\, d\mathcal{N}(\mu,\sigma) < +\infty$.
+\end{lemma}
+\begin{proof}\rocqok
+  Radon--Nikodym change of variables, then
+  $|x| \le |x - \mu| + |\mu|$.
+\end{proof}
+
+\begin{lemma}[Expected Value of Normal]\label{lem:qbs_expect_normal}
   \rocq{QBS.measure_as_qbs_measure.qbs_expect_normal}
   \rocqok
-  \uses{def:qbs_normal_distribution, def:qbs_expect}
-  For $\sigma > 0$, if $\int |x|\, d\mathcal{N}(\mu,\sigma) < +\infty$, the
-  function $x \mapsto (x - \mu)\,\mathrm{pdf}_{\mu,\sigma}(x)$ is Lebesgue
-  integrable, and its integral is $0$, then
-  $\mathbb{E}[\mathcal{N}(\mu, \sigma)] = \mu$.
-  This is a \emph{conditional} statement: the integrability and
-  centred-moment hypotheses (\texttt{centred\_int},
-  \texttt{centred\_moment0}) are assumed, not proved.
+  \uses{def:qbs_normal_distribution, def:qbs_expect, lem:integral_normal_centred, lem:normal_prob_abs_lty}
+  For $\sigma \neq 0$, $\mathbb{E}[\mathcal{N}(\mu, \sigma)] = \mu$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 

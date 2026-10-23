@@ -3,8 +3,8 @@
 **Project:** QBS -- Quasi-Borel Spaces in Rocq
 **Repository:** https://github.com/LLM4Rocq/mathcomp-qbs
 **Date:** 2026-10-23
-**Status:** 308 proofs (303 Qed + 5 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 5,950 across 12 files
+**Status:** 322 proofs (317 Qed + 5 Defined), **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** 6,226 across 13 files
 
 > **Note**: The higher-order PPL development (`ppl_qbs.v`,
 > `ppl_kernel.v`, `showcase/ppl_examples.v`) is on the `ppl`
@@ -551,7 +551,7 @@ Lemma qbs_morphism_size (X : qbsType R) :
 
 ## Part II: Probability Monad and Integration
 
-Source files: `theories/probability_qbs.v` (483 lines, 26 Qed), `theories/qbs_monad.v` (679 lines, 56 Qed), `theories/qbs_normalize.v` (161 lines, 12 Qed), `theories/qbs_quotient.v` (194 lines, 19 Qed), `theories/pair_qbs_measure.v` (770 lines, 21 Qed), `theories/qbs_giry.v` (132 lines, 9 Qed), `theories/measure_as_qbs_measure.v` (201 lines, 4 Qed), `theories/showcase/bayesian_regression.v` (426 lines, 22 Qed).
+Source files: `theories/probability_qbs.v` (483 lines, 26 Qed), `theories/qbs_monad.v` (679 lines, 56 Qed), `theories/qbs_normalize.v` (161 lines, 12 Qed), `theories/qbs_quotient.v` (194 lines, 19 Qed), `theories/pair_qbs_measure.v` (770 lines, 21 Qed), `theories/qbs_giry.v` (132 lines, 9 Qed), `theories/normal_centred.v` (280 lines, 14 Qed), `theories/measure_as_qbs_measure.v` (197 lines, 4 Qed), `theories/showcase/bayesian_regression.v` (426 lines, 22 Qed).
 
 ### 2.1 QBS Probability Triple
 
@@ -1239,17 +1239,28 @@ Lemma qbs_expect_bernoulli (p : R) (hp0 : 0 <= p) (hp1 : p <= 1) :
 Lemma qbs_expect_uniform :
   qbs_expect (realQ R) qbs_uniform (fun x => x) = (2%:R^-1)%:E.
 
-Lemma qbs_expect_normal (mu sigma : R) (hsigma : 0 < sigma)
-  (id_int : (\int[normal_prob mu sigma]_x `|x%:E| < +oo)%E)
-  (centred_int : lebesgue_measure.-integrable setT
-    (fun x => ((x - mu) * normal_pdf mu sigma x)%:E))
-  (centred_moment0 : (\int[lebesgue_measure]_x
-    ((x - mu) * normal_pdf mu sigma x)%:E = 0 :> \bar R)%E) :
+Lemma qbs_expect_normal (mu sigma : R) : sigma != 0 ->
   qbs_expect (realQ R) (qbs_normal_distribution mu sigma)
     (fun x => x) = mu%:E.
 ```
 
-`qbs_expect_normal` is **conditional**: it assumes the integrability hypothesis `centred_int` and the hypothesis `centred_moment0` that the centred first moment vanishes. The latter is true (the integrand is odd around `mu`) but is not proved here.
+The analytic facts it needs are proved in `theories/normal_centred.v`:
+
+```coq
+Lemma integrable_normal_centred (m s : R) : s != 0 ->
+  (@lebesgue_measure R).-integrable setT
+    (fun x : R => ((x - m) * normal_pdf m s x)%:E).
+Lemma integral_normal_centred (m s : R) : s != 0 ->
+  (\int[@lebesgue_measure R]_x ((x - m) * normal_pdf m s x)%:E = 0)%E.
+Lemma ge0_integral_normal_prob (m s : R) (f : R -> \bar R) :
+  (forall x, (0 <= f x)%E) -> measurable_fun setT f ->
+  (\int[normal_prob m s]_x f x =
+   \int[mu]_x (f x * (normal_pdf m s x)%:E))%E.
+Lemma normal_prob_abs_lty (m s : R) : s != 0 ->
+  (\int[normal_prob m s]_x `|x%:E| < +oo)%E.
+```
+
+On each half-line around `m`, the integral of `(x - m) * pdf` is `±s^2 * normal_peak s`, computed by the FTC with antiderivative `-s^2 * normal_pdf m s` (`ge0_continuous_FTC2y`, and `ge0_integration_by_substitutionNy` for the left half-line). `ge0_integral_normal_prob` is the nonnegative version of `integral_normal_prob`, obtained from the Radon–Nikodym change of variables.
 
 ### 2.24 Bayesian Linear Regression
 
@@ -1605,9 +1616,9 @@ quasi_borel.v
 | Integral arithmetic | Not formalized | `qbs_integralD/B/Zl` + `qbs_integrable` |
 | Probability ineq. | Not formalized | `qbs_markov` + `qbs_chebyshev` |
 | Variance | Not formalized | `qbs_varianceE` + `qbs_varianceZ` |
-| E[distributions] | Not formalized | `qbs_expect_normal` (conditional) / `bernoulli` / `uniform` |
+| E[distributions] | Not formalized | `qbs_expect_normal` / `bernoulli` / `uniform` |
 | Standard Borel inst. | Not formalized | R, nat, bool, prod, ereal |
-| Lines | ~5000 | 5,950 |
+| Lines | ~5000 | 6,226 |
 
 ### 4.4 Statistics
 
@@ -1622,12 +1633,13 @@ quasi_borel.v
 | `qbs_quotient.v` | 194 | 19 |
 | `pair_qbs_measure.v` | 770 | 21 |
 | `qbs_giry.v` | 132 | 9 |
-| `measure_as_qbs_measure.v` | 201 | 4 |
+| `normal_centred.v` | 280 | 14 |
+| `measure_as_qbs_measure.v` | 197 | 4 |
 | `standard_borel.v` | 1,287 | 57 |
 | `showcase/bayesian_regression.v` | 426 | 22 |
-| **Total** | **5,950** | **308** |
+| **Total** | **6,226** | **322** |
 
-The 308 proofs are 303 `Qed` and 5 `Defined` (the standard Borel witnesses in `measure_qbs_adjunction.v`). **0 Admitted**, 0 custom axioms.
+The 322 proofs are 317 `Qed` and 5 `Defined` (the standard Borel witnesses in `measure_qbs_adjunction.v`). **0 Admitted**, 0 custom axioms.
 
 ### 4.5 Honest Limitations
 
@@ -1666,22 +1678,15 @@ documented in the source files and in this report, not hidden:
    must check or prove the success case; `bayesian_regression.v` does
    so in `program_posterior` (the evidence is the explicit constant `C`).
 
-6. **`qbs_expect_normal` is conditional.** E[Normal(mu,sigma)] = mu is proved
-   under the hypotheses `centred_int` and `centred_moment0` (the centred
-   first moment of the Gaussian density vanishes). The hypotheses are true
-   but not proved.
-
-7. **`qbs_to_giry_inj` and `qbs_to_giry_bind` need a `standard_borel_wit`**
+6. **`qbs_to_giry_inj` and `qbs_to_giry_bind` need a `standard_borel_wit`**
    for the underlying measurable space, as in HKSY Prop. 23.
 
 ### 4.6 Remaining Work
 
 1. **Normalizer as QBS morphism.** `qbs_normalize` is well defined on equivalence classes (`qbs_normalize_equiv`), but it is not yet proved to be a QBS morphism from `P(X * R)` into the option of `P(X)`.
 
-2. **Unconditional E[Normal(mu,sigma)] = mu.** The current proof requires the hypotheses `centred_int` and `centred_moment0` (see above). These are standard but not yet in mathcomp-analysis.
+2. **Standard Borel closure under countable products.** Extending `pair_standard_borel` to R ~ R^N via Hilbert-cube encoding.
 
-3. **Standard Borel closure under countable products.** Extending `pair_standard_borel` to R ~ R^N via Hilbert-cube encoding.
+3. **s-Finite kernels.** Integration with the s-finite kernel framework from math-comp analysis (Affeldt, Cohen, Saito).
 
-4. **s-Finite kernels.** Integration with the s-finite kernel framework from math-comp analysis (Affeldt, Cohen, Saito).
-
-5. **Standard Borel full round-trip.** The reverse `decode_RRK` is conditional on `no_trailing_ones` of the deinterleaved digit sequences. Formalizing that the exception set has measure zero would complete it.
+4. **Standard Borel full round-trip.** The reverse `decode_RRK` is conditional on `no_trailing_ones` of the deinterleaved digit sequences. Formalizing that the exception set has measure zero would complete it.

@@ -18,7 +18,7 @@ programming semantics.
 
 ## Overview
 
-**308 proofs, 0 Admitted, 0 custom axioms, 5,950 lines across 12 files.**
+**322 proofs, 0 Admitted, 0 custom axioms, 6,226 lines across 13 files.**
 
 > **Note**: A higher-order PPL with denotational semantics in QBS
 > (`ppl_qbs.v`, `ppl_kernel.v`, `showcase/ppl_examples.v`) is
@@ -58,7 +58,8 @@ This formalization follows:
 | `qbs_quotient.v` | 194 | 19 | Quotient of probability triples; monad laws as equalities |
 | `qbs_giry.v` | 132 | 9 | Comparison with the Giry monad |
 | `pair_qbs_measure.v` | 770 | 21 | Product measures via R ≅ R × R, iterated integration, independence |
-| `measure_as_qbs_measure.v` | 201 | 4 | Normal, Bernoulli and uniform distributions and their expectations |
+| `normal_centred.v` | 280 | 14 | Centred first moment of the normal density, change of variables for `normal_prob` |
+| `measure_as_qbs_measure.v` | 197 | 4 | Normal, Bernoulli and uniform distributions and their expectations |
 
 ### Showcase
 
@@ -110,11 +111,6 @@ This formalization follows:
 
 - **`qbs_normalize` returns `option`**: it returns `None` when the
   evidence is zero or infinite.
-
-- **`qbs_expect_normal`** (E[Normal(μ,σ)] = μ) currently takes as
-  hypotheses the integrability of the identity and of
-  (x − μ)·pdf(x), and the vanishing of the centred first moment
-  (`centred_moment0`).
 
 ## Requirements
 
