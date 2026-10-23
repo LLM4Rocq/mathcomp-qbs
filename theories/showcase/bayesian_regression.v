@@ -259,12 +259,23 @@ Let obs2Q : qbsHomType W RQ := qbs_comp lin obs.
 
 Local Lemma measurable_obs2 : qbs_measurable W (fun sb => (obs2 sb.1 sb.2)%:E).
 Proof.
-move=> b hb; apply/measurable_EFinP.
-exact: (qbs_hom_proof (s := obs2Q) _ hb).
+move=> a ha; apply/measurable_EFinP.
+exact: (qbs_hom_proof (s := obs2Q) _ ha).
 Qed.
 
 Local Lemma qbs_Mx_pair_cst (s : R) : qbs_Mx (s := W) (fun b : mR => (s, b)).
 Proof. by split; [exact: measurable_cst|exact: measurable_id]. Qed.
+
+Local Lemma measurable_mul_obs2 (h : W -> \bar R) :
+  qbs_measurable W h ->
+  qbs_measurable W (fun sb => h sb * (obs2 sb.1 sb.2)%:E).
+Proof.
+by move=> mh a ha; apply: emeasurable_funM; [exact: mh|exact: measurable_obs2].
+Qed.
+
+Local Lemma mul_obs2_ge0 (h : W -> \bar R) :
+  (forall x, 0 <= h x) -> forall sb, 0 <= h sb * (obs2 sb.1 sb.2)%:E.
+Proof. by move=> h0 sb; rewrite mule_ge0 ?lee_fin ?obs2_ge0. Qed.
 
 Local Lemma integral_normal_prob_cst1 (m s : R) :
   \int[normal_prob m s]_x (fun=> 1 : \bar R) x = 1.
@@ -326,21 +337,20 @@ Local Lemma factor_inner (h : W -> \bar R) (s : R) :
   (evidence_const * normal_pdf post_s_mean (sqrtr post_s_var) s)%:E *
   \int[normal_prob (post_b_mean s) (sqrtr post_b_var)]_b h (s, b).
 Proof.
-move=> mh h01.
-have hs : qbs_Mx (s := W) (fun b : mR => (s, b)).
-  by split; [exact: measurable_cst|exact: measurable_id].
+move=> mh h01; have h0 := ge0_of_le1 h01.
+have h1 x : h x <= 1 by case/andP: (h01 x).
+have hs := qbs_Mx_pair_cst s.
 have mhb : measurable_fun [set: mR] (fun b => h (s, b)) := mh _ hs.
 have mob : measurable_fun [set: mR] (fun b => obs2 s b) :=
   qbs_hom_proof (s := obs2Q) _ hs.
-have h0 x : 0 <= h x by have /andP[] := h01 x.
-have h1 x : h x <= 1 by have /andP[] := h01 x.
 have mho : measurable_fun [set: mR] (fun b => h (s, b) * (obs2 s b)%:E).
   by apply: emeasurable_funM => //; exact/measurable_EFinP.
 have bho b : 0 <= h (s, b) * (obs2 s b)%:E <= K%:E.
   rewrite mule_ge0 ?lee_fin ?obs2_ge0//=.
   by rewrite -[K%:E]mul1e lee_pmul ?lee_fin ?obs2_ge0 ?obs2_ub.
 rewrite (integral_normal_prob_bounded _ _ mho bho).
-rewrite [X in _ = _ * X](integral_normal_prob_bounded _ _ mhb (fun b => h01 (s, b))).
+rewrite [X in _ = _ * X]
+  (integral_normal_prob_bounded _ _ mhb (fun b => h01 (s, b))).
 have mf1 : measurable_fun [set: mR]
     (fun x => h (s, x) * (obs2 s x)%:E * (normal_pdf 0 3 x)%:E).
   apply: emeasurable_funM.
@@ -350,7 +360,6 @@ have mf2 : measurable_fun [set: mR] (fun x =>
     h (s, x) * (normal_pdf (post_b_mean s) (sqrtr post_b_var) x)%:E).
   apply: emeasurable_funM => //.
   by apply/measurable_EFinP; exact: measurable_normal_pdf.
-have C0 := evidence_const_ge0.
 have nn1 x : [set: mR] x ->
     0 <= h (s, x) * (obs2 s x)%:E * (normal_pdf 0 3 x)%:E.
   by move=> _; rewrite !mule_ge0 ?lee_fin ?normal_pdf_ge0 ?obs2_ge0.
@@ -358,9 +367,9 @@ have nn2 x : [set: mR] x ->
     0 <= h (s, x) * (normal_pdf (post_b_mean s) (sqrtr post_b_var) x)%:E.
   by move=> _; rewrite !mule_ge0 ?lee_fin ?normal_pdf_ge0.
 rewrite -(ge0_integralZr _ measurableT mf1 nn1);
-  try by rewrite lee_fin normal_pdf_ge0.
+  first by rewrite lee_fin normal_pdf_ge0.
 rewrite -(ge0_integralZl _ measurableT mf2 nn2);
-  try by rewrite lee_fin mulr_ge0 ?normal_pdf_ge0.
+  first by rewrite lee_fin mulr_ge0 ?evidence_const_ge0 ?normal_pdf_ge0.
 apply: eq_integral => b _; have e := obs_prior_factor s b.
 rewrite -!muleA -!EFinM [RHS]muleCA -EFinM; congr (h (s, b) * _%:E).
 by rewrite -e; ring.
@@ -372,32 +381,24 @@ Lemma factor_integral (h : W -> \bar R) :
   evidence_const%:E * \int[normal_prob post_s_mean (sqrtr post_s_var)]_s
     \int[normal_prob (post_b_mean s) (sqrtr post_b_var)]_b h (s, b).
 Proof.
-move=> mh h01; have h0 x : 0 <= h x by have /andP[] := h01 x.
+move=> mh h01; have h0 := ge0_of_le1 h01.
 pose ho (sb : W) := h sb * (obs2 sb.1 sb.2)%:E.
-have mho : qbs_measurable W ho.
-  by move=> b hb; apply: emeasurable_funM; [exact: mh|exact: measurable_obs2].
-have ho0 x : 0 <= ho x by rewrite /ho mule_ge0 ?lee_fin ?obs2_ge0.
+have mho : qbs_measurable W ho := measurable_mul_obs2 mh.
+have ho0 : forall x, 0 <= ho x := mul_obs2_ge0 h0.
 have mG := measurable_normal_prob_integral (@qbs_const _ RQ RQ 0%R) 3 mho ho0.
-have mJ := measurable_normal_prob_integral post_b_meanQ (sqrtr post_b_var) mh h0.
-have bnd (m sg : R) (f : mR -> \bar R) (M : R) : measurable_fun [set: mR] f ->
-    (forall x, 0 <= f x <= M%:E) ->
-    0 <= \int[normal_prob m sg]_x f x <= M%:E.
-  move=> mf fM; apply/andP; split.
-    by apply: integral_ge0 => x _; case/andP: (fM x).
-  rewrite (@le_trans _ _ (\int[normal_prob m sg]_x M%:E))//.
-    by apply: ge0_le_integral => // x _; case/andP: (fM x).
-  by rewrite integral_cst //= probability_setT mule1.
-have hs s : qbs_Mx (s := W) (fun b : mR => (s, b)).
-  by split; [exact: measurable_cst|exact: measurable_id].
+have mJ :=
+  measurable_normal_prob_integral post_b_meanQ (sqrtr post_b_var) mh h0.
 have bG s : 0 <= \int[normal_prob 0 3]_b ho (s, b) <= K%:E.
-  apply: bnd => [|b]; first exact: mho _ (hs s).
+  apply: integral_normal_prob_bnd => [|b].
+    exact: mho _ (qbs_Mx_pair_cst s).
   by rewrite ho0 /ho -[K%:E]mul1e lee_pmul ?lee_fin ?obs2_ge0 ?obs2_ub//;
     case/andP: (h01 (s, b)).
 have bJ s : 0 <= \int[normal_prob (post_b_mean s) (sqrtr post_b_var)]_b
     h (s, b) <= 1%:E.
-  by apply: bnd => //; exact: mh _ (hs s).
+  by apply: integral_normal_prob_bnd => //; exact: mh _ (qbs_Mx_pair_cst s).
 rewrite -[LHS]/(\int[normal_prob 0 3]_s \int[normal_prob 0 3]_b ho (s, b)).
-rewrite (integral_normal_prob_bounded _ _ mG bG) (integral_normal_prob_bounded _ _ mJ bJ).
+rewrite (integral_normal_prob_bounded _ _ mG bG)
+  (integral_normal_prob_bounded _ _ mJ bJ).
 rewrite -ge0_integralZl//.
 - apply: emeasurable_funM => //.
   by apply/measurable_EFinP; exact: measurable_normal_pdf.
@@ -413,15 +414,14 @@ rewrite -[LHS]/(qbs_integral W prior2 (fun sb => (maxr 0 (obs2 sb.1 sb.2))%:E)).
 have -> : (fun sb : W => (maxr 0 (obs2 sb.1 sb.2))%:E) =
     (fun sb => 1 * (obs2 sb.1 sb.2)%:E).
   by apply/funext => sb; rewrite mul1e max_r ?obs2_ge0.
-have I1 (m sg : R) : \int[normal_prob m sg]_x (fun=> 1 : \bar R) x = 1.
-  by rewrite integral_cst //= probability_setT mule1.
 rewrite prior2_integral.
-- by move=> b hb; apply: emeasurable_funM => //; exact: measurable_obs2.
-- by move=> sb; rewrite mul1e lee_fin obs2_ge0.
+- exact: (measurable_mul_obs2 (h := fun=> 1)) (fun _ _ => measurable_cst _).
+- exact: (mul_obs2_ge0 (h := fun=> 1)) (fun _ => lee01).
 rewrite (factor_integral (h := fun=> 1)).
 - by move=> ? ?; exact: measurable_cst.
 - by move=> _; rewrite lee01 lexx.
-by under eq_integral do rewrite I1; rewrite I1 mule1.
+by under eq_integral do rewrite integral_normal_prob_cst1;
+  rewrite integral_normal_prob_cst1 mule1.
 Qed.
 
 (** ** Main theorem: the program normalises to the closed-form posterior *)
@@ -436,7 +436,7 @@ move=> U mU; pose V := lin @^-1` U.
 have mV : sigma_Mx V := sigma_Mx_preimage lin mU.
 pose h (sb : W) : \bar R := (\1_V sb)%:E.
 have mh : qbs_measurable W h.
-  by move=> b hb; apply/measurable_EFinP/measurable_indic; exact: mV.
+  by move=> a ha; apply/measurable_EFinP/measurable_indic; exact: mV.
 have h01 x : 0 <= h x <= 1.
   by rewrite /h indicE; case: (_ \in _); rewrite ?lee01 ?lexx.
 rewrite -[LHS]/(qbs_prob_event _ _ _) qbs_normalize_event// wprior_evidence.
@@ -448,11 +448,9 @@ have -> : qbs_integral (prodQ F RQ) wprior
     (fun xw : prodQ F RQ => (\1_U xw.1 * maxr 0 xw.2)%:E) =
     qbs_integral W prior2 (fun sb => h sb * (obs2 sb.1 sb.2)%:E).
   by apply: eq_integral => r _; rewrite /h max_r ?obs2_ge0// EFinM.
-rewrite prior2_integral.
-- by move=> b hb; apply: emeasurable_funM; [exact: mh|exact: measurable_obs2].
-- by move=> x; rewrite mule_ge0 ?lee_fin ?obs2_ge0//; case/andP: (h01 x).
-rewrite factor_integral// posterior2_integral//;
-  try by move=> x; case/andP: (h01 x).
+rewrite prior2_integral; first exact: measurable_mul_obs2 mh.
+  exact: mul_obs2_ge0 (ge0_of_le1 h01).
+rewrite factor_integral// posterior2_integral//; first exact: ge0_of_le1 h01.
 by rewrite /= muleAC -EFinM divff ?gt_eqF ?evidence_const_gt0// mul1e.
 Qed.
 
