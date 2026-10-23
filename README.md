@@ -18,7 +18,7 @@ programming semantics.
 
 ## Overview
 
-**322 proofs, 0 Admitted, 0 custom axioms, 6,226 lines across 13 files.**
+**411 proofs, 0 Admitted, 0 custom axioms, 7,402 lines across 14 files.**
 
 > **Note**: A higher-order PPL with denotational semantics in QBS
 > (`ppl_qbs.v`, `ppl_kernel.v`, `showcase/ppl_examples.v`) is
@@ -43,23 +43,24 @@ This formalization follows:
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `quasi_borel.v` | 821 | 49 | HB structure, morphisms, products, exponentials, cartesian closure, the L functor (`qbs_meas`) and L ⊣ R |
-| `measure_qbs_adjunction.v` | 332 | 14 | Counit of L ⊣ R, standard Borel spaces, R is full on standard Borel domains |
-| `coproduct_qbs.v` | 464 | 19 | Binary and countable coproducts (HKSY Prop. 17), dependent products, lists |
+| `quasi_borel.v` | 948 | 61 | HB structure, morphisms, products, exponentials, cartesian closure, the L functor (`qbs_meas`) and L ⊣ R, lattice of QBS structures, empty QBS |
+| `measure_qbs_adjunction.v` | 380 | 20 | Counit of L ⊣ R, standard Borel spaces, R is full on standard Borel domains, order adjunction |
+| `coproduct_qbs.v` | 864 | 45 | Binary and countable coproducts (HKSY Prop. 17), dependent products, lists with cons and recursion, concrete morphisms |
 | `standard_borel.v` | 1,287 | 57 | R ≅ (0,1) via atan, digit interleaving, R ≅ R × R |
 
 ### Probability
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `probability_qbs.v` | 483 | 26 | Probability triples, equivalence, integration, law, expectation |
-| `qbs_monad.v` | 679 | 56 | The HKSY probability monad: return, bind, laws, map, join, strength, commutativity |
-| `qbs_normalize.v` | 161 | 12 | Normalisation of weighted probabilities (HKSY Sec. VI) |
+| `probability_qbs.v` | 689 | 47 | Probability triples, equivalence, integration and integrability, law, expectation, variance |
+| `qbs_monad.v` | 705 | 58 | The HKSY probability monad: return, bind, laws, map, join, strength and its laws, commutativity |
+| `qbs_normalize.v` | 267 | 18 | Normalisation of weighted probabilities (HKSY Sec. VI), as a morphism P(X × R) → P(X) + 1 |
+| `qbs_monad_integral.v` | 201 | 11 | Integrals, integrability and variance through return and bind |
 | `qbs_quotient.v` | 194 | 19 | Quotient of probability triples; monad laws as equalities |
 | `qbs_giry.v` | 132 | 9 | Comparison with the Giry monad |
 | `pair_qbs_measure.v` | 770 | 21 | Product measures via R ≅ R × R, iterated integration, independence |
 | `normal_centred.v` | 280 | 14 | Centred first moment of the normal density, change of variables for `normal_prob` |
-| `measure_as_qbs_measure.v` | 197 | 4 | Normal, Bernoulli and uniform distributions and their expectations |
+| `measure_as_qbs_measure.v` | 259 | 9 | Normal, Bernoulli and uniform (on any [a, b]) distributions, their expectations, Bernoulli law |
 
 ### Showcase
 
@@ -80,7 +81,9 @@ This formalization follows:
   `sigma_case_uniq`
 - **Probability monad**: `qbs_return`, `qbs_bind`, laws
   `qbs_bind_returnl`, `qbs_bind_returnr`, `qbs_bindA`; `monadP_map`,
-  `qbs_join`, `qbs_strength`; internal bind `qbs_bind_internal`
+  `qbs_join`, `qbs_strength` with its laws `qbs_strength_snd`,
+  `qbs_strength_assoc`, `qbs_strength_return`, `qbs_strength_join`;
+  internal bind `qbs_bind_internal`
   (HKSY Thm. 21); commutativity `qbs_pairP_comm`, `qbs_bind_comm`
   (HKSY Prop. 22(2))
 - **Quotient**: on the quotient type `qbs_quot` the monad laws hold
@@ -93,9 +96,18 @@ This formalization follows:
   `qbs_integral_indep_factorization` (E[fg] = E[f]E[g])
 - **R ≅ R × R**: `pair_standard_borel`, `encode_RRK`
 - **Normaliser**: `qbs_normalize`, `qbs_normalize_event`,
-  `qbs_normalize_equiv`
-- **Distributions**: `qbs_expect_bernoulli`, `qbs_expect_uniform`,
-  `qbs_expect_normal`
+  `qbs_normalize_equiv`; as a morphism into P(X) + 1:
+  `qbs_normalize_morphism`, `qbs_normalizeQ`
+- **Lists**: `qbs_nil`, `qbs_cons`, recursion `list_rec` as a morphism
+  (`qbs_morphism_list_rec`, internal `list_rec_hom`), bijection with
+  `seq` (`seq_of_listK`, `list_of_seqK`)
+- **Order structure**: meet/top/bottom of QBS structures (`qbs_infT`,
+  `qbs_topT`, `qbs_botT`), empty QBS `emptyQ`, Galois connection
+  `sigma_of_Mx_of`, functions out of `natQ`/`boolQ` are morphisms
+- **Integration**: `qbs_integrableP`, `qbs_integral_le`,
+  `qbs_variance_affine`, signed `qbs_integral_bind`
+- **Distributions**: `qbs_expect_bernoulli`, `qbs_bernoulli_law`,
+  `qbs_expect_interval_uniform`, `qbs_expect_normal`
 - **Bayesian regression**: `program_posterior` (the program normalises
   to an explicit Gaussian posterior on functions R => R),
   `wprior_evidence` (closed-form evidence)
@@ -110,7 +122,11 @@ This formalization follows:
   characterization.
 
 - **`qbs_normalize` returns `option`**: it returns `None` when the
-  evidence is zero or infinite.
+  evidence is zero or infinite (`qbs_normalize_sum` is the same map into
+  P(X) + 1).
+
+- **Not formalised from HKSY**: the de Finetti theorem and the
+  random-functions example.
 
 ## Requirements
 
