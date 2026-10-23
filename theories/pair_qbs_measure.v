@@ -13,7 +13,7 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad standard_borel.
 (* so that Fubini and the variance of mathcomp-analysis apply.                *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*   qbs_prob_pair X Y p q == product QBS probability on prodQ X Y, the       *)
+(*   qbs_prob_pair p q == product QBS probability on prodQ X Y, the       *)
 (*                            pushforward of mu_p \x mu_q along R * R -> R;   *)
 (*                            it is equivalent to monadP_pair                 *)
 (*                            (qbs_prob_pair_equiv)                           *)
@@ -23,8 +23,8 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad standard_borel.
 (*     qbs_pair_fun p q h == h composed with the two alphas, on mR * mR       *)
 (*   integral_prod_{fst,snd,mul} == integrals of h rr.1, h rr.2, h1 rr.1 *    *)
 (*                            h2 rr.2 against a product of probabilities      *)
-(*   qbs_indep X Y Z p f g == independence of f and g under p                 *)
-(*   qbs_pair_variance X Y px py f g == variance of f(x) + g(y) on product    *)
+(*   qbs_indep p f g == independence of f and g under p                 *)
+(*   qbs_pair_variance px py f g == variance of f(x) + g(y) on product    *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -125,13 +125,11 @@ Definition qbs_prob_pair (X Y : qbsType R)
     (qbs_pair_mu_build p q)
     (qbs_pair_alpha_random p q).
 
-Arguments qbs_prob_pair : clear implicits.
-
 (** The encoded product agrees with the monadic product
     p >>= (fun x => strength (x, q)) of qbs_monad.v. *)
 Lemma qbs_prob_pair_equiv (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y) :
   qbs_prob_equiv (prodQ X Y) (monadP_pair (p : monadP X) (q : monadP Y))
-    (qbs_prob_pair X Y p q).
+    (qbs_prob_pair p q).
 Proof.
 move=> U mU; rewrite -[LHS]/(qbs_prob_event _ _ _) monadP_pair_event//.
 rewrite /qbs_prob_pair /= /qbs_pair_mu_build /=.
@@ -176,7 +174,7 @@ move=> i1 i2 i12; rewrite -(integral12_prod_meas1 i12).
 transitivity (\int[mu1]_x ((h1 x)%:E * \int[mu2]_y (h2 y)%:E)).
   apply: eq_integral => x _; rewrite /fubini_F /=.
   by under eq_integral do rewrite EFinM; rewrite integralZl.
-rewrite -(fineK (integrable_fin_num measurableT i2)) integralZr//.
+by rewrite -(fineK (integrable_fin_num measurableT i2)) integralZr.
 Qed.
 
 End prod_meas.
@@ -190,7 +188,7 @@ Definition qbs_pair_fun (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y)
 Lemma qbs_prob_pair_integral (X Y : qbsType R) (p : qbs_prob X)
     (q : qbs_prob Y) (h : X * Y -> \bar R) :
   (qbs_prob_mu p \x qbs_prob_mu q).-integrable setT (qbs_pair_fun p q h) ->
-  qbs_integral (prodQ X Y) (qbs_prob_pair X Y p q) h =
+  qbs_integral (prodQ X Y) (qbs_prob_pair p q) h =
   \int[qbs_prob_mu p \x qbs_prob_mu q]_rr qbs_pair_fun p q h rr.
 Proof.
 move=> hint; have /integrableP[mh _] := hint.
@@ -202,8 +200,7 @@ have fg rr :
     qbs_pair_fun p q h rr = h (qbs_pair_alpha p q (encode_RR_mR rr)).
   by rewrite /qbs_pair_alpha encode_RR_mRK.
 rewrite /qbs_integral /=; under [RHS]eq_integral do rewrite fg.
-rewrite -[RHS](@integral_pushforward _ _ _ mR R encode_RR_mR
-  measurable_RR_to_R _ setT _ mg _ measurableT) //.
+rewrite -[RHS](integral_pushforward measurable_RR_to_R mg _ measurableT)//.
 rewrite preimage_setT (_ : _ \o _ = qbs_pair_fun p q h)//.
 by apply/funext => rr; rewrite /= -fg.
 Qed.
@@ -212,7 +209,7 @@ Qed.
 Lemma qbs_prob_pair_iterated (X Y : qbsType R) (p : qbs_prob X)
     (q : qbs_prob Y) (h : X * Y -> \bar R) :
   (qbs_prob_mu p \x qbs_prob_mu q).-integrable setT (qbs_pair_fun p q h) ->
-  qbs_integral (prodQ X Y) (qbs_prob_pair X Y p q) h =
+  qbs_integral (prodQ X Y) (qbs_prob_pair p q) h =
   qbs_integral X p (fun x => qbs_integral Y q (fun y => h (x, y))).
 Proof.
 by move=> hint; rewrite qbs_prob_pair_integral// -(integral12_prod_meas1 hint).
@@ -225,7 +222,7 @@ Lemma qbs_prob_pair_mul (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y)
   (qbs_prob_mu q).-integrable setT (EFin \o (g \o qbs_prob_alpha q)) ->
   (qbs_prob_mu p \x qbs_prob_mu q).-integrable setT
     (qbs_pair_fun p q (fun xy => (f xy.1 * g xy.2)%:E)) ->
-  qbs_integral (prodQ X Y) (qbs_prob_pair X Y p q)
+  qbs_integral (prodQ X Y) (qbs_prob_pair p q)
     (fun xy => (f xy.1 * g xy.2)%:E) = qbs_expect X p f * qbs_expect Y q g.
 Proof.
 move=> hf hg hfg; rewrite qbs_prob_pair_integral//.
@@ -237,15 +234,13 @@ Qed.
 Definition qbs_indep (X Y Z : qbsType R) (p : qbs_prob Z)
     (f : qbsHomType Z X) (g : qbsHomType Z Y) : Prop :=
   qbs_prob_equiv (prodQ X Y) (monadP_map (qbs_pair f g) p)
-    (qbs_prob_pair X Y (monadP_map f p) (monadP_map g p)).
-
-Arguments qbs_indep : clear implicits.
+    (qbs_prob_pair (monadP_map f p) (monadP_map g p)).
 
 (** For real-valued variables, qbs_indep gives the classical product rule
     on Borel rectangles. *)
 Lemma qbs_indep_rect (Z : qbsType R) (p : qbs_prob Z)
     (f g : qbsHomType Z (realQ R)) (A B : set mR) :
-  measurable A -> measurable B -> qbs_indep _ _ _ p f g ->
+  measurable A -> measurable B -> qbs_indep p f g ->
   qbs_prob_event Z p [set z | A (f z) /\ B (g z)] =
   qbs_prob_event Z p (f @^-1` A) * qbs_prob_event Z p (g @^-1` B).
 Proof.
@@ -272,9 +267,9 @@ transitivity (\int[qbs_prob_mu p]_r
     split => t /=; rewrite /preimage /=.
       by case.
     by move=> Bt; split => //; move: h; rewrite inE.
-  rewrite mul0e (_ : [set t | _] = set0) ?measure0//.
+  rewrite mul0e (_ : [set t | _] = set0); last by rewrite measure0.
   by apply/seteqP; split => t //= [Ar _]; move: h; rewrite notin_setE.
-rewrite ge0_integralZr// ?integral_indic ?setIT//.
+rewrite ge0_integralZr//; last by rewrite integral_indic// setIT.
   exact/measurable_EFinP/measurable_indic.
 by move=> x _; rewrite lee_fin indicE ler0n.
 Qed.
@@ -282,7 +277,7 @@ Qed.
 (** Independence factorization: E[phi(f) psi(g)] = E[phi(f)] E[psi(g)]. *)
 Lemma qbs_integral_indep_factorization (X Y Z : qbsType R) (p : qbs_prob Z)
     (f : qbsHomType Z X) (g : qbsHomType Z Y) (phi : X -> R) (psi : Y -> R) :
-  qbs_indep X Y Z p f g ->
+  qbs_indep p f g ->
   qbs_measurable (prodQ X Y) (fun xy => (phi xy.1 * psi xy.2)%:E) ->
   (qbs_prob_mu p).-integrable setT (EFin \o (phi \o f \o qbs_prob_alpha p)) ->
   (qbs_prob_mu p).-integrable setT (EFin \o (psi \o g \o qbs_prob_alpha p)) ->
@@ -307,7 +302,10 @@ Definition qbs_pair_variance (X Y : qbsType R)
     (fun rr : mR * mR =>
       (f (qbs_prob_alpha px rr.1) + g (qbs_prob_alpha py rr.2))%R).
 
-Arguments qbs_pair_variance : clear implicits.
+Let L2_integrable d (T : measurableType d)
+    (m : {measure set T -> \bar R}%R) (h : T -> R) :
+  m setT \is a fin_num -> h \in Lfun m 2 -> m.-integrable setT (EFin \o h).
+Proof. by move=> fm /(Lfun_subset12 fm) /Lfun1_integrable. Qed.
 
 Lemma qbs_pair_varianceD (X Y : qbsType R)
     (px : qbs_prob X) (py : qbs_prob Y) (f : X -> R) (g : Y -> R) :
@@ -316,7 +314,7 @@ Lemma qbs_pair_varianceD (X Y : qbsType R)
   (fun rr : mR * mR => g (qbs_prob_alpha py rr.2)) \in Lfun mu 2 ->
   f \o qbs_prob_alpha px \in Lfun (qbs_prob_mu px) 2 ->
   g \o qbs_prob_alpha py \in Lfun (qbs_prob_mu py) 2 ->
-  qbs_pair_variance X Y px py f g = qbs_variance X px f + qbs_variance Y py g.
+  qbs_pair_variance px py f g = qbs_variance X px f + qbs_variance Y py g.
 Proof.
 move=> mu hF2 hG2 hf2 hg2.
 set F := fun rr : mR * mR => f (qbs_prob_alpha px rr.1).
@@ -325,23 +323,20 @@ have mu_fin : mu setT \is a fin_num.
   by rewrite /mu -(@setXTT mR mR) product_measure1E //= !probability_setT mule1.
 have fin1 (m : probability mR R) : m setT \is a fin_num.
   by rewrite probability_setT.
-have L1 h : h \in Lfun mu 2 -> mu.-integrable setT (EFin \o h).
-  by move=> /(Lfun_subset12 mu_fin) /Lfun1_integrable.
-have L1m (m : probability mR R) h : h \in Lfun m 2 ->
-    m.-integrable setT (EFin \o h).
-  by move=> /(Lfun_subset12 (fin1 m)) /Lfun1_integrable.
 have EF : 'E_mu[F] = 'E_(qbs_prob_mu px)[(f \o qbs_prob_alpha px)].
   rewrite !unlock; exact: (integral_prod_fst
-    (h := fun x => (f (qbs_prob_alpha px x))%:E) (L1 _ hF2)).
+    (h := fun x => (f (qbs_prob_alpha px x))%:E) (L2_integrable mu_fin hF2)).
 have EG : 'E_mu[G] = 'E_(qbs_prob_mu py)[(g \o qbs_prob_alpha py)].
   rewrite !unlock; exact: (integral_prod_snd
-    (h := fun y => (g (qbs_prob_alpha py y))%:E) (L1 _ hG2)).
+    (h := fun y => (g (qbs_prob_alpha py y))%:E) (L2_integrable mu_fin hG2)).
 rewrite /qbs_pair_variance -[fun rr => _]/(F \+ G)%R varianceD//.
 rewrite covarianceE ?(Lfun2_mul_Lfun1 hF2 hG2) ?(Lfun_subset12 mu_fin)//.
 have -> : 'E_mu[(F \* G)%R] = 'E_mu[F] * 'E_mu[G].
   rewrite EF EG !unlock.
   apply: (integral_prod_mul (h1 := f \o qbs_prob_alpha px)
-    (h2 := g \o qbs_prob_alpha py)); [exact: L1m|exact: L1m|].
+    (h2 := g \o qbs_prob_alpha py));
+    [exact: L2_integrable (fin1 (qbs_prob_mu px)) hf2
+    |exact: L2_integrable (fin1 (qbs_prob_mu py)) hg2|].
   by apply/Lfun1_integrable; exact: Lfun2_mul_Lfun1.
 have EFG : 'E_mu[F] * 'E_mu[G] \is a fin_num.
   by rewrite fin_numM ?expectation_fin_num ?(Lfun_subset12 mu_fin).
@@ -356,7 +351,3 @@ Qed.
 
 End product_measure.
 
-Arguments qbs_prob_pair {R X Y}.
-Arguments qbs_pair_fun {R X Y}.
-Arguments qbs_indep {R X Y Z}.
-Arguments qbs_pair_variance {R X Y}.
