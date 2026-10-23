@@ -79,9 +79,9 @@ Variables (X Y : qbsType R).
 
 Let coprod_random : set (mR -> X + Y) :=
   [set f |
-    (exists a : mR -> X, qbs_Mx a /\ forall r, f r = inl (a r))
+    (exists2 a : mR -> X, qbs_Mx a & forall r, f r = inl (a r))
     \/
-    (exists b : mR -> Y, qbs_Mx b /\ forall r, f r = inr (b r))
+    (exists2 b : mR -> Y, qbs_Mx b & forall r, f r = inr (b r))
     \/
     (exists (P : mR -> bool) (a : mR -> X) (b : mR -> Y),
       measurable_fun setT P /\ qbs_Mx a /\ qbs_Mx b /\
@@ -90,10 +90,10 @@ Let coprod_random : set (mR -> X + Y) :=
 Let coprod_comp (h : mR -> X + Y) (f : {mfun mR >-> mR}) :
   coprod_random h -> coprod_random (h \o f).
 Proof.
-case=> [[a [ha hdef]] | [[b [hb hdef]] | [P [a [b [hP [ha [hb hdef]]]]]]]].
-- left; exists (a \o f); split; first exact: qbs_Mx_comp ha.
+case=> [[a ha hdef] | [[b hb hdef] | [P [a [b [hP [ha [hb hdef]]]]]]]].
+- left; exists (a \o f); first exact: qbs_Mx_comp ha.
   by move=> r; rewrite /= hdef.
-- right; left; exists (b \o f); split; first exact: qbs_Mx_comp hb.
+- right; left; exists (b \o f); first exact: qbs_Mx_comp hb.
   by move=> r; rewrite /= hdef.
 - right; right; exists (P \o f), (a \o f), (b \o f).
   by do ![split]; [exact: measurableT_comp hP (measurable_funPT f)|
@@ -102,18 +102,18 @@ Qed.
 
 Let coprod_const (x : X + Y) : coprod_random (fun _ => x).
 Proof.
-case: x => [xl | yr].
-- by left; exists (fun _ => xl); split; first exact: qbs_Mx_const.
-- by right; left; exists (fun _ => yr); split; first exact: qbs_Mx_const.
+case: x => [xl | yr]; last first.
+  by right; left; exists (fun _ => yr); first exact: qbs_Mx_const.
+by left; exists (fun _ => xl); first exact: qbs_Mx_const.
 Qed.
 
 (* Gluing countably many random elements that all factor through [inj]. *)
 Let coprod_glue_side (S : qbsType R) (inj : S -> X + Y)
     (Q : {mfun mR >-> nat}) (Fi : nat -> mR -> X + Y) :
   (forall i, exists a : mR -> S, qbs_Mx a /\ forall r, Fi i r = inj (a r)) ->
-  exists a : mR -> S, qbs_Mx a /\ forall r, Fi (Q r) r = inj (a r).
+  exists2 a : mR -> S, qbs_Mx a & forall r, Fi (Q r) r = inj (a r).
 Proof.
-move=> /choice[g hg]; exists (fun r => g (Q r) r); split.
+move=> /choice[g hg]; exists (fun r => g (Q r) r).
   exact: qbs_Mx_glueT (measurable_funPT Q) (fun i => (hg i).1).
 by move=> r; exact: (hg (Q r)).2.
 Qed.
@@ -123,36 +123,36 @@ Let coprod_glue (Q : {mfun mR >-> nat}) (Fi : nat -> mR -> X + Y) :
 Proof.
 move=> hFi; have hQ := measurable_funPT Q.
 have [Xempty | x0] := pselectT X.
-- (* X is empty: every Fi i factors through inr *)
+  (* X is empty: every Fi i factors through inr *)
   right; left; apply: (coprod_glue_side (inj := @inr X Y)) => i.
-  by case: (hFi i) => [[a _]|[hb|[P [a _]]]]; [|exact: hb|];
-    case: (Xempty (a 0%R)).
-- have [Yempty | y0] := pselectT Y.
-  + (* Y is empty: every Fi i factors through inl *)
-    left; apply: (coprod_glue_side (inj := @inl X Y)) => i.
-    by case: (hFi i) => [ha|[[b _]|[P [a [b _]]]]]; [exact: ha|..];
-      case: (Yempty (b 0%R)).
-  + (* both inhabited: normalize each Fi i to the gluing form *)
-    have /choice[t ht] : forall i,
-        exists t : (mR -> bool) * (mR -> X) * (mR -> Y),
-          measurable_fun setT t.1.1 /\ qbs_Mx t.1.2 /\ qbs_Mx t.2 /\
-          forall r, Fi i r = if t.1.1 r then inl (t.1.2 r) else inr (t.2 r).
-      move=> i; have [[a [ha hdef]] | [[b [hb hdef]] | [P [a [b h]]]]] := hFi i.
-      + exists ((fun _ => true), a, (fun _ => y0)) => /=.
-        by do ![split]; [exact: measurable_cst|exact: ha|exact: qbs_Mx_const|
-          by move=> r; rewrite hdef].
-      + exists ((fun _ => false), (fun _ => x0), b) => /=.
-        by do ![split]; [exact: measurable_cst|exact: qbs_Mx_const|exact: hb|
-          by move=> r; rewrite hdef].
-      + by exists (P, a, b).
-    right; right.
-    exists (fun r => (t (Q r)).1.1 r), (fun r => (t (Q r)).1.2 r),
-      (fun r => (t (Q r)).2 r).
-    do ![split].
-    * exact: measurable_glue hQ (fun i => (ht i).1).
-    * exact: qbs_Mx_glueT hQ (fun i => (ht i).2.1).
-    * exact: qbs_Mx_glueT hQ (fun i => (ht i).2.2.1).
-    * by move=> r; exact: (ht (Q r)).2.2.2.
+  by case: (hFi i) => [[a _ _]|[[b hb e]|[P [a _]]]];
+    [|by exists b|]; case: (Xempty (a 0%R)).
+have [Yempty | y0] := pselectT Y.
+  (* Y is empty: every Fi i factors through inl *)
+  left; apply: (coprod_glue_side (inj := @inl X Y)) => i.
+  by case: (hFi i) => [[a ha e]|[[b _ _]|[P [a [b _]]]]];
+    [by exists a|..]; case: (Yempty (b 0%R)).
+(* both inhabited: normalize each Fi i to the gluing form *)
+have /choice[t ht] : forall i,
+    exists t : (mR -> bool) * (mR -> X) * (mR -> Y),
+      measurable_fun setT t.1.1 /\ qbs_Mx t.1.2 /\ qbs_Mx t.2 /\
+      forall r, Fi i r = if t.1.1 r then inl (t.1.2 r) else inr (t.2 r).
+  move=> i; have [[a ha hdef] | [[b hb hdef] | [P [a [b h]]]]] := hFi i.
+  - exists ((fun _ => true), a, (fun _ => y0)) => /=.
+    by do ![split]; [exact: measurable_cst|exact: ha|exact: qbs_Mx_const|
+      by move=> r; rewrite hdef].
+  - exists ((fun _ => false), (fun _ => x0), b) => /=.
+    by do ![split]; [exact: measurable_cst|exact: qbs_Mx_const|exact: hb|
+      by move=> r; rewrite hdef].
+  - by exists (P, a, b).
+right; right.
+exists (fun r => (t (Q r)).1.1 r), (fun r => (t (Q r)).1.2 r),
+  (fun r => (t (Q r)).2 r).
+do ![split].
+- exact: measurable_glue hQ (fun i => (ht i).1).
+- exact: qbs_Mx_glueT hQ (fun i => (ht i).2.1).
+- exact: qbs_Mx_glueT hQ (fun i => (ht i).2.2.1).
+- by move=> r; exact: (ht (Q r)).2.2.2.
 Qed.
 
 HB.instance Definition _ :=
@@ -165,17 +165,17 @@ Arguments coprodQ : clear implicits.
 (** Injection morphisms. *)
 
 Lemma qbs_morphism_inl X Y :
-  qbs_morphism (X := X) (Y := coprodQ X Y) (@inl X Y).
+  qbs_morphism (X := X) (Y := coprodQ X Y) inl.
 Proof.
 move=> h ha.
-by left; exists h; split.
+by left; exists h.
 Qed.
 
 Lemma qbs_morphism_inr X Y :
-  qbs_morphism (X := Y) (Y := coprodQ X Y) (@inr X Y).
+  qbs_morphism (X := Y) (Y := coprodQ X Y) inr.
 Proof.
 move=> h hb.
-by right; left; exists h; split.
+by right; left; exists h.
 Qed.
 
 (** Case analysis morphism.
@@ -189,7 +189,7 @@ Lemma qbs_morphism_case X Y (Z : qbsType R) (f : X -> Z) (g : Y -> Z) :
     (fun s => match s with inl x => f x | inr y => g y end).
 Proof.
 move=> hf hg gamma.
-case=> [[a [ha hdef]] | [[b [hb hdef]] | [P [a [b [hP [ha [hb hdef]]]]]]]].
+case=> [[a ha hdef] | [[b hb hdef] | [P [a [b [hP [ha [hb hdef]]]]]]]].
 - (* gamma factors through inl *)
   have -> : (fun s => match s with inl x => f x | inr y => g y end) \o gamma =
             f \o a by apply/funext => r; rewrite /= hdef.
@@ -198,11 +198,11 @@ case=> [[a [ha hdef]] | [[b [hb hdef]] | [P [a [b [hP [ha [hb hdef]]]]]]]].
   have -> : (fun s => match s with inl x => f x | inr y => g y end) \o gamma =
             g \o b by apply/funext => r; rewrite /= hdef.
   exact: hg _ hb.
-- (* gamma is a measurable gluing *)
-  have -> : (fun s => match s with inl x => f x | inr y => g y end) \o gamma =
-            fun r => if P r then f (a r) else g (b r).
-    by apply/funext => r; rewrite /= hdef; case: (P r).
-  exact: qbs_Mx_if hP (hf _ ha) (hg _ hb).
+(* gamma is a measurable gluing *)
+have -> : (fun s => match s with inl x => f x | inr y => g y end) \o gamma =
+          fun r => if P r then f (a r) else g (b r).
+  by apply/funext => r; rewrite /= hdef; case: (P r).
+exact: qbs_Mx_if hP (hf _ ha) (hg _ hb).
 Qed.
 
 (** Countable coproduct (HKSY Prop. 17).
@@ -418,7 +418,7 @@ move=> hh ha.
 have hhm : qbs_morphism (X := prodQ (realQ R) A) (Y := B)
     (fun p => (h p.1 : qbsHomType A B) p.2) := hh.
 have hra : qbs_Mx (s := prodQ (realQ R) A) (fun r => (r, a r)).
-  by split => //=; exact: measurable_id.
+  by split=> //=; exact: measurable_id.
 exact: hhm _ hra.
 Qed.
 
@@ -496,7 +496,7 @@ have h2 : qbs_Mx (s := expQ Y Z) (fun r => (a (b r).1).2) :=
   qbs_Mx_compT ha2 hb1.
 change (qbs_Mx (s := Z)
   (fun r => qbs_case (a (b r).1).1 (a (b r).1).2 (b r).2)).
-case: hb2 => [[c [hc e]] | [[d [hd e]] | [P [c [d [hP [hc [hd e]]]]]]]].
+case: hb2 => [[c hc e] | [[d hd e] | [P [c [d [hP [hc [hd e]]]]]]]].
 - have -> : (fun r => qbs_case (a (b r).1).1 (a (b r).1).2 (b r).2) =
       fun r => (a (b r).1).1 (c r) by apply/funext => r; rewrite /= e.
   exact: qbs_Mx_app h1 hc.
@@ -674,7 +674,7 @@ have hord n : qbs_morphism (X := prodQ W (piQ 'I_n (fun=> X))) (Y := Y)
     (fun r => ((a r).1, ((a r).2 ord0, (list_mk ((a r).2 \o lift ord0),
       list_rec_ord (b (a r).1) (fun x l y => F ((a r).1, (x, (l, y))))
         ((a r).2 \o lift ord0)))))).
-  split => //; split; first exact: (ha ord0).
+  split=> //; split; first exact: (ha ord0).
   split; first exact: (qbs_morphism_sigma_inj
     (X := fun n => piQ 'I_n (fun=> X)) (i := n) hl).
   exact: (IH (fun r => ((a r).1, (a r).2 \o lift ord0)) (conj hw hl)).
