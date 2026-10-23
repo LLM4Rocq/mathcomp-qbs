@@ -706,7 +706,7 @@ have -> : qbs_integral Z p (fun z => (phi (f z) * psi (g z))%:E) =
           qbs_integral (prodQ X Y) ppair h by [].
 (* Step 2: by [qbs_indep], integral against [ppair] equals integral
    against [qbs_prob_pair X Y pf pg]. *)
-rewrite (qbs_integral_equiv hmeas _ hint_pair hindep) //.
+rewrite (qbs_integral_equiv hmeas hindep).
 (* Step 3: convert to [qbs_pair_integral] via the helper. *)
 have hint_g : (qbs_pair_mu_build pf pg).-integrable setT
     (fun r : mR => h (qbs_pair_alpha pf pg r)).

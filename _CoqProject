@@ -5,6 +5,7 @@ theories/measure_qbs_adjunction.v
 theories/coproduct_qbs.v
 theories/probability_qbs.v
 theories/qbs_monad.v
+theories/qbs_normalize.v
 theories/pair_qbs_measure.v
 theories/qbs_quotient.v
 theories/measure_as_qbs_measure.v

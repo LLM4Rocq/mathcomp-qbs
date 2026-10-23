@@ -73,6 +73,37 @@ Lemma qbs_to_giry_map d1 d2 (M1 : measurableType d1) (M2 : measurableType d2)
   qbs_to_giry p (f @^-1` A).
 Proof. by []. Qed.
 
+(** ** Comparison with the Giry monad on standard Borel spaces
+    (HKSY Prop. 22(3) and 23) *)
+
+Section standard_borel_giry.
+Context d (M : measurableType d) (sb : standard_borel_wit R M).
+
+(** On a standard Borel space, a QBS probability is determined by its
+    distribution. *)
+Lemma qbs_to_giry_inj (p1 p2 : qbs_prob (R_qbs R M)) :
+  (forall A, measurable A -> qbs_to_giry p1 A = qbs_to_giry p2 A) ->
+  qbs_prob_equiv (R_qbs R M) p1 p2.
+Proof. by move=> e U /(sigma_Mx_standard_borel sb U); exact: e. Qed.
+
+(** L preserves bind: the distribution of p >>= f is the Giry bind of the
+    distribution of p with the distributions of f. *)
+Lemma qbs_to_giry_bind d' (M' : measurableType d') (p : qbs_prob (R_qbs R M))
+    (f : qbsHomType (R_qbs R M) (monadP (R_qbs R M'))) (A : set M') :
+  measurable A ->
+  qbs_to_giry (qbs_bind p f : qbs_prob _) A =
+  \int[qbs_to_giry p]_x qbs_to_giry (f x : qbs_prob _) A.
+Proof.
+move=> mA; rewrite qbs_to_giryE (qbs_bind_event _ _ (sigma_Mx_measurable mA)).
+have mh : measurable_fun [set: M] (fun x => qbs_to_giry (f x : qbs_prob _) A).
+  apply: (R_qbs_full sb (M2 := \bar R)) => a ha.
+  apply: monadP_random_event (sigma_Mx_measurable mA).
+  exact: qbs_hom_proof.
+by rewrite ge0_integral_distribution.
+Qed.
+
+End standard_borel_giry.
+
 Section giry_to_qbs.
 Context d (M : measurableType d).
 Variables (encode : {mfun M >-> mR}) (decode : mR -> M).

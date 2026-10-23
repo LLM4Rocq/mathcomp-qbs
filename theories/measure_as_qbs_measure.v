@@ -10,12 +10,10 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad.
 (**md**************************************************************************)
 (* # Embedding Classical Probability into QBS Probability                     *)
 (*                                                                            *)
-(* Shows how standard probability measures on standard Borel spaces           *)
-(* embed into QBS probability triples, and constructs standard                *)
-(* distributions as QBS probabilities.                                        *)
+(* Standard distributions as QBS probabilities. The general embedding of a    *)
+(* probability measure on a standard Borel space is giry_to_qbs (qbs_giry.v). *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*   as_qbs_prob d M f g hf hg hs P == embed probability P into R_qbs M      *)
 (*   qbs_normal_distribution mu sigma == Normal(mu, sigma) as QBS probability *)
 (*   qbs_bernoulli p == Bernoulli(p) as QBS probability on boolQ             *)
 (*   qbs_uniform == Uniform[0,1] as QBS probability on realQ                 *)
@@ -41,30 +39,6 @@ Variable R : realType.
 Local Notation mR := (measurableTypeR R).
 
 Implicit Types (p mu sigma : R).
-
-(** Embedding classical probability into QBS probability.
-    For a standard Borel space M with measurable isomorphism to R,
-    given a probability measure P on M, we construct a QBS triple.
-    The key idea: if g : R -> M is a measurable section (with
-    f : M -> R measurable and g o f = id), then (g, pushforward_f P)
-    is a valid QBS probability triple on R_qbs(M). *)
-
-(** Embed a probability on M into a QBS triple on R_qbs. *)
-Definition as_qbs_prob d (M : measurableType d)
-  (f : M -> mR) (g : mR -> M)
-  (hf : measurable_fun setT f)
-  (hg : measurable_fun setT g)
-  (h_section : forall x, g (f x) = x)
-  (P : probability mR R) : qbs_prob (R_qbs R M).
-Proof.
-apply: (@mkQBSProb R (R_qbs R M) g P).
-exact: hg.
-(* Must be Defined: as_qbs_prob_recover and as_qbs_prob_recover_full
-   rely on transparency to reduce qbs_prob_mu/qbs_prob_event
-   against the underlying pushforward. *)
-Defined.
-
-Arguments as_qbs_prob : clear implicits.
 
 (** Standard distributions as QBS probabilities. *)
 
@@ -94,34 +68,6 @@ Definition qbs_uniform : qbs_prob (realQ R) :=
     (uniform_prob ltr01 : probability mR R)
     (@measurable_id _ mR setT).
 
-Lemma as_qbs_prob_recover d (M : measurableType d)
-  (f : M -> mR) (g : mR -> M)
-  (hf : measurable_fun setT f)
-  (hg : measurable_fun setT g)
-  (h_section : forall x, g (f x) = x)
-  (P : probability mR R)
-  (U : set M) (hU : measurable U) :
-  qbs_prob_mu (as_qbs_prob d M f g hf hg h_section P) (g @^-1` U) =
-  P (g @^-1` U).
-Proof. by []. Qed.
-
-Lemma as_qbs_prob_recover_full d (M : measurableType d)
-  (f : M -> mR) (g : mR -> M)
-  (hf : measurable_fun setT f)
-  (hg : measurable_fun setT g)
-  (h_section : forall x, g (f x) = x)
-  (h_retract : forall r, f (g r) = r)
-  (P : probability mR R)
-  (U : set M) (hU : measurable U) :
-  qbs_prob_event (R_qbs R M) (as_qbs_prob d M f g hf hg h_section P) U =
-  P (f @` U).
-Proof.
-rewrite /qbs_prob_event /=.
-congr (P _).
-rewrite eqEsubset; split => [r hUgr | r [x hUx hfx]].
-- exists (g r) => //; exact: h_retract.
-- rewrite /preimage /= -hfx h_section; exact: hUx.
-Qed.
 
 Lemma qbs_normal_morphism (sigma : R) (hsigma : (0 < sigma)%R) :
   @qbs_morphism R (realQ R) (monadP (realQ R))

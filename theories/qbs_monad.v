@@ -75,28 +75,6 @@ Local Notation mR := (measurableTypeR R).
 Local Notation G := (giry mR R).
 Implicit Types (W X Y Z : qbsType R).
 
-(** Integrals of nonnegative sigma_Mx-measurable functions only depend on
-    the measures of the preimages of sigma_Mx sets. *)
-Lemma ge0_integral_sigma_Mx X (a1 a2 : mR -> X)
-    (m1 m2 : {measure set mR -> \bar R}%R) (k : X -> \bar R) :
-  qbs_Mx a1 -> qbs_Mx a2 -> qbs_measurable X k -> (forall x, 0 <= k x) ->
-  (forall U, sigma_Mx U -> m1 (a1 @^-1` U) = m2 (a2 @^-1` U)) ->
-  \int[m1]_r k (a1 r) = \int[m2]_r k (a2 r).
-Proof.
-move=> ha1 ha2 mk k0 m12.
-have mk1 := mk _ ha1; have mk2 := mk _ ha2.
-have pre (a : mR -> X) : (k \o a) @^-1` `[0%E, +oo]%classic = [set: mR].
-  by apply/seteqP; split => // r _; rewrite /= in_itv /= k0 leey.
-have Pge0 : {in `[0%E, +oo]%classic, forall y : \bar R, 0 <= y}.
-  by move=> y; rewrite inE /= in_itv /= => /andP[].
-transitivity (\int[pushforward m1 (k \o a1)]_(y in `[0%E, +oo]%classic) y).
-  by rewrite ge0_integral_pushforward ?pre//; exact: emeasurable_itv.
-transitivity (\int[pushforward m2 (k \o a2)]_(y in `[0%E, +oo]%classic) y).
-  apply: eq_measure_integral => V mV _; rewrite /pushforward.
-  exact: m12 (qbs_measurable_sigma_Mx mk mV).
-by rewrite ge0_integral_pushforward ?pre//; exact: emeasurable_itv.
-Qed.
-
 (** ** The QBS of probabilities *)
 
 Record qbs_prob_rep X (b : mR -> qbs_prob X) (a : mR -> X) (g : mR -> G) :
@@ -264,7 +242,7 @@ have mha := mh _ (rep_random bind_rep).
 rewrite [LHS](giry_int_bind (qbs_prob_mu p) (rep_measurable bind_rep)
   (h := h \o bind_a))//; first by move=> x; exact: h0.
 rewrite /giry_int; apply: eq_integral => r _.
-apply: (@ge0_integral_sigma_Mx Y bind_a _ (bind_g r)) => //.
+apply: (@ge0_integral_sigma_Mx R Y bind_a _ (bind_g r)) => //.
 - exact: rep_random bind_rep.
 - exact: qbs_prob_alpha_random.
 - by move=> U mU; exact/esym/(rep_event bind_rep).
@@ -297,7 +275,7 @@ exists b2, (fun r => giry_bind (g1 r) (rep_measurable r2)); split.
 - move=> r U mU; rewrite (giry_bindE _ _ (mU _ (rep_random r2))).
   rewrite [LHS]qbs_bind_event//.
   transitivity (\int[g1 r]_t qbs_prob_event Z (g (b1 t)) U).
-    apply: (@ge0_integral_sigma_Mx Y _ b1 _ (g1 r)
+    apply: (@ge0_integral_sigma_Mx R Y _ b1 _ (g1 r)
       (fun y => qbs_prob_event Z (g y) U)) => //.
     + exact: qbs_prob_alpha_random.
     + exact: rep_random r1.
@@ -661,6 +639,39 @@ Proof.
 apply: qbs_prob_equiv_trans (qbs_bind_map _ _ _).
 exact/qbs_bind_equiv_l/qbs_pairP_comm.
 Qed.
+
+(** ** Join and strength laws *)
+
+Definition qbs_joinQ X : qbsHomType (monadP (monadP X)) (monadP X) :=
+  HB.pack (@qbs_join X)
+    (isQBSMorphism.Build R _ _ _ (@qbs_join_morphism X)).
+
+Lemma qbs_join_map_return X (p : monadP X) :
+  qbs_prob_equiv X (qbs_join (monadP_map (qbs_returnQ X) p)) p.
+Proof.
+apply: qbs_prob_equiv_trans (qbs_bind_map _ _ _) _.
+exact: (qbs_bind_returnr p).
+Qed.
+
+Lemma qbs_join_assoc X (P : monadP (monadP (monadP X))) :
+  qbs_prob_equiv X (qbs_join (qbs_join P))
+    (qbs_join (monadP_map (qbs_joinQ X) P)).
+Proof.
+apply: qbs_prob_equiv_trans (qbs_bindA _ _ _) _.
+apply: qbs_prob_equiv_sym; apply: qbs_prob_equiv_trans (qbs_bind_map _ _ _) _.
+exact: qbs_bind_equiv_r.
+Qed.
+
+Lemma qbs_strength_natural W W' X X' (f : qbsHomType W W')
+    (g : qbsHomType X X') (w : W) (p : monadP X) :
+  qbs_strength (f w, monadP_map g p) =
+  monadP_map (qbs_pair (qbs_comp (qbs_fst W X) f) (qbs_comp (qbs_snd W X) g))
+    (qbs_strength (w, p)).
+Proof. exact: qbs_prob_eqP. Qed.
+
+Lemma qbs_strength_snd W X (w : W) (p : monadP X) :
+  monadP_map (qbs_snd W X) (qbs_strength (w, p)) = p.
+Proof. by case: p => a mu ha; exact: qbs_prob_eqP. Qed.
 
 End qbs_monad.
 
