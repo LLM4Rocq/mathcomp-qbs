@@ -120,7 +120,7 @@ Lemma monadP_random_equiv X (b1 b2 : mR -> qbs_prob X) :
   (forall r, qbs_prob_equiv X (b1 r) (b2 r)) ->
   monadP_random X b1 -> monadP_random X b2.
 Proof.
-move=> e [a [g [ha mg g1 hb]]]; exists a, g; split => // r U mU.
+move=> e [a [g [ha mg g1 hb]]]; exists a, g; split=> // r U mU.
 by rewrite -hb// /qbs_prob_event; apply/esym/e.
 Qed.
 
@@ -135,7 +135,7 @@ Qed.
 Local Lemma monadP_const X (p : qbs_prob X) :
   monadP_random X (fun=> p).
 Proof.
-exists (qbs_prob_alpha p), (fun=> qbs_prob_mu p : G); split => //.
+exists (qbs_prob_alpha p), (fun=> qbs_prob_mu p); split=> //.
   exact: qbs_prob_alpha_random.
 by move=> _; exact: probability_setT.
 Qed.
@@ -202,7 +202,7 @@ exists a', g'; split.
   exact: measurableT_comp (measurable_giry_map _) (qbs_rep_measurable (hag n)).
 - by move=> r; rewrite /g' /= /pushforward preimage_setT (qbs_rep_mass (hag _)).
 - move=> r U mU; rewrite (qbs_rep_event (hag _))// /g' /= /pushforward.
-  by congr (_ _); apply/seteqP; split => y /=; rewrite a'enc.
+  by congr (_ _); apply/seteqP; split=> y /=; rewrite a'enc.
 Qed.
 
 End glue.
@@ -238,7 +238,7 @@ Qed.
 Lemma qbs_return_morphism X : qbs_morphism (X := X) (Y := monadP X)
   (@qbs_return X).
 Proof.
-move=> a ha; exists a, (@giry_ret _ mR R); split => //.
+move=> a ha; exists a, (@giry_ret _ mR R); split=> //.
   exact: measurable_giry_ret.
 by move=> r; exact: diracT.
 Qed.
@@ -284,7 +284,7 @@ Proof.
 move=> mh h0; rewrite /qbs_integral /=.
 have mha := mh _ (qbs_rep_random bind_rep).
 rewrite [LHS](giry_int_bind (qbs_prob_mu p) (qbs_rep_measurable bind_rep)
-  (h := h \o bind_a))//; first by move=> x; exact: h0.
+  (h := h \o bind_a))//; first by move=> ?; exact: h0.
 rewrite /giry_int; apply: eq_integral => r _.
 apply: (@ge0_integral_sigma_Mx R Y bind_a _ (bind_g r)) => //.
 - exact: qbs_rep_random bind_rep.
@@ -392,14 +392,14 @@ Proof. by []. Qed.
 Lemma monadP_map_morphism X Y (f : qbsHomType X Y) :
   qbs_morphism (X := monadP X) (Y := monadP Y) (monadP_map f).
 Proof.
-move=> b [a [g [ha mg g1 hb]]]; exists (f \o a), g; split => //.
+move=> b [a [g [ha mg g1 hb]]]; exists (f \o a), g; split=> //.
   exact: qbs_hom_proof.
 by move=> r U mU; rewrite /= monadP_map_event hb//; exact: sigma_Mx_preimage.
 Qed.
 
 HB.instance Definition _ X Y (f : qbsHomType X Y) :=
   isQBSMorphism.Build R (monadP X) (monadP Y) (monadP_map f)
-    (@monadP_map_morphism X Y f).
+    (monadP_map_morphism f).
 
 Lemma qbs_prob_ext X (p1 p2 : qbs_prob X) :
   qbs_prob_alpha p1 = qbs_prob_alpha p2 ->
@@ -434,7 +434,7 @@ Lemma ge0_qbs_integral_equiv X (p1 p2 : qbs_prob X) (h : X -> \bar R) :
   qbs_measurable X h -> (forall x, 0 <= h x) -> qbs_prob_equiv X p1 p2 ->
   qbs_integral X p1 h = qbs_integral X p2 h.
 Proof.
-move=> mh h0 e; apply: ge0_integral_sigma_Mx => //;
+by move=> mh h0 e; apply: ge0_integral_sigma_Mx => //;
   exact: qbs_prob_alpha_random.
 Qed.
 
@@ -531,11 +531,11 @@ exists b, (fun r => giry_map (me r) (g r)); split.
     by rewrite -[A in measurable A]setTI; exact: measurable_RR_to_R.
   have := measurable_giry_xsection mg g1 mC.
   apply: eq_measurable_fun => r _; rewrite /= /pushforward; congr (_ _).
-  by apply/seteqP; split => t; rewrite /xsection /= inE.
+  by apply/seteqP; split=> t; rewrite /xsection /= inE.
 - by move=> r; rewrite /= /pushforward preimage_setT g1.
 - move=> r U mU; rewrite /= qbs_strength_event (hb _ _ (sigma_Mx_section _ mU)).
   rewrite /pushforward; congr (_ _).
-  by apply/seteqP; split => t /=; rewrite be.
+  by apply/seteqP; split=> t /=; rewrite be.
 Qed.
 
 HB.instance Definition _ W X :=
@@ -617,8 +617,8 @@ move=> mU.
 have hb := qbs_Mx_decode_pair (qbs_prob_alpha_random p)
   (qbs_prob_alpha_random q).
 have := measurable_RR_to_R measurableT (mU _ hb); rewrite setTI.
-have E : (fun s : mR => (ap (decode_RR_mR s).1, aq (decode_RR_mR s).2) : X * Y)
-    \o encode_RR_mR = (fun rt : mR * mR => (ap rt.1, aq rt.2) : X * Y).
+have E : (fun s : mR => (ap (decode_RR_mR s).1, aq (decode_RR_mR s).2))
+    \o encode_RR_mR = (fun rt : mR * mR => (ap rt.1, aq rt.2)).
   by apply/funext => rt; rewrite /comp encode_RR_mRK.
 by rewrite -comp_preimage E.
 Qed.
@@ -640,13 +640,13 @@ transitivity (\int[qbs_prob_mu p]_r \int[qbs_prob_mu q]_t f (r, t)).
   apply: eq_integral => r _.
   have mS : measurable [set t | U (ap r, aq t)].
     have := measurable_xsection r mA; congr measurable.
-    by apply/seteqP; split => t; rewrite /xsection /= inE.
+    by apply/seteqP; split=> t; rewrite /xsection /= inE.
   by rewrite -[A in qbs_prob_mu q A]setIT -integral_indic.
 rewrite (fubini_tonelli (m1 := qbs_prob_mu p) (m2 := qbs_prob_mu q) f mf f0).
 apply: eq_integral => t _.
 have mS : measurable [set r | (qbs_swap Y X @^-1` U) (aq t, ap r)].
   have := measurable_ysection t mA; congr measurable.
-  by apply/seteqP; split => r; rewrite /ysection /= inE.
+  by apply/seteqP; split=> r; rewrite /ysection /= inE.
 by rewrite -[A in qbs_prob_mu p A]setIT -integral_indic.
 Qed.
 
