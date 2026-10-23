@@ -1,9 +1,8 @@
 (* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
-From mathcomp Require Import boot algebra reals classical_sets boolp
-  ereal measurable_structure measurable_function measure measure_function
-  probability_measure lebesgue_stieltjes_measure lebesgue_integral
-  lebesgue_measure measurable_realfun probability.
+From mathcomp Require Import boot algebra reals classical_sets boolp ereal
+  measure lebesgue_stieltjes_measure lebesgue_integral measurable_realfun
+  probability.
 From QBS Require Import quasi_borel measure_qbs_adjunction probability_qbs
   qbs_monad.
 
@@ -17,7 +16,9 @@ From QBS Require Import quasi_borel measure_qbs_adjunction probability_qbs
 (*                                                                            *)
 (* ```                                                                        *)
 (*      qbs_to_giry p == distribution of p : qbs_prob (R_qbs R M) on M        *)
-(* giry_to_qbs me md P == the probability (decode, P o encode^-1) on R(M)     *)
+(* giry_to_qbs encode decode decode_meas P == the probability                 *)
+(*                  (decode, P o encode^-1) on R(M); it returns a             *)
+(*                  qbs_prob, not an element of the Giry monad                *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -30,18 +31,18 @@ Unset Printing Implicit Defensive.
 Local Open Scope classical_set_scope.
 Local Open Scope ereal_scope.
 
-Section qbs_giry.
+Section QbsGiry.
 Variable R : realType.
 Local Notation mR := (measurableTypeR R).
 
 Section qbs_to_giry.
 Context d (M : measurableType d).
 
-Definition qbs_prob_alpha_mfun (p : qbs_prob (R_qbs R M)) : {mfun mR >-> M} :=
+Definition qbs_prob_alpha_mfunR (p : qbs_prob (R_qbs R M)) : {mfun mR >-> M} :=
   mfun_Sub (mem_set (qbs_prob_alpha_random p)).
 
 Definition qbs_to_giry (p : qbs_prob (R_qbs R M)) : probability M R :=
-  distribution (qbs_prob_mu p) (qbs_prob_alpha_mfun p).
+  distribution (qbs_prob_mu p) (qbs_prob_alpha_mfunR p).
 
 Lemma qbs_to_giryE (p : qbs_prob (R_qbs R M)) (A : set M) :
   qbs_to_giry p A = qbs_prob_event (R_qbs R M) p A.
@@ -51,12 +52,12 @@ Lemma qbs_integral_giry (p : qbs_prob (R_qbs R M)) (f : M -> \bar R) :
   measurable_fun [set: M] f ->
   (qbs_prob_mu p).-integrable [set: mR] (f \o qbs_prob_alpha p) ->
   qbs_integral (R_qbs R M) p f = \int[qbs_to_giry p]_y f y.
-Proof. by move=> mf intf; rewrite integral_distribution. Qed.
+Proof. by move=> *; rewrite integral_distribution. Qed.
 
 Lemma qbs_prob_equiv_giry (p1 p2 : qbs_prob (R_qbs R M)) (A : set M) :
   qbs_prob_equiv (R_qbs R M) p1 p2 -> measurable A ->
   qbs_to_giry p1 A = qbs_to_giry p2 A.
-Proof. by move=> e mA; exact: (e _ (sigma_Mx_measurable mA)). Qed.
+Proof. by move=> e /sigma_Mx_measurable/(e _). Qed.
 
 Lemma qbs_to_giry_return (x : M) (A : set M) :
   qbs_to_giry (qbs_return (x : R_qbs R M)) A = (\d_x)%R A.
@@ -129,4 +130,4 @@ Qed.
 
 End giry_to_qbs.
 
-End qbs_giry.
+End QbsGiry.

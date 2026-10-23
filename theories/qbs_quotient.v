@@ -1,8 +1,7 @@
 (* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
-From mathcomp Require Import boot algebra reals classical_sets boolp
-  ereal measurable_structure measurable_function probability_measure
-  lebesgue_stieltjes_measure lebesgue_integral.
+From mathcomp Require Import boot algebra reals classical_sets boolp ereal
+  measure lebesgue_stieltjes_measure lebesgue_integral.
 From QBS Require Import quasi_borel probability_qbs qbs_monad.
 
 (**md**************************************************************************)
@@ -16,6 +15,8 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad.
 (* ```                                                                        *)
 (*      qbs_equiv_op X == boolean version of qbs_prob_equiv X                 *)
 (*         qbs_quot X == {eq_quot qbs_equiv_op}, the quotient type            *)
+(*    qbs_quot_Mx X == random elements of qbs_quot X (instance of qbsType)    *)
+(* qbs_prob_equiv_canonical == the EquivRel structure on qbs_equiv_op         *)
 (*      quot_return x == \pi (qbs_return x)                                   *)
 (*      quot_bind q f == \pi (qbs_bind (repr q) f)                            *)
 (*       quot_map f q == \pi (monadP_map f (repr q))                          *)
@@ -32,7 +33,7 @@ Unset Printing Implicit Defensive.
 Local Open Scope classical_set_scope.
 Local Open Scope quotient_scope.
 
-Section qbs_quotient.
+Section QbsQuotient.
 Variable R : realType.
 Local Notation mR := (measurableTypeR R).
 Implicit Types (X Y Z : qbsType R).
@@ -84,8 +85,6 @@ Proof. by apply/qbs_prob_equivP; rewrite reprK. Qed.
 
 End equiv_instances.
 
-Arguments qbs_quot : clear implicits.
-
 (** ** The quotient is a quasi-Borel space (HKSY Sec. V-D(a)) *)
 
 Section quot_qbs.
@@ -129,7 +128,8 @@ End quot_qbs.
 Section lifted_ops.
 Variables (X Y : qbsType R).
 
-Definition quot_return (x : X) : qbs_quot X := \pi_(qbs_quot X) (qbs_return x : qbs_prob X).
+Definition quot_return (x : X) : qbs_quot X :=
+  \pi_(qbs_quot X) (qbs_return x : qbs_prob X).
 
 Definition quot_bind (q : qbs_quot X) (f : qbsHomType X (monadP Y)) :
   qbs_quot Y := \pi_(qbs_quot Y) (qbs_bind (repr q) f : qbs_prob Y).
@@ -141,11 +141,13 @@ Definition quot_integral (q : qbs_quot X) (h : X -> \bar R) : \bar R :=
   qbs_integral X (repr q) h.
 
 Lemma quot_bindE (p : qbs_prob X) (f : qbsHomType X (monadP Y)) :
-  quot_bind (\pi_(qbs_quot X) p) f = \pi_(qbs_quot Y) (qbs_bind p f : qbs_prob Y).
+  quot_bind (\pi_(qbs_quot X) p) f =
+  \pi_(qbs_quot Y) (qbs_bind p f : qbs_prob Y).
 Proof. exact/qbs_quot_eqP/qbs_bind_equiv_l/qbs_prob_equiv_repr. Qed.
 
 Lemma quot_mapE (f : qbsHomType X Y) (p : qbs_prob X) :
-  quot_map f (\pi_(qbs_quot X) p) = \pi_(qbs_quot Y) (monadP_map f p : qbs_prob Y).
+  quot_map f (\pi_(qbs_quot X) p) =
+  \pi_(qbs_quot Y) (monadP_map f p : qbs_prob Y).
 Proof. exact/qbs_quot_eqP/monadP_map_equiv/qbs_prob_equiv_repr. Qed.
 
 Lemma ge0_quot_integralE (p : qbs_prob X) (h : X -> \bar R) :
@@ -157,8 +159,6 @@ exact: qbs_prob_equiv_repr.
 Qed.
 
 End lifted_ops.
-
-Section monad_laws.
 
 Lemma quot_bind_returnl X Y (x : X) (f : qbsHomType X (monadP Y)) :
   quot_bind (quot_return x) f = \pi_(qbs_quot Y) (f x : qbs_prob Y).
@@ -189,6 +189,4 @@ Proof.
 by rewrite [quot_map f q]/quot_map quot_mapE /quot_map monadP_map_comp.
 Qed.
 
-End monad_laws.
-
-End qbs_quotient.
+End QbsQuotient.
