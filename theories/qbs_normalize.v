@@ -16,9 +16,8 @@ From QBS Require Import measurable_aux quasi_borel coproduct_qbs probability_qbs
 (*                                                                            *)
 (* ```                                                                        *)
 (*         qbs_pweight == (x, w) |-> max(0, w) as an extended real            *)
-(*       qbs_weight p r == qbs_pweight (alpha_p r)                            *)
-(*     qbs_evidence p == \int qbs_weight p d mu_p                             *)
-(*      qbs_density p == the measure A |-> \int_A qbs_weight p d mu_p         *)
+(*     qbs_evidence p == the integral of qbs_pweight against p                *)
+(*      qbs_density p == the measure A |-> \int_A qbs_pweight o alpha_p dmu_p *)
 (*  qbs_pdensity mu ha == the same for (alpha, mu), ha : qbs_Mx alpha         *)
 (* qbs_normalize_prob p == the normalised probability on X                    *)
 (*      qbs_normalize p == Some (qbs_normalize_prob p) if the evidence is     *)
@@ -57,15 +56,8 @@ move=> b [_ hb2]; apply/measurable_EFinP.
 by apply: measurable_maxr => //; exact: measurable_cst.
 Qed.
 
-Definition qbs_weight p : mR -> \bar R := qbs_pweight \o qbs_prob_alpha p.
-
-Lemma qbs_weight_ge0 p r : 0 <= qbs_weight p r.
-Proof. exact: qbs_pweight_ge0. Qed.
-
-Lemma measurable_qbs_weight p : measurable_fun [set: mR] (qbs_weight p).
-Proof. exact: qbs_measurable_weight (qbs_prob_alpha_random p). Qed.
-
-Definition qbs_evidence p : \bar R := \int[qbs_prob_mu p]_r qbs_weight p r.
+(** The evidence: the integral of the weight. *)
+Definition qbs_evidence p : \bar R := qbs_integral _ p qbs_pweight.
 
 Section density.
 Variables (alpha : mR -> prodQ X (realQ R)) (mu : probability mR R).
@@ -198,9 +190,8 @@ Lemma qbs_normalize_prob_event_mk (alpha : mR -> prodQ X (realQ R))
 Proof.
 move=> mU; set p := mkQBSProb alpha mu ha.
 have evp : qbs_evidence p = qbs_pdensity mu ha [set: mR].
-  rewrite qbs_pdensityT -[LHS]/(qbs_integral _ p qbs_pweight) /p.
-  rewrite qbs_integral_mk; first exact: qbs_measurable_weight.
-  by [].
+  by rewrite qbs_pdensityT /qbs_evidence qbs_integral_mk//;
+    exact: qbs_measurable_weight.
 rewrite /mnormalize; case: ifPn => [hc|/norP[/negbTE h0 /negbTE hoo]].
   have hev : ~~ (0 < qbs_evidence p < +oo).
     by rewrite evp; move: hc => /orP[] /eqP ->; rewrite ?ltxx ?ltNge ?leey.
@@ -232,8 +223,8 @@ have ebr r : b r = pr r.
   by apply/qbs_prob_eqP => U mU; rewrite qbs_prob_event_mk//; exact: hbe.
 pose d r := qbs_pdensity (giry_prob (g1 r)) ha.
 have evr r : qbs_evidence (b r) = d r [set: mR].
-  rewrite ebr /d qbs_pdensityT -[LHS]/(qbs_integral _ (pr r) qbs_pweight).
-  by rewrite qbs_integral_mk //; exact: qbs_measurable_weight.
+  rewrite ebr /d qbs_pdensityT /qbs_evidence qbs_integral_mk//.
+  exact: qbs_measurable_weight.
 pose P r := 0 < qbs_evidence (b r) < +oo.
 have mev : measurable_fun [set: mR] (fun r => qbs_evidence (b r)).
   exact: (ge0_qbs_integral_morphism qbs_measurable_weight qbs_pweight_ge0 hb).

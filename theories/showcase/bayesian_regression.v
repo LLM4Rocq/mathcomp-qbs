@@ -424,7 +424,7 @@ Lemma wprior_evidence : qbs_evidence wprior = evidence_const%:E.
 Proof.
 have mw0 := @qbs_measurable_weight R F.
 have mw := qbs_measurable_comp (qbs_pair (qbs_id F) obs) mw0.
-rewrite -[LHS]/(qbs_integral _ wprior (@qbs_pweight R F)).
+rewrite /qbs_evidence.
 rewrite !monadP_map_integral//.
 rewrite -[LHS]/(qbs_integral W prior2 (fun sb => (maxr 0 (obs2 sb.1 sb.2))%:E)).
 have -> : (fun sb : W => (maxr 0 (obs2 sb.1 sb.2))%:E) =
