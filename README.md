@@ -58,7 +58,7 @@ This formalization follows:
 | `qbs_monad_integral.v` | 201 | 11 | Integrals, integrability and variance through return and bind |
 | `qbs_quotient.v` | 194 | 19 | Quotient of probability triples; monad laws as equalities |
 | `qbs_giry.v` | 132 | 9 | Comparison with the Giry monad |
-| `pair_qbs_measure.v` | 770 | 21 | Product measures via R ≅ R × R, iterated integration, independence |
+| `pair_qbs_measure.v` | 363 | 15 | Concrete product via R ≅ R × R, Fubini, independence, variance of independent sums |
 | `normal_centred.v` | 280 | 14 | Centred first moment of the normal density, change of variables for `normal_prob` |
 | `measure_as_qbs_measure.v` | 259 | 9 | Normal, Bernoulli and uniform (on any [a, b]) distributions, their expectations, Bernoulli law |
 

@@ -1791,52 +1791,55 @@ evidence is $0$ or infinite.
   $\mathbb{R}\times\mathbb{R} \to \mathbb{R}$ and random element
   $r \mapsto (\alpha_p(d_1(r)), \alpha_q(d_2(r)))$, where
   $(d_1, d_2)$ is the decoding $\mathbb{R} \to \mathbb{R}\times\mathbb{R}$.
+  It is a concrete representative of the monadic product, through which
+  integrals reduce to integrals against $\mu_p \otimes \mu_q$.
 \end{definition}
 
-\begin{definition}[Product Integration]\label{def:qbs_pair_integral}
-  \rocq{QBS.pair_qbs_measure.qbs_pair_integral}
+\begin{lemma}[Product Agrees with the Monadic Product]\label{lem:qbs_prob_pairE}
+  \rocq{QBS.pair_qbs_measure.qbs_prob_pairE}
   \rocqok
-  \uses{def:qbs_prob_pair}
-  $\int_{p \otimes q} h = \int_{\mu_p \otimes \mu_q}
-  h(\alpha_p(r_1), \alpha_q(r_2))$.
-\end{definition}
+  \uses{def:qbs_prob_pair, def:qbs_pairP, def:qbs_prob_equiv}
+  The explicit product probability is equivalent to the monadic product:
+  $p \otimes q \sim \mathrm{qbs\_prob\_pair}(p, q)$.
+\end{lemma}
+\begin{proof}\rocqok\end{proof}
 
-\begin{theorem}[Iterated Integration on QBS Product Measure]\label{thm:qbs_pair_integral_iterated}
-  \rocq{QBS.pair_qbs_measure.qbs_pair_integral_iterated}
+\begin{lemma}[Integrals on a Product of Probabilities]\label{lem:expectation_prod}
+  \rocq{QBS.pair_qbs_measure.integral_prod_fst}
+  \rocq{QBS.pair_qbs_measure.integral_prod_snd}
+  \rocq{QBS.pair_qbs_measure.integral_prod_mul}
   \rocqok
-  \uses{def:qbs_pair_integral}
-  The joint integral equals the iterated integral:
-  $\int_{p \otimes q} h = \int_p \int_q h(x, y)$.
-  This is a special case of Fubini for the specific QBS product
-  measure construction, not the full Fubini theorem on arbitrary
-  product measures.
+  For probabilities $\mu_1, \mu_2$ on $\mathbb{R}$ and integrable
+  functions: $\int_{\mu_1 \otimes \mu_2} h \circ \pi_1 = \int_{\mu_1} h$,
+  symmetrically for~$\pi_2$, and
+  $\int_{\mu_1 \otimes \mu_2} (h_1 \circ \pi_1)(h_2 \circ \pi_2)
+  = \int_{\mu_1} h_1 \cdot \int_{\mu_2} h_2$.
+\end{lemma}
+\begin{proof}\rocqok Fubini.\end{proof}
+
+\begin{theorem}[Fubini for the Product Probability]\label{thm:qbs_pair_integral_iterated}
+  \rocq{QBS.pair_qbs_measure.qbs_prob_pair_integral}
+  \rocq{QBS.pair_qbs_measure.qbs_prob_pair_iterated}
+  \rocqok
+  \uses{def:qbs_prob_pair, def:qbs_integral}
+  If $(r_1, r_2) \mapsto h(\alpha_p(r_1), \alpha_q(r_2))$ is integrable
+  for $\mu_p \otimes \mu_q$, then $\int_{\mathrm{qbs\_prob\_pair}(p,q)} h$
+  is the integral of that function against $\mu_p \otimes \mu_q$, and
+  equals the iterated integral $\int_p \int_q h(x, y)$.
 \end{theorem}
 \begin{proof}
   \rocqok
-  By Fubini's theorem on the product measure $\mu_p \otimes \mu_q$.
+  Change of variables along the encoding, then Fubini on
+  $\mu_p \otimes \mu_q$.
 \end{proof}
 
-\begin{lemma}[First Marginal Integration]\label{lem:qbs_pair_integral_fst}
-  \rocq{QBS.pair_qbs_measure.qbs_pair_integral_fst}
+\begin{lemma}[Product Factorization]\label{lem:qbs_pair_integral_factorization}
+  \rocq{QBS.pair_qbs_measure.qbs_prob_pair_mul}
   \rocqok
-  \uses{def:qbs_pair_integral}
-  Integration over the first component marginalizes the second.
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
-
-\begin{lemma}[Second Marginal Integration]\label{lem:qbs_pair_integral_snd}
-  \rocq{QBS.pair_qbs_measure.qbs_pair_integral_snd}
-  \rocqok
-  \uses{def:qbs_pair_integral}
-  Integration over the second component marginalizes the first.
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
-
-\begin{lemma}[Commutativity of Product Integration]\label{lem:qbs_pair_integral_comm}
-  \rocq{QBS.pair_qbs_measure.qbs_pair_integral_comm}
-  \rocqok
-  \uses{def:qbs_pair_integral, thm:qbs_pair_integral_iterated}
-  $\int_{p \otimes q} h = \int_{q \otimes p} h \circ \mathrm{swap}$.
+  \uses{thm:qbs_pair_integral_iterated, lem:expectation_prod, def:qbs_expect}
+  $\int_{\mathrm{qbs\_prob\_pair}(p,q)} f(x) \cdot g(y)
+  = \mathbb{E}_p[f] \cdot \mathbb{E}_q[g]$ for integrable $f$, $g$
+  and $f \cdot g$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
@@ -1848,8 +1851,8 @@ evidence is $0$ or infinite.
   \rocqok
   \uses{def:qbs_prob_equiv, def:monadP_map, def:qbs_prob_pair}
   Random variables $f : Z \to X$ and $g : Z \to Y$ are \emph{independent}
-  under~$p$ if the joint distribution $(f, g)_*(p)$ equals the product
-  $f_*(p) \otimes g_*(p)$.
+  under~$p$ if the joint distribution $(f, g)_*(p)$ is equivalent to the
+  product $f_*(p) \otimes g_*(p)$.
 \end{definition}
 
 \begin{lemma}[Independence on Rectangles]\label{lem:qbs_indep_rect}
@@ -1862,43 +1865,22 @@ evidence is $0$ or infinite.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
 
-\begin{lemma}[Product-Measure Factorization (Tautology)]\label{lem:qbs_pair_integral_factorization}
-  \rocq{QBS.pair_qbs_measure.qbs_pair_integral_factorization}
-  \rocqok
-  \uses{def:qbs_expect, def:qbs_pair_integral}
-  For functions $f, g$ depending on disjoint coordinates of a
-  product measure:
-  $\int_{p_X \otimes p_Y} f(x) \cdot g(y)
-  = \mathbb{E}_{p_X}[f] \cdot \mathbb{E}_{p_Y}[g]$.
-  This is product-measure factorization (a tautology of
-  products), not a non-trivial statistical independence theorem --
-  the lemma has no independence hypothesis. The genuine
-  independence factorization, using the \texttt{qbs\_indep}
-  predicate, is Lemma~\ref{lem:qbs_integral_indep_factorization}.
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
-
 \begin{lemma}[Independence Factorization]\label{lem:qbs_integral_indep_factorization}
   \rocq{QBS.pair_qbs_measure.qbs_integral_indep_factorization}
   \rocqok
   \uses{def:qbs_indep, lem:qbs_pair_integral_factorization, def:qbs_expect, def:qbs_prob_equiv, def:monadP_map}
-  Genuine independence factorization. For random variables
-  $f : Z \to X$ and $g : Z \to Y$ on a common probability space
-  $p : \mathrm{qbs\_prob}(Z)$ that are independent in the sense of
-  Definition~\ref{def:qbs_indep}, and real-valued test functions
-  $\phi : X \to \mathbb{R}$, $\psi : Y \to \mathbb{R}$:
+  For random variables $f : Z \to X$ and $g : Z \to Y$ independent
+  under $p$, and real-valued test functions $\phi$, $\psi$ (with the
+  integrability hypotheses of the Rocq statement):
   \[
     \mathbb{E}_p\bigl[\phi(f(z)) \cdot \psi(g(z))\bigr]
     = \mathbb{E}_{f_*(p)}[\phi] \cdot \mathbb{E}_{g_*(p)}[\psi].
   \]
-  Unlike Lemma~\ref{lem:qbs_pair_integral_factorization}, the
-  hypothesis \texttt{qbs\_indep} is used non-trivially: the proof
-  rewrites the joint integral against the pushforward
-  $(f, g)_*(p)$ through the product
-  $f_*(p) \otimes g_*(p)$ via \texttt{qbs\_prob\_equiv}, then
-  reduces to the product-measure factorization.
 \end{lemma}
-\begin{proof}\rocqok\end{proof}
+\begin{proof}\rocqok
+  Rewrite the integral along the equivalence given by independence,
+  then apply the product factorization.
+\end{proof}
 
 
 \section{Variance of Independent Sums}\label{sec:var_indep_sum}
@@ -1912,64 +1894,21 @@ evidence is $0$ or infinite.
   r \mapsto f(\alpha_p(r_1)) + g(\alpha_q(r_2)))$.
 \end{definition}
 
-\begin{lemma}[Product Marginal Expectations]\label{lem:expectation_prod}
-  \rocq{QBS.pair_qbs_measure.expectation_prod_fst}
-  \rocq{QBS.pair_qbs_measure.expectation_prod_snd}
-  \rocq{QBS.pair_qbs_measure.expectation_prod_indep}
-  \rocqok
-  \uses{def:qbs_pair_integral}
-  $\mathbb{E}_{p \otimes q}[h \circ \pi_1] = \mathbb{E}_p[h]$, and
-  symmetrically for~$\pi_2$. For independent variables,
-  $\mathbb{E}_{p \otimes q}[h_1 \circ \pi_1 \cdot h_2 \circ \pi_2]
-  = \mathbb{E}_p[h_1] \cdot \mathbb{E}_q[h_2]$.
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
-
-\begin{lemma}[Product Marginal Variances]\label{lem:variance_prod}
-  \rocq{QBS.pair_qbs_measure.variance_prod_fst}
-  \rocq{QBS.pair_qbs_measure.variance_prod_snd}
-  \rocqok
-  \uses{def:qbs_pair_variance}
-  $\mathrm{Var}_{p \otimes q}[h \circ \pi_1] = \mathrm{Var}_p[h]$,
-  and symmetrically for~$\pi_2$.
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
-
 \begin{theorem}[Variance of Independent Sum]\label{thm:qbs_variance_indep_sum}
   \rocq{QBS.pair_qbs_measure.qbs_variance_indep_sum}
   \rocqok
-  \uses{def:qbs_pair_variance, lem:expectation_prod, lem:variance_prod, lem:qbs_pair_integral_factorization}
-  For independent random variables~$f$ and~$g$:
-  $\mathrm{Var}[f + g] = \mathrm{Var}[f] + \mathrm{Var}[g]$.
+  \uses{def:qbs_pair_variance, lem:expectation_prod}
+  If $f \circ \alpha_p$ and $g \circ \alpha_q$ are square-integrable
+  (on the marginals and on the product), then
+  $\mathrm{Var}_{p \otimes q}[f + g] = \mathrm{Var}_p[f] + \mathrm{Var}_q[g]$.
 \end{theorem}
 \begin{proof}
   \rocqok
-  \uses{lem:expectation_prod, lem:variance_prod, lem:qbs_pair_integral_factorization}
-  Decompose $\mathrm{Var}(f+g) = \mathrm{Var}(f) + \mathrm{Var}(g) + 2\,\mathrm{Cov}(f,g)$,
-  then show $\mathrm{Cov}(f,g) = 0$ because
-  $\mathbb{E}[fg] = \mathbb{E}[f] \cdot \mathbb{E}[g]$ by Fubini.
+  \uses{lem:expectation_prod}
+  Decompose $\mathrm{Var}(f+g) = \mathrm{Var}(f) + \mathrm{Var}(g) + 2\,\mathrm{Cov}(f,g)$;
+  the covariance vanishes and the variances reduce to the marginals by
+  Fubini.
 \end{proof}
-
-\begin{lemma}[Product Agrees with the Monadic Product]\label{lem:qbs_prob_pairE}
-  \rocq{QBS.pair_qbs_measure.qbs_prob_pairE}
-  \rocqok
-  \uses{def:qbs_prob_pair, def:qbs_pairP, def:qbs_prob_equiv}
-  The explicit product probability is equivalent to the monadic product:
-  $p \otimes q \sim \mathrm{qbs\_prob\_pair}(p, q)$.
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
-
-\begin{lemma}[Product--Bind Integral]\label{lem:qbs_prob_pair_measure_eq_bind}
-  \rocq{QBS.pair_qbs_measure.qbs_prob_pair_measure_eq_bind}
-  \rocqok
-  \uses{def:qbs_prob_pair, def:qbs_integral, thm:qbs_pair_integral_iterated}
-  If $h \circ \alpha$ is integrable for the product (and $h$ is integrable
-  against $\mu_p \otimes \mu_q$ in the sense of the Rocq statement), then
-  $\int_{\mathrm{qbs\_prob\_pair}(p,q)} h =
-  \int_p \bigl(x \mapsto \int_q (y \mapsto h(x,y))\bigr)$
-  (iterated integration, as for the monadic product).
-\end{lemma}
-\begin{proof}\rocqok\end{proof}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{QBS--Giry Bridge and Classical Distributions}\label{ch:giry}

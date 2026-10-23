@@ -642,7 +642,7 @@ Lemma qbs_morphism_list_rec (W : qbsType R) (b : qbsHomType W Y)
 
 ## Part II: Probability Monad and Integration
 
-Source files: `theories/probability_qbs.v` (689 lines, 47 Qed), `theories/qbs_monad.v` (705 lines, 58 Qed), `theories/qbs_monad_integral.v` (201 lines, 11 Qed), `theories/qbs_normalize.v` (267 lines, 18 Qed), `theories/qbs_quotient.v` (194 lines, 19 Qed), `theories/pair_qbs_measure.v` (770 lines, 21 Qed), `theories/qbs_giry.v` (132 lines, 9 Qed), `theories/normal_centred.v` (280 lines, 14 Qed), `theories/measure_as_qbs_measure.v` (259 lines, 9 Qed), `theories/showcase/bayesian_regression.v` (426 lines, 22 Qed).
+Source files: `theories/probability_qbs.v` (689 lines, 47 Qed), `theories/qbs_monad.v` (705 lines, 58 Qed), `theories/qbs_monad_integral.v` (201 lines, 11 Qed), `theories/qbs_normalize.v` (267 lines, 18 Qed), `theories/qbs_quotient.v` (194 lines, 19 Qed), `theories/pair_qbs_measure.v` (363 lines, 15 Qed), `theories/qbs_giry.v` (132 lines, 9 Qed), `theories/normal_centred.v` (280 lines, 14 Qed), `theories/measure_as_qbs_measure.v` (259 lines, 9 Qed), `theories/showcase/bayesian_regression.v` (426 lines, 22 Qed).
 
 ### 2.1 QBS Probability Triple
 
@@ -1239,25 +1239,15 @@ Lemma qbs_prob_pairE (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y) :
     (qbs_prob_pair X Y p q).
 ```
 
-For integration, `qbs_pair_integral` works directly on `mR * mR`, with no encoding:
-
-```
-Definition qbs_pair_integral (X Y : qbsType R)
-  (p : qbs_prob X) (q : qbs_prob Y)
-  (h : X * Y -> \bar R) : \bar R :=
-  \int[(qbs_prob_mu p \x qbs_prob_mu q)]_rr
-    h (qbs_prob_alpha p rr.1, qbs_prob_alpha q rr.2).
-```
+Integrals against `qbs_prob_pair` reduce to integrals against the product measure `mu_p \x mu_q`, where Fubini applies. `qbs_pair_fun p q h` is `(r1, r2) |-> h (alpha_p r1, alpha_q r2)`.
 
 | Name | Statement |
 |------|-----------|
-| `qbs_pair_integral_iterated` | Joint integral on `mu_p \x mu_q` = iterated QBS integral (under integrability) |
-| `qbs_pair_integral_fst` / `qbs_pair_integral_snd` | Integrating a function of one component recovers the marginal integral |
-| `qbs_pair_integral_comm` | Integrating `h` against `mu_p \x mu_q` = integrating `h \o swap` against `mu_q \x mu_p` |
-| `qbs_prob_pair_measure_eq_bind` | Integral against `qbs_prob_pair p q` = iterated QBS integral |
-| `qbs_pair_integral_factorization` | `E[f x * g y] = E[f] * E[g]` on a product measure |
-
-`qbs_pair_integral_iterated` is iterated integration on this specific product measure, not full Fubini on arbitrary products. `qbs_pair_integral_factorization` is a statement about product measures (the two factors depend on disjoint coordinates), not about statistical independence; the genuine independence statement is in the next section.
+| `integral_prod_fst` / `integral_prod_snd` | On `mu1 \x mu2`, integrating a function of one coordinate gives the marginal integral |
+| `integral_prod_mul` | `\int (h1 r1 * h2 r2) d(mu1 \x mu2) = \int h1 dmu1 * \int h2 dmu2` |
+| `qbs_prob_pair_integral` | Integral against `qbs_prob_pair p q` = integral of `qbs_pair_fun p q h` against `mu_p \x mu_q` (if the latter is integrable) |
+| `qbs_prob_pair_iterated` | Integral against `qbs_prob_pair p q` = iterated QBS integral (Fubini) |
+| `qbs_prob_pair_mul` | `E[f x * g y] = E[f] * E[g]` against `qbs_prob_pair p q` |
 
 ### 2.20 Independence
 
@@ -1292,12 +1282,12 @@ Lemma qbs_integral_indep_factorization (X Y Z : qbsType R)
     (hindep : qbs_indep X Y Z p f g)
     (hmeas : qbs_measurable (prodQ X Y)
        (fun xy : X * Y => (phi xy.1 * psi xy.2)%:E))
-    (hintphi : ...) (hintpsi : ...) (hintjoint : ...) (hintprod : ...) :
+    ... (* integrability of phi o f, psi o g, and of the product *) :
   qbs_integral Z p (fun z => (phi (f z) * psi (g z))%:E) =
   qbs_expect X (monadP_map f p) phi * qbs_expect Y (monadP_map g p) psi.
 ```
 
-(the four `h...` hypotheses are integrability conditions, abbreviated here; see the source for their statements).
+The proof rewrites the integral along the equivalence given by independence and applies `qbs_prob_pair_mul`.
 
 ### 2.21 Variance of Independent Sums
 
@@ -1312,14 +1302,14 @@ Definition qbs_pair_variance (X Y : qbsType R)
       (f (qbs_prob_alpha px rr.1) + g (qbs_prob_alpha py rr.2))%R).
 ```
 
-The main theorem `qbs_variance_indep_sum` states `Var(f(x) + g(y)) = Var_px(f) + Var_py(g)` on the product measure, with `L2` and integrability hypotheses:
+The main theorem `qbs_variance_indep_sum` states `Var(f(x) + g(y)) = Var_px(f) + Var_py(g)` on the product measure, assuming only that `f o alpha_px` and `g o alpha_py` are in `L2` (on the marginals and on the product); the integrability conditions follow from these:
 
 ```
   qbs_pair_variance X Y px py f g =
   (qbs_variance X px f + qbs_variance Y py g)%E.
 ```
 
-It rests on four helper lemmas about a function of one coordinate of a product measure, `expectation_prod_fst`, `expectation_prod_snd`, `variance_prod_fst`, `variance_prod_snd`, and on `expectation_prod_indep` (`E[h1(r1) h2(r2)] = E[h1] E[h2]`).
+It rests on `integral_prod_fst`, `integral_prod_snd` and `integral_prod_mul`.
 
 ### 2.22 Comparison with the Giry Monad (HKSY Prop. 22(3), 23)
 
@@ -1778,7 +1768,7 @@ quasi_borel.v
 
 **Setoid first, quotient second.** The monad laws are proved up to `qbs_prob_equiv` on `qbs_prob X`, and the quotient `qbs_quot X` (`qbs_quotient.v`) restates them as equalities. Congruence of bind and map for equivalence is proved unconditionally.
 
-**Product measure via the retraction R x R -> R.** `qbs_pair_mu` pushes the product measure `mu_p \x mu_q` through `encode_RR_mR` from `standard_borel.v`. The `qbs_pair_integral` function works directly on `mR * mR` for genuine product integration via Fubini. The same retraction decodes the selector in the glue axiom of `P(X)` and the product-closure of standard Borel spaces.
+**Product measure via the retraction R x R -> R.** `qbs_pair_mu` pushes the product measure `mu_p \x mu_q` through `encode_RR_mR` from `standard_borel.v`. Integrals against the resulting product reduce to integrals against `mu_p \x mu_q` (`qbs_prob_pair_integral`), where Fubini applies. The same retraction decodes the selector in the glue axiom of `P(X)` and the product-closure of standard Borel spaces.
 
 **Universe management.** The `\o` composition operator inside `[set ...]` comprehensions was replaced with explicit lambdas in a few places to avoid universe inconsistencies between `algebra_tactics.ring` and the QBS type hierarchy.
 
@@ -1824,7 +1814,7 @@ quasi_borel.v
 | `qbs_monad_integral.v` | 201 | 11 |
 | `qbs_normalize.v` | 267 | 18 |
 | `qbs_quotient.v` | 194 | 19 |
-| `pair_qbs_measure.v` | 770 | 21 |
+| `pair_qbs_measure.v` | 363 | 15 |
 | `qbs_giry.v` | 132 | 9 |
 | `normal_centred.v` | 280 | 14 |
 | `measure_as_qbs_measure.v` | 259 | 9 |
