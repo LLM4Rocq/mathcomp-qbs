@@ -18,7 +18,7 @@ programming semantics.
 
 ## Overview
 
-**411 proofs, 0 Admitted, 0 custom axioms, 6,468 lines across 14 files.**
+**415 proofs, 0 Admitted, 0 custom axioms, 6,491 lines across 15 files.**
 
 > **Note**: A higher-order PPL with denotational semantics in QBS
 > (`ppl_qbs.v`, `ppl_kernel.v`, `showcase/ppl_examples.v`) is
@@ -43,30 +43,31 @@ This formalization follows:
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `quasi_borel.v` | 909 | 61 | HB structure, morphisms, products, exponentials, cartesian closure, the L functor (`qbs_meas`) and L ⊣ R, lattice of QBS structures, empty QBS |
-| `measure_qbs_adjunction.v` | 342 | 21 | Counit of L ⊣ R, standard Borel spaces, R is full on standard Borel domains, order adjunction |
-| `coproduct_qbs.v` | 725 | 43 | Binary and countable coproducts (HKSY Prop. 17), dependent products, lists with cons and recursion, concrete morphisms |
-| `standard_borel.v` | 1,073 | 61 | R ≅ (0,1) via atan, digit interleaving, R ≅ R × R |
+| `measurable_aux.v` | 81 | 3 | Auxiliary measurability lemmas: `measurable_invr`, `measurable_fun_nat_discrete`, `measurable_truncn` |
+| `quasi_borel.v` | 913 | 61 | HB structure, morphisms, products, exponentials, cartesian closure, the L functor (`qbs_meas`) and L ⊣ R, lattice of QBS structures, empty QBS |
+| `measure_qbs_adjunction.v` | 331 | 20 | Counit of L ⊣ R, standard Borel spaces, R is full on standard Borel domains, order adjunction |
+| `coproduct_qbs.v` | 721 | 44 | Binary and countable coproducts (HKSY Prop. 17), dependent products, lists with cons and recursion, concrete morphisms |
+| `standard_borel.v` | 1,033 | 59 | R ≅ (0,1) via atan, digit interleaving, R ≅ R × R |
 
 ### Probability
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `probability_qbs.v` | 536 | 35 | Probability triples, equivalence, integration and integrability, law, expectation, variance |
-| `qbs_monad.v` | 723 | 61 | The HKSY probability monad: return, bind, laws, map, join, strength and its laws, commutativity |
-| `qbs_normalize.v` | 263 | 19 | Normalisation of weighted probabilities (HKSY Sec. VI), as a morphism P(X × R) → P(X) + 1 |
+| `probability_qbs.v` | 515 | 35 | Probability triples, equivalence, integration and integrability, law, expectation, variance |
+| `qbs_monad.v` | 724 | 61 | The HKSY probability monad: return, bind, laws, map, join, strength and its laws, commutativity |
+| `qbs_normalize.v` | 271 | 20 | Normalisation of weighted probabilities (HKSY Sec. VI), as a morphism P(X × R) → P(X) + 1 |
 | `qbs_monad_integral.v` | 202 | 11 | Integrals, integrability and variance through return and bind |
-| `qbs_quotient.v` | 189 | 19 | Quotient of probability triples; monad laws as equalities |
+| `qbs_quotient.v` | 188 | 19 | Quotient of probability triples; monad laws as equalities |
 | `qbs_giry.v` | 133 | 9 | Comparison with the Giry monad |
-| `pair_qbs_measure.v` | 362 | 15 | Concrete product via R ≅ R × R, Fubini, independence, variance of independent sums |
-| `normal_centred.v` | 289 | 16 | Centred first moment and mean of the normal law (`integral_normal_mean`), change of variables for `normal_prob` |
-| `measure_as_qbs_measure.v` | 265 | 11 | Normal, Bernoulli and uniform (on any [a, b]) distributions, their expectations, Bernoulli event probabilities |
+| `pair_qbs_measure.v` | 353 | 16 | Concrete product via R ≅ R × R, Fubini, independence, variance of independent sums |
+| `normal_centred.v` | 300 | 16 | Centred first moment and mean of the normal law (`integral_normal_mean`), change of variables for `normal_prob` |
+| `measure_as_qbs_measure.v` | 270 | 12 | Normal, Bernoulli and uniform (on any [a, b]) distributions, their expectations, Bernoulli event probabilities |
 
 ### Showcase
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `showcase/bayesian_regression.v` | 457 | 29 | Bayesian linear regression (HKSY Sec. VI) with closed-form posterior |
+| `showcase/bayesian_regression.v` | 456 | 29 | Bayesian linear regression (HKSY Sec. VI) with closed-form posterior |
 
 ## Key results
 

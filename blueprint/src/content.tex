@@ -135,8 +135,8 @@ $m\mathbb{R}$ for its Borel measurable space.
 \begin{lemma}[Measurable Gluing]\label{lem:measurable_glue}
   \rocq{QBS.quasi_borel.measurable_glue}
   \rocqok
-  If $P : \mathbb{R} \to \mathbb{N}$ and each $F_i : \mathbb{R} \to M$
-  are measurable, then $\lambda r.\; F_{P(r)}(r)$ is measurable.
+  If $P : T \to \mathbb{N}$ and each $F_i : T \to M$
+  are measurable ($T$ any measurable space), then $\lambda r.\; F_{P(r)}(r)$ is measurable.
   This justifies the gluing axiom for~$R(M)$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
@@ -326,7 +326,7 @@ $m\mathbb{R}$ for its Borel measurable space.
   \rocq{QBS.quasi_borel.sigma_Mx}
   \rocqok
   \uses{def:isQBS}
-  For a QBS~$X$, the induced sigma-algebra is
+  For a QBS~$X$, the induced sigma-algebra (defined as \texttt{sigma\_of qbs\_Mx}) is
   $\sigma_{M_X} = \{U \subseteq X \mid \forall \alpha \in M_X,\;
   \alpha^{-1}(U) \text{ is Borel measurable}\}$.
 \end{definition}
@@ -372,7 +372,8 @@ $m\mathbb{R}$ for its Borel measurable space.
   \uses{def:isQBS}
   Given a QBS~$X$ and a predicate $P \subseteq X$, the subspace QBS
   has carrier $\{x : X \mid P(x)\}$ with $\alpha$ random iff
-  $\mathrm{proj}_1 \circ \alpha \in M_X$.
+  $\mathrm{proj}_1 \circ \alpha \in M_X$. The projection is bundled as
+  \texttt{qbs\_sval}, a QBS morphism $\mathrm{subQ}\ X\ P \to X$.
 \end{definition}
 
 
@@ -673,10 +674,12 @@ $m\mathbb{R}$ for its Borel measurable space.
 
 \begin{definition}[$\mathbb{N}$ Is Standard Borel]\label{def:nat_standard_borel}
   \rocq{QBS.measure_qbs_adjunction.nat_standard_borel}
+  \rocq{QBS.measurable_aux.measurable_truncn}
   \rocqok
   \uses{def:standard_borel_wit}
   $\mathbb{N}$ has a standard Borel witness (embedding $n \mapsto n$,
-  retraction \texttt{truncn}).
+  retraction \texttt{truncn}, measurable by \texttt{measurable\_truncn}
+  from \texttt{measurable\_aux.v}).
 \end{definition}
 
 \begin{definition}[$\mathbb{B}$ Is Standard Borel]\label{def:bool_standard_borel}
@@ -1960,6 +1963,7 @@ probability measure on a standard Borel space is \texttt{giry\_to\_qbs}
 
 \begin{lemma}[Uniform as a Morphism on Intervals]\label{lem:qbs_uniform_of_morphism}
   \rocq{QBS.measure_as_qbs_measure.qbs_uniform_of_morphism}
+  \rocq{QBS.measurable_aux.measurable_invr}
   \rocqok
   \uses{def:qbs_interval_uniform, def:monadP}
   On the subspace $\{(a,b) \mid a < b\}$ of $\mathbb{R} \times \mathbb{R}$,
@@ -2105,7 +2109,7 @@ probability measure on a standard Borel space is \texttt{giry\_to\_qbs}
   \rocqok
   \uses{def:qbs_prob, def:R_qbs}
   Given measurable $e : M \to \mathbb{R}$ with measurable left inverse
-  $d : \mathbb{R} \to M$ ($d \circ e = \mathrm{id}$, e.g.\ a standard Borel
+  $d : \mathbb{R} \to M$, both bundled as measurable functions ($d \circ e = \mathrm{id}$, e.g.\ a standard Borel
   witness) and a probability~$P$ on~$M$, the QBS probability
   $(d,\; e_*(P))$ on $R(M)$.
 \end{definition}
