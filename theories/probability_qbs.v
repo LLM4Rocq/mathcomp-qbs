@@ -32,6 +32,12 @@ From QBS Require Import quasi_borel.
 (*   qbs_integrable_equiv, qbs_variance_equiv == equivalent probabilities     *)
 (*                           agree on integrability and variance              *)
 (*   qbs_variance_affine  == Var(a * h + b) = a^2 * Var(h)                    *)
+(*   qbs_measurable X h   == h o alpha is Borel for every random alpha        *)
+(*   qbs_expect X p h     == expectation of a real function                   *)
+(*   qbs_prob_event X p U == mu (alpha @^-1` U)                               *)
+(*   qbs_variance X p h   == variance of h o alpha under mu                   *)
+(*   qbs_rv X p h hm      == random variable from a measurable h o alpha      *)
+(*   measurable_invr      == measurability of the inverse function on R       *)
 (* ```                                                                        *)
 (* The probability monad itself is in qbs_monad.v.                            *)
 (******************************************************************************)
@@ -429,8 +435,8 @@ Lemma qbs_variance_equiv X (p1 p2 : qbs_prob X) (h : X -> R) :
   qbs_variance X p1 h = qbs_variance X p2 h.
 Proof.
 move=> mh e; rewrite !qbs_varianceE_integral.
-have ee : qbs_expect X p1 h = qbs_expect X p2 h := qbs_integral_equiv mh e.
-rewrite ee; apply: qbs_integral_equiv e => a ha.
+rewrite /qbs_expect (qbs_integral_equiv mh e).
+apply: qbs_integral_equiv e => a ha.
 have /measurable_EFinP mha := mh _ ha.
 apply/measurable_EFinP/measurable_funM; apply: measurable_funB => //.
 Qed.
@@ -480,7 +486,7 @@ have -> : (fun x => ((f \o normr \o h) (qbs_prob_alpha p x))%:E) =
           (fun x => ((f \o normr \o rv) x)%:E) by [].
 have := @markov _ _ R (qbs_prob_mu p) rv f eps heps hmf hf0 hfnd.
 suff -> : (\int[qbs_prob_mu p]_x (((f \o normr) \o rv) x)%:E)%E =
-          'E_(qbs_prob_mu p)[((f \o [eta normr]) \o rv)] by [].
+          'E_(qbs_prob_mu p)[((f \o normr) \o rv)] by [].
 by rewrite unlock.
 Qed.
 
