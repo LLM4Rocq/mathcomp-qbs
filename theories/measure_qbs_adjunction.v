@@ -287,11 +287,11 @@ Definition Mx_of (T : Type) (S : set (set T)) : set (mR -> T) :=
 
 Lemma sigma_of_antitone (T : Type) (Mx1 Mx2 : set (mR -> T)) :
   Mx1 `<=` Mx2 -> sigma_of Mx2 `<=` sigma_of Mx1.
-Proof. by move=> h U hU a /h; exact: hU. Qed.
+Proof. by move=> h U + a /h; apply. Qed.
 
 Lemma Mx_of_antitone (T : Type) (S1 S2 : set (set T)) :
   S1 `<=` S2 -> Mx_of S2 `<=` Mx_of S1.
-Proof. by move=> h a ha U /h; exact: ha. Qed.
+Proof. by move=> h a + U /h; apply. Qed.
 
 Lemma sigma_of_Mx_of (T : Type) (S : set (set T)) (Mx : set (mR -> T)) :
   S `<=` sigma_of Mx <-> Mx `<=` Mx_of S.
