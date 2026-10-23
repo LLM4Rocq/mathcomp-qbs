@@ -5,9 +5,11 @@
 This formalization was developed with
 [Claude Opus 4.6](https://claude.ai/claude-code) using
 [Rocq-MCP](https://github.com/LLM4Rocq/rocq-mcp) for interactive
-proof development. Claude wrote all 9,043 lines of Rocq code (414
-proofs, 0 Admitted) with guidance from a human collaborator who
-provided mathematical direction and design decisions.
+proof development, with guidance from a human collaborator who
+provided mathematical direction and design decisions. It was then
+ported to MathComp 2.6 / analysis 1.18 and refactored (notably the
+probability monad, now the one of HKSY) with Claude Opus 5.5 using
+[rocq-mcp-evolve](https://github.com/LLM4Rocq/rocq-mcp-evolve).
 
 A formalization of Quasi-Borel Spaces (QBS) in Rocq using
 [math-comp analysis](https://github.com/math-comp/analysis),
@@ -16,7 +18,7 @@ programming semantics.
 
 ## Overview
 
-**414 proofs, 0 Admitted, 0 custom axioms, 9,043 lines across 13 files.**
+**308 proofs, 0 Admitted, 0 custom axioms, 5,950 lines across 12 files.**
 
 > **Note**: A higher-order PPL with denotational semantics in QBS
 > (`ppl_qbs.v`, `ppl_kernel.v`, `showcase/ppl_examples.v`) is
@@ -31,7 +33,7 @@ cartesian-closed category with a well-behaved probability monad.
 
 This formalization follows:
 - ["A Convenient Category for Higher-Order Probability Theory"](https://arxiv.org/abs/1701.02547)
-  by Heunen, Kammar, Staton, Yang (LICS 2017)
+  by Heunen, Kammar, Staton, Yang (LICS 2017), referred to as HKSY
 - The [Isabelle AFP formalization](https://www.isa-afp.org/entries/Quasi_Borel_Spaces.html)
   by Hirata, Minamide, Sato
 
@@ -41,86 +43,82 @@ This formalization follows:
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `quasi_borel.v` | 708 | 36 | HB structure via Section+`HB.instance`, morphisms, products, exponentials, cartesian closure (β/η) |
-| `measure_qbs_adjunction.v` | 575 | 32 | L⊣R hom-set bijection, naturality (dom/cod/square), standard Borel (`{mfun}`), full faithfulness |
-| `coproduct_qbs.v` | 711 | 25 | Binary/general coproducts, dependent products, list type |
-| `probability_qbs.v` | 1,325 | 63 | Probability monad: return, bind, 3 monad laws (setoid), strength, normalizer |
-| `pair_qbs_measure.v` | 727 | 19 | Product measures via R≅R×R, iterated integration, product-measure and genuine independence factorizations |
-| `qbs_prob_quot.v` | 314 | 17 | Setoid quotient for probability triples |
-| `measure_as_qbs_measure.v` | 275 | 9 | Normal, Bernoulli, uniform distributions, E[Normal]=μ |
-| `qbs_quotient.v` | 312 | 13 | Mathcomp quotient type for QBS probability spaces |
+| `quasi_borel.v` | 821 | 49 | HB structure, morphisms, products, exponentials, cartesian closure, the L functor (`qbs_meas`) and L ⊣ R |
+| `measure_qbs_adjunction.v` | 332 | 14 | Counit of L ⊣ R, standard Borel spaces, R is full on standard Borel domains |
+| `coproduct_qbs.v` | 464 | 19 | Binary and countable coproducts (HKSY Prop. 17), dependent products, lists |
+| `standard_borel.v` | 1,287 | 57 | R ≅ (0,1) via atan, digit interleaving, R ≅ R × R |
 
-### Bridges and analysis
+### Probability
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `qbs_giry.v` | 192 | 12 | QBS↔Giry monad connection, integral correspondence |
-| `qbs_kernel.v` | 418 | 21 | QBS↔s-finite kernel bridge, Dirac kernels, composition |
-| `standard_borel.v` | 1,274 | 60 | R↔(0,1) via atan, digit interleaving, R≅R×R |
-| `normal_algebra.v` | 1,286 | 73 | Product of Gaussians, normalizing constant computation |
+| `probability_qbs.v` | 483 | 26 | Probability triples, equivalence, integration, law, expectation |
+| `qbs_monad.v` | 679 | 56 | The HKSY probability monad: return, bind, laws, map, join, strength, commutativity |
+| `qbs_normalize.v` | 161 | 12 | Normalisation of weighted probabilities (HKSY Sec. VI) |
+| `qbs_quotient.v` | 194 | 19 | Quotient of probability triples; monad laws as equalities |
+| `qbs_giry.v` | 132 | 9 | Comparison with the Giry monad |
+| `pair_qbs_measure.v` | 770 | 21 | Product measures via R ≅ R × R, iterated integration, independence |
+| `measure_as_qbs_measure.v` | 201 | 4 | Normal, Bernoulli and uniform distributions and their expectations |
 
 ### Showcase
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `showcase/bayesian_regression.v` | 926 | 34 | Bayesian linear regression with explicit normalizing constant |
+| `showcase/bayesian_regression.v` | 426 | 22 | Bayesian linear regression (HKSY Sec. VI) with closed-form posterior |
 
 ## Key results
 
-- **Cartesian closure**: `qbs_eval`, `qbs_curry`, `qbs_curry_morph`,
-  `qbs_curry_eval` (β), `qbs_eval_curry` (η)
-- **L⊣R hom-set bijection**: `lr_adj_iff`
-- **L⊣R naturality**: `lr_adj_natural_dom` (contravariant in X),
-  `lr_adj_natural_cod` (covariant in M), `lr_adj_natural_square`
-  (full commuting square), plus the L-side preimage variants
-  `lr_adj_natural_dom_preimage` / `lr_adj_natural_cod_preimage`
-- **Full faithfulness**: `R_full_faithful_standard_borel`
-- **Probability monad**: `qbs_bind_returnl`, `qbs_bind_returnr`, `qbs_bindA`
-- **Iterated integration on product measures**: `qbs_pair_integral_iterated`
-  (Fubini for the specific QBS product measure construction)
-- **Product-measure factorization**: `qbs_pair_integral_factorization`
-  (E[fg] = E[f]E[g] when f, g depend on disjoint coordinates of a
-  product measure; tautology of product measures)
-- **Genuine independence factorization**: `qbs_integral_indep_factorization`
-  (E[fg] = E[f]E[g] from `qbs_indep`, via pushforward equivalence;
-  uses the `qbs_indep` predicate non-trivially)
-- **QBS↔Giry**: `qbs_to_giry`, `qbs_integral_giry`
-- **R≅R×R**: `pair_standard_borel`, `encode_RRK`
-- **Normalizer**: `qbs_normalize`, `qbs_normalize_total`, `qbs_normalize_integral`
-- **Distributions**: `qbs_expect_normal`, `qbs_expect_bernoulli`, `qbs_expect_uniform`
-- **Bayesian regression**: `evidence_value`, `program_integrates_to_1`
-- **Normal density**: `normal_pdf_times` (product of Gaussians)
-- **S-finite kernel bridge**: `qbs_prob_sfinite`, `qbs_morph_kdirac`, `kernel_integration`
+- **Cartesian closure**: `qbs_curry_morph`, `qbs_uncurry`, `qbs_curryK` (β),
+  `qbs_uncurryK` (η), `qbs_curry_morph_uniq`
+- **L ⊣ R** (HKSY Prop. 15(1)): `qbs_morphism_measurableP`, where
+  `qbs_meas X` is X with the sigma-algebra `sigma_Mx`; counit
+  `adjunction_counit`
+- **R is full on standard Borel domains**: `R_qbs_full`,
+  `sigma_Mx_standard_borel`
+- **Countable coproducts** (HKSY Prop. 17): `sigmaQ`, `sigma_case`,
+  `sigma_case_uniq`
+- **Probability monad**: `qbs_return`, `qbs_bind`, laws
+  `qbs_bind_returnl`, `qbs_bind_returnr`, `qbs_bindA`; `monadP_map`,
+  `qbs_join`, `qbs_strength`; internal bind `qbs_bind_internal`
+  (HKSY Thm. 21); commutativity `qbs_pairP_comm`, `qbs_bind_comm`
+  (HKSY Prop. 22(2))
+- **Quotient**: on the quotient type `qbs_quot` the monad laws hold
+  as equalities
+- **QBS ↔ Giry**: `qbs_to_giry`, `qbs_integral_giry`, and on standard
+  Borel spaces `qbs_to_giry_inj`, `qbs_to_giry_bind`
+- **Integration**: `qbs_integral_law`, `qbs_expectE` (expectation is
+  `'E` on the law)
+- **Independence**: `qbs_indep_rect` (product rule),
+  `qbs_integral_indep_factorization` (E[fg] = E[f]E[g])
+- **R ≅ R × R**: `pair_standard_borel`, `encode_RRK`
+- **Normaliser**: `qbs_normalize`, `qbs_normalize_event`,
+  `qbs_normalize_equiv`
+- **Distributions**: `qbs_expect_bernoulli`, `qbs_expect_uniform`,
+  `qbs_expect_normal`
+- **Bayesian regression**: `program_posterior` (the program normalises
+  to an explicit Gaussian posterior on functions R => R),
+  `wprior_evidence` (closed-form evidence)
 
 ## Limitations
 
-The formalization is honest about its scope. Key limitations:
-
-- **Probability monad uses the pointwise random-element condition**
-  (`monadP_random_pw`), not the strong shared condition. As a result,
-  `qbs_bind` requires an explicit diagonal-randomness proof and the
-  three monad laws (`qbs_bind_returnl`, `qbs_bind_returnr`, `qbs_bindA`)
-  are stated up to `qbs_prob_equiv` (setoid equivalence). Congruence
-  for `qbs_bind` is provided in special cases (`qbs_bind_equiv_l`,
-  `qbs_bind_strong_equiv_l`, `qbs_bind_equiv_l_return`); a fully
-  unconditional congruence would require disintegration.
+- **Monad laws hold up to `qbs_prob_equiv`** on the raw triples
+  (`monadP`); they are equalities on the quotient `qbs_quot`.
 
 - **Standard Borel** is defined via the existence of an
   encode/decode pair, not via the classical Polish-space
   characterization.
 
-- **`qbs_normalize` returns `option`** and may return `None` when
-  the evidence is zero or infinite. Programs using normalization
-  must check or prove the success case.
+- **`qbs_normalize` returns `option`**: it returns `None` when the
+  evidence is zero or infinite.
 
-- **`qbs_expect_normal`** (E[Normal(μ,σ)] = μ) currently requires
-  three analytic hypotheses (identity integrability against
-  normal_prob, odd-function integrability, odd integral = 0). These
-  are standard analytic facts not yet in mathcomp-analysis.
+- **`qbs_expect_normal`** (E[Normal(μ,σ)] = μ) currently takes as
+  hypotheses the integrability of the identity and of
+  (x − μ)·pdf(x), and the vanishing of the centred first moment
+  (`centred_moment0`).
 
 ## Requirements
 
-- Rocq 9.0 -- 9.3 (tested with 9.2.0)
+- Rocq 9.2 (tested with 9.2.0; the opam file allows 9.0 -- 9.3)
 - Math-comp 2.6.x
 - Math-comp analysis 1.18.x
 - Hierarchy Builder 1.10.x
