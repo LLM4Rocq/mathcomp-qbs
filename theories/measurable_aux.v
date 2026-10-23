@@ -33,7 +33,7 @@ Local Abbreviation mR := (measurableTypeR R).
 
 Lemma measurable_invr : measurable_fun [set: mR] (@GRing.inv R).
 Proof.
-rewrite -(setUv [set (0 : mR)%R]); apply/measurable_funU => //.
+rewrite -(setUv [set (0 : mR)]); apply/measurable_funU => //.
   exact: measurableC.
 split; first exact: measurable_fun_set1.
 apply: open_continuous_measurable_fun.
@@ -54,7 +54,7 @@ have -> : D `&` g @^-1` Y = \bigcup_(n in Y) (D `&` g @^-1` [set n]).
   apply/seteqP; split=> [r [Dr Ygr]|r [n Yn [Dr /= gr]]].
     by exists (g r).
   by split=> //; rewrite /preimage /= gr.
-by apply: bigcup_measurable => n Yn; exact: hg.
+by apply: bigcup_measurable => n _; exact: hg.
 Qed.
 
 (** truncn : R -> nat is measurable.
@@ -67,14 +67,14 @@ Proof.
 apply: measurable_fun_nat_discrete => n; rewrite setTI.
 have -> : (truncn : mR -> nat) @^-1` [set n] =
     if n is 0%N then [set` `]-oo, 1%:R[] else [set` `[n%:R, n.+1%:R[].
-  apply/seteqP; split => r /=; rewrite /preimage /=.
-  - case: n => [|n] h /=.
+  apply/seteqP; split=> r /=; rewrite /preimage /=.
+    case: n => [|n] h /=.
       by rewrite in_itv /= -real_truncn_le_nat ?num_real // h.
     have r1 : 1 <= r by rewrite -truncn_gt0 h.
     by rewrite in_itv /= -h truncn_itv // (le_trans ler01 r1).
-  - case: n => [|n] /=; rewrite in_itv /=.
-      by move=> r1; apply/truncn0Pn; rewrite real_ltNge ?num_real in r1.
-    by move=> hr; apply: truncn_def.
+  case: n => [|n] /=; rewrite in_itv /=.
+    by move=> r1; apply/truncn0Pn; rewrite real_ltNge ?num_real in r1.
+  by apply: truncn_def.
 by case: n => [|n]; exact: measurable_itv.
 Qed.
 

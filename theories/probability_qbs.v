@@ -134,13 +134,13 @@ Lemma ge0_integral_sigma_Mx X (a1 a2 : mR -> X)
 Proof.
 move=> ha1 ha2 mk k0 m12.
 have mk1 := mk _ ha1; have mk2 := mk _ ha2.
-have pre (a : mR -> X) : (k \o a) @^-1` `[0%E, +oo]%classic = [set: mR].
-  by apply/seteqP; split => // r _; rewrite /= in_itv /= k0 leey.
-have Pge0 : {in `[0%E, +oo]%classic, forall y : \bar R, 0 <= y}.
+have pre (a : mR -> X) : (k \o a) @^-1` `[0, +oo]%classic = [set: mR].
+  by apply/seteqP; split=> // r _; rewrite /= in_itv /= k0 leey.
+have Pge0 : {in `[0, +oo]%classic, forall y : \bar R, 0 <= y}.
   by move=> y; rewrite inE /= in_itv /= => /andP[].
-transitivity (\int[pushforward m1 (k \o a1)]_(y in `[0%E, +oo]%classic) y).
+transitivity (\int[pushforward m1 (k \o a1)]_(y in `[0, +oo]%classic) y).
   by rewrite ge0_integral_pushforward ?pre//; exact: emeasurable_itv.
-transitivity (\int[pushforward m2 (k \o a2)]_(y in `[0%E, +oo]%classic) y).
+transitivity (\int[pushforward m2 (k \o a2)]_(y in `[0, +oo]%classic) y).
   apply: eq_measure_integral => V mV _; rewrite /pushforward.
   exact: m12 (qbs_measurable_sigma_Mx mk mV).
 by rewrite ge0_integral_pushforward ?pre//; exact: emeasurable_itv.
@@ -166,8 +166,8 @@ Lemma qbs_integralE X (p : qbs_prob X) (h : X -> \bar R) :
   qbs_integral X p h = qbs_integral X p h^\+ - qbs_integral X p h^\-.
 Proof.
 rewrite /qbs_integral integralE; congr (_ - _).
-- by apply: eq_integral => r _; rewrite funepos_comp.
-- by apply: eq_integral => r _; rewrite funeneg_comp.
+  by apply: eq_integral => r _; rewrite funepos_comp.
+by apply: eq_integral => r _; rewrite funeneg_comp.
 Qed.
 
 (** Integration respects equivalence for sigma_Mx-measurable integrands. *)
@@ -192,7 +192,7 @@ End ge0_integral_sigma_Mx.
 
 Lemma qbs_measurableP X (h : X -> \bar R) :
   qbs_measurable X h <->
-  measurable_fun [set: qbs_meas X] (h : qbs_meas X -> \bar R).
+  measurable_fun [set: qbs_meas X] h.
 Proof. exact: (qbs_morphism_measurableP (M := \bar R)). Qed.
 
 Definition qbs_prob_alpha_mfun X (p : qbs_prob X) :
@@ -225,10 +225,10 @@ Lemma qbs_integral_law X (p : qbs_prob X) (h : X -> \bar R) :
 Proof.
 move=> mh; rewrite qbs_integralE [RHS]integralE.
 congr (_ - _)%E.
-- apply: ge0_qbs_integral_law (fun x => funepos_ge0 _ _).
+  apply: ge0_qbs_integral_law (fun x => funepos_ge0 _ _).
   exact: qbs_measurable_funepos.
-- apply: ge0_qbs_integral_law (fun x => funeneg_ge0 _ _).
-  exact: qbs_measurable_funeneg.
+apply: ge0_qbs_integral_law (fun x => funeneg_ge0 _ _).
+exact: qbs_measurable_funeneg.
 Qed.
 
 (** Expectation of a real-valued function h on a QBS probability, defined as
@@ -245,7 +245,7 @@ Lemma qbs_expectE X (p : qbs_prob X)
   qbs_expect X p f = ('E_(qbs_law p)[f])%E.
 Proof.
 rewrite /qbs_expect qbs_integral_law ?unlock//.
-apply/qbs_measurableP; exact/measurable_EFinP/measurable_funPT.
+by apply/qbs_measurableP; exact/measurable_EFinP/measurable_funPT.
 Qed.
 
 Definition qbs_prob_event X (p : qbs_prob X)
@@ -292,7 +292,7 @@ Proof.
 move=> mh e /integrableP[_ fin]; apply/integrableP; split.
   exact: mh _ (qbs_prob_alpha_random p2).
 have mabs : qbs_measurable X (abse \o h).
-  by move=> a ha; exact: measurableT_comp (mh _ ha).
+  by move=> ? /mh; exact: measurableT_comp.
 move: fin; rewrite -[Y in Y < _]/(qbs_integral X p1 (abse \o h)).
 by rewrite (qbs_integral_equiv mabs e).
 Qed.
@@ -302,7 +302,7 @@ Lemma qbs_integrableP X (p : qbs_prob X) (h : X -> \bar R) :
   qbs_measurable X h ->
   qbs_integrable X p h <-> qbs_integral X p (fun x => `|h x|) < +oo.
 Proof.
-move=> mh; split=> [/integrableP[_ //]|fin]; apply/integrableP; split => //.
+move=> mh; split=> [/integrableP[_ //]|fin]; apply/integrableP; split=> //.
 exact: mh _ (qbs_prob_alpha_random p).
 Qed.
 
@@ -379,7 +379,7 @@ have := integrableD measurableT
   (integrableB measurableT isq (integrableZl measurableT (2 * c)%R ik))
   (finite_measure_integrable_cst (qbs_prob_mu p) (c ^+ 2)%R measurableT).
 apply: eq_integrable => // r _ /=.
-rewrite -!EFinD; congr (_%:E); ring.
+by rewrite -!EFinD; congr (_%:E); ring.
 Qed.
 
 (** Monotonicity of the integral. *)
@@ -393,8 +393,8 @@ Lemma ge0_qbs_integral_le X (p : qbs_prob X) (f g : X -> \bar R) :
   (forall x, f x <= g x) -> qbs_integral X p f <= qbs_integral X p g.
 Proof.
 move=> mf mg f0 fg; apply: ge0_le_integral => //.
-- exact: mf _ (qbs_prob_alpha_random p).
-- exact: mg _ (qbs_prob_alpha_random p).
+  exact: mf _ (qbs_prob_alpha_random p).
+exact: mg _ (qbs_prob_alpha_random p).
 Qed.
 
 Lemma qbs_varianceE X (p : qbs_prob X) (h : X -> R) :
@@ -412,11 +412,7 @@ Lemma qbs_varianceZ X (p : qbs_prob X) (a : R)
   qbs_variance X p (a \o* h)%R =
   (a ^+ 2)%:E * qbs_variance X p h.
 Proof.
-move=> hL2; rewrite /qbs_variance.
-have -> : ((a \o* h)%R \o qbs_prob_alpha p) =
-          (a \o* (h \o qbs_prob_alpha p))%R.
-  by apply: funext => r.
-exact: varianceZ.
+move=> hL2; exact: varianceZ.
 Qed.
 
 (** The variance as the integral of the squared deviation from the mean. *)
@@ -438,7 +434,7 @@ move=> mh e; rewrite !qbs_varianceE_integral.
 rewrite /qbs_expect (qbs_integral_equiv mh e).
 apply: qbs_integral_equiv e => a ha.
 have /measurable_EFinP mha := mh _ ha.
-apply/measurable_EFinP/measurable_funM; apply: measurable_funB => //.
+by apply/measurable_EFinP/measurable_funM; apply: measurable_funB.
 Qed.
 
 (** Variance of an affine function, Var(a * h + b) = a^2 * Var(h). *)
@@ -494,7 +490,7 @@ Proof.
 pose rv : {RV (qbs_prob_mu p) >-> R} := qbs_rv hm.
 have hE : qbs_expect X p h = 'E_(qbs_prob_mu p)[rv] by rewrite unlock.
 rewrite hE.
-exact: (@chebyshev _ _ R _ rv eps heps).
+exact: chebyshev rv eps heps.
 Qed.
 
 End probability_inequalities.
