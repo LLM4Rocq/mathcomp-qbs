@@ -8,14 +8,13 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad standard_borel.
 (**md**************************************************************************)
 (* # Product Measures on QBS Probability Spaces                               *)
 (*                                                                            *)
-(* A concrete representation of the product of QBS probabilities, through     *)
-(* which integrals reduce to integrals on the product measure mu_p \x mu_q,   *)
-(* so that Fubini and the variance of mathcomp-analysis apply.                *)
+(* The monadic product monadP_pair p q of qbs_monad.v is represented by the   *)
+(* product measure mu_p \x mu_q pushed to R along R * R -> R                  *)
+(* (qbs_prob_pairE), so that its integrals are integrals against mu_p \x mu_q *)
+(* and Fubini and the variance of mathcomp-analysis apply.                    *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*   qbs_prob_pair p q == product QBS probability on prodQ X Y, the           *)
-(*                            pushforward of mu_p \x mu_q along R * R -> R;   *)
-(*                            it is equal to monadP_pair                      *)
+(*      qbs_prob_pair p q == the encoded product, equal to monadP_pair p q    *)
 (*                            (qbs_prob_pairE)                                *)
 (*      qbs_pair_alpha p q == the pairing map mR -> X * Y of the two alphas   *)
 (*   qbs_pair_mu_build p q == the probability measure on mR obtained by       *)
@@ -23,7 +22,12 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad standard_borel.
 (*     qbs_pair_fun p q h == h composed with the two alphas, on mR * mR       *)
 (*   integral_prod_{fst,snd,mul} == integrals of h rr.1, h rr.2, h1 rr.1 *    *)
 (*                            h2 rr.2 against a product of probabilities      *)
+(*   monadP_pair_integrable, monadP_pair_integral, monadP_pair_iterated,      *)
+(*   monadP_pair_mul == integrability and integrals against monadP_pair p q:  *)
+(*                            product measure, Fubini, E[f g] = E[f] E[g]     *)
 (*   qbs_indep p f g == independence of f and g under p                       *)
+(*   qbs_indep_rect, qbs_integral_indepM == product rule on rectangles and    *)
+(*                            E[phi(f) psi(g)] = E[phi(f)] E[psi(g)]          *)
 (*   qbs_pair_variance px py f g == variance of f(x) + g(y) on product        *)
 (* ```                                                                        *)
 (******************************************************************************)
@@ -189,66 +193,85 @@ Qed.
 
 End prod_meas.
 
-(** ** Integrals against the encoded product *)
+(** ** Integrals against the product *)
 
 Definition qbs_pair_fun (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y)
     (h : X * Y -> \bar R) (rr : mR * mR) : \bar R :=
   h (qbs_prob_alpha p rr.1, qbs_prob_alpha q rr.2).
 
-Lemma qbs_prob_pair_integral (X Y : qbsType R) (p : qbs_prob X)
-    (q : qbs_prob Y) (h : X * Y -> \bar R) :
-  qbs_measurable (prodQ X Y) h ->
+Section monadP_pair_integral.
+Context (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y).
+Context (h : X * Y -> \bar R) (mh : qbs_measurable (prodQ X Y) h).
+
+Let mg : measurable_fun [set: mR] (h \o qbs_pair_alpha p q).
+Proof. exact: mh _ (qbs_pair_alpha_random p q). Qed.
+
+Let pair_funE : qbs_pair_fun p q h = (h \o qbs_pair_alpha p q) \o encode_RR_mR.
+Proof. by apply/funext => rr; rewrite /= /qbs_pair_alpha encode_RR_mRK. Qed.
+
+Lemma monadP_pair_integrable :
+  qbs_integrable (prodQ X Y) (monadP_pair p q) h <->
+  (qbs_prob_mu p \x qbs_prob_mu q).-integrable setT (qbs_pair_fun p q h).
+Proof.
+rewrite qbs_prob_pairE qbs_integrable_mk// pair_funE.
+have mabs : measurable_fun [set: mR] (abse \o (h \o qbs_pair_alpha p q)).
+  exact: measurableT_comp.
+split=> /integrableP[_ fin]; apply/integrableP; split.
+- exact: measurableT_comp mg measurable_RR_to_R.
+- move: fin; rewrite -[X in X < _ -> _]/(\int[pushforward _ encode_RR_mR]_x _).
+  rewrite ge0_integral_pushforward//.
+    exact: measurable_RR_to_R.
+  by move=> ? _; exact: abse_ge0.
+- exact: mg.
+- rewrite -[X in X < _]/(\int[pushforward _ encode_RR_mR]_x _).
+  rewrite ge0_integral_pushforward//.
+    exact: measurable_RR_to_R.
+  by move=> ? _; exact: abse_ge0.
+Qed.
+
+Lemma monadP_pair_integral :
   (qbs_prob_mu p \x qbs_prob_mu q).-integrable setT (qbs_pair_fun p q h) ->
-  qbs_integral (prodQ X Y) (qbs_prob_pair p q) h =
+  qbs_integral (prodQ X Y) (monadP_pair p q) h =
   \int[qbs_prob_mu p \x qbs_prob_mu q]_rr qbs_pair_fun p q h rr.
 Proof.
-move=> mh0 hint; have /integrableP[mh _] := hint.
-have hg : (fun r => h (qbs_pair_alpha p q r)) =
-    qbs_pair_fun p q h \o decode_RR_mR by [].
-have mg : measurable_fun [set: mR] (fun r => h (qbs_pair_alpha p q r)).
-  by rewrite hg; exact: measurableT_comp mh measurable_R_to_RR.
-have fg rr :
-    qbs_pair_fun p q h rr = h (qbs_pair_alpha p q (encode_RR_mR rr)).
-  by rewrite /qbs_pair_alpha encode_RR_mRK.
-rewrite /qbs_prob_pair qbs_integral_mk //= /qbs_pair_mu_build.
-under [RHS]eq_integral do rewrite fg.
-rewrite -[RHS](integral_pushforward measurable_RR_to_R mg _ measurableT)//.
-rewrite preimage_setT (_ : _ \o _ = qbs_pair_fun p q h)//.
-by apply/funext => rr; rewrite /= -fg.
+move=> hint; rewrite qbs_prob_pairE qbs_integral_mk// pair_funE.
+rewrite -[LHS]/(\int[pushforward _ encode_RR_mR]_x _).
+rewrite (integral_pushforward measurable_RR_to_R mg _ measurableT)//.
+by rewrite preimage_setT -pair_funE.
 Qed.
 
 (** Fubini: integrating against the product is iterated integration. *)
-Lemma qbs_prob_pair_iterated (X Y : qbsType R) (p : qbs_prob X)
-    (q : qbs_prob Y) (h : X * Y -> \bar R) :
-  qbs_measurable (prodQ X Y) h ->
-  (qbs_prob_mu p \x qbs_prob_mu q).-integrable setT (qbs_pair_fun p q h) ->
-  qbs_integral (prodQ X Y) (qbs_prob_pair p q) h =
+Lemma monadP_pair_iterated :
+  qbs_integrable (prodQ X Y) (monadP_pair p q) h ->
+  qbs_integral (prodQ X Y) (monadP_pair p q) h =
   qbs_integral X p (fun x => qbs_integral Y q (fun y => h (x, y))).
 Proof.
-move=> mh hint; rewrite qbs_prob_pair_integral// -(integral12_prod_meas1 hint).
+move=> /monadP_pair_integrable hint.
+rewrite monadP_pair_integral// -(integral12_prod_meas1 hint).
 by apply: eq_integral => x _; rewrite /fubini_F /qbs_pair_fun.
 Qed.
 
+End monadP_pair_integral.
+
 (** E[f(x) g(y)] = E[f] E[g] on the product. *)
-Lemma qbs_prob_pair_mul (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y)
+Lemma monadP_pair_mul (X Y : qbsType R) (p : qbs_prob X) (q : qbs_prob Y)
     (f : X -> R) (g : Y -> R) :
   qbs_measurable (prodQ X Y) (fun xy => (f xy.1 * g xy.2)%:E) ->
-  (qbs_prob_mu p).-integrable setT (EFin \o (f \o qbs_prob_alpha p)) ->
-  (qbs_prob_mu q).-integrable setT (EFin \o (g \o qbs_prob_alpha q)) ->
-  (qbs_prob_mu p \x qbs_prob_mu q).-integrable setT
-    (qbs_pair_fun p q (fun xy => (f xy.1 * g xy.2)%:E)) ->
-  qbs_integral (prodQ X Y) (qbs_prob_pair p q)
+  qbs_integrable X p (EFin \o f) -> qbs_integrable Y q (EFin \o g) ->
+  qbs_integrable (prodQ X Y) (monadP_pair p q)
+    (fun xy => (f xy.1 * g xy.2)%:E) ->
+  qbs_integral (prodQ X Y) (monadP_pair p q)
     (fun xy => (f xy.1 * g xy.2)%:E) = qbs_expect X p f * qbs_expect Y q g.
 Proof.
-move=> mfg hf hg hfg; rewrite qbs_prob_pair_integral//.
-exact: (integral_prod_mul hf hg hfg).
+move=> mfg hf hg /(monadP_pair_integrable _ _ mfg) hfg.
+by rewrite monadP_pair_integral//; exact: (integral_prod_mul hf hg hfg).
 Qed.
 
 (** ** Independence *)
 
 Definition qbs_indep (X Y Z : qbsType R) (p : qbs_prob Z)
     (f : qbsHomType Z X) (g : qbsHomType Z Y) : Prop :=
-  monadP_map (qbs_pair f g) p = qbs_prob_pair (monadP_map f p) (monadP_map g p).
+  monadP_map (qbs_pair f g) p = monadP_pair (monadP_map f p) (monadP_map g p).
 
 (** For real-valued variables, qbs_indep gives the classical product rule
     on Borel rectangles. *)
@@ -259,52 +282,52 @@ Lemma qbs_indep_rect (Z : qbsType R) (p : qbs_prob Z)
   qbs_prob_event Z p (f @^-1` A) * qbs_prob_event Z p (g @^-1` B).
 Proof.
 move=> mA mB hind.
-have sA : sigma_Mx (X := realQ R) A.
-  by move=> b hb; have := hb measurableT A mA; rewrite setTI.
-have sB : sigma_Mx (X := realQ R) B.
-  by move=> b hb; have := hb measurableT B mB; rewrite setTI.
+have sA : sigma_Mx (X := realQ R) A := sigma_Mx_measQ mA.
+have sB : sigma_Mx (X := realQ R) B := sigma_Mx_measQ mB.
 have mU : sigma_Mx (X := prodQ (realQ R) (realQ R)) (A `*` B).
   move=> b [hb1 hb2].
   have -> : b @^-1` (A `*` B) =
       (fun r => (b r).1) @^-1` A `&` (fun r => (b r).2) @^-1` B by [].
-  apply: measurableI.
-    by have := hb1 measurableT A mA; rewrite setTI.
-  by have := hb2 measurableT B mB; rewrite setTI.
+  by apply: measurableI; [exact: sA _ hb1|exact: sB _ hb2].
 transitivity (qbs_prob_event _ (monadP_map (qbs_pair f g) p) (A `*` B)).
   by rewrite (monadP_map_event (qbs_pair f g) p mU).
-rewrite hind qbs_prob_pair_event//.
+rewrite hind qbs_prob_pairE qbs_prob_pair_event//.
 set p1 := monadP_map f p; set p2 := monadP_map g p.
 have mA1 : measurable (qbs_prob_alpha p1 @^-1` A).
-  have := qbs_prob_alpha_random p1 measurableT A mA.
-  by rewrite setTI.
+  by have := sA _ (qbs_prob_alpha_random p1).
 have mB2 : measurable (qbs_prob_alpha p2 @^-1` B).
-  have := qbs_prob_alpha_random p2 measurableT B mB.
-  by rewrite setTI.
+  by have := sB _ (qbs_prob_alpha_random p2).
 rewrite (_ : [set rr | _] = qbs_prob_alpha p1 @^-1` A `*`
     qbs_prob_alpha p2 @^-1` B)// product_measure1E//.
-congr (_ * _).
-  exact: (monadP_map_event f p sA).
-exact: (monadP_map_event g p sB).
+by congr (_ * _); exact: monadP_map_event.
 Qed.
 
 (** Independence factorization: E[phi(f) psi(g)] = E[phi(f)] E[psi(g)]. *)
 Lemma qbs_integral_indepM (X Y Z : qbsType R) (p : qbs_prob Z)
     (f : qbsHomType Z X) (g : qbsHomType Z Y) (phi : X -> R) (psi : Y -> R) :
   qbs_indep p f g ->
-  qbs_measurable (prodQ X Y) (fun xy => (phi xy.1 * psi xy.2)%:E) ->
-  (qbs_prob_mu (monadP_map f p)).-integrable setT
-    (EFin \o (phi \o qbs_prob_alpha (monadP_map f p))) ->
-  (qbs_prob_mu (monadP_map g p)).-integrable setT
-    (EFin \o (psi \o qbs_prob_alpha (monadP_map g p))) ->
-  (qbs_prob_mu (monadP_map f p) \x qbs_prob_mu (monadP_map g p)).-integrable
-    setT (qbs_pair_fun (monadP_map f p) (monadP_map g p)
-      (fun xy => (phi xy.1 * psi xy.2)%:E)) ->
-  qbs_integral Z p (fun z => (phi (f z) * psi (g z))%:E) =
-  qbs_expect X (monadP_map f p) phi * qbs_expect Y (monadP_map g p) psi.
+  qbs_measurable X (EFin \o phi) -> qbs_measurable Y (EFin \o psi) ->
+  qbs_integrable Z p (EFin \o (phi \o f)) ->
+  qbs_integrable Z p (EFin \o (psi \o g)) ->
+  qbs_integrable Z p (fun z => (phi (f z) * psi (g z))%:E) ->
+  qbs_expect Z p (fun z => phi (f z) * psi (g z))%R =
+  qbs_expect Z p (phi \o f) * qbs_expect Z p (psi \o g).
 Proof.
-move=> hind hmeas hphi hpsi hprod.
-rewrite -[LHS](monadP_map_integral (qbs_pair f g) p hmeas) hind.
-exact: qbs_prob_pair_mul.
+move=> hind mphi mpsi hphi hpsi hprod.
+have mfg : qbs_measurable (prodQ X Y) (fun xy => (phi xy.1 * psi xy.2)%:E).
+  move=> a [ha1 ha2]; rewrite (_ : (fun r => _) =
+    (fun r => (phi (a r).1)%:E * (psi (a r).2)%:E)).
+    by apply/funext => r; rewrite EFinM.
+  by apply: emeasurable_funM; [exact: mphi _ ha1|exact: mpsi _ ha2].
+have -> : qbs_expect Z p (fun z => phi (f z) * psi (g z))%R =
+    qbs_integral _ (monadP_map (qbs_pair f g) p)
+      (fun xy => (phi xy.1 * psi xy.2)%:E).
+  by rewrite monadP_map_integral.
+rewrite hind monadP_pair_mul//.
+- exact/(monadP_map_integrable _ _ mphi).
+- exact/(monadP_map_integrable _ _ mpsi).
+- by rewrite -hind; exact/(monadP_map_integrable _ _ mfg).
+- by rewrite /qbs_expect !monadP_map_integral.
 Qed.
 
 (** ** Variance of independent sums *)
