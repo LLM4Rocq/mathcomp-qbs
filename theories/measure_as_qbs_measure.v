@@ -223,6 +223,13 @@ have fB : (\int[lebesgue_measure]_(x in `[a, b]) (@EFin R)^\- x)%E
     \is a fin_num := integrable_neg_fin_num mab iid.
 rewrite -muleBr; [by []|by rewrite fin_num_adde_defl// fin_numN|].
 rewrite -integralE /=.
+have dF (x : R) : is_derive x 1 (fun x : R => x ^+ 2 / 2) x.
+  have h := is_deriveM (is_deriveX 2 (is_derive_id x 1))
+    (is_derive_cst (2^-1 : R) x 1).
+  have h' : is_derive x 1 (fun y : R => y ^+ 2 / 2) _ := h.
+  apply: (is_derive_eq h').
+  rewrite /= scaler0 add0r expr1 /GRing.scale/= mulr1 mulrA mulVf ?mul1r//.
+  by rewrite pnatr_eq0.
 have cF := @continuous_horner R (2^-1 *: 'X^2 : {poly R}).
 have eF : horner (2^-1 *: 'X^2 : {poly R}) = (fun x : R => x ^+ 2 / 2).
   by apply: funext => x; rewrite hornerZ hornerXn mulrC.
@@ -230,18 +237,10 @@ rewrite eF in cF.
 rewrite (@continuous_FTC2 _ idfun (fun x => x ^+ 2 / 2) a b ab).
 - by apply: (@continuous_subspaceT _ _ _ idfun) => x /=; exact: cvg_id.
 - split.
-  + move=> x hx.
-    by apply: derivableM;
-      [exact: exprn_derivable|exact: derivable_cst].
+  + by move=> x _; case: (dF x).
   + by move: (cF a); rewrite /continuous_at; exact: cvg_within_filter.
   + by move: (cF b); rewrite /continuous_at; exact: cvg_within_filter.
-- move=> x hx /=.
-  rewrite derive1E deriveM;
-    [exact: exprn_derivable|exact: derivable_cst|].
-  rewrite derive_cst GRing.scaler0 GRing.add0r.
-  rewrite (@derive_val _ _ _ _ _ _ _
-    (is_deriveX 2 (is_derive_id x 1))) /=.
-  by rewrite expr1 /GRing.scale /= mulr1 mulrA mulVf ?mul1r // pnatr_eq0.
+- by move=> x _; rewrite derive1E; case: (dF x) => _ ->.
 have ba0 : b - a != 0 by rewrite gt_eqF// subr_gt0.
 rewrite -EFinB -EFinM; congr (_%:E).
 have -> : b ^+ 2 / 2 - a ^+ 2 / 2 = (b - a) * ((a + b) / 2) by ring.
