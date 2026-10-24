@@ -16,7 +16,6 @@ From QBS Require Import measurable_aux quasi_borel standard_borel
 (* measures. Bind is the Giry bind of mathcomp-analysis.                      *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*                  giry_prob m m1 == m : giry T R, given m1 : m(T) = 1       *)
 (*                   qbs_rep b a g == b r is [a, g r] for all r               *)
 (*                         probQ X == the QBS of probabilities on X           *)
 (*                    qbs_return x == the Dirac probability at x              *)
@@ -29,7 +28,6 @@ From QBS Require Import measurable_aux quasi_borel standard_borel
 (*            qbs_joinQ, strengthQ == join and strength as morphisms          *)
 (*           qbs_bind_internal X Y == P(X) * (X => P(Y)) -> P(Y)              *)
 (*      qbs_swap X Y, qbs_prod p q == swap; monadic product of p, q           *)
-(*      giry_bindE, giry_bind_setT == integral formula, mass of Giry bind     *)
 (*        qbs_map_id, qbs_map_comp == qbs_map is functorial                   *)
 (*      qbs_map_bind, qbs_bind_map == naturality of bind and map              *)
 (* qbs_join_return, qbs_join_assoc == unit and associativity of join          *)
@@ -51,39 +49,6 @@ Unset Printing Implicit Defensive.
 
 Local Open Scope classical_set_scope.
 Local Open Scope ereal_scope.
-
-Section giry_prob.
-Context d (T : measurableType d) (R : realType).
-
-Lemma giry_bindE d' (T' : measurableType d') (mu : giry T' R)
-    (g : T' -> giry T R) (mg : measurable_fun [set: T'] g) (A : set T) :
-  measurable A -> giry_bind mu mg A = \int[mu]_x g x A.
-Proof.
-move=> mA; rewrite /giry_bind /= /giry_join /= giry_int_map//.
-exact: measurable_giry_ev.
-Qed.
-
-Lemma giry_bind_setT d' (T' : measurableType d') (mu : giry T' R)
-    (g : T' -> giry T R) (mg : measurable_fun [set: T'] g) :
-  mu [set: T'] = 1 -> (forall x, g x [set: T] = 1) ->
-  giry_bind mu mg [set: T] = 1.
-Proof.
-move=> mu1 g1; rewrite giry_bindE//.
-under eq_integral do rewrite g1.
-by rewrite integral_cst//= mu1 mule1.
-Qed.
-
-Definition giry_prob (m : giry T R) of m [set: T] = 1 : set T -> \bar R := m.
-
-Context (m : giry T R) (m1 : m [set: T] = 1).
-
-HB.instance Definition _ := Measure.on (giry_prob m1).
-HB.instance Definition _ :=
-  Measure_isProbability.Build _ _ _ (giry_prob m1) m1.
-
-Lemma giry_probE A : giry_prob m1 A = m A. Proof. by []. Qed.
-
-End giry_prob.
 
 Section probability_monad.
 Context (R : realType).

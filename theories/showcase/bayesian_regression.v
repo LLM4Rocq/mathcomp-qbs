@@ -421,7 +421,7 @@ Qed.
 
 Lemma wprior_evidence : evidence wprior = evidence_const%:E.
 Proof.
-have mw0 := qbs_measurable_weight (X := F).
+have mw0 := qbs_measurable_pweight (X := F).
 have mw := qbs_measurable_comp (qbs_pair (qbs_id F) obs) mw0.
 rewrite /evidence.
 rewrite !qbs_map_integral//.

@@ -1523,7 +1523,7 @@ probabilities are classes.
 \begin{proof}\rocqok\end{proof}
 
 \begin{lemma}[Strength Associativity and Join]\label{lem:qbs_strength_assoc_join}
-  \rocq{QBS.qbs_monad.assoc}
+  \rocq{QBS.qbs_monad.assocQ}
   \rocq{QBS.qbs_monad.strength_assoc}
   \rocq{QBS.qbs_monad.strength_join}
   \rocqok
@@ -1615,8 +1615,8 @@ probabilities are classes.
 
 \begin{lemma}[Signed and Parametric Integral Morphisms]\label{lem:qbs_morphism_integral}
   \rocq{QBS.qbs_monad_integral.qbs_morphism_integral}
-  \rocq{QBS.qbs_monad_integral.qbs_integral_param}
-  \rocq{QBS.qbs_monad_integral.qbs_integral_param_snd}
+  \rocq{QBS.qbs_monad_integral.qbs_morphism_integral_param}
+  \rocq{QBS.qbs_monad_integral.qbs_morphism_integral_param_snd}
   \rocqok
   \uses{thm:ge0_qbs_morphism_integral, def:qbs_integral, def:monadP}
   $p \mapsto \int h \, dp$ is a morphism $P(X) \to R(\bar{\mathbb{R}})$ for any measurable $h$ (not only nonnegative); for a morphism $L : X \to P(Y)$, $x \mapsto \int h(x, \cdot)\, d(L\,x)$ is a morphism (AFP \texttt{qbs\_prob\_integral\_morphism}); and $y \mapsto \int h(\cdot, y)\, dp$ is a morphism.

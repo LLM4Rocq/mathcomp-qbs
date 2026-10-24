@@ -1,19 +1,25 @@
 (* QBS project. License: CeCILL-C.                                            *)
-From mathcomp Require Import boot order algebra reals classical_sets boolp
+From HB Require Import structures.
+From mathcomp Require Import boot order algebra reals ereal classical_sets boolp
   topology num_topology normedtype measurable_structure measurable_function
-  measurable_realfun lebesgue_stieltjes_measure.
+  measurable_realfun lebesgue_stieltjes_measure measure lebesgue_integral
+  probability giry.
 
 (**md**************************************************************************)
 (* # Auxiliary measurability facts                                            *)
 (*                                                                            *)
-(* Facts about measurable functions on the reals that are not (yet) in        *)
-(* mathcomp-analysis.                                                         *)
+(* Facts about measurable functions on the reals and about the Giry monad     *)
+(* that are not (yet) in mathcomp-analysis.                                   *)
 (*                                                                            *)
 (* ```                                                                        *)
 (*                measurable_invr == x |-> x^-1 is measurable on R            *)
 (*    measurable_fun_nat_discrete == a map into nat is measurable when the    *)
 (*                                   preimages of singletons are              *)
 (*              measurable_truncn == truncn : R -> nat is measurable          *)
+(*                     giry_bindE == giry_bind mu g A = \int[mu]_x g x A      *)
+(*                 giry_bind_setT == giry_bind of probabilities has mass 1    *)
+(*                 giry_prob m m1 == m : giry T R as a probability, given a   *)
+(*                                   proof m1 that m [set: T] = 1             *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -79,3 +85,38 @@ by case: n => [|n]; exact: measurable_itv.
 Qed.
 
 End measurable_aux.
+
+Section giry_prob.
+Local Open Scope ereal_scope.
+Context d (T : measurableType d) (R : realType).
+
+Lemma giry_bindE d' (T' : measurableType d') (mu : giry T' R)
+    (g : T' -> giry T R) (mg : measurable_fun [set: T'] g) (A : set T) :
+  measurable A -> giry_bind mu mg A = \int[mu]_x g x A.
+Proof.
+move=> mA; rewrite /giry_bind /= /giry_join /= giry_int_map//.
+exact: measurable_giry_ev.
+Qed.
+
+Lemma giry_bind_setT d' (T' : measurableType d') (mu : giry T' R)
+    (g : T' -> giry T R) (mg : measurable_fun [set: T'] g) :
+  mu [set: T'] = 1 -> (forall x, g x [set: T] = 1) ->
+  giry_bind mu mg [set: T] = 1.
+Proof.
+move=> mu1 g1; rewrite giry_bindE//.
+under eq_integral do rewrite g1.
+by rewrite integral_cst//= mu1 mule1.
+Qed.
+
+Definition giry_prob (m : giry T R) of m [set: T] = 1 : set T -> \bar R := m.
+
+Context (m : giry T R) (m1 : m [set: T] = 1).
+
+HB.instance Definition _ := Measure.on (giry_prob m1).
+HB.instance Definition _ :=
+  Measure_isProbability.Build _ _ _ (giry_prob m1) m1.
+
+Lemma giry_probE A : giry_prob m1 A = m A. Proof. by []. Qed.
+
+End giry_prob.
+

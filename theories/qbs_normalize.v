@@ -49,7 +49,7 @@ Definition pweight (xw : X * R) : \bar R := (maxr 0 xw.2)%:E.
 Lemma pweight_ge0 xw : 0 <= pweight xw.
 Proof. by rewrite lee_fin le_max lexx. Qed.
 
-Lemma qbs_measurable_weight :
+Lemma qbs_measurable_pweight :
   qbs_measurable (prodQ X (realQ R)) pweight.
 Proof.
 move=> b [_ hb2]; apply/measurable_EFinP.
@@ -76,7 +76,7 @@ Proof. by apply: integral_ge0 => ? _; exact: pweight_ge0. Qed.
 Let pdensity_sigma : semi_sigma_additive (pdensity ha).
 Proof.
 apply: semi_sigma_additive_nng_induced.
-  exact: qbs_measurable_weight ha.
+  exact: qbs_measurable_pweight ha.
 by move=> ?; exact: pweight_ge0.
 Qed.
 
@@ -191,7 +191,7 @@ Proof.
 move=> mU; set p := mkQBSProb alpha mu ha.
 have evp : evidence p = pdensity mu ha [set: mR].
   by rewrite pdensityT /evidence qbs_integral_mk//;
-    exact: qbs_measurable_weight.
+    exact: qbs_measurable_pweight.
 rewrite /mnormalize; case: ifPn => [hc|/norP[h0 hoo]].
   have hev : ~~ (0 < evidence p < +oo).
     by rewrite evp; move: hc => /orP[] /eqP ->; rewrite ?ltxx ?ltNge ?leey.
@@ -223,10 +223,10 @@ have ebr r : b r = pr r.
 pose d r := pdensity (giry_prob (g1 r)) ha.
 have evr r : evidence (b r) = d r [set: mR].
   rewrite ebr /d pdensityT /evidence qbs_integral_mk//.
-  exact: qbs_measurable_weight.
+  exact: qbs_measurable_pweight.
 pose P r := 0 < evidence (b r) < +oo.
 have mev : measurable_fun [set: mR] (fun r => evidence (b r)).
-  exact: (ge0_qbs_morphism_integral qbs_measurable_weight pweight_ge0 hb).
+  exact: (ge0_qbs_morphism_integral qbs_measurable_pweight pweight_ge0 hb).
 have mP : measurable_fun [set: mR] P.
   apply: measurable_and.
     exact: measurable_fun_lte (measurable_cst 0) mev.

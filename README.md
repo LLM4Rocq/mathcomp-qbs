@@ -15,7 +15,7 @@ programming semantics.
 
 ## Overview
 
-**402 proofs, 0 Admitted, 0 custom axioms, 6,370 lines across 14 files.**
+**401 proofs, 0 Admitted, 0 custom axioms, 6,380 lines across 14 files.**
 
 > **Note**: A higher-order PPL with denotational semantics in QBS
 > (`ppl_qbs.v`, `ppl_kernel.v`, `showcase/ppl_examples.v`, ...) is
@@ -40,7 +40,7 @@ This formalization follows:
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `measurable_aux.v` | 81 | 3 | Auxiliary measurability lemmas: `measurable_invr`, `measurable_fun_nat_discrete`, `measurable_truncn` |
+| `measurable_aux.v` | 122 | 6 | Auxiliary measurability lemmas: `measurable_invr`, `measurable_fun_nat_discrete`, `measurable_truncn` |
 | `quasi_borel.v` | 887 | 62 | HB structure, morphisms, products, exponentials, cartesian closure, the L functor (`qbs_meas`) and L ⊣ R, lattice of QBS structures, empty QBS |
 | `measure_qbs_adjunction.v` | 311 | 19 | Counit of L ⊣ R, standard Borel spaces, R is full on standard Borel domains, order adjunction |
 | `coproduct_qbs.v` | 721 | 44 | Binary and countable coproducts (HKSY Prop. 17), dependent products, lists with cons and recursion, concrete morphisms |
@@ -50,20 +50,20 @@ This formalization follows:
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `probability_qbs.v` | 594 | 42 | Probabilities as the quotient of pairs (alpha, mu), equality on `sigma_Mx` events, integration and integrability, law, expectation, variance |
-| `qbs_monad.v` | 715 | 61 | The HKSY probability monad: return, bind, laws (as equalities), map, join, strength and its laws, commutativity |
-| `qbs_normalize.v` | 279 | 18 | Normalisation of weighted probabilities (HKSY Sec. VI), as a morphism P(X × R) → P(X) + 1 |
-| `qbs_monad_integral.v` | 171 | 8 | Integrals, integrability and variance through return and bind |
-| `qbs_giry.v` | 135 | 8 | Comparison with the Giry monad |
-| `pair_qbs_measure.v` | 389 | 20 | Concrete product via R ≅ R × R, Fubini, independence, variance of independent sums |
+| `probability_qbs.v` | 604 | 42 | Probabilities as the quotient of pairs (alpha, mu), equality on `sigma_Mx` events, integration and integrability, law, expectation, variance |
+| `qbs_monad.v` | 675 | 57 | The HKSY probability monad: return, bind, laws (as equalities), map, join, strength and its laws, commutativity |
+| `qbs_normalize.v` | 278 | 18 | Normalisation of weighted probabilities (HKSY Sec. VI), as a morphism P(X × R) → P(X) + 1 |
+| `qbs_monad_integral.v` | 170 | 8 | Integrals, integrability and variance through return and bind |
+| `qbs_giry.v` | 136 | 8 | Comparison with the Giry monad |
+| `pair_qbs_measure.v` | 385 | 20 | Concrete product via R ≅ R × R, Fubini, independence, variance of independent sums |
 | `normal_centred.v` | 300 | 16 | Centred first moment and mean of the normal law (`integral_normal_mean`), change of variables for `normal_prob` |
-| `measure_as_qbs_measure.v` | 282 | 13 | Normal, Bernoulli and uniform (on any [a, b]) distributions, their expectations, Bernoulli event probabilities |
+| `measure_as_qbs_measure.v` | 287 | 13 | Normal, Bernoulli and uniform (on any [a, b]) distributions, their expectations, Bernoulli event probabilities |
 
 ### Showcase
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `showcase/bayesian_regression.v` | 474 | 29 | Bayesian linear regression (HKSY Sec. VI) with closed-form posterior |
+| `showcase/bayesian_regression.v` | 473 | 29 | Bayesian linear regression (HKSY Sec. VI) with closed-form posterior |
 
 ## Key results
 

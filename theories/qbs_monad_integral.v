@@ -24,10 +24,10 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad.
 (*                                measurable in a random probability          *)
 (*   qbs_morphism_integral     == signed version of p |-> qbs_integral p h    *)
 (*                                being a morphism P(X) -> \bar R             *)
-(*   qbs_integral_param        == x |-> integral of h(x, .) against L x is a  *)
-(*                                morphism, for L : X -> P(Y)                 *)
-(*   qbs_integral_param_snd    == y |-> integral of h(., y) against p is a    *)
-(*                                morphism                                    *)
+(*   qbs_morphism_integral_param == x |-> integral of h(x, .) against L x is  *)
+(*                                a morphism, for L : X -> P(Y)               *)
+(*   qbs_morphism_integral_param_snd == y |-> integral of h(., y) against p   *)
+(*                                is a morphism                               *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -140,7 +140,7 @@ Proof. by move=> mh b hb; exact: measurable_qbs_integral. Qed.
 
 (** ** Parametric integrals (AFP qbs_prob_integral_morphism) *)
 
-Lemma qbs_integral_param X Y (L : qbsHomType X (probQ Y))
+Lemma qbs_morphism_integral_param X Y (L : qbsHomType X (probQ Y))
     (h : prodQ X Y -> \bar R) :
   qbs_measurable (prodQ X Y) h ->
   qbs_morphism (X := X) (Y := measQ R (\bar R))
@@ -154,12 +154,13 @@ by under [X in measurable_fun _ X -> _]eq_fun do
   rewrite /g /= strength_integral//.
 Qed.
 
-Lemma qbs_integral_param_snd X Y (p : probQ X) (h : prodQ X Y -> \bar R) :
+Lemma qbs_morphism_integral_param_snd X Y (p : probQ X)
+    (h : prodQ X Y -> \bar R) :
   qbs_measurable (prodQ X Y) h ->
   qbs_morphism (X := Y) (Y := measQ R (\bar R))
     (fun y => qbs_integral X p (fun x => h (x, y))).
 Proof.
-move=> mh; apply: (qbs_integral_param (qbs_const Y p)
+move=> mh; apply: (qbs_morphism_integral_param (qbs_const Y p)
   (h := fun yx => h (yx.2, yx.1))).
 move=> a ha.
 have hs : qbs_Mx (qbs_swap Y X \o a) := qbs_hom_proof _ ha.

@@ -3,8 +3,8 @@
 **Project:** QBS -- Quasi-Borel Spaces in Rocq
 **Repository:** https://github.com/LLM4Rocq/mathcomp-qbs
 **Date:** 2026-10-23
-**Status:** 402 proofs (397 Qed + 5 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 6,370 across 14 files
+**Status:** 401 proofs (396 Qed + 5 Defined), **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** 6,380 across 14 files
 
 > **Note**: The higher-order PPL development (`ppl_qbs.v`,
 > `ppl_kernel.v`, `showcase/ppl_examples.v`) is on the `ppl`
@@ -96,7 +96,7 @@ Throughout, HKSY refers to the LICS 2017 paper above; "Prop. n" and "Thm. n" ref
 
 ## Part I: Core QBS Theory
 
-Source files: `theories/measurable_aux.v` (81 lines, 3 Qed), `theories/quasi_borel.v` (887 lines, 62 Qed), `theories/measure_qbs_adjunction.v` (311 lines, 14 Qed + 5 Defined), `theories/coproduct_qbs.v` (721 lines, 44 Qed).
+Source files: `theories/measurable_aux.v` (122 lines, 6 Qed), `theories/quasi_borel.v` (887 lines, 62 Qed), `theories/measure_qbs_adjunction.v` (311 lines, 14 Qed + 5 Defined), `theories/coproduct_qbs.v` (721 lines, 44 Qed).
 
 ### 1.1 The isQBS Mixin and QBSpace Structure
 
@@ -641,7 +641,7 @@ Lemma qbs_morphism_list_rec (W : qbsType R) (b : qbsHomType W Y)
 
 ## Part II: Probability Monad and Integration
 
-Source files: `theories/probability_qbs.v` (594 lines, 42 Qed), `theories/qbs_monad.v` (715 lines, 61 Qed), `theories/qbs_monad_integral.v` (171 lines, 8 Qed), `theories/qbs_normalize.v` (279 lines, 18 Qed), `theories/pair_qbs_measure.v` (389 lines, 20 Qed), `theories/qbs_giry.v` (135 lines, 8 Qed), `theories/normal_centred.v` (300 lines, 16 Qed), `theories/measure_as_qbs_measure.v` (282 lines, 13 Qed), `theories/showcase/bayesian_regression.v` (474 lines, 29 Qed).
+Source files: `theories/probability_qbs.v` (604 lines, 42 Qed), `theories/qbs_monad.v` (675 lines, 57 Qed), `theories/qbs_monad_integral.v` (170 lines, 8 Qed), `theories/qbs_normalize.v` (278 lines, 18 Qed), `theories/pair_qbs_measure.v` (385 lines, 20 Qed), `theories/qbs_giry.v` (136 lines, 8 Qed), `theories/normal_centred.v` (300 lines, 16 Qed), `theories/measure_as_qbs_measure.v` (287 lines, 13 Qed), `theories/showcase/bayesian_regression.v` (473 lines, 29 Qed).
 
 ### 2.1 Representatives and the Quotient
 
@@ -884,7 +884,7 @@ HB.instance Definition _ X :=
 
 Here `G := giry mR R`, and `qbs_rep b a g` says that `b r` is represented by `[a, g r]` for every `r`. Since probabilities are classes, no saturation of random elements with respect to equivalence is needed. `measurable_qbs_event` shows that the probability of a `sigma_Mx` event is measurable in `r`; for a morphism `f : X -> probQ Y` this is `qbs_measurable_event` (`x |-> qbs_event Y (f x) U` is QBS-measurable). The glue axiom (`qbs_random_glue`) decodes the selector with the retraction `encode_RR_mR`/`decode_RR_mR` from `standard_borel.v`.
 
-The file also defines a small helper `giry_prob m m1`, the probability measure `m : giry T R` given a proof `m1` that `m` has total mass 1, with `giry_bindE` and `giry_bind_setT` for the Giry bind.
+It uses a small helper from `measurable_aux.v`: `giry_prob m m1`, the probability measure `m : giry T R` given a proof `m1` that `m` has total mass 1, with `giry_bindE` and `giry_bind_setT` for the Giry bind.
 
 ### 2.8 Return
 
@@ -1069,14 +1069,14 @@ Lemma qbs_morphism_integral X (h : X -> \bar R) :
   qbs_morphism (X := probQ X) (Y := measQ R (\bar R))
     (fun p => qbs_integral X p h).
 
-Lemma qbs_integral_param X Y (L : qbsHomType X (probQ Y))
+Lemma qbs_morphism_integral_param X Y (L : qbsHomType X (probQ Y))
     (h : prodQ X Y -> \bar R) :
   qbs_measurable (prodQ X Y) h ->
   qbs_morphism (X := X) (Y := measQ R (\bar R))
     (fun x => qbs_integral Y (L x) (fun y => h (x, y))).
 ```
 
-`qbs_integral_bind_bounded` is the same identity for bounded measurable real functions, and `qbs_integral_param_snd` is the symmetric parametric integral.
+`qbs_integral_bind_bounded` is the same identity for bounded measurable real functions, and `qbs_morphism_integral_param_snd` is the symmetric parametric integral.
 
 ### 2.15 Monadic Product and Commutativity (HKSY Prop. 22(2))
 
@@ -1143,7 +1143,7 @@ Definition normalize p : option (probQ X) :=
 
 | Name | Statement |
 |------|-----------|
-| `pweight_ge0`, `qbs_measurable_weight` | The weight is nonnegative and `qbs_measurable` |
+| `pweight_ge0`, `qbs_measurable_pweight` | The weight is nonnegative and `qbs_measurable` |
 | `pdensityT`, `densityT` | `pdensity mu ha [set: mR] = \int[mu]_r pweight (alpha r)` and `density p [set: mR] = evidence p` |
 | `evidence_degen` | If the evidence is not in `(0, +oo)` then it is `0` or `+oo` |
 | `qbs_alpha_fst_random` | The first component of the alpha of a probability on `X * R` is a random element of `X` |
@@ -1410,7 +1410,7 @@ On each half-line around `m`, the integral of `(x - m) * pdf` is `±s^2 * normal
 
 ### 2.22 Bayesian Linear Regression
 
-**File:** `theories/showcase/bayesian_regression.v` (474 lines, 29 Qed)
+**File:** `theories/showcase/bayesian_regression.v` (473 lines, 29 Qed)
 
 Following HKSY Sec. VI and the Isabelle AFP development (Bayesian_Linear_Regression.thy) by Hirata, Minamide, Sato, the prior is a probability on the *function space* `R => R`.
 
@@ -1775,29 +1775,29 @@ measurable_aux.v (standalone measurability lemmas, no QBS imports)
 | Variance | Not formalized | `qbs_varianceE` + `qbs_varianceZ`, `qbs_variance_affine`, `qbs_variance_mk` |
 | E[distributions] | Not formalized | `qbs_expect_normal` (from `integral_normal_mean`) / `bernoulli` / `uniform`, `qbs_expect_interval_uniform` (Uniform(a,b)), `qbs_bernoulli_event` |
 | Standard Borel inst. | Not formalized | R, nat, bool, prod, ereal |
-| Lines | ~5000 | 6,370 |
+| Lines | ~5000 | 6,380 |
 
 ### 4.4 Statistics
 
 | File | Lines | Proofs |
 |------|------:|-------:|
-| `measurable_aux.v` | 81 | 3 |
+| `measurable_aux.v` | 122 | 6 |
 | `quasi_borel.v` | 887 | 62 |
 | `measure_qbs_adjunction.v` | 311 | 19 |
 | `coproduct_qbs.v` | 721 | 44 |
-| `probability_qbs.v` | 594 | 42 |
-| `qbs_monad.v` | 715 | 61 |
-| `qbs_monad_integral.v` | 171 | 8 |
-| `qbs_normalize.v` | 279 | 18 |
-| `pair_qbs_measure.v` | 389 | 20 |
-| `qbs_giry.v` | 135 | 8 |
+| `probability_qbs.v` | 604 | 42 |
+| `qbs_monad.v` | 675 | 57 |
+| `qbs_monad_integral.v` | 170 | 8 |
+| `qbs_normalize.v` | 278 | 18 |
+| `pair_qbs_measure.v` | 385 | 20 |
+| `qbs_giry.v` | 136 | 8 |
 | `normal_centred.v` | 300 | 16 |
-| `measure_as_qbs_measure.v` | 282 | 13 |
+| `measure_as_qbs_measure.v` | 287 | 13 |
 | `standard_borel.v` | 1,031 | 59 |
-| `showcase/bayesian_regression.v` | 474 | 29 |
-| **Total** | **6,370** | **402** |
+| `showcase/bayesian_regression.v` | 473 | 29 |
+| **Total** | **6,380** | **401** |
 
-The 402 proofs are 397 `Qed` and 5 `Defined` (the standard Borel witnesses in `measure_qbs_adjunction.v`). **0 Admitted**, 0 custom axioms.
+The 401 proofs are 396 `Qed` and 5 `Defined` (the standard Borel witnesses in `measure_qbs_adjunction.v`). **0 Admitted**, 0 custom axioms.
 
 ### 4.5 Honest Limitations
 
