@@ -76,15 +76,15 @@ This formalization follows:
   `sigma_Mx_standard_borelP`
 - **Countable coproducts** (HKSY Prop. 17): `sigmaQ`, `sigma_case`,
   `sigma_case_eta`
-- **Probability monad**: `qbs_prob X` is the quotient of the pairs
-  (alpha, mu) by `preprob_equiv` (`qbs_prob_eqP`: equality iff equal
+- **Probability monad**: `probQ X` is the quotient of the pairs
+  (alpha, mu) by `preprob_equiv` (`qbs_eqP`: equality iff equal
   on `sigma_Mx` sets); `qbs_return`, `qbs_bind`, monad laws as
   equalities `qbs_bind_returnl`, `qbs_bind_returnr`, `qbs_bindA`;
-  `monadP_map`,
+  `qbs_map`,
   `qbs_join`, `qbs_strength` with its laws `qbs_strength_snd`,
   `qbs_strength_assoc`, `qbs_strength_return`, `qbs_strength_join`;
   internal bind `qbs_bind_internal`
-  (HKSY Thm. 21); commutativity `monadP_pair_comm`, `qbs_bind_comm`
+  (HKSY Thm. 21); commutativity `qbs_prod_comm`, `qbs_bind_comm`
   (HKSY Prop. 22(2))
 - **QBS ↔ Giry**: `qbs_to_giry`, `qbs_integral_giry`, and on standard
   Borel spaces `qbs_to_giry_inj`, `qbs_to_giry_bind`

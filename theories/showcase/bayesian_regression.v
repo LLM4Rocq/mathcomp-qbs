@@ -17,7 +17,7 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad qbs_normalize
 (* norm (P(id, obs) prior), and the posterior is computed in closed form.     *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*                nu == the normal distribution N(0,3) as a qbs_prob RQ         *)
+(*                nu == the normal distribution N(0,3) as a probQ RQ          *)
 (*             prior2 == the parameter prior N(0,3) x N(0,3) on pairs (s, b)  *)
 (*       lin_uncurried == ((s, b), r) |-> s * r + b, as a QBS morphism        *)
 (*          lin (s,b) == the function r |-> s * r + b, as a morphism into     *)
@@ -26,7 +26,7 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad qbs_normalize
 (*            obs_fun == likelihood of the data for a regression function     *)
 (*                obs == obs_fun as a QBS morphism R => R -> R                *)
 (*             wprior == the weighted prior P(id, obs) prior                  *)
-(*            program == norm wprior : option (qbs_prob (R => R))             *)
+(*            program == norm wprior : option (probQ (R => R))                *)
 (*     evidence_const == closed-form value of the evidence of wprior          *)
 (*  post_s_mean, post_s_var == mean and variance of s in the posterior        *)
 (*  post_b_mean s, post_b_var == mean (a function of s) and variance of b     *)
@@ -61,10 +61,10 @@ Local Abbreviation F := (expQ RQ RQ).
 
 Let half_neq0 : (2^-1 : R) != 0. Proof. by rewrite invr_eq0 pnatr_eq0. Qed.
 
-Definition nu : qbs_prob RQ := qbs_normal_distribution 0 3.
+Definition nu : probQ RQ := qbs_normal 0 3.
 
 (** The parameter prior N(0,3) x N(0,3), as a monadic product. *)
-Definition prior2 : qbs_prob W := monadP_pair nu nu.
+Definition prior2 : probQ W := qbs_prod nu nu.
 
 (** (s, b) |-> (r |-> s * r + b). *)
 Definition lin_uncurried : qbsHomType (prodQ W RQ) RQ :=
@@ -79,7 +79,7 @@ Lemma linE (s b r : R) : lin (s, b) r = s * r + b.
 Proof. by []. Qed.
 
 (** The prior on functions (HKSY eq. (5)). *)
-Definition prior : qbs_prob F := monadP_map lin prior2.
+Definition prior : probQ F := qbs_map lin prior2.
 
 Let d (m x : R) : R := normal_pdf m (2^-1) x.
 
@@ -110,10 +110,10 @@ Definition obs : qbsHomType F RQ :=
   HB.pack obs_fun (isQBSMorphism.Build R F RQ _ obs_morphism).
 
 (** The weighted prior P(id, obs)(prior) and the program. *)
-Definition wprior : qbs_prob (prodQ F RQ) :=
-  monadP_map (qbs_pair (qbs_id F) obs) prior.
+Definition wprior : probQ (prodQ F RQ) :=
+  qbs_map (qbs_pair (qbs_id F) obs) prior.
 
-Definition program : option (qbs_prob F) := qbs_normalize wprior.
+Definition program : option (probQ F) := qbs_normalize wprior.
 
 (** ** The posterior in closed form *)
 
@@ -210,14 +210,14 @@ Qed.
 Definition post_b_meanQ : qbsHomType RQ RQ :=
   HB.pack post_b_mean (isQBSMorphism.Build R RQ RQ _ post_b_mean_morphism).
 
-Definition posterior2 : qbs_prob W :=
+Definition posterior2 : probQ W :=
   qbs_bind
-    (qbs_normal_distribution post_s_mean (sqrtr post_s_var))
+    (qbs_normal post_s_mean (sqrtr post_s_var))
     (qbs_comp (qbs_pair (qbs_id RQ)
       (qbs_comp post_b_meanQ (qbs_normalQ (sqrtr post_b_var))))
       (qbs_strengthQ RQ RQ)).
 
-Definition posterior : qbs_prob F := monadP_map lin posterior2.
+Definition posterior : probQ F := qbs_map lin posterior2.
 
 (** ** Integrals against the prior and the posterior *)
 
@@ -425,7 +425,7 @@ Proof.
 have mw0 := @qbs_measurable_weight R F.
 have mw := qbs_measurable_comp (qbs_pair (qbs_id F) obs) mw0.
 rewrite /qbs_evidence.
-rewrite !monadP_map_integral//.
+rewrite !qbs_map_integral//.
 rewrite -[LHS]/(qbs_integral W prior2 (fun sb => (maxr 0 (obs2 sb.1 sb.2))%:E)).
 have -> : (fun sb : W => (maxr 0 (obs2 sb.1 sb.2))%:E) =
     (fun sb => 1 * (obs2 sb.1 sb.2)%:E).
@@ -446,7 +446,7 @@ Theorem program_posterior : program = Some posterior.
 Proof.
 have ev : 0 < qbs_evidence wprior < +oo.
   by rewrite wprior_evidence ltry lte_fin evidence_const_gt0.
-rewrite /program /qbs_normalize ev; congr Some; apply/qbs_prob_eqP => U mU.
+rewrite /program /qbs_normalize ev; congr Some; apply/qbs_eqP => U mU.
 pose V := lin @^-1` U.
 have mV : sigma_Mx V := sigma_Mx_preimage lin mU.
 pose h (sb : W) : \bar R := (\1_V sb)%:E.
@@ -456,8 +456,8 @@ have h01 x : 0 <= h x <= 1.
   by rewrite /h indicE; case: (_ \in _); rewrite ?lee01 ?lexx.
 have mw := qbs_measurable_weighted_indic mU.
 have mw' := qbs_measurable_comp (qbs_pair (qbs_id F) obs) mw.
-rewrite qbs_normalize_event// wprior_evidence monadP_map_event//.
-rewrite qbs_prob_event_integral// !monadP_map_integral//.
+rewrite qbs_normalize_event// wprior_evidence qbs_map_event//.
+rewrite qbs_event_integral// !qbs_map_integral//.
 have -> : (fun x : W => (x \in V)%:R%:E) = h.
   by apply/funext => x; rewrite /h indicE.
 have -> : qbs_integral W prior2

@@ -15,7 +15,7 @@ From QBS Require Import measurable_aux quasi_borel probability_qbs qbs_monad
 (* probability measure on a standard Borel space is giry_to_qbs (qbs_giry.v). *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*   qbs_normal_distribution m s == Normal(m, s) as QBS probability           *)
+(*   qbs_normal m s == Normal(m, s) as QBS probability                        *)
 (*   qbs_normalQ s == m |-> Normal(m, s) as a morphism realQ -> P(R)          *)
 (*   qbs_bernoulli p == Bernoulli(p) as QBS probability on boolQ              *)
 (*   qbs_interval_uniform ab == Uniform[a,b] as QBS probability on realQ, for *)
@@ -50,14 +50,14 @@ Implicit Types (p m s : R).
 (** Standard distributions as QBS probabilities. *)
 
 (** A probability measure on R as a QBS probability (random element idfun). *)
-Let qbs_of_prob (P : probability mR R) : qbs_prob (realQ R) :=
+Let qbs_of_prob (P : probability mR R) : probQ (realQ R) :=
   mkQBSProb (X := realQ R) idfun P (@measurable_id _ mR setT).
 
 (** Normal distribution as QBS probability. *)
-Definition qbs_normal_distribution m s : qbs_prob (realQ R) :=
+Definition qbs_normal m s : probQ (realQ R) :=
   qbs_of_prob (normal_prob m s).
 
-Arguments qbs_normal_distribution : clear implicits.
+Arguments qbs_normal : clear implicits.
 
 Let measurable_ltr p : measurable_fun setT (fun r : mR => r < p).
 Proof.
@@ -66,36 +66,36 @@ exact: measurable_fun_ltr (@measurable_id _ mR setT)
 Qed.
 
 (** Bernoulli distribution as QBS probability on boolQ. *)
-Definition qbs_bernoulli p : qbs_prob (boolQ R) :=
+Definition qbs_bernoulli p : probQ (boolQ R) :=
   mkQBSProb (X := boolQ R) (fun r : mR => r < p)
     (uniform_prob ltr01 : probability mR R) (measurable_ltr p).
 
 Arguments qbs_bernoulli : clear implicits.
 
 (** Uniform distribution on [a,b], for a < b, as QBS probability. *)
-Definition qbs_interval_uniform (a b : R) (ab : a < b) : qbs_prob (realQ R) :=
+Definition qbs_interval_uniform (a b : R) (ab : a < b) : probQ (realQ R) :=
   qbs_of_prob (uniform_prob ab).
 
 Arguments qbs_interval_uniform {a b}.
 
 (** Uniform[0,1] distribution as QBS probability. *)
-Definition qbs_uniform : qbs_prob (realQ R) := qbs_interval_uniform ltr01.
+Definition qbs_uniform : probQ (realQ R) := qbs_interval_uniform ltr01.
 
 (** The QBS of intervals (a, b) with a < b, and Uniform[a,b] as a morphism
     out of it (AFP qbs_interval_uniform_distribution_morphism). *)
 Definition intervalQ : qbsType R :=
   @subQ R (prodQ (realQ R) (realQ R)) (fun ab => (ab.1 < ab.2)).
 
-Definition qbs_uniform_of (ab : intervalQ) : qbs_prob (realQ R) :=
+Definition qbs_uniform_of (ab : intervalQ) : probQ (realQ R) :=
   qbs_interval_uniform (svalP ab).
 
 Lemma qbs_uniform_of_morphism :
-  qbs_morphism (X := intervalQ) (Y := qbs_prob (realQ R)) qbs_uniform_of.
+  qbs_morphism (X := intervalQ) (Y := probQ (realQ R)) qbs_uniform_of.
 Proof.
 move=> c [m1 m2].
 exists idfun, (fun r => uniform_prob (svalP (c r)) : giry mR R).
 split; [exact: (@measurable_id _ mR setT)| |by move=> r; exact: probability_setT
-  |by move=> r U mU; rewrite qbs_prob_event_mk].
+  |by move=> r U mU; rewrite qbs_event_mk].
 apply: measurable_giry_codensity => // B mB.
   pose f (z : (mR * mR) * mR) : \bar R :=
     (\1_B z.2 * uniform_pdf z.1.1 z.1.2 z.2)%:E.
@@ -121,24 +121,24 @@ apply: measurable_giry_codensity => // B mB.
   by apply/measurable_fun_pairP; split.
 Qed.
 
-Definition qbs_uniformQ : qbsHomType intervalQ (qbs_prob (realQ R)) :=
+Definition qbs_uniformQ : qbsHomType intervalQ (probQ (realQ R)) :=
   HB.pack qbs_uniform_of
     (isQBSMorphism.Build R _ _ _ qbs_uniform_of_morphism).
 
 Lemma qbs_normal_morphism s :
-  qbs_morphism (X := realQ R) (Y := qbs_prob (realQ R))
-    (fun m => qbs_normal_distribution m s).
+  qbs_morphism (X := realQ R) (Y := probQ (realQ R))
+    (fun m => qbs_normal m s).
 Proof.
 move=> a ha; exists idfun, (fun r => normal_prob (a r) s : giry mR R).
 split; [exact: (@measurable_id _ mR setT)| |by move=> r; exact: probability_setT
-  |by move=> r U mU; rewrite qbs_prob_event_mk].
+  |by move=> r U mU; rewrite qbs_event_mk].
 apply: measurable_giry_codensity => // B mB.
 exact: measurableT_comp (measurable_normal_prob _ mB) ha.
 Qed.
 
 (** m |-> N(m, s) as a bundled morphism R -> P(R). *)
-Definition qbs_normalQ s : qbsHomType (realQ R) (qbs_prob (realQ R)) :=
-  HB.pack (fun m : realQ R => qbs_normal_distribution m s : qbs_prob _)
+Definition qbs_normalQ s : qbsHomType (realQ R) (probQ (realQ R)) :=
+  HB.pack (fun m : realQ R => qbs_normal m s : probQ _)
     (isQBSMorphism.Build R _ _ _ (qbs_normal_morphism s)).
 
 (** Distribution expectation lemmas. *)
@@ -176,7 +176,7 @@ Qed.
 
 Lemma qbs_integral_normal m s (h : R -> \bar R) :
   qbs_measurable (realQ R) h ->
-  qbs_integral (realQ R) (qbs_normal_distribution m s) h =
+  qbs_integral (realQ R) (qbs_normal m s) h =
   (\int[normal_prob m s]_x h x)%E.
 Proof. exact: qbs_integral_mk. Qed.
 
@@ -196,10 +196,10 @@ Qed.
     mathcomp-analysis. *)
 Lemma qbs_bernoulli_event p (hp0 : 0 <= p) (hp1 : p <= 1)
     (A : set bool) :
-  qbs_prob_event (boolQ R) (qbs_bernoulli p) A = bernoulli_prob p A.
+  qbs_event (boolQ R) (qbs_bernoulli p) A = bernoulli_prob p A.
 Proof.
 have p01 : 0 <= p <= 1 by apply/andP.
-rewrite qbs_prob_event_mk.
+rewrite qbs_event_mk.
   exact: (@sigma_Mx_measQ _ _ bool A).
 pose f : {mfun mR >-> bool} := mfun_Sub (mem_set (measurable_ltr p)).
 pose P : probability bool R :=
@@ -268,7 +268,7 @@ Proof. by rewrite qbs_expect_interval_uniform add0r div1r. Qed.
 
 (** E[Normal(m,s)] = m. *)
 Lemma qbs_expect_normal m s : s != 0 ->
-  qbs_expect (realQ R) (qbs_normal_distribution m s) (fun x => x) = m%:E.
+  qbs_expect (realQ R) (qbs_normal m s) (fun x => x) = m%:E.
 Proof.
 move=> s0; rewrite /qbs_expect qbs_integral_mk /=.
   by apply: qbs_measurable_measQ; exact/measurable_EFinP/measurable_id.
@@ -279,4 +279,4 @@ End distribution_expectations.
 
 End measure_as_qbs.
 
-Arguments qbs_normal_distribution {R}.
+Arguments qbs_normal {R}.
