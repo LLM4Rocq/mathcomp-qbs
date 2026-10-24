@@ -71,13 +71,13 @@ Let pdensity0 : pdensity ha set0 = 0.
 Proof. by rewrite /pdensity integral_set0. Qed.
 
 Let pdensity_ge0 A : 0 <= pdensity ha A.
-Proof. by apply: integral_ge0 => r _; exact: pweight_ge0. Qed.
+Proof. by apply: integral_ge0 => ? _; exact: pweight_ge0. Qed.
 
 Let pdensity_sigma : semi_sigma_additive (pdensity ha).
 Proof.
-apply: semi_sigma_additive_nng_induced;
-  first exact: qbs_measurable_weight ha.
-by move=> r; exact: pweight_ge0.
+apply: semi_sigma_additive_nng_induced.
+  exact: qbs_measurable_weight ha.
+by move=> ?; exact: pweight_ge0.
 Qed.
 
 HB.instance Definition _ := isMeasure.Build _ _ _ (pdensity ha)
@@ -100,14 +100,14 @@ rewrite /pdensity integral_mkcond.
 by apply: eq_integral => r _; rewrite patchE in_setT.
 Qed.
 
-Lemma qbs_alpha_fst_random p :
+Lemma qbs_Mx_alpha_fst p :
   qbs_Mx (fun r => (qbs_alpha p r).1).
 Proof. by have [] := qbs_alpha_random p. Qed.
 
 Definition normalize_prob p : probQ X :=
   mkQBSProb (fun r => (qbs_alpha p r).1)
     (mnormalize (density p) (qbs_mu p))
-    (qbs_alpha_fst_random p).
+    (qbs_Mx_alpha_fst p).
 
 Definition normalize p : option (probQ X) :=
   if 0 < evidence p < +oo
@@ -192,16 +192,15 @@ move=> mU; set p := mkQBSProb alpha mu ha.
 have evp : evidence p = pdensity mu ha [set: mR].
   by rewrite pdensityT /evidence qbs_integral_mk//;
     exact: qbs_measurable_weight.
-rewrite /mnormalize; case: ifPn => [hc|/norP[/negbTE h0 /negbTE hoo]].
+rewrite /mnormalize; case: ifPn => [hc|/norP[h0 hoo]].
   have hev : ~~ (0 < evidence p < +oo).
     by rewrite evp; move: hc => /orP[] /eqP ->; rewrite ?ltxx ?ltNge ?leey.
   rewrite (normalize_event_degen mU hev) qbs_event_mk //.
   exact: (sigma_Mx_preimage (qbs_fst X (realQ R)) mU).
 have hev : 0 < evidence p < +oo.
-  have {}h0 := negbT h0; have {}hoo := negbT hoo.
   by rewrite evp lt0e ltey h0 hoo /= measure_ge0.
-rewrite (normalize_event mU hev) evp /p qbs_integral_mk;
-  first exact: qbs_measurable_weighted_indic mU.
+rewrite (normalize_event mU hev) evp /p qbs_integral_mk.
+  exact: qbs_measurable_weighted_indic mU.
 by rewrite -pdensity_preimage.
 Qed.
 
