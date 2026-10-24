@@ -28,13 +28,14 @@ jobs:
           coq_version: '9.2'
           ocaml_version: 'default'
           export: 'OPAMIGNORECONSTRAINTS'
-          before_script: |
-            startGroup "Workaround permission issue"
-              sudo chown -R 1000:1000 .
-            endGroup
+          before_install: |
             startGroup "algebra-tactics: no release for MathComp 2.6 yet"
               opam pin add -n -y -k git coq-mathcomp-algebra-tactics \
                 "https://github.com/math-comp/algebra-tactics.git#master"
+            endGroup
+          before_script: |
+            startGroup "Workaround permission issue"
+              sudo chown -R 1000:1000 .
             endGroup
           after_script: |
             startGroup "Build docs"
