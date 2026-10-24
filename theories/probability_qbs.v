@@ -22,9 +22,9 @@ From QBS Require Import measurable_aux quasi_borel.
 (*                                                                            *)
 (* ```                                                                        *)
 (*   preprob X        == pairs (alpha, mu) (representatives)                  *)
-(*   probQ X           == probabilities on X: the quotient of the pairs       *)
+(*   probQ X          == probabilities on X: the quotient of the pairs        *)
 (*   qbs_alpha p, qbs_mu p == the pair of a representative of p               *)
-(*   mkQBSProb alpha mu ha == the probability represented by (alpha, mu)      *)
+(*   mkQBSProb mu halpha == the probability represented by (alpha, mu)        *)
 (*   qbs_event X p U == mu (alpha @^-1` U)                                    *)
 (*   qbs_eqP         == probabilities are equal iff they agree on             *)
 (*                           sigma_Mx sets                                    *)
@@ -48,6 +48,20 @@ From QBS Require Import measurable_aux quasi_borel.
 (*   qbs_variance_affine  == Var(a * h + b) = a^2 * Var(h)                    *)
 (*   qbs_expect X p h     == expectation of a real function                   *)
 (*   qbs_variance X p h   == variance of h o alpha under mu                   *)
+(*   mkQBSProbK       == mkQBSProb (qbs_mu p) _ = p                           *)
+(*   qbs_measurableP  == qbs_measurable iff Borel on qbs_meas X               *)
+(*   qbs_measurable_comp, qbs_measurable_measQ == sigma_Mx-measurability is   *)
+(*                       stable under morphisms, true for Borel h on measQ    *)
+(*   qbs_alpha_mfun p == alpha as a measurable function into qbs_meas X       *)
+(*   qbs_lawE, qbs_eq_lawP == the law gives the same event masses, and        *)
+(*                       determines the probability                           *)
+(*   ge0_qbs_integral_law, qbs_integral_law == the integral against p is the  *)
+(*                       integral against its law                             *)
+(*   qbs_expectE      == the expectation is that of the law                   *)
+(*   qbs_varianceE, qbs_varianceE_integral == Var(h) = E(h^2) - E(h)^2, and   *)
+(*                       as the integral of the squared deviation             *)
+(*   qbs_varianceZ    == Var(a * h) = a^2 * Var(h) (a function a o* h)        *)
+(*   qbs_markov, qbs_chebyshev == Markov and Chebyshev inequalities           *)
 (*   qbs_rv X p h hm      == random variable from a measurable h o alpha      *)
 (* ```                                                                        *)
 (* The probability monad itself is in qbs_monad.v.                            *)
@@ -91,7 +105,7 @@ Arguments qbs_measurable : clear implicits.
 (** Measurable functions out of measQ M are sigma_Mx-measurable. *)
 Lemma qbs_measurable_measQ d (M : measurableType d) (h : M -> \bar R) :
   measurable_fun setT h -> qbs_measurable (measQ R M) h.
-Proof. by move=> mh a ha; exact: measurableT_comp mh ha. Qed.
+Proof. by move=> mh a; exact: measurableT_comp mh. Qed.
 
 Lemma qbs_measurable_comp X Y (f : qbsHomType X Y) (h : Y -> \bar R) :
   qbs_measurable Y h -> qbs_measurable X (h \o f).
@@ -111,14 +125,14 @@ Qed.
 Lemma qbs_measurable_funepos X (h : X -> \bar R) :
   qbs_measurable X h -> qbs_measurable X h^\+%E.
 Proof.
-move=> mh a ha; move: (mh _ ha) => /measurable_funepos.
+move=> mh a /mh /measurable_funepos.
 by apply: eq_measurable_fun => r _; rewrite !funeposE.
 Qed.
 
 Lemma qbs_measurable_funeneg X (h : X -> \bar R) :
   qbs_measurable X h -> qbs_measurable X h^\-%E.
 Proof.
-move=> mh a ha; move: (mh _ ha) => /measurable_funeneg.
+move=> mh a /mh /measurable_funeneg.
 by apply: eq_measurable_fun => r _; rewrite !funenegE.
 Qed.
 
@@ -134,13 +148,13 @@ Lemma ge0_integral_sigma_Mx (k : X -> \bar R) : qbs_Mx a1 -> qbs_Mx a2 ->
   \int[m1]_r k (a1 r) = \int[m2]_r k (a2 r).
 Proof.
 move=> ha1 ha2 m12 mk k0; have mk1 := mk _ ha1; have mk2 := mk _ ha2.
-have pre (a : mR -> X) : (k \o a) @^-1` `[0, +oo]%classic = [set: mR].
+have pre (a : mR -> X) : (k \o a) @^-1` `[0, +oo] = [set: mR].
   by apply/seteqP; split=> // r _; rewrite /= in_itv /= k0 leey.
-have Pge0 : {in `[0, +oo]%classic, forall y : \bar R, 0 <= y}.
+have Pge0 : {in `[0, +oo], forall y : \bar R, 0 <= y}.
   by move=> y; rewrite inE /= in_itv /= => /andP[].
-transitivity (\int[pushforward m1 (k \o a1)]_(y in `[0, +oo]%classic) y).
+transitivity (\int[pushforward m1 (k \o a1)]_(y in `[0, +oo]) y).
   by rewrite ge0_integral_pushforward ?pre//; exact: emeasurable_itv.
-transitivity (\int[pushforward m2 (k \o a2)]_(y in `[0, +oo]%classic) y).
+transitivity (\int[pushforward m2 (k \o a2)]_(y in `[0, +oo]) y).
   apply: eq_measure_integral => V mV _; rewrite /pushforward.
   exact: m12 (qbs_measurable_sigma_Mx mk mV).
 by rewrite ge0_integral_pushforward ?pre//; exact: emeasurable_itv.
@@ -272,7 +286,7 @@ Lemma qbs_integral_mk X (alpha : mR -> X) (mu : probability mR R)
   qbs_integral X (mkQBSProb mu halpha) h = (\int[mu]_r h (alpha r))%E.
 Proof.
 move=> mh; apply: integral_sigma_Mx => //; first exact: qbs_alpha_random.
-by move=> U mU; exact: qbs_event_mk.
+by move=> U; exact: qbs_event_mk.
 Qed.
 
 (** ** The law of a QBS probability on L X (HKSY l_X, eq. (3)) *)
@@ -493,9 +507,7 @@ Lemma qbs_varianceZ X (p : probQ X) (a : R)
   h \o qbs_alpha p \in Lfun (qbs_mu p) 2%:E ->
   qbs_variance X p (a \o* h)%R =
   (a ^+ 2)%:E * qbs_variance X p h.
-Proof.
-move=> hL2; exact: varianceZ.
-Qed.
+Proof. exact: varianceZ. Qed.
 
 (** The variance as the integral of the squared deviation from the mean. *)
 Lemma qbs_varianceE_integral X (p : probQ X) (h : X -> R) :
@@ -555,10 +567,9 @@ Lemma qbs_markov X (p : probQ X)
 Proof.
 have /measurable_EFinP mha := hm _ (qbs_alpha_random p).
 pose rv : {RV (qbs_mu p) >-> R} := qbs_rv mha.
-have := @markov _ _ R _ rv f eps heps hmf hf0 hfnd.
+have := markov rv heps hmf hf0 hfnd.
 rewrite unlock /qbs_event /qbs_integral /=.
-under eq_set => x do rewrite -abse_EFin lee_fin.
-exact.
+by under eq_set => x do rewrite -abse_EFin lee_fin.
 Qed.
 
 (** Chebyshev inequality lifted to QBS probabilities. *)
@@ -571,8 +582,7 @@ Lemma qbs_chebyshev X (p : probQ X)
 Proof.
 have /measurable_EFinP mha := hm _ (qbs_alpha_random p).
 pose rv : {RV (qbs_mu p) >-> R} := qbs_rv mha.
-have hE : qbs_expect X p h = 'E_(qbs_mu p)[rv] by rewrite unlock.
-rewrite hE.
+have -> : qbs_expect X p h = 'E_(qbs_mu p)[rv] by rewrite unlock.
 exact: chebyshev rv eps heps.
 Qed.
 
