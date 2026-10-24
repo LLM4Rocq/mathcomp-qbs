@@ -1,8 +1,7 @@
 (* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
 From mathcomp Require Import boot algebra reals ereal topology classical_sets
-  boolp numfun measure measurable_realfun lebesgue_measure lebesgue_integral
-  lebesgue_stieltjes_measure probability.
+  boolp numfun measure measurable_realfun lebesgue_measure lebesgue_integral.
 From QBS Require Import quasi_borel probability_qbs qbs_monad.
 
 (**md**************************************************************************)
@@ -13,25 +12,25 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad.
 (* of quasi-Borel spaces (Hirata, Minamide, Sato).                            *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*   qbs_integrable_returnP == h is integrable for the Dirac probability at x *)
-(*                             iff h x is finite                              *)
-(*   qbs_integrable_return  == real-valued functions are integrable for       *)
-(*                             qbs_return x                                   *)
-(*   qbs_integral_bind     == the integral of an integrable function against  *)
-(*                             p >>= f is the integral of the inner integrals *)
+(*   qbs_integrable_returnP    == h is integrable for the Dirac probability   *)
+(*                                at x iff h x is finite                      *)
+(*   qbs_integrable_return     == real-valued functions are integrable for    *)
+(*                                qbs_return x                                *)
+(*   qbs_integral_bind         == the integral of an integrable function      *)
+(*                                against p >>= f is the integral of the      *)
+(*                                inner integrals                             *)
 (*   qbs_integral_bind_bounded == same for bounded measurable real functions  *)
-(*   measurable_qbs_integral, qbs_morphism_integral == signed versions        *)
-(*                             of the integral being measurable in a random   *)
-(*                             probability, and of p |-> qbs_integral p h     *)
-(*                             being a morphism P(X) -> \bar R                *)
-(*   qbs_integral_param == x |-> integral of h(x, .) against L x is a         *)
-(*                             morphism, for L : X -> P(Y)                    *)
-(*   qbs_integral_param_snd == y |-> integral of h(., y) against p is a       *)
-(*                             morphism                                       *)
+(*   measurable_qbs_integral   == signed version of the integral being        *)
+(*                                measurable in a random probability          *)
+(*   qbs_morphism_integral     == signed version of p |-> qbs_integral p h    *)
+(*                                being a morphism P(X) -> \bar R             *)
+(*   qbs_integral_param        == x |-> integral of h(x, .) against L x is a  *)
+(*                                morphism, for L : X -> P(Y)                 *)
+(*   qbs_integral_param_snd    == y |-> integral of h(., y) against p is a    *)
+(*                                morphism                                    *)
 (* ```                                                                        *)
 (******************************************************************************)
 
-Import GRing.Theory Num.Def Num.Theory.
 Import MeasurableR.
 
 Set Implicit Arguments.
@@ -59,7 +58,7 @@ move=> mh; split=> [hi|hx].
 rewrite /qbs_return (qbs_integrable_mk _ _ mh).
 rewrite (_ : h \o _ = fun=> (fine (h x))%:E).
   by apply/funext => r /=; rewrite fineK.
-exact: finite_measure_integrable_cst _ _ measurableT.
+exact: finite_measure_integrable_cst.
 Qed.
 
 Lemma qbs_integrable_return X (x : X) (f : X -> R) :
@@ -72,7 +71,7 @@ Proof. by move=> mf; apply/qbs_integrable_returnP. Qed.
 Section bind.
 Context X Y (p : probQ X) (f : qbsHomType X (probQ Y)).
 
-Let hf : qbs_Mx (s := probQ Y) (f \o qbs_alpha p) :=
+Let hf : qbs_Mx (f \o qbs_alpha p) :=
   qbs_hom_proof _ (qbs_alpha_random p).
 
 (** Signed version of ge0_qbs_integral_bind. *)
@@ -116,14 +115,13 @@ Lemma qbs_integral_bind_bounded X Y (p : probQ X)
   qbs_integral Y (qbs_bind p f) (fun y => (k y)%:E) =
   qbs_integral X p (fun x => qbs_integral Y (f x) (fun y => (k y)%:E)).
 Proof.
-move=> mk bd; apply: qbs_integral_bind => //.
-exact: qbs_integrable_bounded.
+by move=> mk bd; apply: qbs_integral_bind => //; exact: qbs_integrable_bounded.
 Qed.
 
 (** ** Integration is a morphism, signed version of ge0_qbs_morphism_integral *)
 
 Lemma measurable_qbs_integral X (b : mR -> probQ X) (h : X -> \bar R) :
-  qbs_Mx (s := probQ X) b -> qbs_measurable X h ->
+  qbs_Mx b -> qbs_measurable X h ->
   measurable_fun [set: mR] (fun r => qbs_integral X (b r) h).
 Proof.
 move=> hb mh; under eq_fun do rewrite qbs_integralE.
@@ -150,7 +148,7 @@ Lemma qbs_integral_param X Y (L : qbsHomType X (probQ Y))
 Proof.
 move=> mh a ha.
 pose g := qbs_comp (qbs_pair (qbs_id X) L) (strengthQ X Y).
-have hs : qbs_Mx (s := probQ (prodQ X Y)) (g \o a) := qbs_hom_proof _ ha.
+have hs : qbs_Mx (g \o a) := qbs_hom_proof _ ha.
 have := measurable_qbs_integral hs mh.
 by under [X in measurable_fun _ X -> _]eq_fun do
   rewrite /g /= strength_integral//.
@@ -164,7 +162,7 @@ Proof.
 move=> mh; apply: (qbs_integral_param (qbs_const Y p)
   (h := fun yx => h (yx.2, yx.1))).
 move=> a ha.
-have hs : qbs_Mx (s := prodQ X Y) (qbs_swap Y X \o a) := qbs_hom_proof _ ha.
+have hs : qbs_Mx (qbs_swap Y X \o a) := qbs_hom_proof _ ha.
 exact: mh _ hs.
 Qed.
 
