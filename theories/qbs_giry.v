@@ -1,8 +1,7 @@
 (* QBS project. License: CeCILL-C.                                            *)
 From HB Require Import structures.
-From mathcomp Require Import boot algebra reals classical_sets boolp ereal
-  measure lebesgue_stieltjes_measure lebesgue_integral measurable_realfun
-  probability.
+From mathcomp Require Import boot reals classical_sets ereal measure
+  lebesgue_stieltjes_measure lebesgue_integral measurable_realfun probability.
 From QBS Require Import quasi_borel measure_qbs_adjunction probability_qbs
   qbs_monad.
 
@@ -15,6 +14,8 @@ From QBS Require Import quasi_borel measure_qbs_adjunction probability_qbs
 (* probability on R(M).                                                       *)
 (*                                                                            *)
 (* ```                                                                        *)
+(* qbs_alpha_mfunR p == the random element of p as a measurable function      *)
+(*                  mR -> M                                                   *)
 (*      to_giry p == distribution of p : probQ (measQ R M) on M               *)
 (* of_giry encode decode P == the probability (decode, P o encode^-1)         *)
 (*                  on R(M); it returns a probQ, not an element of the        *)
@@ -55,7 +56,7 @@ Lemma qbs_integral_giry (p : probQ (measQ R M)) (f : M -> \bar R) :
 Proof. by move=> *; rewrite integral_distribution. Qed.
 
 Lemma to_giry_return (x : M) (A : set M) : measurable A ->
-  to_giry (qbs_return (x : measQ R M)) A = (\d_x)%R A.
+  to_giry (qbs_return x) A = (\d_x)%R A.
 Proof.
 move=> mA; rewrite to_giryE qbs_return_event ?diracE//.
   exact: sigma_Mx_measQ.
@@ -66,7 +67,7 @@ End to_giry.
 Lemma to_giry_map d1 d2 (M1 : measurableType d1) (M2 : measurableType d2)
     (f : qbsHomType (measQ R M1) (measQ R M2))
     (p : probQ (measQ R M1)) (A : set M2) : measurable A ->
-  to_giry (qbs_map f p : probQ _) A =
+  to_giry (qbs_map f p) A =
   to_giry p (f @^-1` A).
 Proof.
 move=> mA; rewrite to_giryE qbs_map_event//.
@@ -93,11 +94,11 @@ Qed.
 Lemma to_giry_bind d' (M' : measurableType d') (p : probQ (measQ R M))
     (f : qbsHomType (measQ R M) (probQ (measQ R M'))) (A : set M') :
   measurable A ->
-  to_giry (qbs_bind p f : probQ _) A =
-  \int[to_giry p]_x to_giry (f x : probQ _) A.
+  to_giry (qbs_bind p f) A =
+  \int[to_giry p]_x to_giry (f x) A.
 Proof.
 move=> mA; rewrite to_giryE (qbs_bind_event _ _ (sigma_Mx_measQ mA)).
-have mh : measurable_fun [set: M] (fun x => to_giry (f x : probQ _) A).
+have mh : measurable_fun [set: M] (fun x => to_giry (f x) A).
   apply: (measQ_full sb (M2 := \bar R)) => a ha.
   apply: measurable_qbs_event (sigma_Mx_measQ mA).
   exact: qbs_hom_proof.
