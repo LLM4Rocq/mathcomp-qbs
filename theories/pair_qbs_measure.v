@@ -71,17 +71,17 @@ Let pf_mu0 : pf_mu set0 = 0.
 Proof. by rewrite /pf_mu preimage_set0 measure0. Qed.
 
 Let pf_mu_ge0 (A : set mR) : 0 <= pf_mu A.
-Proof. by rewrite /pf_mu; exact: measure_ge0. Qed.
+Proof. exact: measure_ge0. Qed.
 
 Let pf_mu_sigma : semi_sigma_additive pf_mu.
 Proof.
 move=> F mF tF mUF; rewrite /pf_mu preimage_bigcup.
 apply: measure_semi_sigma_additive.
-- move=> n; rewrite -[X in measurable X]setTI.
+- move=> n; rewrite -[T in measurable T]setTI.
   exact: (measurable_RR_to_R measurableT (mF n)).
 - apply/trivIsetP => /= i j _ _ ij; rewrite -preimage_setI.
-  by move/trivIsetP : tF => /(_ _ _ _ _ ij) ->//; rewrite preimage_set0.
-- rewrite -preimage_bigcup -[X in measurable X]setTI.
+  by move/trivIsetP: tF => /(_ _ _ _ _ ij) ->//; rewrite preimage_set0.
+- rewrite -preimage_bigcup -[T in measurable T]setTI.
   exact: (measurable_RR_to_R measurableT mUF).
 Qed.
 
@@ -123,8 +123,8 @@ exact: measurable_R_to_RR.
 Qed.
 
 Definition qbs_prod_enc (X Y : qbsType R)
-  (p : probQ X) (q : probQ Y) : probQ (prodQ X Y) :=
-  @mkQBSProb R (prodQ X Y)
+    (p : probQ X) (q : probQ Y) : probQ (prodQ X Y) :=
+  mkQBSProb (X := prodQ X Y)
     (qbs_prod_alpha p q)
     (qbs_prod_mu p q)
     (qbs_prod_alpha_random p q).
@@ -138,8 +138,8 @@ Lemma qbs_prod_enc_event (X Y : qbsType R) (p : probQ X)
   (qbs_mu p \x qbs_mu q)
     [set rr | U (qbs_alpha p rr.1, qbs_alpha q rr.2)].
 Proof.
-move=> mU; rewrite /qbs_prod_enc qbs_event_mk //= /qbs_prod_mu.
-rewrite /pf_mu; congr (_ _); apply/seteqP; split=> rr /=;
+move=> mU; rewrite /qbs_prod_enc qbs_event_mk //= /qbs_prod_mu /pf_mu.
+congr (_ _); apply/seteqP; split=> rr /=;
   by rewrite /qbs_prod_alpha encode_RR_mRK.
 Qed.
 
@@ -152,8 +152,6 @@ apply/qbs_eqP => U mU; rewrite qbs_prod_event// qbs_prod_enc_event//.
 rewrite /product_measure1 /=; apply: eq_integral => r _; congr (_ _).
 by apply/seteqP; split=> t /=; rewrite /xsection /= inE.
 Qed.
-
-Local Open Scope ereal_scope.
 
 (** ** Integrals on a product of probabilities on mR *)
 
@@ -286,17 +284,15 @@ have sA : sigma_Mx (X := realQ R) A := sigma_Mx_measQ mA.
 have sB : sigma_Mx (X := realQ R) B := sigma_Mx_measQ mB.
 have mU : sigma_Mx (X := prodQ (realQ R) (realQ R)) (A `*` B).
   move=> b [hb1 hb2].
-  have -> : b @^-1` (A `*` B) =
-      (fun r => (b r).1) @^-1` A `&` (fun r => (b r).2) @^-1` B by [].
-  by apply: measurableI; [exact: sA _ hb1|exact: sB _ hb2].
+  exact: measurableI (sA _ hb1) (sB _ hb2).
 transitivity (qbs_event _ (qbs_map (qbs_pair f g) p) (A `*` B)).
   by rewrite (qbs_map_event (qbs_pair f g) p mU).
 rewrite hind qbs_prodE qbs_prod_enc_event//.
 set p1 := qbs_map f p; set p2 := qbs_map g p.
 have mA1 : measurable (qbs_alpha p1 @^-1` A).
-  by have := sA _ (qbs_alpha_random p1).
+  exact: sA _ (qbs_alpha_random p1).
 have mB2 : measurable (qbs_alpha p2 @^-1` B).
-  by have := sB _ (qbs_alpha_random p2).
+  exact: sB _ (qbs_alpha_random p2).
 rewrite (_ : [set rr | _] = qbs_alpha p1 @^-1` A `*`
     qbs_alpha p2 @^-1` B)// product_measure1E//.
 by congr (_ * _); exact: qbs_map_event.
@@ -345,7 +341,7 @@ Proof. by move=> fm /(Lfun_subset12 fm) /Lfun1_integrable. Qed.
 
 Lemma qbs_prod_varianceD (X Y : qbsType R)
     (px : probQ X) (py : probQ Y) (f : X -> R) (g : Y -> R) :
-  let mu := (qbs_mu px \x qbs_mu py) in
+  let mu := qbs_mu px \x qbs_mu py in
   (fun rr : mR * mR => f (qbs_alpha px rr.1)) \in Lfun mu 2 ->
   (fun rr : mR * mR => g (qbs_alpha py rr.2)) \in Lfun mu 2 ->
   f \o qbs_alpha px \in Lfun (qbs_mu px) 2 ->
@@ -356,7 +352,7 @@ move=> mu hF2 hG2 hf2 hg2.
 set F := fun rr : mR * mR => f (qbs_alpha px rr.1).
 set G := fun rr : mR * mR => g (qbs_alpha py rr.2).
 have mu_fin : mu setT \is a fin_num.
-  by rewrite /mu -(@setXTT mR mR) product_measure1E //= !probability_setT mule1.
+  by rewrite /mu -setXTT product_measure1E//= !probability_setT mule1.
 have fin1 (m : probability mR R) : m setT \is a fin_num.
   by rewrite probability_setT.
 have EF : 'E_mu[F] = 'E_(qbs_mu px)[(f \o qbs_alpha px)].
