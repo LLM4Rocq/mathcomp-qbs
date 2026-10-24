@@ -25,8 +25,8 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad standard_borel.
 (*   qbs_prod_integrable, qbs_prod_integral, qbs_prod_iterated,               *)
 (*   qbs_prod_mul == integrability and integrals against qbs_prod p q:        *)
 (*                            product measure, Fubini, E[f g] = E[f] E[g]     *)
-(*   qbs_indep p f g == independence of f and g under p                       *)
-(*   qbs_indep_rect, qbs_integral_indepM == product rule on rectangles and    *)
+(*   indep p f g == independence of f and g under p                           *)
+(*   indep_rect, qbs_integral_indepM == product rule on rectangles and        *)
 (*                            E[phi(f) psi(g)] = E[phi(f)] E[psi(g)]          *)
 (*   qbs_prod_variance px py f g == variance of f(x) + g(y) on product        *)
 (* ```                                                                        *)
@@ -269,15 +269,15 @@ Qed.
 
 (** ** Independence *)
 
-Definition qbs_indep (X Y Z : qbsType R) (p : probQ Z)
+Definition indep (X Y Z : qbsType R) (p : probQ Z)
     (f : qbsHomType Z X) (g : qbsHomType Z Y) : Prop :=
   qbs_map (qbs_pair f g) p = qbs_prod (qbs_map f p) (qbs_map g p).
 
-(** For real-valued variables, qbs_indep gives the classical product rule
+(** For real-valued variables, indep gives the classical product rule
     on Borel rectangles. *)
-Lemma qbs_indep_rect (Z : qbsType R) (p : probQ Z)
+Lemma indep_rect (Z : qbsType R) (p : probQ Z)
     (f g : qbsHomType Z (realQ R)) (A B : set mR) :
-  measurable A -> measurable B -> qbs_indep p f g ->
+  measurable A -> measurable B -> indep p f g ->
   qbs_event Z p [set z | A (f z) /\ B (g z)] =
   qbs_event Z p (f @^-1` A) * qbs_event Z p (g @^-1` B).
 Proof.
@@ -305,7 +305,7 @@ Qed.
 (** Independence factorization: E[phi(f) psi(g)] = E[phi(f)] E[psi(g)]. *)
 Lemma qbs_integral_indepM (X Y Z : qbsType R) (p : probQ Z)
     (f : qbsHomType Z X) (g : qbsHomType Z Y) (phi : X -> R) (psi : Y -> R) :
-  qbs_indep p f g ->
+  indep p f g ->
   qbs_measurable X (EFin \o phi) -> qbs_measurable Y (EFin \o psi) ->
   qbs_integrable Z p (EFin \o (phi \o f)) ->
   qbs_integrable Z p (EFin \o (psi \o g)) ->

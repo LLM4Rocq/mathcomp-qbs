@@ -30,11 +30,11 @@ From QBS Require Import quasi_borel.
 (*   list_rec_hom == Y => (X => listQ X => Y => Y) => listQ X => Y            *)
 (*   qbs_negb, qbs_andb, qbs_orb, qbs_implb == boolean operations             *)
 (*   qbs_ltr, qbs_ltn == < on realQ and on natQ, into boolQ                   *)
-(*   qbs_hom_of f hf == f bundled with a proof hf that it is a morphism       *)
-(*   qbs_arg_swap == (X => Y => Z) -> (Y => X => Z)                           *)
-(*   qbs_exp_compose == (X => Y) * (Y => Z) -> (X => Z)                       *)
+(*   hom_of f hf == f bundled with a proof hf that it is a morphism           *)
+(*   arg_swap == (X => Y => Z) -> (Y => X => Z)                               *)
+(*   exp_compose == (X => Y) * (Y => Z) -> (X => Z)                           *)
 (*   qbs_case f g == copairing of f : X -> Z and g : Y -> Z                   *)
-(*   qbs_case_exp == (X => Z) * (Y => Z) -> (X + Y => Z)                      *)
+(*   case_exp == (X => Z) * (Y => Z) -> (X + Y => Z)                          *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -222,7 +222,7 @@ Arguments sigmaQ_random : clear implicits.
 
 (** Fibrewise choice of a random element: a fibre that is empty is
     filled with a constant. *)
-Local Lemma qbs_fibre_choice (A : qbsType R) (a0 : A) (p : mR -> Prop)
+Local Lemma fibre_choice (A : qbsType R) (a0 : A) (p : mR -> Prop)
     (Q : (mR -> A) -> mR -> Prop) :
   ((exists r, p r) -> exists2 a, qbs_Mx a & forall r, p r -> Q a r) ->
   exists a, qbs_Mx a /\ forall r, p r -> Q a r. (* this shape feeds choice *)
@@ -263,7 +263,7 @@ move=> i [r0 ri0].
 have x0 : X i by rewrite -ri0; exact: projT2 (F (P r0) r0).
 have /choice[a ha] : forall n, exists a : mR -> X i, qbs_Mx a /\
     forall r, projT1 (F n r) = i -> F n r = existT X i (a r).
-  move=> n; apply: (qbs_fibre_choice x0 (p := fun r => projT1 (F n r) = i)
+  move=> n; apply: (fibre_choice x0 (p := fun r => projT1 (F n r) = i)
     (Q := fun a r => F n r = existT X i (a r))).
   exact: (hF n).2 i.
 exists (fun r => a (P r) r).
@@ -301,7 +301,7 @@ move=> b [mi hb].
 have z0 : Z := sigma_case f (b 0%R).
 have /choice[a ha] : forall i, exists a : mR -> Z, qbs_Mx a /\
     forall r, projT1 (b r) = i -> sigma_case f (b r) = a r.
-  move=> i; apply: (qbs_fibre_choice z0 (p := fun r => projT1 (b r) = i)
+  move=> i; apply: (fibre_choice z0 (p := fun r => projT1 (b r) = i)
     (Q := fun a r => sigma_case f (b r) = a r)) => ex.
   have [a ra hab] := hb i ex; exists (f i \o a).
     exact: qbs_hom_proof.
@@ -381,33 +381,33 @@ Proof. by move=> b [mi _]. Qed.
     and coproducts (AFP Exponent_QuasiBorel.thy). *)
 
 (** Bundle a function together with a proof that it is a morphism. *)
-Definition qbs_hom_of X Y (f : X -> Y) (hf : qbs_morphism f) :
+Definition hom_of X Y (f : X -> Y) (hf : qbs_morphism f) :
     qbsHomType X Y := HB.pack f (isQBSMorphism.Build R X Y f hf).
 
-Arguments qbs_hom_of {X Y} f hf.
+Arguments hom_of {X Y} f hf.
 
 (** Measurable operations on [boolQ], [natQ], [realQ] are morphisms. *)
 Definition qbs_negb : qbsHomType (boolQ R) (boolQ R) :=
-  qbs_hom_of (negb : boolQ R -> boolQ R) (fun a ha => measurable_neg ha).
+  hom_of (negb : boolQ R -> boolQ R) (fun a ha => measurable_neg ha).
 
 Definition qbs_andb : qbsHomType (prodQ (boolQ R) (boolQ R)) (boolQ R) :=
-  qbs_hom_of (fun p : prodQ (boolQ R) (boolQ R) => p.1 && p.2 : boolQ R)
+  hom_of (fun p : prodQ (boolQ R) (boolQ R) => p.1 && p.2 : boolQ R)
     (fun a ha => measurable_and ha.1 ha.2).
 
 Definition qbs_orb : qbsHomType (prodQ (boolQ R) (boolQ R)) (boolQ R) :=
-  qbs_hom_of (fun p : prodQ (boolQ R) (boolQ R) => (p.1 || p.2 : boolQ R))
+  hom_of (fun p : prodQ (boolQ R) (boolQ R) => (p.1 || p.2 : boolQ R))
     (fun a ha => measurable_or ha.1 ha.2).
 
 Definition qbs_implb : qbsHomType (prodQ (boolQ R) (boolQ R)) (boolQ R) :=
-  qbs_hom_of (fun p : prodQ (boolQ R) (boolQ R) => ~~ p.1 || p.2 : boolQ R)
+  hom_of (fun p : prodQ (boolQ R) (boolQ R) => ~~ p.1 || p.2 : boolQ R)
     (fun a ha => measurable_or (measurable_neg ha.1) ha.2).
 
 Definition qbs_ltr : qbsHomType (prodQ (realQ R) (realQ R)) (boolQ R) :=
-  qbs_hom_of (fun p : prodQ (realQ R) (realQ R) => (p.1 < p.2)%R : boolQ R)
+  hom_of (fun p : prodQ (realQ R) (realQ R) => (p.1 < p.2)%R : boolQ R)
     (fun a ha => measurable_fun_ltr ha.1 ha.2).
 
 Definition qbs_ltn : qbsHomType (prodQ (natQ R) (natQ R)) (boolQ R) :=
-  qbs_hom_of (fun p : prodQ (natQ R) (natQ R) => (p.1 < p.2) : boolQ R)
+  hom_of (fun p : prodQ (natQ R) (natQ R) => (p.1 < p.2) : boolQ R)
     (fun a ha => measurable_fun_ltn ha.1 ha.2).
 
 (** Pointwise application of a random function to a random argument. *)
@@ -423,39 +423,39 @@ exact: hhm _ hra.
 Qed.
 
 (** Argument swap [(X => Y => Z) -> (Y => X => Z)]. *)
-Section qbs_arg_swap.
+Section arg_swap.
 Variables (X Y Z : qbsType R).
 
 Let swap1 (f : qbsHomType X (expQ Y Z)) (y : Y) : qbsHomType X Z :=
-  qbs_hom_of (fun x => (f x : qbsHomType Y Z) y)
+  hom_of (fun x => (f x : qbsHomType Y Z) y)
     (fun a ha => qbs_Mx_app (qbs_hom_proof _ ha) (qbs_Mx_const y)).
 
 Let swap2 (f : qbsHomType X (expQ Y Z)) : qbsHomType Y (expQ X Z) :=
-  qbs_hom_of (swap1 f) (fun b hb a ha =>
+  hom_of (swap1 f) (fun b hb a ha =>
     qbs_Mx_app (h := fun r => (f (a r).2 : qbsHomType Y Z))
       (qbs_hom_proof _ ha.2) (qbs_Mx_compT hb ha.1)).
 
-Definition qbs_arg_swap :
+Definition arg_swap :
     qbsHomType (expQ X (expQ Y Z)) (expQ Y (expQ X Z)) :=
-  qbs_hom_of swap2 (fun phi hphi b hb a ha =>
+  hom_of swap2 (fun phi hphi b hb a ha =>
     qbs_Mx_app (h := fun r => (phi (b (a r).1).1 : qbsHomType X (expQ Y Z))
         (a r).2)
       (hphi (fun r => ((b (a r).1).1, (a r).2))
         (conj (measurableT_comp hb.1 ha.1) ha.2))
       (qbs_Mx_compT hb.2 ha.1)).
 
-Lemma qbs_arg_swapE f y x : qbs_arg_swap f y x = f x y.
+Lemma arg_swapE f y x : arg_swap f y x = f x y.
 Proof. by []. Qed.
 
-End qbs_arg_swap.
+End arg_swap.
 
 (** Internal composition [(X => Y) * (Y => Z) -> (X => Z)]. *)
-Section qbs_exp_compose.
+Section exp_compose.
 Variables (X Y Z : qbsType R).
 
-Definition qbs_exp_compose :
+Definition exp_compose :
     qbsHomType (prodQ (expQ X Y) (expQ Y Z)) (expQ X Z) :=
-  qbs_hom_of (fun p => qbs_comp (p.1 : qbsHomType X Y)
+  hom_of (fun p => qbs_comp (p.1 : qbsHomType X Y)
       (p.2 : qbsHomType Y Z))
     (fun a ha b hb =>
       qbs_Mx_app (h := fun r => (a (b r).1).2 : qbsHomType Y Z)
@@ -463,20 +463,20 @@ Definition qbs_exp_compose :
         (qbs_Mx_app (h := fun r => (a (b r).1).1 : qbsHomType X Y)
           (qbs_Mx_compT (X := expQ X Y) ha.1 hb.1) hb.2)).
 
-Lemma qbs_exp_composeE f g x :
-  qbs_exp_compose (f, g) x = (g : qbsHomType Y Z) ((f : qbsHomType X Y) x).
+Lemma exp_composeE f g x :
+  exp_compose (f, g) x = (g : qbsHomType Y Z) ((f : qbsHomType X Y) x).
 Proof. by []. Qed.
 
-End qbs_exp_compose.
+End exp_compose.
 
 (** Case analysis as an internal morphism
     [(X => Z) * (Y => Z) -> (X + Y => Z)]. *)
-Section qbs_case_exp.
+Section case_exp.
 Variables (X Y Z : qbsType R).
 
 Definition qbs_case (f : qbsHomType X Z) (g : qbsHomType Y Z) :
     qbsHomType (coprodQ X Y) Z :=
-  qbs_hom_of _ (qbs_morphism_case (qbs_hom_proof (s := f))
+  hom_of _ (qbs_morphism_case (qbs_hom_proof (s := f))
     (qbs_hom_proof (s := g))).
 
 Lemma qbs_case_inl f g x : qbs_case f g (inl x) = f x.
@@ -509,15 +509,15 @@ have -> : (fun r => qbs_case (a (b r).1).1 (a (b r).1).2 (b r).2) =
 exact: qbs_Mx_if hP (qbs_Mx_app h1 hc) (qbs_Mx_app h2 hd).
 Qed.
 
-Definition qbs_case_exp : qbsHomType (prodQ (expQ X Z) (expQ Y Z))
+Definition case_exp : qbsHomType (prodQ (expQ X Z) (expQ Y Z))
     (expQ (coprodQ X Y) Z) :=
-  qbs_hom_of _ qbs_morphism_case_exp.
+  hom_of _ qbs_morphism_case_exp.
 
-Lemma qbs_case_expE f g s :
-  qbs_case_exp (f, g) s = qbs_case f g s.
+Lemma case_expE f g s :
+  case_exp (f, g) s = qbs_case f g s.
 Proof. by []. Qed.
 
-End qbs_case_exp.
+End case_exp.
 
 (** Copairing with a parameter: a family of morphisms
     [W * X i -> Z] induces a morphism [W * sigmaQ X -> Z]. *)
@@ -527,14 +527,14 @@ Lemma qbs_morphism_sigma_case_prod (W Z : qbsType R) (X : nat -> qbsType R)
     (fun p => f (projT1 p.2) (p.1, projT2 p.2)).
 Proof.
 move=> a [hw hl].
-pose g i (x : X i) : qbsHomType W Z := qbs_hom_of (fun w => f i (w, x))
+pose g i (x : X i) : qbsHomType W Z := hom_of (fun w => f i (w, x))
   (fun c hc => qbs_hom_proof (s := f i) (fun r => (c r, x))
     (conj hc (qbs_Mx_const x))).
 have hg i : qbs_morphism (X := X i) (Y := expQ W Z) (g i).
   move=> b hb c hc; exact: (qbs_hom_proof (s := f i)
     (fun r => ((c r).2, b (c r).1)) (conj hc.2 (qbs_Mx_compT hb hc.1))).
-have hs := qbs_morphism_sigma_case (fun i => qbs_hom_of _ (hg i)) hl.
-exact: (qbs_Mx_app (h := fun r => sigma_case (fun i => qbs_hom_of _ (hg i))
+have hs := qbs_morphism_sigma_case (fun i => hom_of _ (hg i)) hl.
+exact: (qbs_Mx_app (h := fun r => sigma_case (fun i => hom_of _ (hg i))
   (a r).2) hs hw).
 Qed.
 
@@ -614,7 +614,7 @@ by rewrite /list_cons /= (e r hn).
 Qed.
 
 Definition qbs_cons : qbsHomType (prodQ X (listQ X)) (listQ X) :=
-  qbs_hom_of _ qbs_morphism_cons.
+  hom_of _ qbs_morphism_cons.
 
 Lemma seq_of_list_nil : seq_of_list qbs_nil = [::].
 Proof. by rewrite /seq_of_list /= enum_ord0. Qed.
@@ -679,7 +679,7 @@ have hord n : qbs_morphism (X := prodQ W (piQ 'I_n (fun=> X))) (Y := Y)
     (X := fun n => piQ 'I_n (fun=> X)) (i := n) hl).
   exact: (IH (fun r => ((a r).1, (a r).2 \o lift ord0)) (conj hw hl)).
 exact: (qbs_morphism_sigma_case_prod
-  (X := fun n => piQ 'I_n (fun=> X)) (fun n => qbs_hom_of _ (hord n))).
+  (X := fun n => piQ 'I_n (fun=> X)) (fun n => hom_of _ (hord n))).
 Qed.
 
 End qbs_list_rec.
@@ -704,10 +704,10 @@ Qed.
 
 Let list_step : qbsHomType
     (prodQ (prodQ Y step_ty) (prodQ X (prodQ (listQ X) Y))) Y :=
-  qbs_hom_of _ list_step_proof.
+  hom_of _ list_step_proof.
 
 Let list_rec_uncurried : qbsHomType (prodQ (prodQ Y step_ty) (listQ X)) Y :=
-  qbs_hom_of _ (qbs_morphism_list_rec (qbs_fst _ _) list_step).
+  hom_of _ (qbs_morphism_list_rec (qbs_fst _ _) list_step).
 
 Definition list_rec_hom :
     qbsHomType Y (expQ step_ty (expQ (listQ X) Y)) :=

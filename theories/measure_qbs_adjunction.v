@@ -45,7 +45,7 @@ Implicit Types (X Y : qbsType R).
     measQ is defined in quasi_borel.v. Here we show it is functorial. *)
 
 (* If f is measurable, then f is a QBS morphism between measQ spaces *)
-Lemma measQ_morphism d1 d2
+Lemma qbs_morphism_measQ d1 d2
     (M1 : measurableType d1) (M2 : measurableType d2)
     (f : {mfun M1 >-> M2}) :
   qbs_morphism (X := measQ R M1) (Y := measQ R M2) f.

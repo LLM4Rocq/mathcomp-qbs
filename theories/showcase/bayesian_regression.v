@@ -96,7 +96,7 @@ have -> : (fun m => d m y) = normal_pdf y (2^-1).
 exact: measurable_normal_pdf.
 Qed.
 
-Lemma obs_morphism : qbs_morphism (X := F) (Y := RQ) obs_fun.
+Lemma qbs_morphism_obs : qbs_morphism (X := F) (Y := RQ) obs_fun.
 Proof.
 move=> a ha.
 have mev (c : R) : measurable_fun [set: mR] (fun r => (a r : RQ -> RQ) c).
@@ -107,13 +107,13 @@ by repeat apply: measurable_funM;
 Qed.
 
 Definition obs : qbsHomType F RQ :=
-  HB.pack obs_fun (isQBSMorphism.Build R F RQ _ obs_morphism).
+  HB.pack obs_fun (isQBSMorphism.Build R F RQ _ qbs_morphism_obs).
 
 (** The weighted prior P(id, obs)(prior) and the program. *)
 Definition wprior : probQ (prodQ F RQ) :=
   qbs_map (qbs_pair (qbs_id F) obs) prior.
 
-Definition program : option (probQ F) := qbs_normalize wprior.
+Definition program : option (probQ F) := normalize wprior.
 
 (** ** The posterior in closed form *)
 
@@ -201,21 +201,21 @@ Qed.
 
 (** The posterior: s ~ N(post_s_mean, sqrt post_s_var), and given s,
     b ~ N(post_b_mean s, sqrt post_b_var); pushed to functions by lin. *)
-Let post_b_mean_morphism : qbs_morphism (X := RQ) (Y := RQ) post_b_mean.
+Let qbs_morphism_post_b_mean : qbs_morphism (X := RQ) (Y := RQ) post_b_mean.
 Proof.
 move=> a ha; apply: measurable_funM => //; apply: measurable_funB => //.
 exact: measurable_funM.
 Qed.
 
 Definition post_b_meanQ : qbsHomType RQ RQ :=
-  HB.pack post_b_mean (isQBSMorphism.Build R RQ RQ _ post_b_mean_morphism).
+  HB.pack post_b_mean (isQBSMorphism.Build R RQ RQ _ qbs_morphism_post_b_mean).
 
 Definition posterior2 : probQ W :=
   qbs_bind
     (qbs_normal post_s_mean (sqrtr post_s_var))
     (qbs_comp (qbs_pair (qbs_id RQ)
       (qbs_comp post_b_meanQ (qbs_normalQ (sqrtr post_b_var))))
-      (qbs_strengthQ RQ RQ)).
+      (strengthQ RQ RQ)).
 
 Definition posterior : probQ F := qbs_map lin posterior2.
 
@@ -231,7 +231,7 @@ Proof.
 move=> mh h0; rewrite ge0_qbs_integral_bind// qbs_integral_normal.
   exact: ge0_qbs_measurable_integral.
 apply: eq_integral => s _.
-rewrite /= qbs_strength_integral// qbs_integral_normal//.
+rewrite /= strength_integral// qbs_integral_normal//.
 by move=> a ha; exact: mh _ (qbs_Mx_pair_cstl s ha).
 Qed.
 
@@ -244,7 +244,7 @@ Proof.
 move=> mh h0; rewrite ge0_qbs_integral_bind// qbs_integral_normal.
   exact: ge0_qbs_measurable_integral.
 apply: eq_integral => s _.
-rewrite /= qbs_strength_integral// qbs_integral_normal//.
+rewrite /= strength_integral// qbs_integral_normal//.
 by move=> a ha; exact: mh _ (qbs_Mx_pair_cstl s ha).
 Qed.
 
@@ -327,10 +327,10 @@ Let measurable_normal_prob_integral (m : qbsHomType RQ RQ) (sigma : R)
 Proof.
 move=> mh h0.
 pose g := qbs_comp (qbs_pair (qbs_id RQ) (qbs_comp m (qbs_normalQ sigma)))
-  (qbs_strengthQ RQ RQ).
+  (strengthQ RQ RQ).
 have := ge0_qbs_measurable_integral g mh h0 (@measurable_id _ mR setT).
 apply: eq_measurable_fun => s _ /=.
-rewrite qbs_strength_integral// qbs_integral_normal//.
+rewrite strength_integral// qbs_integral_normal//.
 by move=> a ha; exact: mh _ (qbs_Mx_pair_cstl (s : RQ) ha).
 Qed.
 
@@ -420,11 +420,11 @@ rewrite -ge0_integralZl//.
   by rewrite (factor_inner s mh h01) muleCA -EFinM muleC.
 Qed.
 
-Lemma wprior_evidence : qbs_evidence wprior = evidence_const%:E.
+Lemma wprior_evidence : evidence wprior = evidence_const%:E.
 Proof.
 have mw0 := @qbs_measurable_weight R F.
 have mw := qbs_measurable_comp (qbs_pair (qbs_id F) obs) mw0.
-rewrite /qbs_evidence.
+rewrite /evidence.
 rewrite !qbs_map_integral//.
 rewrite -[LHS]/(qbs_integral W prior2 (fun sb => (maxr 0 (obs2 sb.1 sb.2))%:E)).
 have -> : (fun sb : W => (maxr 0 (obs2 sb.1 sb.2))%:E) =
@@ -444,9 +444,9 @@ Qed.
 
 Theorem program_posterior : program = Some posterior.
 Proof.
-have ev : 0 < qbs_evidence wprior < +oo.
+have ev : 0 < evidence wprior < +oo.
   by rewrite wprior_evidence ltry lte_fin evidence_const_gt0.
-rewrite /program /qbs_normalize ev; congr Some; apply/qbs_eqP => U mU.
+rewrite /program /normalize ev; congr Some; apply/qbs_eqP => U mU.
 pose V := lin @^-1` U.
 have mV : sigma_Mx V := sigma_Mx_preimage lin mU.
 pose h (sb : W) : \bar R := (\1_V sb)%:E.
@@ -456,7 +456,7 @@ have h01 x : 0 <= h x <= 1.
   by rewrite /h indicE; case: (_ \in _); rewrite ?lee01 ?lexx.
 have mw := qbs_measurable_weighted_indic mU.
 have mw' := qbs_measurable_comp (qbs_pair (qbs_id F) obs) mw.
-rewrite qbs_normalize_event// wprior_evidence qbs_map_event//.
+rewrite normalize_event// wprior_evidence qbs_map_event//.
 rewrite qbs_event_integral// !qbs_map_integral//.
 have -> : (fun x : W => (x \in V)%:R%:E) = h.
   by apply/funext => x; rewrite /h indicE.

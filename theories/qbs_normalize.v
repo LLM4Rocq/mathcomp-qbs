@@ -15,16 +15,16 @@ From QBS Require Import measurable_aux quasi_borel coproduct_qbs probability_qbs
 (* the evidence is 0 or infinite.                                             *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*         qbs_pweight == (x, w) |-> max(0, w) as an extended real            *)
-(*     qbs_evidence p == the integral of qbs_pweight against p                *)
-(*      qbs_density p == the measure A |-> \int_A qbs_pweight o alpha_p dmu_p *)
-(*  qbs_pdensity mu ha == the same for (alpha, mu), ha : qbs_Mx alpha         *)
-(* qbs_normalize_prob p == the normalised probability on X                    *)
-(*      qbs_normalize p == Some (qbs_normalize_prob p) if the evidence is     *)
+(*         pweight == (x, w) |-> max(0, w) as an extended real                *)
+(*     evidence p == the integral of pweight against p                        *)
+(*      density p == the measure A |-> \int_A pweight o alpha_p dmu_p         *)
+(*  pdensity mu ha == the same for (alpha, mu), ha : qbs_Mx alpha             *)
+(* normalize_prob p == the normalised probability on X                        *)
+(*      normalize p == Some (normalize_prob p) if the evidence is             *)
 (*                         positive and finite, None otherwise                *)
-(*  qbs_normalize_sum p == the same, as an element of P(X) + 1                *)
-(*       qbs_normalizeQ == qbs_normalize_sum as a QBS morphism                *)
-(*                         P(X * R) -> P(X) + 1 (qbs_normalize_morphism)      *)
+(*  normalize_sum p == the same, as an element of P(X) + 1                    *)
+(*       normalizeQ == normalize_sum as a QBS morphism                        *)
+(*                         P(X * R) -> P(X) + 1 (qbs_morphism_normalize)      *)
 (* ```                                                                        *)
 (******************************************************************************)
 
@@ -38,65 +38,65 @@ Unset Printing Implicit Defensive.
 Local Open Scope classical_set_scope.
 Local Open Scope ereal_scope.
 
-Section qbs_normalize.
+Section normalize.
 Variable R : realType.
 Local Abbreviation mR := (measurableTypeR R).
 Variable X : qbsType R.
 Implicit Types p : probQ (prodQ X (realQ R)).
 
-Definition qbs_pweight (xw : X * R) : \bar R := (maxr 0 xw.2)%:E.
+Definition pweight (xw : X * R) : \bar R := (maxr 0 xw.2)%:E.
 
-Lemma qbs_pweight_ge0 xw : 0 <= qbs_pweight xw.
+Lemma pweight_ge0 xw : 0 <= pweight xw.
 Proof. by rewrite lee_fin le_max lexx. Qed.
 
 Lemma qbs_measurable_weight :
-  qbs_measurable (prodQ X (realQ R)) qbs_pweight.
+  qbs_measurable (prodQ X (realQ R)) pweight.
 Proof.
 move=> b [_ hb2]; apply/measurable_EFinP.
 by apply: measurable_maxr => //; exact: measurable_cst.
 Qed.
 
 (** The evidence: the integral of the weight. *)
-Definition qbs_evidence p : \bar R := qbs_integral _ p qbs_pweight.
+Definition evidence p : \bar R := qbs_integral _ p pweight.
 
-Section density.
+Section pdensity_measure.
 Variables (alpha : mR -> prodQ X (realQ R)) (mu : probability mR R).
 
-Definition qbs_pdensity (ha : qbs_Mx alpha) (A : set mR) : \bar R :=
-  \int[mu]_(r in A) qbs_pweight (alpha r).
+Definition pdensity (ha : qbs_Mx alpha) (A : set mR) : \bar R :=
+  \int[mu]_(r in A) pweight (alpha r).
 
 Context (ha : qbs_Mx alpha).
 
-Let pdensity0 : qbs_pdensity ha set0 = 0.
-Proof. by rewrite /qbs_pdensity integral_set0. Qed.
+Let pdensity0 : pdensity ha set0 = 0.
+Proof. by rewrite /pdensity integral_set0. Qed.
 
-Let pdensity_ge0 A : 0 <= qbs_pdensity ha A.
-Proof. by apply: integral_ge0 => r _; exact: qbs_pweight_ge0. Qed.
+Let pdensity_ge0 A : 0 <= pdensity ha A.
+Proof. by apply: integral_ge0 => r _; exact: pweight_ge0. Qed.
 
-Let pdensity_sigma : semi_sigma_additive (qbs_pdensity ha).
+Let pdensity_sigma : semi_sigma_additive (pdensity ha).
 Proof.
 apply: semi_sigma_additive_nng_induced;
   first exact: qbs_measurable_weight ha.
-by move=> r; exact: qbs_pweight_ge0.
+by move=> r; exact: pweight_ge0.
 Qed.
 
-HB.instance Definition _ := isMeasure.Build _ _ _ (qbs_pdensity ha)
+HB.instance Definition _ := isMeasure.Build _ _ _ (pdensity ha)
   pdensity0 pdensity_ge0 pdensity_sigma.
 
-End density.
+End pdensity_measure.
 
-Arguments qbs_pdensity {alpha} mu ha A.
+Arguments pdensity {alpha} mu ha A.
 
-Definition qbs_density p : set mR -> \bar R :=
-  qbs_pdensity (qbs_mu p) (qbs_alpha_random p).
+Definition density p : set mR -> \bar R :=
+  pdensity (qbs_mu p) (qbs_alpha_random p).
 
-HB.instance Definition _ p := Measure.on (qbs_density p).
+HB.instance Definition _ p := Measure.on (density p).
 
-Lemma qbs_pdensityT (alpha : mR -> prodQ X (realQ R)) (mu : probability mR R)
+Lemma pdensityT (alpha : mR -> prodQ X (realQ R)) (mu : probability mR R)
     (ha : qbs_Mx alpha) :
-  qbs_pdensity mu ha [set: mR] = \int[mu]_r qbs_pweight (alpha r).
+  pdensity mu ha [set: mR] = \int[mu]_r pweight (alpha r).
 Proof.
-rewrite /qbs_pdensity integral_mkcond.
+rewrite /pdensity integral_mkcond.
 by apply: eq_integral => r _; rewrite patchE in_setT.
 Qed.
 
@@ -104,26 +104,26 @@ Lemma qbs_alpha_fst_random p :
   qbs_Mx (fun r => (qbs_alpha p r).1).
 Proof. by have [] := qbs_alpha_random p. Qed.
 
-Definition qbs_normalize_prob p : probQ X :=
+Definition normalize_prob p : probQ X :=
   mkQBSProb (fun r => (qbs_alpha p r).1)
-    (mnormalize (qbs_density p) (qbs_mu p))
+    (mnormalize (density p) (qbs_mu p))
     (qbs_alpha_fst_random p).
 
-Definition qbs_normalize p : option (probQ X) :=
-  if 0 < qbs_evidence p < +oo
-  then Some (qbs_normalize_prob p) else None.
+Definition normalize p : option (probQ X) :=
+  if 0 < evidence p < +oo
+  then Some (normalize_prob p) else None.
 
-Lemma qbs_densityT p : qbs_density p [set: mR] = qbs_evidence p.
-Proof. exact: qbs_pdensityT. Qed.
+Lemma densityT p : density p [set: mR] = evidence p.
+Proof. exact: pdensityT. Qed.
 
-Lemma qbs_evidence_ge0 p : 0 <= qbs_evidence p.
-Proof. by rewrite -qbs_densityT; exact: measure_ge0. Qed.
+Lemma evidence_ge0 p : 0 <= evidence p.
+Proof. by rewrite -densityT; exact: measure_ge0. Qed.
 
-Lemma qbs_evidence_degen p :
-  ~~ (0 < qbs_evidence p < +oo) ->
-  qbs_evidence p = 0 \/ qbs_evidence p = +oo.
+Lemma evidence_degen p :
+  ~~ (0 < evidence p < +oo) ->
+  evidence p = 0 \/ evidence p = +oo.
 Proof.
-have := qbs_evidence_ge0 p; rewrite le_eqVlt => /orP[/eqP<-|ev0]; first by left.
+have := evidence_ge0 p; rewrite le_eqVlt => /orP[/eqP<-|ev0]; first by left.
 by rewrite ev0 /= -leNgt leye_eq => /eqP; right.
 Qed.
 
@@ -142,92 +142,92 @@ move=> mU b [hb1 hb2]; apply/measurable_EFinP; apply: measurable_funM.
 by apply: measurable_maxr; [exact: measurable_cst|exact: hb2].
 Qed.
 
-Lemma qbs_pdensity_preimage (mu : probability mR R)
+Lemma pdensity_preimage (mu : probability mR R)
     (alpha : mR -> prodQ X (realQ R))
     (ha : qbs_Mx alpha) (U : set X) :
-  qbs_pdensity mu ha ((fun r => (alpha r).1) @^-1` U) =
+  pdensity mu ha ((fun r => (alpha r).1) @^-1` U) =
   \int[mu]_r ((\1_U (alpha r).1 : R) * maxr 0 (alpha r).2)%:E.
 Proof.
-rewrite /qbs_pdensity integral_mkcond; apply: eq_integral => r _.
+rewrite /pdensity integral_mkcond; apply: eq_integral => r _.
 rewrite patchE indicE.
 have -> : (r \in (fun r0 : mR => (alpha r0).1) @^-1` U) =
     ((alpha r).1 \in U) by apply/idP/idP; rewrite !inE.
-by case: (_ \in U); rewrite /qbs_pweight ?mul1r ?mul0r.
+by case: (_ \in U); rewrite /pweight ?mul1r ?mul0r.
 Qed.
 
 (** The normalised probability of U is the weighted probability of U
     divided by the evidence. *)
-Lemma qbs_normalize_event p (U : set X) : sigma_Mx U ->
-  0 < qbs_evidence p < +oo ->
-  qbs_event X (qbs_normalize_prob p) U =
+Lemma normalize_event p (U : set X) : sigma_Mx U ->
+  0 < evidence p < +oo ->
+  qbs_event X (normalize_prob p) U =
   qbs_integral _ p (fun xw => ((\1_U xw.1 : R) * maxr 0 xw.2)%:E) *
-  (fine (qbs_evidence p))^-1%:E.
+  (fine (evidence p))^-1%:E.
 Proof.
 move=> mU /andP[ev0 evoo].
-rewrite /qbs_normalize_prob qbs_event_mk //= /mnormalize.
+rewrite /normalize_prob qbs_event_mk //= /mnormalize.
 case: ifPn => [/orP[] /eqP h|_].
-- by move: ev0; rewrite -qbs_densityT h ltxx.
-- by move: evoo; rewrite -qbs_densityT h ltxx.
-by congr (_ * _); exact: qbs_pdensity_preimage.
+- by move: ev0; rewrite -densityT h ltxx.
+- by move: evoo; rewrite -densityT h ltxx.
+by congr (_ * _); exact: pdensity_preimage.
 Qed.
 
-Lemma qbs_normalize_event_degen p (U : set X) : sigma_Mx U ->
-  ~~ (0 < qbs_evidence p < +oo) ->
-  qbs_event X (qbs_normalize_prob p) U =
+Lemma normalize_event_degen p (U : set X) : sigma_Mx U ->
+  ~~ (0 < evidence p < +oo) ->
+  qbs_event X (normalize_prob p) U =
   qbs_event _ p (fst @^-1` U).
 Proof.
-move=> mU /qbs_evidence_degen hev.
-rewrite /qbs_normalize_prob qbs_event_mk //= /mnormalize.
+move=> mU /evidence_degen hev.
+rewrite /normalize_prob qbs_event_mk //= /mnormalize.
 case: ifPn => // /norP[/eqP h0 /eqP hoo].
 by exfalso; case: hev => hev; [apply: h0 | apply: hoo]; exact: hev.
 Qed.
 
 (** Events of the normalisation of a probability given by (alpha, mu). *)
-Lemma qbs_normalize_prob_event_mk (alpha : mR -> prodQ X (realQ R))
+Lemma normalize_prob_event_mk (alpha : mR -> prodQ X (realQ R))
     (mu : probability mR R) (ha : qbs_Mx alpha) (U : set X) : sigma_Mx U ->
-  qbs_event X (qbs_normalize_prob (mkQBSProb alpha mu ha)) U =
-  mnormalize (qbs_pdensity mu ha) mu ((fun r => (alpha r).1) @^-1` U).
+  qbs_event X (normalize_prob (mkQBSProb alpha mu ha)) U =
+  mnormalize (pdensity mu ha) mu ((fun r => (alpha r).1) @^-1` U).
 Proof.
 move=> mU; set p := mkQBSProb alpha mu ha.
-have evp : qbs_evidence p = qbs_pdensity mu ha [set: mR].
-  by rewrite qbs_pdensityT /qbs_evidence qbs_integral_mk//;
+have evp : evidence p = pdensity mu ha [set: mR].
+  by rewrite pdensityT /evidence qbs_integral_mk//;
     exact: qbs_measurable_weight.
 rewrite /mnormalize; case: ifPn => [hc|/norP[/negbTE h0 /negbTE hoo]].
-  have hev : ~~ (0 < qbs_evidence p < +oo).
+  have hev : ~~ (0 < evidence p < +oo).
     by rewrite evp; move: hc => /orP[] /eqP ->; rewrite ?ltxx ?ltNge ?leey.
-  rewrite (qbs_normalize_event_degen mU hev) qbs_event_mk //.
+  rewrite (normalize_event_degen mU hev) qbs_event_mk //.
   exact: (sigma_Mx_preimage (qbs_fst X (realQ R)) mU).
-have hev : 0 < qbs_evidence p < +oo.
+have hev : 0 < evidence p < +oo.
   have {}h0 := negbT h0; have {}hoo := negbT hoo.
   by rewrite evp lt0e ltey h0 hoo /= measure_ge0.
-rewrite (qbs_normalize_event mU hev) evp /p qbs_integral_mk;
+rewrite (normalize_event mU hev) evp /p qbs_integral_mk;
   first exact: qbs_measurable_weighted_indic mU.
-by rewrite -qbs_pdensity_preimage.
+by rewrite -pdensity_preimage.
 Qed.
 
 (** Normalisation as a total map into P(X) + 1 (HKSY Sec. VI). *)
-Definition qbs_normalize_sum p : coprodQ (probQ X) (unitQ R) :=
-  if qbs_normalize p is Some q then inl q else inr tt.
+Definition normalize_sum p : coprodQ (probQ X) (unitQ R) :=
+  if normalize p is Some q then inl q else inr tt.
 
-Lemma qbs_normalize_sumE p : qbs_normalize_sum p =
-  if qbs_normalize p is Some q then inl q else inr tt.
+Lemma normalize_sumE p : normalize_sum p =
+  if normalize p is Some q then inl q else inr tt.
 Proof. by []. Qed.
 
-Lemma qbs_normalize_morphism :
+Lemma qbs_morphism_normalize :
   qbs_morphism (X := probQ (prodQ X (realQ R)))
-    (Y := coprodQ (probQ X) (unitQ R)) qbs_normalize_sum.
+    (Y := coprodQ (probQ X) (unitQ R)) normalize_sum.
 Proof.
 move=> b hb; have [a [g [ha mg g1 hbe]]] := hb.
 pose pr r : probQ (prodQ X (realQ R)) := mkQBSProb a (giry_prob (g1 r)) ha.
 have ebr r : b r = pr r.
   by apply/qbs_eqP => U mU; rewrite qbs_event_mk//; exact: hbe.
-pose d r := qbs_pdensity (giry_prob (g1 r)) ha.
-have evr r : qbs_evidence (b r) = d r [set: mR].
-  rewrite ebr /d qbs_pdensityT /qbs_evidence qbs_integral_mk//.
+pose d r := pdensity (giry_prob (g1 r)) ha.
+have evr r : evidence (b r) = d r [set: mR].
+  rewrite ebr /d pdensityT /evidence qbs_integral_mk//.
   exact: qbs_measurable_weight.
-pose P r := 0 < qbs_evidence (b r) < +oo.
-have mev : measurable_fun [set: mR] (fun r => qbs_evidence (b r)).
-  exact: (ge0_qbs_integral_morphism qbs_measurable_weight qbs_pweight_ge0 hb).
+pose P r := 0 < evidence (b r) < +oo.
+have mev : measurable_fun [set: mR] (fun r => evidence (b r)).
+  exact: (ge0_qbs_morphism_integral qbs_measurable_weight pweight_ge0 hb).
 have mP : measurable_fun [set: mR] P.
   apply: measurable_and.
     exact: measurable_fun_lte (measurable_cst 0) mev.
@@ -241,15 +241,15 @@ have md A : measurable A -> measurable_fun [set: mR] (fun r => d r A).
   have w0 t : 0 <= w t.
     by rewrite /w -EFinM lee_fin; exact: indic_maxr_ge0.
   have -> : (fun r => d r A) = (giry_int^~ w) \o g.
-    apply/funext => r; rewrite /d /qbs_pdensity integral_mkcond /giry_int /=.
+    apply/funext => r; rewrite /d /pdensity integral_mkcond /giry_int /=.
     apply: eq_integral => t _; rewrite /w patchE indicE.
-    by case: (t \in A); rewrite /qbs_pweight ?mul1e ?mul0e.
+    by case: (t \in A); rewrite /pweight ?mul1e ?mul0e.
   exact: measurableT_comp (measurable_giry_int mw w0) mg.
-right; right; exists P, (fun r => qbs_normalize_prob (b r)), (fun=> tt).
+right; right; exists P, (fun r => normalize_prob (b r)), (fun=> tt).
 split; first exact: mP.
 split; last first.
   split=> // r.
-  by rewrite /= /qbs_normalize_sum /qbs_normalize -/(P r); case: ifP.
+  by rewrite /= /normalize_sum /normalize -/(P r); case: ifP.
 exists (fun t => (a t).1),
   (fun r => mnormalize (d r) (giry_prob (g1 r))).
 split=> //.
@@ -268,12 +268,12 @@ split=> //.
     apply/measurable_EFinP; apply: measurableT_comp measurable_invr _.
     exact: measurableT_comp (fine_measurable measurableT) (md _ measurableT).
 - by move=> ?; exact: probability_setT.
-- by move=> r U mU; rewrite ebr; exact: qbs_normalize_prob_event_mk.
+- by move=> r U mU; rewrite ebr; exact: normalize_prob_event_mk.
 Qed.
 
-Definition qbs_normalizeQ :
+Definition normalizeQ :
     qbsHomType (probQ (prodQ X (realQ R))) (coprodQ (probQ X) (unitQ R)) :=
-  HB.pack qbs_normalize_sum
-    (isQBSMorphism.Build R _ _ _ qbs_normalize_morphism).
+  HB.pack normalize_sum
+    (isQBSMorphism.Build R _ _ _ qbs_morphism_normalize).
 
-End qbs_normalize.
+End normalize.

@@ -19,7 +19,7 @@ From mathcomp Require Import boot algebra boolp reals classical_sets
 (*   qbs_Mx alpha == alpha is a random element (in Mx)                        *)
 (*   qbs_morphism X Y f == f is a QBS morphism from X to Y                    *)
 (*   qbsHomType R X Y == bundled QBS morphisms from X to Y (HB structure)     *)
-(*   qbs_homeqP f g == f = g iff f =1 g, for bundled morphisms f, g           *)
+(*   homeqP f g == f = g iff f =1 g, for bundled morphisms f, g               *)
 (*   qbs_Mx_compT alpha hf == [qbs_Mx]-closure under bare [measurable_fun]    *)
 (*   qbs_Mx_glueT P Fi hP hFi == [qbs_Mx]-glue with bare measurability for P  *)
 (*   measurable_glue P Fi hP hFi == nat-indexed measurable glue: preimage     *)
@@ -139,7 +139,7 @@ End qbs_const_instance.
 
 (** Extensionality: bundled morphisms are equal iff their underlying
     functions are pointwise equal. *)
-Lemma qbs_homeqP (X Y : qbsType R) (f g : qbsHomType X Y) :
+Lemma homeqP (X Y : qbsType R) (f g : qbsHomType X Y) :
   f = g <-> f =1 g.
 Proof.
 split=> [->//|/funext].
@@ -150,16 +150,16 @@ Qed.
 (** Category laws. *)
 Lemma qbs_1comp (X Y : qbsType R) (f : qbsHomType X Y) :
   qbs_comp (qbs_id X) f = f.
-Proof. exact/qbs_homeqP. Qed.
+Proof. exact/homeqP. Qed.
 
 Lemma qbs_comp1 (X Y : qbsType R) (f : qbsHomType X Y) :
   qbs_comp f (qbs_id Y) = f.
-Proof. exact/qbs_homeqP. Qed.
+Proof. exact/homeqP. Qed.
 
 Lemma qbs_compA (W X Y Z : qbsType R) (f : qbsHomType W X)
     (g : qbsHomType X Y) (h : qbsHomType Y Z) :
   qbs_comp f (qbs_comp g h) = qbs_comp (qbs_comp f g) h.
-Proof. exact/qbs_homeqP. Qed.
+Proof. exact/homeqP. Qed.
 
 (** Convenience wrappers: accept bare [measurable_fun setT] proofs. *)
 
@@ -416,11 +416,11 @@ Proof. by []. Qed.
 
 (** beta: [eval \o (curry f * id) = f]. *)
 Lemma qbs_curryK : cancel (@qbs_curry_morph X Y Z) (@qbs_uncurry X Y Z).
-Proof. by move=> f; apply/qbs_homeqP => -[]. Qed.
+Proof. by move=> f; apply/homeqP => -[]. Qed.
 
 (** eta: [curry (eval \o (g * id)) = g]. *)
 Lemma qbs_uncurryK : cancel (@qbs_uncurry X Y Z) (@qbs_curry_morph X Y Z).
-Proof. by move=> g; apply/qbs_homeqP => x; apply/qbs_homeqP. Qed.
+Proof. by move=> g; apply/homeqP => x; apply/homeqP. Qed.
 
 (** Uniqueness of the transpose. *)
 Lemma qbs_curry_morph_uniq f g : qbs_uncurry g = f -> g = qbs_curry_morph f.
@@ -704,13 +704,13 @@ by move=> _ [alpha halpha ->]; apply: hf halpha.
 Qed.
 
 (* Morphisms out of Y restrict to morphisms out of mapQ f. *)
-Lemma mapQ_morphism_out (X Y Z : qbsType R) (f : X -> Y) (g : Y -> Z)
+Lemma qbs_morphism_mapQ_out (X Y Z : qbsType R) (f : X -> Y) (g : Y -> Z)
   (hf : qbs_morphism f) (hg : qbs_morphism g) :
   qbs_morphism (X := mapQ f) (Y := Z) g.
 Proof. by move=> beta /(mapQ_sub hf); apply: hg. Qed.
 
 (* The defining map f is a morphism from X to mapQ f *)
-Lemma mapQ_morphism_in (X Y : qbsType R) (f : X -> Y) :
+Lemma qbs_morphism_mapQ_in (X Y : qbsType R) (f : X -> Y) :
   qbs_morphism (X := X) (Y := mapQ f) f.
 Proof. by move=> alpha halpha; apply: mapQ_random halpha. Qed.
 
@@ -868,20 +868,20 @@ Lemma emptyQ_initial (X : qbsType R) (f g : emptyQ -> X) : f = g.
 Proof. by apply: funext => v; case: v. Qed.
 
 (* Every function out of a countable discrete space is a morphism. *)
-Lemma natQ_morphism (X : qbsType R) (f : natQ -> X) : qbs_morphism f.
+Lemma qbs_morphism_natQ (X : qbsType R) (f : natQ -> X) : qbs_morphism f.
 Proof.
 move=> alpha ha.
 exact: (qbs_Mx_glueT (Fi := fun i _ => f i) ha (fun i => qbs_Mx_const (f i))).
 Qed.
 
-Lemma boolQ_morphism (X : qbsType R) (f : boolQ -> X) : qbs_morphism f.
+Lemma qbs_morphism_boolQ (X : qbsType R) (f : boolQ -> X) : qbs_morphism f.
 Proof.
 move=> alpha ha.
 have hP : measurable_fun setT (fun r => nat_of_bool (alpha r)).
   by apply: measurableT_comp ha => //; apply: measurable_fun_of_discrete.
 have -> : f \o alpha = (fun i : natQ => f (i != 0%N)) \o (nat_of_bool \o alpha).
   by apply: funext => r /=; case: (alpha r).
-exact: natQ_morphism hP.
+exact: qbs_morphism_natQ hP.
 Qed.
 
 End qbs.

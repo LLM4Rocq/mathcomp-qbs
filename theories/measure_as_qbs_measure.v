@@ -12,7 +12,7 @@ From QBS Require Import measurable_aux quasi_borel probability_qbs qbs_monad
 (* # Embedding Classical Probability into QBS Probability                     *)
 (*                                                                            *)
 (* Standard distributions as QBS probabilities. The general embedding of a    *)
-(* probability measure on a standard Borel space is giry_to_qbs (qbs_giry.v). *)
+(* probability measure on a standard Borel space is of_giry (qbs_giry.v).     *)
 (*                                                                            *)
 (* ```                                                                        *)
 (*   qbs_normal m s == Normal(m, s) as QBS probability                        *)
@@ -89,7 +89,7 @@ Definition intervalQ : qbsType R :=
 Definition qbs_uniform_of (ab : intervalQ) : probQ (realQ R) :=
   qbs_interval_uniform (svalP ab).
 
-Lemma qbs_uniform_of_morphism :
+Lemma qbs_morphism_uniform_of :
   qbs_morphism (X := intervalQ) (Y := probQ (realQ R)) qbs_uniform_of.
 Proof.
 move=> c [m1 m2].
@@ -123,9 +123,9 @@ Qed.
 
 Definition qbs_uniformQ : qbsHomType intervalQ (probQ (realQ R)) :=
   HB.pack qbs_uniform_of
-    (isQBSMorphism.Build R _ _ _ qbs_uniform_of_morphism).
+    (isQBSMorphism.Build R _ _ _ qbs_morphism_uniform_of).
 
-Lemma qbs_normal_morphism s :
+Lemma qbs_morphism_normal s :
   qbs_morphism (X := realQ R) (Y := probQ (realQ R))
     (fun m => qbs_normal m s).
 Proof.
@@ -139,7 +139,7 @@ Qed.
 (** m |-> N(m, s) as a bundled morphism R -> P(R). *)
 Definition qbs_normalQ s : qbsHomType (realQ R) (probQ (realQ R)) :=
   HB.pack (fun m : realQ R => qbs_normal m s : probQ _)
-    (isQBSMorphism.Build R _ _ _ (qbs_normal_morphism s)).
+    (isQBSMorphism.Build R _ _ _ (qbs_morphism_normal s)).
 
 (** Distribution expectation lemmas. *)
 
@@ -185,7 +185,7 @@ Lemma qbs_expect_bernoulli p (hp0 : 0 <= p) (hp1 : p <= 1) :
   qbs_expect (boolQ R) (qbs_bernoulli p) (fun b : bool => b%:R) = p%:E.
 Proof.
 rewrite /qbs_expect qbs_integral_mk /=.
-  exact: (boolQ_morphism (X := measQ R (\bar R))).
+  exact: (qbs_morphism_boolQ (X := measQ R (\bar R))).
 have -> : (fun x : mR => ((((x < p)%R : bool)%:R : R))%:E) =
     (fun x => (\1_[set r : mR | r < p] x)%:E).
   by apply: funext => x /=; rewrite indicE mem_setE.

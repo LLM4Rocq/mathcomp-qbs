@@ -21,7 +21,7 @@ From QBS Require Import measurable_aux quasi_borel.
 (* qbs_monad.v are equalities.                                                *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*   qbs_preprob X        == pairs (alpha, mu) (representatives)              *)
+(*   preprob X        == pairs (alpha, mu) (representatives)                  *)
 (*   probQ X           == probabilities on X: the quotient of the pairs       *)
 (*   qbs_alpha p, qbs_mu p == the pair of a representative of p               *)
 (*   mkQBSProb alpha mu ha == the probability represented by (alpha, mu)      *)
@@ -70,13 +70,13 @@ Implicit Types X : qbsType R.
 
 (** Representatives of probabilities: a random element alpha : R -> X and a
     base probability measure mu on R. *)
-Record qbs_preprob X := QBSPreProb {
+Record preprob X := QBSPreProb {
   preprob_alpha : mR -> X ;
   preprob_mu : probability mR R ;
   preprob_alpha_random : qbs_Mx preprob_alpha }.
 
-HB.instance Definition _ X := gen_eqMixin (qbs_preprob X).
-HB.instance Definition _ X := gen_choiceMixin (qbs_preprob X).
+HB.instance Definition _ X := gen_eqMixin (preprob X).
+HB.instance Definition _ X := gen_choiceMixin (preprob X).
 
 (* Sigma_Mx-measurability for functions h : X -> \bar R.
    h is sigma_Mx-measurable iff for every random element alpha
@@ -169,7 +169,7 @@ End integral_sigma_Mx.
 
 (** Two representatives are equivalent when they induce the same measure on
     sigma_Mx sets. *)
-Definition preprob_equiv X (p1 p2 : qbs_preprob X) : Prop :=
+Definition preprob_equiv X (p1 p2 : preprob X) : Prop :=
   forall U, sigma_Mx U ->
     preprob_mu p1 (preprob_alpha p1 @^-1` U) =
     preprob_mu p2 (preprob_alpha p2 @^-1` U).
@@ -177,7 +177,7 @@ Definition preprob_equiv X (p1 p2 : qbs_preprob X) : Prop :=
 Section equiv_rel.
 Variable X : qbsType R.
 
-Definition preprob_eq_op : rel (qbs_preprob X) :=
+Definition preprob_eq_op : rel (preprob X) :=
   fun p1 p2 => `[< preprob_equiv p1 p2 >].
 
 Let preprob_eq_op_refl : reflexive preprob_eq_op.

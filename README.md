@@ -81,21 +81,21 @@ This formalization follows:
   on `sigma_Mx` sets); `qbs_return`, `qbs_bind`, monad laws as
   equalities `qbs_bind_returnl`, `qbs_bind_returnr`, `qbs_bindA`;
   `qbs_map`,
-  `qbs_join`, `qbs_strength` with its laws `qbs_strength_snd`,
-  `qbs_strength_assoc`, `qbs_strength_return`, `qbs_strength_join`;
+  `qbs_join`, `strength` with its laws `strength_snd`,
+  `strength_assoc`, `strength_return`, `strength_join`;
   internal bind `qbs_bind_internal`
   (HKSY Thm. 21); commutativity `qbs_prod_comm`, `qbs_bind_comm`
   (HKSY Prop. 22(2))
-- **QBS ↔ Giry**: `qbs_to_giry`, `qbs_integral_giry`, and on standard
-  Borel spaces `qbs_to_giry_inj`, `qbs_to_giry_bind`
+- **QBS ↔ Giry**: `to_giry`, `qbs_integral_giry`, and on standard
+  Borel spaces `to_giry_inj`, `to_giry_bind`
 - **Integration**: `qbs_integral_law`, `qbs_expectE` (expectation is
   `'E` on the law)
-- **Independence**: `qbs_indep_rect` (product rule),
+- **Independence**: `indep_rect` (product rule),
   `qbs_integral_indepM` (E[fg] = E[f]E[g])
 - **R ≅ R × R**: `pair_standard_borel`, `encode_RRK`
-- **Normaliser**: `qbs_normalize`, `qbs_normalize_event`,
-  `qbs_normalize_prob_event_mk`; as a morphism into P(X) + 1:
-  `qbs_normalize_morphism`, `qbs_normalizeQ`
+- **Normaliser**: `normalize`, `normalize_event`,
+  `normalize_prob_event_mk`; as a morphism into P(X) + 1:
+  `qbs_morphism_normalize`, `normalizeQ`
 - **Lists**: `qbs_nil`, `qbs_cons`, recursion `list_rec` as a morphism
   (`qbs_morphism_list_rec`, internal `list_rec_hom`), bijection with
   `seq` (`seq_of_listK`, `list_of_seqK`)
@@ -118,8 +118,8 @@ This formalization follows:
   encode/decode pair, not via the classical Polish-space
   characterization.
 
-- **`qbs_normalize` returns `option`**: it returns `None` when the
-  evidence is zero or infinite (`qbs_normalize_sum` is the same map into
+- **`normalize` returns `option`**: it returns `None` when the
+  evidence is zero or infinite (`normalize_sum` is the same map into
   P(X) + 1).
 
 - **Not formalised from HKSY**: the de Finetti theorem and the

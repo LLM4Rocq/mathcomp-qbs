@@ -20,7 +20,7 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad.
 (*   qbs_integral_bind     == the integral of an integrable function against  *)
 (*                             p >>= f is the integral of the inner integrals *)
 (*   qbs_integral_bind_bounded == same for bounded measurable real functions  *)
-(*   measurable_qbs_integral, qbs_integral_morphism == signed versions        *)
+(*   measurable_qbs_integral, qbs_morphism_integral == signed versions        *)
 (*                             of the integral being measurable in a random   *)
 (*                             probability, and of p |-> qbs_integral p h     *)
 (*                             being a morphism P(X) -> \bar R                *)
@@ -120,7 +120,7 @@ move=> mk bd; apply: qbs_integral_bind => //.
 exact: qbs_integrable_bounded.
 Qed.
 
-(** ** Integration is a morphism, signed version of ge0_qbs_integral_morphism *)
+(** ** Integration is a morphism, signed version of ge0_qbs_morphism_integral *)
 
 Lemma measurable_qbs_integral X (b : mR -> probQ X) (h : X -> \bar R) :
   qbs_Mx (s := probQ X) b -> qbs_measurable X h ->
@@ -134,7 +134,7 @@ exact: ge0_measurable_qbs_integral hb (qbs_measurable_funeneg mh)
   (funeneg_ge0 h).
 Qed.
 
-Lemma qbs_integral_morphism X (h : X -> \bar R) :
+Lemma qbs_morphism_integral X (h : X -> \bar R) :
   qbs_measurable X h ->
   qbs_morphism (X := probQ X) (Y := measQ R (\bar R))
     (fun p => qbs_integral X p h).
@@ -149,11 +149,11 @@ Lemma qbs_integral_param X Y (L : qbsHomType X (probQ Y))
     (fun x => qbs_integral Y (L x) (fun y => h (x, y))).
 Proof.
 move=> mh a ha.
-pose g := qbs_comp (qbs_pair (qbs_id X) L) (qbs_strengthQ X Y).
+pose g := qbs_comp (qbs_pair (qbs_id X) L) (strengthQ X Y).
 have hs : qbs_Mx (s := probQ (prodQ X Y)) (g \o a) := qbs_hom_proof _ ha.
 have := measurable_qbs_integral hs mh.
 by under [X in measurable_fun _ X -> _]eq_fun do
-  rewrite /g /= qbs_strength_integral//.
+  rewrite /g /= strength_integral//.
 Qed.
 
 Lemma qbs_integral_param_snd X Y (p : probQ X) (h : prodQ X Y -> \bar R) :
