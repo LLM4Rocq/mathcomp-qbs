@@ -58,6 +58,18 @@ Implicit Types (p m s : R).
 Let qbs_of_prob (P : probability mR R) : probQ (realQ R) :=
   mkQBSProb (X := realQ R) idfun P (@measurable_id _ mR setT).
 
+(** A family of probabilities on R that is measurable in its parameter is a
+    random element of P(R). *)
+Let qbs_of_prob_random (P : mR -> probability mR R) :
+  (forall B, measurable B -> measurable_fun [set: mR] (fun r => P r B)) ->
+  qbs_Mx (s := probQ (realQ R)) (fun r => qbs_of_prob (P r)).
+Proof.
+move=> mP; exists idfun, (fun r => P r : giry mR R).
+split; [exact: measurable_id| |by move=> r; exact: probability_setT
+  |by move=> r U mU; rewrite qbs_event_mk].
+by apply: measurable_giry_codensity => // B; exact: mP.
+Qed.
+
 (** Normal distribution as QBS probability. *)
 Definition qbs_normal m s : probQ (realQ R) :=
   qbs_of_prob (normal_prob m s).
@@ -97,11 +109,7 @@ Definition qbs_uniform_of (ab : intervalQ) : probQ (realQ R) :=
 Lemma qbs_morphism_uniform_of :
   qbs_morphism (X := intervalQ) (Y := probQ (realQ R)) qbs_uniform_of.
 Proof.
-move=> c [m1 m2].
-exists idfun, (fun r => uniform_prob (svalP (c r))).
-split; [exact: measurable_id| |by move=> r; exact: probability_setT
-  |by move=> r U mU; rewrite qbs_event_mk].
-apply: measurable_giry_codensity => // B mB.
+move=> c [m1 m2]; apply: qbs_of_prob_random => B mB.
 pose f (z : (mR * mR) * mR) : \bar R :=
   (\1_B z.2 * uniform_pdf z.1.1 z.1.2 z.2)%:E.
 have -> : (fun x => uniform_prob (svalP (c x)) B) =
@@ -134,10 +142,7 @@ Lemma qbs_morphism_normal s :
   qbs_morphism (X := realQ R) (Y := probQ (realQ R))
     (fun m => qbs_normal m s).
 Proof.
-move=> a ha; exists idfun, (fun r => normal_prob (a r) s).
-split; [exact: measurable_id| |by move=> r; exact: probability_setT
-  |by move=> r U mU; rewrite qbs_event_mk].
-apply: measurable_giry_codensity => // B mB.
+move=> a ha; apply: qbs_of_prob_random => B mB.
 exact: measurableT_comp (measurable_normal_prob _ mB) ha.
 Qed.
 

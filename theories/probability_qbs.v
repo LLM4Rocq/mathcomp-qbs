@@ -498,8 +498,8 @@ Lemma qbs_varianceE X (p : probQ X) (h : X -> R) :
   qbs_variance X p h =
   qbs_expect X p (fun x => h x ^+ 2)%R - (qbs_expect X p h) ^+ 2.
 Proof.
-move=> hL2; rewrite /qbs_variance /qbs_expect /qbs_integral.
-by rewrite varianceE //; congr (_ - _); rewrite unlock.
+move=> hL2; rewrite /qbs_variance /qbs_expect /qbs_integral varianceE//.
+by congr (_ - _); rewrite unlock.
 Qed.
 
 Lemma qbs_varianceZ X (p : probQ X) (a : R)

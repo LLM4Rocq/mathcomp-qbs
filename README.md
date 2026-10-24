@@ -15,7 +15,7 @@ programming semantics.
 
 ## Overview
 
-**401 proofs, 0 Admitted, 0 custom axioms, 6,380 lines across 14 files.**
+**403 proofs, 0 Admitted, 0 custom axioms, 6,390 lines across 14 files.**
 
 > **Note**: A higher-order PPL with denotational semantics in QBS
 > (`ppl_qbs.v`, `ppl_kernel.v`, `showcase/ppl_examples.v`, ...) is
@@ -57,13 +57,13 @@ This formalization follows:
 | `qbs_giry.v` | 136 | 8 | Comparison with the Giry monad |
 | `pair_qbs_measure.v` | 385 | 20 | Concrete product via R ≅ R × R, Fubini, independence, variance of independent sums |
 | `normal_centred.v` | 300 | 16 | Centred first moment and mean of the normal law (`integral_normal_mean`), change of variables for `normal_prob` |
-| `measure_as_qbs_measure.v` | 287 | 13 | Normal, Bernoulli and uniform (on any [a, b]) distributions, their expectations, Bernoulli event probabilities |
+| `measure_as_qbs_measure.v` | 292 | 14 | Normal, Bernoulli and uniform (on any [a, b]) distributions, their expectations, Bernoulli event probabilities |
 
 ### Showcase
 
 | File | Lines | Proofs | Description |
 |------|------:|-------:|-------------|
-| `showcase/bayesian_regression.v` | 473 | 29 | Bayesian linear regression (HKSY Sec. VI) with closed-form posterior |
+| `showcase/bayesian_regression.v` | 478 | 30 | Bayesian linear regression (HKSY Sec. VI) with closed-form posterior |
 
 ## Key results
 

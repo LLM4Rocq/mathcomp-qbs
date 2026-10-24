@@ -3,8 +3,8 @@
 **Project:** QBS -- Quasi-Borel Spaces in Rocq
 **Repository:** https://github.com/LLM4Rocq/mathcomp-qbs
 **Date:** 2026-10-23
-**Status:** 401 proofs (396 Qed + 5 Defined), **0 Admitted**, 0 custom axioms
-**Lines of Rocq:** 6,380 across 14 files
+**Status:** 403 proofs (398 Qed + 5 Defined), **0 Admitted**, 0 custom axioms
+**Lines of Rocq:** 6,390 across 14 files
 
 > **Note**: The higher-order PPL development (`ppl_qbs.v`,
 > `ppl_kernel.v`, `showcase/ppl_examples.v`) is on the `ppl`
@@ -641,7 +641,7 @@ Lemma qbs_morphism_list_rec (W : qbsType R) (b : qbsHomType W Y)
 
 ## Part II: Probability Monad and Integration
 
-Source files: `theories/probability_qbs.v` (604 lines, 42 Qed), `theories/qbs_monad.v` (675 lines, 57 Qed), `theories/qbs_monad_integral.v` (170 lines, 8 Qed), `theories/qbs_normalize.v` (278 lines, 18 Qed), `theories/pair_qbs_measure.v` (385 lines, 20 Qed), `theories/qbs_giry.v` (136 lines, 8 Qed), `theories/normal_centred.v` (300 lines, 16 Qed), `theories/measure_as_qbs_measure.v` (287 lines, 13 Qed), `theories/showcase/bayesian_regression.v` (473 lines, 29 Qed).
+Source files: `theories/probability_qbs.v` (604 lines, 42 Qed), `theories/qbs_monad.v` (675 lines, 57 Qed), `theories/qbs_monad_integral.v` (170 lines, 8 Qed), `theories/qbs_normalize.v` (278 lines, 18 Qed), `theories/pair_qbs_measure.v` (385 lines, 20 Qed), `theories/qbs_giry.v` (136 lines, 8 Qed), `theories/normal_centred.v` (300 lines, 16 Qed), `theories/measure_as_qbs_measure.v` (292 lines, 14 Qed), `theories/showcase/bayesian_regression.v` (478 lines, 30 Qed).
 
 ### 2.1 Representatives and the Quotient
 
@@ -1410,7 +1410,7 @@ On each half-line around `m`, the integral of `(x - m) * pdf` is `±s^2 * normal
 
 ### 2.22 Bayesian Linear Regression
 
-**File:** `theories/showcase/bayesian_regression.v` (473 lines, 29 Qed)
+**File:** `theories/showcase/bayesian_regression.v` (478 lines, 30 Qed)
 
 Following HKSY Sec. VI and the Isabelle AFP development (Bayesian_Linear_Regression.thy) by Hirata, Minamide, Sato, the prior is a probability on the *function space* `R => R`.
 
@@ -1775,7 +1775,7 @@ measurable_aux.v (standalone measurability lemmas, no QBS imports)
 | Variance | Not formalized | `qbs_varianceE` + `qbs_varianceZ`, `qbs_variance_affine`, `qbs_variance_mk` |
 | E[distributions] | Not formalized | `qbs_expect_normal` (from `integral_normal_mean`) / `bernoulli` / `uniform`, `qbs_expect_interval_uniform` (Uniform(a,b)), `qbs_bernoulli_event` |
 | Standard Borel inst. | Not formalized | R, nat, bool, prod, ereal |
-| Lines | ~5000 | 6,380 |
+| Lines | ~5000 | 6,390 |
 
 ### 4.4 Statistics
 
@@ -1792,12 +1792,12 @@ measurable_aux.v (standalone measurability lemmas, no QBS imports)
 | `pair_qbs_measure.v` | 385 | 20 |
 | `qbs_giry.v` | 136 | 8 |
 | `normal_centred.v` | 300 | 16 |
-| `measure_as_qbs_measure.v` | 287 | 13 |
+| `measure_as_qbs_measure.v` | 292 | 14 |
 | `standard_borel.v` | 1,031 | 59 |
-| `showcase/bayesian_regression.v` | 473 | 29 |
-| **Total** | **6,380** | **401** |
+| `showcase/bayesian_regression.v` | 478 | 30 |
+| **Total** | **6,390** | **403** |
 
-The 401 proofs are 396 `Qed` and 5 `Defined` (the standard Borel witnesses in `measure_qbs_adjunction.v`). **0 Admitted**, 0 custom axioms.
+The 403 proofs are 398 `Qed` and 5 `Defined` (the standard Borel witnesses in `measure_qbs_adjunction.v`). **0 Admitted**, 0 custom axioms.
 
 ### 4.5 Honest Limitations
 

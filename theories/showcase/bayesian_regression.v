@@ -222,30 +222,35 @@ Definition posterior : probQ F := qbs_map lin posterior2.
 
 Local Open Scope ereal_scope.
 
+(** Integrals against p >>= (s |-> strength (s, G s)) when p and the G s are
+    normal distributions. *)
+Let normal2_integral m t (mu : R -> R) u (G : qbsHomType RQ (probQ RQ))
+    (h : W -> \bar R) :
+  (forall x, G x = qbs_normal (mu x) u) ->
+  qbs_measurable W h -> (forall x, 0 <= h x) ->
+  qbs_integral W (qbs_bind (qbs_normal m t)
+    (qbs_comp (qbs_pair (qbs_id RQ) G) (strengthQ RQ RQ))) h =
+  \int[normal_prob m t]_s \int[normal_prob (mu s) u]_b h (s, b).
+Proof.
+move=> GE mh h0; rewrite ge0_qbs_integral_bind// qbs_integral_normal.
+  exact: ge0_qbs_measurable_integral.
+apply: eq_integral => s _.
+rewrite /= strength_integral// GE qbs_integral_normal//.
+by move=> a ha; exact: mh _ (qbs_Mx_pair_cstl s ha).
+Qed.
+
 Lemma prior2_integral (h : W -> \bar R) :
   qbs_measurable W h -> (forall x, 0 <= h x) ->
   qbs_integral W prior2 h =
   \int[normal_prob 0 3]_s \int[normal_prob 0 3]_b h (s, b).
-Proof.
-move=> mh h0; rewrite ge0_qbs_integral_bind// qbs_integral_normal.
-  exact: ge0_qbs_measurable_integral.
-apply: eq_integral => s _.
-rewrite /= strength_integral// qbs_integral_normal//.
-by move=> a ha; exact: mh _ (qbs_Mx_pair_cstl s ha).
-Qed.
+Proof. by apply: normal2_integral. Qed.
 
 Lemma posterior2_integral (h : W -> \bar R) :
   qbs_measurable W h -> (forall x, 0 <= h x) ->
   qbs_integral W posterior2 h =
   \int[normal_prob post_s_mean (sqrtr post_s_var)]_s
     \int[normal_prob (post_b_mean s) (sqrtr post_b_var)]_b h (s, b).
-Proof.
-move=> mh h0; rewrite ge0_qbs_integral_bind// qbs_integral_normal.
-  exact: ge0_qbs_measurable_integral.
-apply: eq_integral => s _.
-rewrite /= strength_integral// qbs_integral_normal//.
-by move=> a ha; exact: mh _ (qbs_Mx_pair_cstl s ha).
-Qed.
+Proof. by apply: normal2_integral. Qed.
 
 (** Helpers. *)
 
