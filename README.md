@@ -132,18 +132,16 @@ This formalization follows:
 - MathComp analysis 1.18.x
 - Hierarchy Builder 1.10.x
 - MathComp algebra-tactics (for `ring`/`field`). No release supports
-  MathComp 2.6 yet: use its `master` branch, ignoring its
-  `coq-mathcomp-ssreflect` upper bound.
+  MathComp 2.6 yet: `coq-qbs.opam` pins a commit of its `master` branch
+  (`pin-depends`), whose opam file still bounds `coq-mathcomp-ssreflect`
+  below 2.5, hence `OPAMIGNORECONSTRAINTS` below.
 
 ### Installation
 
 ```bash
 opam repo add rocq-released https://rocq-prover.org/opam/released
-opam install rocq-mathcomp-analysis.1.18.0
-opam pin add -n -y -k git coq-mathcomp-algebra-tactics \
-  "https://github.com/math-comp/algebra-tactics.git#master"
 OPAMIGNORECONSTRAINTS=coq-mathcomp-ssreflect \
-  opam install coq-mathcomp-algebra-tactics
+  opam install --deps-only .
 ```
 
 ## Building

@@ -20,7 +20,15 @@ depends: [
   "rocq-mathcomp-algebra" {>= "2.6.0" & < "2.7~"}
   "rocq-mathcomp-analysis" {>= "1.18.0" & < "1.19~"}
   "rocq-hierarchy-builder" {>= "1.10.0"}
-  "coq-mathcomp-algebra-tactics" {>= "1.2.0"}
+  "coq-mathcomp-algebra-tactics"
+]
+
+# No algebra-tactics release supports MathComp 2.6 yet: use a master commit
+# (its opam file still bounds coq-mathcomp-ssreflect < 2.5, so install with
+# OPAMIGNORECONSTRAINTS=coq-mathcomp-ssreflect).
+pin-depends: [
+  ["coq-mathcomp-algebra-tactics.dev"
+   "git+https://github.com/math-comp/algebra-tactics.git#7da689bc90532e70ecf806110fdb4103ba0383b3"]
 ]
 
 build: [
