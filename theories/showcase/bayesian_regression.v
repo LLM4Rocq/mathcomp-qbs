@@ -17,7 +17,7 @@ From QBS Require Import quasi_borel probability_qbs qbs_monad qbs_normalize
 (* norm (P(id, obs) prior), and the posterior is computed in closed form.     *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*                nu == the normal distribution N(0,3) as a monadP RQ         *)
+(*                nu == the normal distribution N(0,3) as a qbs_prob RQ         *)
 (*             prior2 == the parameter prior N(0,3) x N(0,3) on pairs (s, b)  *)
 (*       lin_uncurried == ((s, b), r) |-> s * r + b, as a QBS morphism        *)
 (*          lin (s,b) == the function r |-> s * r + b, as a morphism into     *)
@@ -61,10 +61,10 @@ Local Abbreviation F := (expQ RQ RQ).
 
 Let half_neq0 : (2^-1 : R) != 0. Proof. by rewrite invr_eq0 pnatr_eq0. Qed.
 
-Definition nu : monadP RQ := qbs_normal_distribution 0 3.
+Definition nu : qbs_prob RQ := qbs_normal_distribution 0 3.
 
 (** The parameter prior N(0,3) x N(0,3), as a monadic product. *)
-Definition prior2 : monadP W := monadP_pair nu nu.
+Definition prior2 : qbs_prob W := monadP_pair nu nu.
 
 (** (s, b) |-> (r |-> s * r + b). *)
 Definition lin_uncurried : qbsHomType (prodQ W RQ) RQ :=
@@ -79,7 +79,7 @@ Lemma linE (s b r : R) : lin (s, b) r = s * r + b.
 Proof. by []. Qed.
 
 (** The prior on functions (HKSY eq. (5)). *)
-Definition prior : monadP F := monadP_map lin prior2.
+Definition prior : qbs_prob F := monadP_map lin prior2.
 
 Let d (m x : R) : R := normal_pdf m (2^-1) x.
 
@@ -110,7 +110,7 @@ Definition obs : qbsHomType F RQ :=
   HB.pack obs_fun (isQBSMorphism.Build R F RQ _ obs_morphism).
 
 (** The weighted prior P(id, obs)(prior) and the program. *)
-Definition wprior : monadP (prodQ F RQ) :=
+Definition wprior : qbs_prob (prodQ F RQ) :=
   monadP_map (qbs_pair (qbs_id F) obs) prior.
 
 Definition program : option (qbs_prob F) := qbs_normalize wprior.
@@ -210,14 +210,14 @@ Qed.
 Definition post_b_meanQ : qbsHomType RQ RQ :=
   HB.pack post_b_mean (isQBSMorphism.Build R RQ RQ _ post_b_mean_morphism).
 
-Definition posterior2 : monadP W :=
+Definition posterior2 : qbs_prob W :=
   qbs_bind
     (qbs_normal_distribution post_s_mean (sqrtr post_s_var))
     (qbs_comp (qbs_pair (qbs_id RQ)
       (qbs_comp post_b_meanQ (qbs_normalQ (sqrtr post_b_var))))
       (qbs_strengthQ RQ RQ)).
 
-Definition posterior : monadP F := monadP_map lin posterior2.
+Definition posterior : qbs_prob F := monadP_map lin posterior2.
 
 (** ** Integrals against the prior and the posterior *)
 

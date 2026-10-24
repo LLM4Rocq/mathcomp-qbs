@@ -91,7 +91,7 @@ Qed.
 (** L preserves bind: the distribution of p >>= f is the Giry bind of the
     distribution of p with the distributions of f. *)
 Lemma qbs_to_giry_bind d' (M' : measurableType d') (p : qbs_prob (measQ R M))
-    (f : qbsHomType (measQ R M) (monadP (measQ R M'))) (A : set M') :
+    (f : qbsHomType (measQ R M) (qbs_prob (measQ R M'))) (A : set M') :
   measurable A ->
   qbs_to_giry (qbs_bind p f : qbs_prob _) A =
   \int[qbs_to_giry p]_x qbs_to_giry (f x : qbs_prob _) A.

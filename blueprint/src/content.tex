@@ -1039,7 +1039,7 @@ is of pairs.
 \begin{definition}[Probability Monad QBS]\label{def:monadP}
   \rocq{QBS.qbs_monad.monadP_random}
   \rocq{QBS.qbs_monad.monadP_random_event}
-  \rocq{QBS.qbs_monad.monadP}
+  \rocq{QBS.probability_qbs.qbs_prob}
   \rocqok
   \uses{def:isQBS, def:qbs_prob, def:qbs_prob_rep}
   The probability monad $P(X)$ is the QBS whose carrier is
@@ -1072,7 +1072,7 @@ is of pairs.
 \begin{lemma}[Return Is a Morphism]\label{lem:qbs_return_morphism}
   \rocq{QBS.qbs_monad.qbs_return_morphism}
   \rocqok
-  \uses{def:qbs_return, def:monadP, def:qbs_morphism}
+  \uses{def:qbs_return, def:qbs_prob, def:qbs_morphism}
   $\eta : X \to P(X)$ is a QBS morphism.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
@@ -1113,7 +1113,7 @@ is of pairs.
 \begin{lemma}[Bind Is a Morphism in the Argument]\label{lem:qbs_bind_morphism}
   \rocq{QBS.qbs_monad.qbs_bind_morphism}
   \rocqok
-  \uses{def:qbs_bind, def:monadP, def:qbs_morphism}
+  \uses{def:qbs_bind, def:qbs_prob, def:qbs_morphism}
   For fixed $g : Y \to P(Z)$ and a morphism $f : X \to P(Y)$,
   $x \mapsto f(x) \mathbin{>\!\!>\!\!=} g$ is a QBS morphism
   $X \to P(Z)$.
@@ -1232,7 +1232,7 @@ probabilities are classes.
   \rocq{QBS.qbs_monad.ge0_qbs_integral_morphism}
   \rocq{QBS.qbs_monad.ge0_qbs_measurable_integral}
   \rocqok
-  \uses{def:qbs_integral, def:qbs_measurable, def:monadP, def:ereal_standard_borel}
+  \uses{def:qbs_integral, def:qbs_measurable, def:qbs_prob, def:ereal_standard_borel}
   For a QBS-measurable $h : X \to \bar{\mathbb{R}}$ with $h \geq 0$,
   $p \mapsto \int_p h$ is a QBS morphism
   $P(X) \to R(\bar{\mathbb{R}})$ (HKSY Sec.~V-C). Consequently, for a
@@ -1291,7 +1291,7 @@ probabilities are classes.
 \begin{lemma}[Map Is a Morphism]\label{lem:monadP_map_morph}
   \rocq{QBS.qbs_monad.monadP_map_morphism}
   \rocqok
-  \uses{def:monadP_map, def:monadP, def:qbs_morphism}
+  \uses{def:monadP_map, def:qbs_prob, def:qbs_morphism}
   $P(f)$ is a QBS morphism $P(X) \to P(Y)$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
@@ -1467,7 +1467,7 @@ probabilities are classes.
 \begin{lemma}[Join Is a Morphism]\label{lem:qbs_join_morphism}
   \rocq{QBS.qbs_monad.qbs_join_morphism}
   \rocqok
-  \uses{def:qbs_join, def:qbs_morphism, def:monadP, lem:qbs_bind_morphism}
+  \uses{def:qbs_join, def:qbs_morphism, def:qbs_prob, lem:qbs_bind_morphism}
   Join is a QBS morphism $P(P(X)) \to P(X)$.
 \end{lemma}
 \begin{proof}\rocqok\end{proof}
@@ -1702,7 +1702,7 @@ evidence is $0$ or infinite.
   \rocq{QBS.qbs_normalize.qbs_normalize_morphism}
   \rocq{QBS.qbs_normalize.qbs_normalizeQ}
   \rocqok
-  \uses{def:qbs_normalize, lem:qbs_normalize_prob_event_mk, def:monadP, def:coprodQ, def:unitQ, def:qbs_morphism}
+  \uses{def:qbs_normalize, lem:qbs_normalize_prob_event_mk, def:qbs_prob, def:coprodQ, def:unitQ, def:qbs_morphism}
   The total normaliser $P(X \times \mathbb{R}) \to P(X) + 1$ (sending degenerate cases to the unit summand) is a QBS morphism, bundled as \texttt{qbs\_normalizeQ} (AFP \texttt{norm\_qbs\_measure\_morphism}).
 \end{theorem}
 \begin{proof}\rocqok\end{proof}
@@ -1889,7 +1889,7 @@ probability measure on a standard Borel space is \texttt{giry\_to\_qbs}
   \rocq{QBS.measure_as_qbs_measure.qbs_normal_morphism}
   \rocq{QBS.measure_as_qbs_measure.qbs_normalQ}
   \rocqok
-  \uses{def:qbs_normal_distribution, def:monadP, def:qbs_morphism}
+  \uses{def:qbs_normal_distribution, def:qbs_prob, def:qbs_morphism}
   For fixed $\sigma$, $\mu \mapsto \mathcal{N}(\mu, \sigma)$ is a QBS
   morphism $\mathtt{realQ} \to P(\mathtt{realQ})$ (bundled as
   \texttt{qbs\_normalQ}).

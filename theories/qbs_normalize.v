@@ -206,7 +206,7 @@ by rewrite -qbs_pdensity_preimage.
 Qed.
 
 (** Normalisation as a total map into P(X) + 1 (HKSY Sec. VI). *)
-Definition qbs_normalize_sum p : coprodQ (monadP X) (unitQ R) :=
+Definition qbs_normalize_sum p : coprodQ (qbs_prob X) (unitQ R) :=
   if qbs_normalize p is Some q then inl q else inr tt.
 
 Lemma qbs_normalize_sumE p : qbs_normalize_sum p =
@@ -214,8 +214,8 @@ Lemma qbs_normalize_sumE p : qbs_normalize_sum p =
 Proof. by []. Qed.
 
 Lemma qbs_normalize_morphism :
-  qbs_morphism (X := monadP (prodQ X (realQ R)))
-    (Y := coprodQ (monadP X) (unitQ R)) qbs_normalize_sum.
+  qbs_morphism (X := qbs_prob (prodQ X (realQ R)))
+    (Y := coprodQ (qbs_prob X) (unitQ R)) qbs_normalize_sum.
 Proof.
 move=> b hb; have [a [g [ha mg g1 hbe]]] := hb.
 pose pr r : qbs_prob (prodQ X (realQ R)) := mkQBSProb a (giry_prob (g1 r)) ha.
@@ -272,7 +272,7 @@ split=> //.
 Qed.
 
 Definition qbs_normalizeQ :
-    qbsHomType (monadP (prodQ X (realQ R))) (coprodQ (monadP X) (unitQ R)) :=
+    qbsHomType (qbs_prob (prodQ X (realQ R))) (coprodQ (qbs_prob X) (unitQ R)) :=
   HB.pack qbs_normalize_sum
     (isQBSMorphism.Build R _ _ _ qbs_normalize_morphism).
 

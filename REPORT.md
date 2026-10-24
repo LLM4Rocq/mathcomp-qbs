@@ -877,13 +877,12 @@ Record qbs_prob_rep X (b : mR -> qbs_prob X) (a : mR -> X) (g : mR -> G) :
 Definition monadP_random X : set (mR -> qbs_prob X) :=
   [set b | exists a g, qbs_prob_rep b a g].
 
-Definition monadP X : Type := qbs_prob X.
 HB.instance Definition _ X :=
-  isQBS.Build R (monadP X) (@monadP_comp X) (@monadP_const X)
+  isQBS.Build R (qbs_prob X) (@monadP_comp X) (@monadP_const X)
     (@monadP_glue X).
 ```
 
-Here `G := giry mR R`, and `qbs_prob_rep b a g` says that `b r` is represented by `[a, g r]` for every `r`. Since probabilities are classes, no saturation of random elements with respect to equivalence is needed. `monadP_random_event` shows that the probability of a `sigma_Mx` event is measurable in `r`; for a morphism `f : X -> monadP Y` this is `qbs_measurable_event` (`x |-> qbs_prob_event Y (f x) U` is QBS-measurable). The glue axiom (`monadP_glue`) decodes the selector with the retraction `encode_RR_mR`/`decode_RR_mR` from `standard_borel.v`.
+Here `G := giry mR R`, and `qbs_prob_rep b a g` says that `b r` is represented by `[a, g r]` for every `r`. Since probabilities are classes, no saturation of random elements with respect to equivalence is needed. `monadP_random_event` shows that the probability of a `sigma_Mx` event is measurable in `r`; for a morphism `f : X -> qbs_prob Y` this is `qbs_measurable_event` (`x |-> qbs_prob_event Y (f x) U` is QBS-measurable). The glue axiom (`monadP_glue`) decodes the selector with the retraction `encode_RR_mR`/`decode_RR_mR` from `standard_borel.v`.
 
 The file also defines a small helper `giry_prob m m1`, the probability measure `m : giry T R` given a proof `m1` that `m` has total mass 1, with `giry_bindE` and `giry_bind_setT` for the Giry bind.
 
@@ -892,29 +891,29 @@ The file also defines a small helper `giry_prob m m1`, the probability measure `
 **File:** `theories/qbs_monad.v`
 
 ```
-Definition qbs_return X (x : X) : monadP X :=
+Definition qbs_return X (x : X) : qbs_prob X :=
   mkQBSProb (fun=> x) (\d_(0 : mR))%R (qbs_Mx_const x).
 
 Lemma qbs_return_event X (x : X) (U : set X) : sigma_Mx U ->
   qbs_prob_event X (qbs_return x) U = (x \in U)%:R%:E.
 
-Lemma qbs_return_morphism X : qbs_morphism (X := X) (Y := monadP X)
+Lemma qbs_return_morphism X : qbs_morphism (X := X) (Y := qbs_prob X)
   (@qbs_return X).
 
 Lemma qbs_return_integral X (x : X) (h : X -> \bar R) : qbs_measurable X h ->
   qbs_integral X (qbs_return x) h = h x.
 ```
 
-`qbs_returnQ X : qbsHomType X (monadP X)` is the bundled version.
+`qbs_returnQ X : qbsHomType X (qbs_prob X)` is the bundled version.
 
 ### 2.9 Bind
 
 **File:** `theories/qbs_monad.v`
 
-For `p : qbs_prob X` and a *bundled morphism* `f : qbsHomType X (monadP Y)`, bind is defined without any side condition: `f \o alpha_p` is random in `P(Y)`, so it has a representation `[a, g]`, and the bound measure is the Giry bind of `mu_p` with `g` (computed on the representative of `p`).
+For `p : qbs_prob X` and a *bundled morphism* `f : qbsHomType X (qbs_prob Y)`, bind is defined without any side condition: `f \o alpha_p` is random in `P(Y)`, so it has a representation `[a, g]`, and the bound measure is the Giry bind of `mu_p` with `g` (computed on the representative of `p`).
 
 ```
-Definition qbs_bind : monadP Y :=
+Definition qbs_bind : qbs_prob Y :=
   mkQBSProb bind_a (giry_prob bind_mu1) (qbs_rep_random bind_rep).
 
 Lemma ge0_qbs_integral_bind (h : Y -> \bar R) :
@@ -930,14 +929,14 @@ Lemma qbs_bind_event (U : set Y) : sigma_Mx U ->
 Bind with a fixed continuation is itself a morphism, and the bundled version is `qbs_bindQ`:
 
 ```
-Lemma qbs_bind_morphism X Y Z (f : qbsHomType X (monadP Y))
-    (g : qbsHomType Y (monadP Z)) :
-  qbs_morphism (X := X) (Y := monadP Z) (fun x => qbs_bind (f x) g).
+Lemma qbs_bind_morphism X Y Z (f : qbsHomType X (qbs_prob Y))
+    (g : qbsHomType Y (qbs_prob Z)) :
+  qbs_morphism (X := X) (Y := qbs_prob Z) (fun x => qbs_bind (f x) g).
 
-Definition qbs_bindQ X Y Z (f : qbsHomType X (monadP Y))
-    (g : qbsHomType Y (monadP Z)) : qbsHomType X (monadP Z) :=
+Definition qbs_bindQ X Y Z (f : qbsHomType X (qbs_prob Y))
+    (g : qbsHomType Y (qbs_prob Z)) : qbsHomType X (qbs_prob Z) :=
   HB.pack (fun x => qbs_bind (f x) g)
-    (isQBSMorphism.Build R X (monadP Z) _ (qbs_bind_morphism f g)).
+    (isQBSMorphism.Build R X (qbs_prob Z) _ (qbs_bind_morphism f g)).
 ```
 
 ### 2.10 Monad Laws
@@ -947,16 +946,16 @@ Definition qbs_bindQ X Y Z (f : qbsHomType X (monadP Y))
 Since probabilities are classes, the monad laws are equalities. Each is proved with `qbs_prob_eqP` by comparing the probabilities of `sigma_Mx` events, using `qbs_bind_event`, `qbs_return_event` and `qbs_return_integral`:
 
 ```
-Lemma qbs_bind_returnl X Y (x : X) (f : qbsHomType X (monadP Y)) :
+Lemma qbs_bind_returnl X Y (x : X) (f : qbsHomType X (qbs_prob Y)) :
   qbs_bind (qbs_return x) f = f x.
 
 Lemma qbs_bind_returnr X (p : qbs_prob X) : qbs_bind p (qbs_returnQ X) = p.
 
-Lemma qbs_bindA X Y Z (p : qbs_prob X) (f : qbsHomType X (monadP Y))
-    (g : qbsHomType Y (monadP Z)) :
+Lemma qbs_bindA X Y Z (p : qbs_prob X) (f : qbsHomType X (qbs_prob Y))
+    (g : qbsHomType Y (qbs_prob Z)) :
   qbs_bind (qbs_bind p f) g = qbs_bind p (qbs_bindQ f g).
 
-Lemma eq_qbs_bind X Y (p : qbs_prob X) (f g : qbsHomType X (monadP Y)) :
+Lemma eq_qbs_bind X Y (p : qbs_prob X) (f g : qbsHomType X (qbs_prob Y)) :
   f =1 g -> qbs_bind p f = qbs_bind p g.
 ```
 
@@ -969,8 +968,8 @@ Lemma eq_qbs_bind X Y (p : qbs_prob X) (f g : qbsHomType X (monadP Y)) :
 Map is the pushforward of the random element along a bundled morphism, keeping the base measure:
 
 ```
-Definition monadP_map X Y (f : qbsHomType X Y) (p : monadP X) :
-    monadP Y :=
+Definition monadP_map X Y (f : qbsHomType X Y) (p : qbs_prob X) :
+    qbs_prob Y :=
   mkQBSProb (f \o qbs_prob_alpha p) (qbs_prob_mu p)
     (qbs_hom_proof _ (qbs_prob_alpha_random p)).
 ```
@@ -981,7 +980,7 @@ Definition monadP_map X Y (f : qbsHomType X Y) (p : monadP X) :
 | `monadP_map_integral` | `qbs_integral Y (monadP_map f p) h = qbs_integral X p (h \o f)` for `qbs_measurable Y h` |
 | `monadP_map_integrable` | `qbs_integrable Y (monadP_map f p) h <-> qbs_integrable X p (h \o f)` for `qbs_measurable Y h` |
 | `monadP_map_variance` | `qbs_variance Y (monadP_map f p) h = qbs_variance X p (h \o f)` |
-| `monadP_map_morphism` | `monadP_map f` is a morphism `monadP X -> monadP Y` (an HB instance) |
+| `monadP_map_morphism` | `monadP_map f` is a morphism `qbs_prob X -> qbs_prob Y` (an HB instance) |
 | `sigma_Mx_preimage` | Preimages of `sigma_Mx` sets under morphisms are `sigma_Mx` sets |
 | `monadP_map_id` | `monadP_map (qbs_id X) p = p` |
 | `monadP_map_comp` | `monadP_map (qbs_comp f g) p = monadP_map g (monadP_map f p)` |
@@ -993,8 +992,8 @@ Definition monadP_map X Y (f : qbsHomType X Y) (p : monadP X) :
 **File:** `theories/qbs_monad.v`
 
 ```
-Definition qbs_join X (pp : monadP (monadP X)) : monadP X :=
-  qbs_bind pp (qbs_id (monadP X)).
+Definition qbs_join X (pp : qbs_prob (qbs_prob X)) : qbs_prob X :=
+  qbs_bind pp (qbs_id (qbs_prob X)).
 ```
 
 `qbs_join_morphism` shows join is a morphism (with a bundled version `qbs_joinQ X`). The monad coherence laws are equalities:
@@ -1010,7 +1009,7 @@ Definition qbs_join X (pp : monadP (monadP X)) : monadP X :=
 **File:** `theories/qbs_monad.v`
 
 ```
-Definition qbs_strength W X (wp : W * monadP X) : monadP (prodQ W X) :=
+Definition qbs_strength W X (wp : W * qbs_prob X) : qbs_prob (prodQ W X) :=
   mkQBSProb (fun r => (wp.1, qbs_prob_alpha wp.2 r))
     (qbs_prob_mu wp.2) (qbs_Mx_pair_cstl wp.1 (qbs_prob_alpha_random wp.2)).
 ```
@@ -1019,7 +1018,7 @@ Definition qbs_strength W X (wp : W * monadP X) : monadP (prodQ W X) :=
 |------|-----------|
 | `qbs_strength_event` | `qbs_prob_event _ (qbs_strength (w, p)) U = qbs_prob_event X p [set x | U (w, x)]` for `sigma_Mx U` |
 | `qbs_strength_integral` | `qbs_integral _ (qbs_strength (w, p)) h = qbs_integral X p (fun x => h (w, x))` for `qbs_measurable _ h` |
-| `qbs_strength_morphism` | Strength is a morphism `prodQ W (monadP X) -> monadP (prodQ W X)` (bundled as `qbs_strengthQ`) |
+| `qbs_strength_morphism` | Strength is a morphism `prodQ W (qbs_prob X) -> qbs_prob (prodQ W X)` (bundled as `qbs_strengthQ`) |
 | `qbs_strength_return` | `qbs_strength (w, qbs_return x) = qbs_return (w, x)` |
 | `qbs_strength_natural` | Naturality in both arguments |
 | `qbs_strength_snd` | `monadP_map (qbs_snd W X) (qbs_strength (w, p)) = p` |
@@ -1039,21 +1038,21 @@ Integrating a fixed nonnegative measurable function is a morphism from `P(X)` in
 ```
 Lemma ge0_qbs_integral_morphism X (h : X -> \bar R) :
   qbs_measurable X h -> (forall x, 0 <= h x) ->
-  qbs_morphism (X := monadP X) (Y := measQ R (\bar R))
+  qbs_morphism (X := qbs_prob X) (Y := measQ R (\bar R))
     (fun p => qbs_integral X p h).
 ```
 
-`ge0_qbs_measurable_integral` states that for a morphism `f : qbsHomType X (monadP Y)` and a nonnegative `qbs_measurable` `h`, the map `x |-> qbs_integral Y (f x) h` is `qbs_measurable`.
+`ge0_qbs_measurable_integral` states that for a morphism `f : qbsHomType X (qbs_prob Y)` and a nonnegative `qbs_measurable` `h`, the map `x |-> qbs_integral Y (f x) h` is `qbs_measurable`.
 
 Bind is internal: a single morphism `P(X) * (X => P(Y)) -> P(Y)`, obtained from strength and evaluation:
 
 ```
 Definition qbs_bind_internal X Y :
-    qbsHomType (prodQ (monadP X) (expQ X (monadP Y))) (monadP Y) :=
+    qbsHomType (prodQ (qbs_prob X) (expQ X (qbs_prob Y))) (qbs_prob Y) :=
   qbs_bindQ (qbs_comp (qbs_swap _ _) (qbs_strengthQ _ _))
-    (qbs_eval X (monadP Y)).
+    (qbs_eval X (qbs_prob Y)).
 
-Lemma qbs_bind_internalE X Y (p : monadP X) (f : qbsHomType X (monadP Y)) :
+Lemma qbs_bind_internalE X Y (p : qbs_prob X) (f : qbsHomType X (qbs_prob Y)) :
   qbs_bind_internal X Y (p, f) = qbs_bind p f.
 ```
 
@@ -1067,10 +1066,10 @@ Lemma qbs_integral_bind (h : Y -> \bar R) :
 
 Lemma qbs_integral_morphism X (h : X -> \bar R) :
   qbs_measurable X h ->
-  qbs_morphism (X := monadP X) (Y := measQ R (\bar R))
+  qbs_morphism (X := qbs_prob X) (Y := measQ R (\bar R))
     (fun p => qbs_integral X p h).
 
-Lemma qbs_integral_param X Y (L : qbsHomType X (monadP Y))
+Lemma qbs_integral_param X Y (L : qbsHomType X (qbs_prob Y))
     (h : prodQ X Y -> \bar R) :
   qbs_measurable (prodQ X Y) h ->
   qbs_morphism (X := X) (Y := measQ R (\bar R))
@@ -1083,16 +1082,16 @@ Lemma qbs_integral_param X Y (L : qbsHomType X (monadP Y))
 
 **File:** `theories/qbs_monad.v`
 
-The monadic product of `p : monadP X` and `q : monadP Y` is bind followed by strength:
+The monadic product of `p : qbs_prob X` and `q : qbs_prob Y` is bind followed by strength:
 
 ```
 Definition qbs_swap X Y : qbsHomType (prodQ X Y) (prodQ Y X) :=
   qbs_pair (qbs_snd X Y) (qbs_fst X Y).
 
-Definition monadP_pair X Y (p : monadP X) (q : monadP Y) : monadP (prodQ X Y) :=
+Definition monadP_pair X Y (p : qbs_prob X) (q : qbs_prob Y) : qbs_prob (prodQ X Y) :=
   qbs_bind p (qbs_comp (qbs_pair (qbs_id X) (qbs_const X q)) (qbs_strengthQ X Y)).
 
-Lemma monadP_pair_event X Y (p : monadP X) (q : monadP Y) (U : set (prodQ X Y)) :
+Lemma monadP_pair_event X Y (p : qbs_prob X) (q : qbs_prob Y) (U : set (prodQ X Y)) :
   sigma_Mx U ->
   qbs_prob_event _ (monadP_pair p q) U =
   \int[qbs_prob_mu p]_r qbs_prob_mu q
@@ -1105,8 +1104,8 @@ Commutativity says that the order of drawing does not matter. It is proved from 
 Lemma monadP_pair_comm :
   monadP_pair p q = monadP_map (qbs_swap Y X) (monadP_pair q p).
 
-Lemma qbs_bind_comm X Y Z (p : monadP X) (q : monadP Y)
-    (f : qbsHomType (prodQ X Y) (monadP Z)) :
+Lemma qbs_bind_comm X Y Z (p : qbs_prob X) (q : qbs_prob Y)
+    (f : qbsHomType (prodQ X Y) (qbs_prob Z)) :
   qbs_bind (monadP_pair p q) f =
   qbs_bind (monadP_pair q p) (qbs_comp (qbs_swap Y X) f).
 ```
@@ -1169,7 +1168,7 @@ The normalised probability of `U` is the weighted probability of `U` divided by 
 **The normaliser as a QBS morphism (AFP `norm_qbs_measure_morphism`).** The total version maps into the coproduct `P(X) + 1`, with the unit summand for the degenerate case, and is a morphism:
 
 ```
-Definition qbs_normalize_sum p : coprodQ (monadP X) (unitQ R) :=
+Definition qbs_normalize_sum p : coprodQ (qbs_prob X) (unitQ R) :=
   if (0 < qbs_evidence p) && (qbs_evidence p < +oo)
   then inl (qbs_normalize_prob p) else inr tt.
 
@@ -1177,11 +1176,11 @@ Lemma qbs_normalize_sumE p : qbs_normalize_sum p =
   if qbs_normalize p is Some q then inl q else inr tt.
 
 Lemma qbs_normalize_morphism :
-  qbs_morphism (X := monadP (prodQ X (realQ R)))
-    (Y := coprodQ (monadP X) (unitQ R)) qbs_normalize_sum.
+  qbs_morphism (X := qbs_prob (prodQ X (realQ R)))
+    (Y := coprodQ (qbs_prob X) (unitQ R)) qbs_normalize_sum.
 
 Definition qbs_normalizeQ :
-    qbsHomType (monadP (prodQ X (realQ R))) (coprodQ (monadP X) (unitQ R)).
+    qbsHomType (qbs_prob (prodQ X (realQ R))) (coprodQ (qbs_prob X) (unitQ R)).
 ```
 
 ### 2.17 Product Measures and Fubini
@@ -1306,7 +1305,7 @@ Lemma qbs_to_giry_inj (p1 p2 : qbs_prob (measQ R M)) :
   p1 = p2.
 
 Lemma qbs_to_giry_bind d' (M' : measurableType d') (p : qbs_prob (measQ R M))
-    (f : qbsHomType (measQ R M) (monadP (measQ R M'))) (A : set M') :
+    (f : qbsHomType (measQ R M) (qbs_prob (measQ R M'))) (A : set M') :
   measurable A ->
   qbs_to_giry (qbs_bind p f : qbs_prob _) A =
   \int[qbs_to_giry p]_x qbs_to_giry (f x : qbs_prob _) A.
@@ -1350,7 +1349,7 @@ Definition qbs_interval_uniform (a b : R) (ab : a < b) : qbs_prob (realQ R) :=
 Definition qbs_uniform : qbs_prob (realQ R) := qbs_interval_uniform ltr01.
 ```
 
-The map `mu |-> N(mu, sigma)` is a morphism `realQ -> monadP realQ` (`qbs_normal_morphism`), bundled as `qbs_normalQ sigma`. Integration against the normal distribution is integration against `normal_prob`:
+The map `mu |-> N(mu, sigma)` is a morphism `realQ -> qbs_prob realQ` (`qbs_normal_morphism`), bundled as `qbs_normalQ sigma`. Integration against the normal distribution is integration against `normal_prob`:
 
 ```
 Lemma qbs_integral_normal m s (h : R -> \bar R) :
@@ -1420,13 +1419,13 @@ Following HKSY Sec. VI and the Isabelle AFP development (Bayesian_Linear_Regress
 **Prior.** The parameter prior is a monadic product, which is mapped to functions through the curried line `lin`:
 
 ```
-Definition nu : monadP RQ := qbs_normal_distribution 0 3.
-Definition prior2 : monadP W := monadP_pair nu nu.
+Definition nu : qbs_prob RQ := qbs_normal_distribution 0 3.
+Definition prior2 : qbs_prob W := monadP_pair nu nu.
 
 Definition lin : qbsHomType W F := qbs_curry_morph lin_uncurried.
 Lemma linE (s b r : R) : lin (s, b) r = s * r + b.
 
-Definition prior : monadP F := monadP_map lin prior2.
+Definition prior : qbs_prob F := monadP_map lin prior2.
 ```
 
 (here `W := prodQ RQ RQ` and `F := expQ RQ RQ`).
@@ -1434,7 +1433,7 @@ Definition prior : monadP F := monadP_map lin prior2.
 **Program.** The likelihood `obs_fun f` is the product of the five Gaussian densities of the data at `f 1, ..., f 5`; it is a QBS morphism `obs : qbsHomType F RQ`. The program is the normalisation of the prior weighted by the likelihood:
 
 ```
-Definition wprior : monadP (prodQ F RQ) :=
+Definition wprior : qbs_prob (prodQ F RQ) :=
   monadP_map (qbs_pair (qbs_id F) obs) prior.
 Definition program : option (qbs_prob F) := qbs_normalize wprior.
 ```
@@ -1446,13 +1445,13 @@ Definition evidence_const : R :=
   4 * Num.sqrt 2 / (pi ^+ 2 * Num.sqrt (29 * 2309 * pi)) *
   expR (- (11 * 11 * (138 * 100 + 41) / (25 * 29 * 2309))).
 
-Definition posterior2 : monadP W :=
+Definition posterior2 : qbs_prob W :=
   qbs_bind
-    (qbs_normal_distribution post_s_mean (Num.sqrt post_s_var) : monadP _)
+    (qbs_normal_distribution post_s_mean (Num.sqrt post_s_var) : qbs_prob _)
     (qbs_comp (qbs_pair (qbs_id RQ)
       (qbs_comp post_b_meanQ (qbs_normalQ (Num.sqrt post_b_var))))
       (qbs_strengthQ RQ RQ)).
-Definition posterior : monadP F := monadP_map lin posterior2.
+Definition posterior : qbs_prob F := monadP_map lin posterior2.
 ```
 
 | Name | Statement |
@@ -1736,7 +1735,7 @@ measurable_aux.v (standalone measurability lemmas, no QBS imports)
 
 ### 4.2 Design Decisions
 
-**Instances plus named definitions.** Concrete QBS constructions (`prodQ`, `expQ`, `unitQ`, `coprodQ`, `sigmaQ`, `piQ`, `monadP`, etc.) are declared with `HB.instance` on their (non-canonical) carrier types, and then exposed through a named definition of type `qbsType R`. Morphisms are bundled in the HB structure `qbsHomType`, which makes category laws and the universal properties statable as equalities (`qbs_homeqP`).
+**Instances plus named definitions.** Concrete QBS constructions (`prodQ`, `expQ`, `unitQ`, `coprodQ`, `sigmaQ`, `piQ`, `qbs_prob`, etc.) are declared with `HB.instance` on their (non-canonical) carrier types, and then exposed through a named definition of type `qbsType R`. Morphisms are bundled in the HB structure `qbsHomType`, which makes category laws and the universal properties statable as equalities (`qbs_homeqP`).
 
 **Shared-alpha probability monad.** The random elements of `P(X)` are the maps `r |-> [alpha, g r]` with a single random element `alpha` and a measurable family `g` of Giry probabilities, as in HKSY. Bind takes a bundled morphism `X -> P(Y)` and is total, defined from the Giry bind of mathcomp-analysis; no diagonal-randomness side condition is needed.
 
@@ -1761,7 +1760,7 @@ measurable_aux.v (standalone measurability lemmas, no QBS imports)
 | Order adjunction (`rl_order_adjunction`) | Present | `sigma_of_Mx_of` (Galois connection `sigma_of` / `Mx_of`) |
 | Concrete morphisms | Present | `qbs_negb/andb/orb/implb`, `qbs_ltr`, `qbs_ltn`, `qbs_case`, `qbs_arg_swap`, `qbs_exp_compose`, `natQ_morphism`, `boolQ_morphism` |
 | Standard Borel R≅R×R | Not formalized | `pair_standard_borel` (retraction, via atan + digit interleaving) |
-| Bayesian regression | Function-space prior | Function-space prior `prior : monadP (expQ RQ RQ)`, closed-form posterior |
+| Bayesian regression | Function-space prior | Function-space prior `prior : qbs_prob (expQ RQ RQ)`, closed-form posterior |
 | Program correctness | `program_result` (Inl) | `program_posterior` (`program = Some posterior`) |
 | Evidence | Explicit closed form `evidence_const` | `wprior_evidence` |
 | Monad strength, join | Not formalized | `qbs_strength*` (snd, assoc, return, join), `qbs_join*` lemmas |

@@ -70,7 +70,7 @@ Proof. by move=> mf; apply/qbs_integrable_returnP. Qed.
 (** ** Bind *)
 
 Section bind.
-Context X Y (p : qbs_prob X) (f : qbsHomType X (monadP Y)).
+Context X Y (p : qbs_prob X) (f : qbsHomType X (qbs_prob Y)).
 
 Let hf : monadP_random Y (f \o qbs_prob_alpha p) :=
   qbs_hom_proof _ (qbs_prob_alpha_random p).
@@ -111,7 +111,7 @@ End bind.
 
 (** Bounded measurable real functions: AFP qbs_prob_integral_bind. *)
 Lemma qbs_integral_bind_bounded X Y (p : qbs_prob X)
-    (f : qbsHomType X (monadP Y)) (k : Y -> R) :
+    (f : qbsHomType X (qbs_prob Y)) (k : Y -> R) :
   qbs_measurable Y (fun y => (k y)%:E) -> (exists M, forall y, `|k y| <= M)%R ->
   qbs_integral Y (qbs_bind p f) (fun y => (k y)%:E) =
   qbs_integral X p (fun x => qbs_integral Y (f x) (fun y => (k y)%:E)).
@@ -136,13 +136,13 @@ Qed.
 
 Lemma qbs_integral_morphism X (h : X -> \bar R) :
   qbs_measurable X h ->
-  qbs_morphism (X := monadP X) (Y := measQ R (\bar R))
+  qbs_morphism (X := qbs_prob X) (Y := measQ R (\bar R))
     (fun p => qbs_integral X p h).
 Proof. by move=> mh b hb; exact: monadP_random_integral. Qed.
 
 (** ** Parametric integrals (AFP qbs_prob_integral_morphism) *)
 
-Lemma qbs_integral_param X Y (L : qbsHomType X (monadP Y))
+Lemma qbs_integral_param X Y (L : qbsHomType X (qbs_prob Y))
     (h : prodQ X Y -> \bar R) :
   qbs_measurable (prodQ X Y) h ->
   qbs_morphism (X := X) (Y := measQ R (\bar R))
@@ -156,7 +156,7 @@ by under [X in measurable_fun _ X -> _]eq_fun do
   rewrite /g /= qbs_strength_integral//.
 Qed.
 
-Lemma qbs_integral_param_snd X Y (p : monadP X) (h : prodQ X Y -> \bar R) :
+Lemma qbs_integral_param_snd X Y (p : qbs_prob X) (h : prodQ X Y -> \bar R) :
   qbs_measurable (prodQ X Y) h ->
   qbs_morphism (X := Y) (Y := measQ R (\bar R))
     (fun y => qbs_integral X p (fun x => h (x, y))).

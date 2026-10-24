@@ -86,11 +86,11 @@ Definition qbs_uniform : qbs_prob (realQ R) := qbs_interval_uniform ltr01.
 Definition intervalQ : qbsType R :=
   @subQ R (prodQ (realQ R) (realQ R)) (fun ab => (ab.1 < ab.2)).
 
-Definition qbs_uniform_of (ab : intervalQ) : monadP (realQ R) :=
+Definition qbs_uniform_of (ab : intervalQ) : qbs_prob (realQ R) :=
   qbs_interval_uniform (svalP ab).
 
 Lemma qbs_uniform_of_morphism :
-  qbs_morphism (X := intervalQ) (Y := monadP (realQ R)) qbs_uniform_of.
+  qbs_morphism (X := intervalQ) (Y := qbs_prob (realQ R)) qbs_uniform_of.
 Proof.
 move=> c [m1 m2].
 exists idfun, (fun r => uniform_prob (svalP (c r)) : giry mR R).
@@ -121,12 +121,12 @@ apply: measurable_giry_codensity => // B mB.
   by apply/measurable_fun_pairP; split.
 Qed.
 
-Definition qbs_uniformQ : qbsHomType intervalQ (monadP (realQ R)) :=
+Definition qbs_uniformQ : qbsHomType intervalQ (qbs_prob (realQ R)) :=
   HB.pack qbs_uniform_of
     (isQBSMorphism.Build R _ _ _ qbs_uniform_of_morphism).
 
 Lemma qbs_normal_morphism s :
-  qbs_morphism (X := realQ R) (Y := monadP (realQ R))
+  qbs_morphism (X := realQ R) (Y := qbs_prob (realQ R))
     (fun m => qbs_normal_distribution m s).
 Proof.
 move=> a ha; exists idfun, (fun r => normal_prob (a r) s : giry mR R).
@@ -137,8 +137,8 @@ exact: measurableT_comp (measurable_normal_prob _ mB) ha.
 Qed.
 
 (** m |-> N(m, s) as a bundled morphism R -> P(R). *)
-Definition qbs_normalQ s : qbsHomType (realQ R) (monadP (realQ R)) :=
-  HB.pack (fun m : realQ R => qbs_normal_distribution m s : monadP _)
+Definition qbs_normalQ s : qbsHomType (realQ R) (qbs_prob (realQ R)) :=
+  HB.pack (fun m : realQ R => qbs_normal_distribution m s : qbs_prob _)
     (isQBSMorphism.Build R _ _ _ (qbs_normal_morphism s)).
 
 (** Distribution expectation lemmas. *)
