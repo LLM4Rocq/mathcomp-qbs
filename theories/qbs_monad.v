@@ -16,19 +16,23 @@ From QBS Require Import measurable_aux quasi_borel standard_borel
 (* measures. Bind is the Giry bind of mathcomp-analysis.                      *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*              giry_prob m m1 == m : giry T R given a proof m1 that m(T) = 1 *)
-(*          qbs_rep b a g == b r is represented by [a, g r] for every r       *)
-(*                  probQ X == the QBS of probabilities on X (HKSY P(X))      *)
-(*                qbs_return x == the Dirac probability at x                  *)
-(*                qbs_bind p f == bind, for f : qbsHomType X (probQ Y)        *)
-(*              qbs_map f p == pushforward of p along f : qbsHomType X Y      *)
-(*                 qbs_join pp == multiplication P(P(X)) -> P(X)              *)
-(*         strength (w, p) == strength W * P(X) -> P(W * X)                   *)
-(*             assoc U W X == associativity (U * W) * X -> U * (W * X)        *)
-(*      qbs_returnQ, qbs_bindQ == return and bind as qbsHomType morphisms     *)
-(*    qbs_joinQ, strengthQ == join and strength as qbsHomType morphisms       *)
-(*       qbs_bind_internal X Y == bind as P(X) * (X => P(Y)) -> P(Y)          *)
-(* qbs_swap X Y, qbs_prod p q == swap; monadic product of p, q                *)
+(*                  giry_prob m m1 == m : giry T R, given m1 : m(T) = 1       *)
+(*                   qbs_rep b a g == b r is [a, g r] for all r               *)
+(*                         probQ X == the QBS of probabilities on X           *)
+(*                    qbs_return x == the Dirac probability at x              *)
+(*                    qbs_bind p f == bind, for f : qbsHomType X (probQ Y)    *)
+(*                     qbs_map f p == pushforward along f : qbsHomType X Y    *)
+(*                     qbs_join pp == multiplication P(P(X)) -> P(X)          *)
+(*                 strength (w, p) == strength W * P(X) -> P(W * X)           *)
+(*                    assocQ U W X == (U * W) * X -> U * (W * X)              *)
+(*          qbs_returnQ, qbs_bindQ == return and bind as morphisms            *)
+(*            qbs_joinQ, strengthQ == join and strength as morphisms          *)
+(*           qbs_bind_internal X Y == P(X) * (X => P(Y)) -> P(Y)              *)
+(*      qbs_swap X Y, qbs_prod p q == swap; monadic product of p, q           *)
+(*      giry_bindE, giry_bind_setT == integral formula, mass of Giry bind     *)
+(*        qbs_map_id, qbs_map_comp == qbs_map is functorial                   *)
+(*      qbs_map_bind, qbs_bind_map == naturality of bind and map              *)
+(* qbs_join_return, qbs_join_assoc == unit and associativity of join          *)
 (* ```                                                                        *)
 (*                                                                            *)
 (* The monad laws (qbs_bind_returnl, qbs_bind_returnr, qbs_bindA), the        *)
@@ -135,7 +139,7 @@ Proof. exact: measurableT_comp measurable_snd measurable_R_to_RR. Qed.
 Local Lemma qbs_Mx_decode_pair X Y (a : mR -> X) (b : mR -> Y) :
   qbs_Mx a -> qbs_Mx b ->
   qbs_Mx
-    (fun s : mR => (a (decode_RR_mR s).1, b (decode_RR_mR s).2) : prodQ X Y).
+    (fun s : mR => (a (decode_RR_mR s).1, b (decode_RR_mR s).2)).
 Proof.
 move=> ha hb; split.
   exact: qbs_Mx_compT ha measurable_decode1.
@@ -676,17 +680,17 @@ apply/qbs_eqP => U mU; rewrite qbs_map_event// strength_event//.
 exact: sigma_Mx_preimage.
 Qed.
 
-Definition assoc (U W X : qbsType R) :
+Definition assocQ (U W X : qbsType R) :
     qbsHomType (prodQ (prodQ U W) X) (prodQ U (prodQ W X)) :=
   qbs_pair (qbs_comp (qbs_fst _ X) (qbs_fst U W))
     (qbs_pair (qbs_comp (qbs_fst _ X) (qbs_snd U W)) (qbs_snd _ X)).
 
 Lemma strength_assoc (U W X : qbsType R) (u : U) (w : W) (p : probQ X) :
   strength (u, strength (w, p)) =
-  qbs_map (assoc U W X) (strength ((u, w), p)).
+  qbs_map (assocQ U W X) (strength ((u, w), p)).
 Proof.
 apply/qbs_eqP => V mV; have mS := sigma_Mx_section u mV.
-have mA := sigma_Mx_preimage (assoc U W X) mV.
+have mA := sigma_Mx_preimage (assocQ U W X) mV.
 by rewrite qbs_map_event// !strength_event.
 Qed.
 
