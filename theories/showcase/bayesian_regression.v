@@ -144,8 +144,7 @@ Let expoE s b :
   - (s - post_s_mean) ^+ 2 / (post_s_var *+ 2) +
   - (b - post_b_mean s) ^+ 2 / (post_b_var *+ 2) :> R.
 Proof.
-rewrite /post_s_mean /post_b_mean /post_s_var /post_b_var.
-by field.
+by rewrite /post_s_mean /post_b_mean /post_s_var /post_b_var; field.
 Qed.
 
 Let peakE :
@@ -156,8 +155,8 @@ Proof.
 have pi0 : 0 < pi :> R := pi_gt0.
 have vs0 := post_s_var_gt0; have vb0 := post_b_var_gt0.
 apply/eqP; rewrite -(eqrXn2 (n := 2)) //.
-- by rewrite mulr_ge0 ?exprn_ge0 ?normal_peak_ge0.
-- by rewrite !mulr_ge0 ?normal_peak_ge0 ?invr_ge0 ?mulr_ge0 ?sqrtr_ge0
+  by rewrite mulr_ge0 ?exprn_ge0 ?normal_peak_ge0.
+  by rewrite !mulr_ge0 ?normal_peak_ge0 ?invr_ge0 ?mulr_ge0 ?sqrtr_ge0
     ?exprn_ge0 ?ltW.
 have pk2 x : 0 <= x ^+ 2 * pi *+ 2 ->
     normal_peak x ^+ 2 = (x ^+ 2 * pi *+ 2)^-1.
@@ -186,7 +185,7 @@ rewrite /obs2 /obs_fun !linE /d /evidence_const !(normal_pdfE _ half_neq0)
   !(normal_pdfE _ h3)
   (normal_pdfE _ hvs) (normal_pdfE _ hvb) /normal_fun !sqr_sqrtr ?ltW //.
 have HE := congr1 expR (expoE s b); rewrite !expRD in HE.
-move: (peakE); move: (normal_peak _) => P3; move: (normal_peak 2^-1) => Ph.
+move: peakE; move: (normal_peak _) => P3; move: (normal_peak 2^-1) => Ph.
 move=> HP.
 set e1 := expR (- (s - 0) ^+ 2 / _); set e2 := expR (- (b - 0) ^+ 2 / _).
 set e3 := expR (- (5 / 2 - _) ^+ 2 / _).
@@ -422,7 +421,7 @@ Qed.
 
 Lemma wprior_evidence : evidence wprior = evidence_const%:E.
 Proof.
-have mw0 := @qbs_measurable_weight R F.
+have mw0 := qbs_measurable_weight (X := F).
 have mw := qbs_measurable_comp (qbs_pair (qbs_id F) obs) mw0.
 rewrite /evidence.
 rewrite !qbs_map_integral//.
@@ -431,11 +430,11 @@ have -> : (fun sb : W => (maxr 0 (obs2 sb.1 sb.2))%:E) =
     (fun sb => 1 * (obs2 sb.1 sb.2)%:E).
   by apply/funext => sb; rewrite mul1e max_r ?obs2_ge0.
 rewrite prior2_integral.
-- exact: (measurable_mul_obs2 (h := fun=> 1)) (fun _ _ => measurable_cst _).
-- exact: (mul_obs2_ge0 (h := fun=> 1)) (fun _ => lee01).
+  exact: (measurable_mul_obs2 (h := fun=> 1)) (fun _ _ => measurable_cst _).
+  exact: (mul_obs2_ge0 (h := fun=> 1)) (fun _ => lee01).
 rewrite (factor_integral (h := fun=> 1)).
-- by move=> ? ?; exact: measurable_cst.
-- by move=> _; rewrite lee01 lexx.
+  by move=> ? ?; exact: measurable_cst.
+  by move=> _; rewrite lee01 lexx.
 by under eq_integral do rewrite integral_normal_prob_cst1;
   rewrite integral_normal_prob_cst1 mule1.
 Qed.
