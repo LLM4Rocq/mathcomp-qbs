@@ -15,102 +15,51 @@ programming semantics.
 
 ## Overview
 
-**403 proofs, 0 Admitted, 0 custom axioms, 6,390 lines across 14 files.**
-
-> **Note**: A higher-order PPL with denotational semantics in QBS
-> (`ppl_qbs.v`, `ppl_kernel.v`, `showcase/ppl_examples.v`, ...) is
-> developed on the [`ppl`](../../tree/ppl) branch as future work. It
-> targets MathComp 2.5 and has not been ported yet.
-
-Quasi-Borel spaces solve a fundamental problem: the category of
-measurable spaces is not cartesian closed, which prevents giving
-semantics to higher-order probabilistic programs. QBS replaces
-measurable sets with "random elements" (morphisms from R), yielding a
-cartesian-closed category with a well-behaved probability monad.
-
 This formalization follows:
 - ["A Convenient Category for Higher-Order Probability Theory"](https://arxiv.org/abs/1701.02547)
   by Heunen, Kammar, Staton, Yang (LICS 2017), referred to as HKSY
 - The [Isabelle AFP formalization](https://www.isa-afp.org/entries/Quasi_Borel_Spaces.html)
   by Hirata, Minamide, Sato
 
-## Files
+## Files and key results
 
 ### Core QBS theory
 
-| File | Lines | Proofs | Description |
-|------|------:|-------:|-------------|
-| `measurable_aux.v` | 122 | 6 | Auxiliary measurability lemmas: `measurable_invr`, `measurable_fun_nat_discrete`, `measurable_truncn` |
-| `quasi_borel.v` | 887 | 62 | HB structure, morphisms, products, exponentials, cartesian closure, the L functor (`qbs_meas`) and L ⊣ R, lattice of QBS structures, empty QBS |
-| `measure_qbs_adjunction.v` | 311 | 19 | Counit of L ⊣ R, standard Borel spaces, R is full on standard Borel domains, order adjunction |
-| `coproduct_qbs.v` | 721 | 44 | Binary and countable coproducts (HKSY Prop. 17), dependent products, lists with cons and recursion, concrete morphisms |
-| `standard_borel.v` | 1,031 | 59 | R ≅ (0,1) via atan, digit interleaving, R ≅ R × R |
+| File | Result | Paper | Rocq |
+|------|--------|-------|------|
+| `measurable_aux.v` | Auxiliary measurability lemmas | — | `measurable_invr`, `measurable_fun_nat_discrete`, `measurable_truncn` |
+| `quasi_borel.v` | Cartesian closure | HKSY Prop. 16 | `qbs_curry_morph`, `qbs_uncurry`, `qbs_curryK` (β), `qbs_uncurryK` (η), `qbs_curry_morph_uniq` |
+| | L ⊣ R, with L X = (X, `sigma_Mx`) | HKSY Prop. 15(1) | `qbs_morphism_measurableP` |
+| | Lattice of QBS structures, empty QBS | — | `qbs_inf`, `qbs_top`, `qbs_bot`, `emptyQ` |
+| `measure_qbs_adjunction.v` | Counit of L ⊣ R | HKSY Prop. 15(1) | `adjunction_counit` |
+| | R is full on standard Borel domains | HKSY Prop. 15(2) | `measQ_full`, `sigma_Mx_standard_borelP` |
+| | Galois connection | — | `sigma_of_Mx_of` |
+| `coproduct_qbs.v` | Countable coproducts | HKSY Prop. 17 | `sigmaQ`, `sigma_case`, `sigma_case_eta` |
+| | Lists, recursion as a morphism | HKSY Sec. IV | `qbs_nil`, `qbs_cons`, `list_rec`, `qbs_morphism_list_rec`, `list_rec_hom`, `seq_of_listK`, `list_of_seqK` |
+| `standard_borel.v` | R ≅ R × R (retraction) | HKSY Prop. 5 | `pair_standard_borel`, `encode_RRK` |
 
 ### Probability
 
-| File | Lines | Proofs | Description |
-|------|------:|-------:|-------------|
-| `probability_qbs.v` | 604 | 42 | Probabilities as the quotient of pairs (alpha, mu), equality on `sigma_Mx` events, integration and integrability, law, expectation, variance |
-| `qbs_monad.v` | 675 | 57 | The HKSY probability monad: return, bind, laws (as equalities), map, join, strength and its laws, commutativity |
-| `qbs_normalize.v` | 278 | 18 | Normalisation of weighted probabilities (HKSY Sec. VI), as a morphism P(X × R) → P(X) + 1 |
-| `qbs_monad_integral.v` | 170 | 8 | Integrals, integrability and variance through return and bind |
-| `qbs_giry.v` | 136 | 8 | Comparison with the Giry monad |
-| `pair_qbs_measure.v` | 385 | 20 | Concrete product via R ≅ R × R, Fubini, independence, variance of independent sums |
-| `normal_centred.v` | 300 | 16 | Centred first moment and mean of the normal law (`integral_normal_mean`), change of variables for `normal_prob` |
-| `measure_as_qbs_measure.v` | 292 | 14 | Normal, Bernoulli and uniform (on any [a, b]) distributions, their expectations, Bernoulli event probabilities |
+| File | Result | Paper | Rocq |
+|------|--------|-------|------|
+| `probability_qbs.v` | Probabilities: quotient of the pairs (alpha, mu), equal iff equal on `sigma_Mx` sets | HKSY Sec. V | `probQ`, `preprob_equiv`, `qbs_eqP` |
+| | Law, integration, expectation, variance | HKSY eq. (3) | `qbs_integral_law`, `qbs_expectE` (expectation is `'E` on the law), `qbs_integrableP`, `qbs_integral_le`, `qbs_variance_affine` |
+| `qbs_monad.v` | Monad laws (equalities) | HKSY Sec. V | `qbs_return`, `qbs_bind`, `qbs_bind_returnl`, `qbs_bind_returnr`, `qbs_bindA`, `qbs_map`, `qbs_join` |
+| | Strength and its laws | HKSY Sec. V | `strength`, `strength_snd`, `strength_assoc`, `strength_return`, `strength_join` |
+| | Integration is a morphism, internal bind | HKSY Sec. V-C, Thm. 21 | `ge0_qbs_morphism_integral`, `qbs_bind_internal` |
+| | Commutativity | HKSY Prop. 22(2) | `qbs_prod_comm`, `qbs_bind_comm` |
+| `qbs_normalize.v` | Normaliser, as a morphism into P(X) + 1 | HKSY Sec. VI | `normalize`, `normalize_event`, `normalize_prob_event_mk`, `qbs_morphism_normalize`, `normalizeQ` |
+| `qbs_monad_integral.v` | Signed integrals through return and bind | — | `qbs_integral_bind`, `qbs_morphism_integral` |
+| `qbs_giry.v` | QBS ↔ Giry | HKSY Prop. 22(3), 23 | `to_giry`, `qbs_integral_giry`, `to_giry_inj`, `to_giry_bind` |
+| `pair_qbs_measure.v` | Fubini, independence, variance of independent sums | — | `qbs_prod_iterated`, `indep_rect` (product rule), `qbs_integral_indepM` (E[fg] = E[f]E[g]), `qbs_prod_varianceD` |
+| `normal_centred.v` | Mean of the normal law | — | `integral_normal_mean` |
+| `measure_as_qbs_measure.v` | Normal, Bernoulli and uniform distributions | — | `qbs_expect_normal`, `qbs_expect_bernoulli`, `qbs_bernoulli_event`, `qbs_expect_interval_uniform`, `qbs_uniformQ : intervalQ -> P(R)` |
 
 ### Showcase
 
-| File | Lines | Proofs | Description |
-|------|------:|-------:|-------------|
-| `showcase/bayesian_regression.v` | 478 | 30 | Bayesian linear regression (HKSY Sec. VI) with closed-form posterior |
-
-## Key results
-
-- **Cartesian closure**: `qbs_curry_morph`, `qbs_uncurry`, `qbs_curryK` (β),
-  `qbs_uncurryK` (η), `qbs_curry_morph_uniq`
-- **L ⊣ R** (HKSY Prop. 15(1)): `qbs_morphism_measurableP`, where
-  `qbs_meas X` is X with the sigma-algebra `sigma_Mx`; counit
-  `adjunction_counit`
-- **R is full on standard Borel domains**: `measQ_full`,
-  `sigma_Mx_standard_borelP`
-- **Countable coproducts** (HKSY Prop. 17): `sigmaQ`, `sigma_case`,
-  `sigma_case_eta`
-- **Probability monad**: `probQ X` is the quotient of the pairs
-  (alpha, mu) by `preprob_equiv` (`qbs_eqP`: equality iff equal
-  on `sigma_Mx` sets); `qbs_return`, `qbs_bind`, monad laws as
-  equalities `qbs_bind_returnl`, `qbs_bind_returnr`, `qbs_bindA`;
-  `qbs_map`,
-  `qbs_join`, `strength` with its laws `strength_snd`,
-  `strength_assoc`, `strength_return`, `strength_join`;
-  internal bind `qbs_bind_internal`
-  (HKSY Thm. 21); commutativity `qbs_prod_comm`, `qbs_bind_comm`
-  (HKSY Prop. 22(2))
-- **QBS ↔ Giry**: `to_giry`, `qbs_integral_giry`, and on standard
-  Borel spaces `to_giry_inj`, `to_giry_bind`
-- **Integration**: `qbs_integral_law`, `qbs_expectE` (expectation is
-  `'E` on the law)
-- **Independence**: `indep_rect` (product rule),
-  `qbs_integral_indepM` (E[fg] = E[f]E[g])
-- **R ≅ R × R**: `pair_standard_borel`, `encode_RRK`
-- **Normaliser**: `normalize`, `normalize_event`,
-  `normalize_prob_event_mk`; as a morphism into P(X) + 1:
-  `qbs_morphism_normalize`, `normalizeQ`
-- **Lists**: `qbs_nil`, `qbs_cons`, recursion `list_rec` as a morphism
-  (`qbs_morphism_list_rec`, internal `list_rec_hom`), bijection with
-  `seq` (`seq_of_listK`, `list_of_seqK`)
-- **Order structure**: meet/top/bottom of QBS structures (`qbs_inf`,
-  `qbs_top`, `qbs_bot`), empty QBS `emptyQ`, Galois connection
-  `sigma_of_Mx_of`, functions out of `natQ`/`boolQ` are morphisms
-- **Integration**: `qbs_integrableP`, `qbs_integral_le`,
-  `qbs_variance_affine`, signed `qbs_integral_bind`
-- **Distributions**: `qbs_expect_bernoulli`, `qbs_bernoulli_event`,
-  `qbs_expect_interval_uniform`, `qbs_expect_normal` (via
-  `integral_normal_mean`), and Uniform as a
-  morphism on intervals `qbs_uniformQ : intervalQ -> P(R)`
-- **Bayesian regression**: `program_posterior` (`program = Some posterior`:
-  the program normalises to an explicit Gaussian posterior on functions
-  R => R), `wprior_evidence` (closed-form evidence)
+| File | Result | Paper | Rocq |
+|------|--------|-------|------|
+| `showcase/bayesian_regression.v` | Bayesian regression: explicit Gaussian posterior on R => R, closed-form evidence | HKSY Sec. VI | `program_posterior` (`program = Some posterior`), `wprior_evidence` |
 
 ## Limitations
 
